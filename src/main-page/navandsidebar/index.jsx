@@ -58,7 +58,7 @@ const NavandSideBar = () => {
       label: "Profile",
     },
     {
-      path: "/scratch-card",
+      path: "#",
       icon: <BiCreditCard className="text-xl" />,
       label: "Scratch Cards",
       subItems: [
@@ -77,7 +77,7 @@ const NavandSideBar = () => {
       label: "Airtime",
     },
     {
-      path: "/jamb-services",
+      path: "#",
       icon: <BiBook className="text-xl" />,
       label: "JAMB Services",
       subItems: [
