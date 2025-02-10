@@ -103,7 +103,7 @@ const Dashboards = () => {
             className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow duration-300"
           >
             <div className="flex justify-between items-center border-b pb-4">
-              <h4 className="text-xl font-bold text-green-500">Recent Transactions</h4>
+              <h4 className="text-lg lg:text-xl font-bold text-green-500">Recent Transactions</h4>
             </div>
             <ol className="mt-4">
               {recentTransactions.map((transaction, index) => (
