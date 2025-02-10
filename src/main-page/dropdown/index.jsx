@@ -33,7 +33,7 @@ const Dropdown = () => {
         aria-haspopup="true"
       >
         <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
-          M
+          
         </div>
         <span className="hidden md:block ml-2 text-green-500">
           Michael Balogun Temidayo
@@ -48,7 +48,7 @@ const Dropdown = () => {
 
       {/* Dropdown Menu */}
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out transform opacity-100 translate-y-0">
+        <div className="absolute right-0 mt-10 w-56 bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out transform opacity-100 translate-y-0">
           <div className="p-4 border-b">
             <h6 className="font-bold">Michael Balogun Temidayo</h6>
             <span className="text-sm text-gray-600">
