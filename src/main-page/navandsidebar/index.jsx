@@ -23,7 +23,7 @@ import Dashboards from "../dashboard";
 
 const NavandSideBar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [openDropdown, setOpenDropdown] = useState(null);
   const location = useLocation();
 
