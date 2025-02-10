@@ -750,3 +750,7 @@ aside ul li a {
     margin-left: 0 !important; /* Remove margin in mobile view */
   }
 }
+
+.marquee{
+  z-index: 1100;
+}

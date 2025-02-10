@@ -82,14 +82,14 @@ const Dashboards = () => {
               </h4>
               <a
                 href="#"
-                className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 transition-colors duration-300"
+                className="bg-blue-500 text-white px-4 py-2 rounded-md lg:text-sm hover:bg-blue-600 transition-colors duration-300 text-xs"
               >
                 Fund Wallet
               </a>
             </div>
             <ul className="mt-4">
               {balanceData.items.map((item, index) => (
-                <li key={index} className="flex justify-between items-center py-2">
+                <li key={index} className="flex justify-between items-center py-2 text-sm lg:text-lg">
                   <span>{item.label}</span>
                   <span>{item.value}</span>
                 </li>
@@ -107,7 +107,7 @@ const Dashboards = () => {
             </div>
             <ol className="mt-4">
               {recentTransactions.map((transaction, index) => (
-                <li key={index} className="flex justify-between items-center py-2">
+                <li key={index} className="flex justify-between items-center py-2 text-sm lg:text-lg">
                   <span>{transaction.label}</span>
                   <span>{transaction.amount}</span>
                 </li>

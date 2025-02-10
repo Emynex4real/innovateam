@@ -141,7 +141,7 @@ const NavandSideBar = () => {
         />
       </form>
 
-      <div className="fixed top-16 left-0 right-0 h-5 flex items-center justify-center overflow-hidden bg-gradient-to-r from-green-500 to-green-600 z-50">
+      <div className="fixed top-16 left-0 right-0 h-5 flex items-center justify-center overflow-hidden bg-gradient-to-r from-green-500 to-green-600 z-50 marquee">
         <p className="text-white text-sm font-medium whitespace-nowrap animate-marquee">
           HAPPY NEW YEAR 2025 - Wishing you a prosperous and joyful year ahead!
           🎉✨
@@ -250,11 +250,7 @@ const NavandSideBar = () => {
       </footer>
 
       {/* Mobile-Specific Styles */}
-      <style>
-        {`
-         
-        `}
-      </style>
+
     </div>
   );
 };
