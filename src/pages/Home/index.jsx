@@ -3,6 +3,7 @@ import image from "../../images/pexels-cottonbro-6344238.jpg";
 import OurServices from "./our services";
 import Accordionx from "../accordion";
 import Data from "./../accordion/data";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
@@ -20,6 +21,8 @@ const Home = () => {
               pariatur repudiandae recusandae!
             </p>
             <div className="flex items-center gap-4 flex-wrap">
+              <Link to={'/signup'}>
+              
               <button className="animated-button">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -38,6 +41,7 @@ const Home = () => {
                   <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
                 </svg>
               </button>
+              </Link>
 
               <div className="flex items-center">
                 {/* <p className="text-xs w-32 lg:text-sm lg:w-48">

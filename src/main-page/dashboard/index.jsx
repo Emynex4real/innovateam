@@ -1,5 +1,9 @@
 import React from "react";
-import waec  from '../../images/waec-gce.jpg'
+import waecResultChecker from "../../images/waec-result-checker.jpg";
+import necoResultChecker from "../../images/neco-result-checker.jpg";
+import nabtebResultChecker from "../../images/nabteb-result-checker.jpg";
+import nbaisResultChecker from "../../images/nbais-result-checker.jpg";
+import waecGce from "../../images/waec-gce.jpg";
 
 const Dashboards = () => {
   // Data for balance and recent transactions
@@ -23,34 +27,33 @@ const Dashboards = () => {
     {
       title: "WAEC Result Checker",
       price: "₦3,400.00",
-      image: "https://arewagate.com/images/products/waec-result-checker.jpg",
+      image: waecResultChecker, // Use the imported image
       link: "https://arewagate.com/scratch-card/waec/744aa364-93b7-4ad5-96de-d14086de383a",
     },
     {
       title: "NECO Result Checker",
       price: "₦1,300.00",
-      image: "https://arewagate.com/images/products/waec-result-checker.jpg",
+      image: necoResultChecker, // Use the imported image
       link: "https://arewagate.com/scratch-card/waec/744aa364-93b7-4ad5-96de-d14086de383a",
     },
     {
       title: "NABTEB Result Checker",
       price: "₦900.00",
-      image: "https://arewagate.com/images/products/waec-result-checker.jpg",
+      image: nabtebResultChecker, // Use the imported image
       link: "https://arewagate.com/scratch-card/waec/744aa364-93b7-4ad5-96de-d14086de383a",
     },
     {
       title: "NBAIS Result Checker",
       price: "₦1,100.00",
-      image: "https://arewagate.com/images/products/waec-result-checker.jpg",
+      image: nbaisResultChecker, // Use the imported image
       link: "https://arewagate.com/scratch-card/waec/744aa364-93b7-4ad5-96de-d14086de383a",
     },
     {
       title: "WAEC GCE",
       price: "₦28,000.00",
-      image: "https://arewagate.com/images/products/waec-result-checker.jpg",
+      image: waecGce, // Use the imported image
       link: "https://arewagate.com/scratch-card/waec/744aa364-93b7-4ad5-96de-d14086de383a",
     },
-    // Add more services as needed
   ];
 
   // Animation variants for Framer Motion
@@ -74,7 +77,7 @@ const Dashboards = () => {
             className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow duration-300"
           >
             <div className="flex justify-between items-center border-b pb-4">
-              <h4 className="text-xl font-bold text-orange-500">
+              <h4 className="text-xl font-bold text-green-500">
                 Balance: <span className="font-bold">{balanceData.totalBalance}</span>
               </h4>
               <a
@@ -100,7 +103,7 @@ const Dashboards = () => {
             className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow duration-300"
           >
             <div className="flex justify-between items-center border-b pb-4">
-              <h4 className="text-xl font-bold text-orange-500">Recent Transactions</h4>
+              <h4 className="text-xl font-bold text-green-500">Recent Transactions</h4>
             </div>
             <ol className="mt-4">
               {recentTransactions.map((transaction, index) => (
@@ -136,7 +139,7 @@ const Dashboards = () => {
                 className="w-full h-32 object-cover"
               />
               <div className="p-4">
-                <h5 className="text-lg font-bold text-orange-500">{service.title}</h5>
+                <h5 className="text-lg font-bold text-green-500">{service.title}</h5>
                 <p className="text-gray-600">{service.price}</p>
                 <a
                   href={'#'}
