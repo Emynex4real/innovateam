@@ -1,8 +1,5 @@
-import { Routes, Route } from "react-router-dom";
-import Dashboard from "../dashboard";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { CSSTransition } from "react-transition-group";
 import {
   BiGrid,
   BiUser,
@@ -152,10 +149,14 @@ const NavandSideBar = () => {
       </div>
 
       <div className="">
+        {/* Sidebar */}
         <aside
           className={`fixed top-20 left-0 bottom-0 bg-white shadow-md p-4 transition-all duration-300 ease-in-out ${
             isCollapsed ? "w-20" : "w-64"
           }`}
+          style={{
+            zIndex: 1000, // Ensure sidebar is above other content
+          }}
         >
           {/* Collapse/Expand Button */}
           <button
@@ -230,9 +231,14 @@ const NavandSideBar = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className={`transition-all duration-300 ease-in-out ${
-          isCollapsed ? "ml-20" : "ml-64"
-        }`}>
+        <main
+          className={`transition-all duration-300 ease-in-out ${
+            isCollapsed ? "ml-20" : "ml-64"
+          }`}
+          style={{
+            marginLeft: isCollapsed ? "5rem" : "16rem", // Adjust margin for mobile
+          }}
+        >
           <Dashboards isCollapsed={isCollapsed} />
         </main>
       </div>
@@ -242,6 +248,13 @@ const NavandSideBar = () => {
           Copyright © 2025 <strong>ArewaGate</strong> All Rights Reserved.
         </p>
       </footer>
+
+      {/* Mobile-Specific Styles */}
+      <style>
+        {`
+         
+        `}
+      </style>
     </div>
   );
 };

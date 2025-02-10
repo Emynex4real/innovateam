@@ -738,3 +738,15 @@ aside ul li a {
 .animate-marquee {
   animation: marquee 10s linear infinite;
 }
+
+/* The mobile view side bar */
+
+@media (max-width: 768px) {
+  aside {
+    position: absolute; /* Overlap the main content */
+    z-index: 1000; /* Ensure sidebar is above main content */
+  }
+  main {
+    margin-left: 0 !important; /* Remove margin in mobile view */
+  }
+}

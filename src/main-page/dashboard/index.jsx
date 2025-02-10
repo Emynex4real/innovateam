@@ -63,7 +63,7 @@ const Dashboards = () => {
 //   };
 
   return (
-    <div className=" mt-20 p-6">
+    <div className=" mt-20 p-6 ml-20 lg:ml-0">
       {/* Balance Section */}
       <section
         initial="hidden"
