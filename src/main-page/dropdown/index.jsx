@@ -66,13 +66,16 @@ const Dropdown = () => {
               </Link>
             </li>
             <li>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-              >
-                <BiLogOut className="mr-2" />
-                Sign Out
-              </button>
+              <Link to={'/login'}>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <BiLogOut className="mr-2" />
+                  Sign Out
+                </button>
+              
+              </Link>
             </li>
           </ul>
         </div>

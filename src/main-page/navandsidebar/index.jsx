@@ -96,7 +96,7 @@ const NavandSideBar = () => {
       label: "Support",
     },
     {
-      path: "/logout",
+      path: "/login",
       icon: <BiLogOut className="text-xl" />,
       label: "Logout",
     },
