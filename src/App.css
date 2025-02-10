@@ -690,3 +690,51 @@
 .animate-fade-in-up {
   animation: fade-in-up 0.5s ease-out;
 }
+
+.dropdown-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.dropdown-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+}
+
+.dropdown-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+}
+
+/* Custom CSS for smoother transitions */
+aside {
+  transition: width 0.3s ease-in-out;
+}
+
+aside ul li a {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+
+/* Marquee */
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  animation: marquee 10s linear infinite;
+}

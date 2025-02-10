@@ -58,9 +58,12 @@ const Login = () => {
           </div>
 
           {/* <!-- Login Button --> */}
+          <Link to={'/dashboard'}>
           <button className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-300">
             Login
           </button>
+          
+          </Link>
 
           {/* <!-- Social Login --> */}
           <div className="mt-6 text-center">
@@ -69,6 +72,7 @@ const Login = () => {
               <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300">
                 Facebook
               </button>
+              
               <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">
                 Google
               </button>
