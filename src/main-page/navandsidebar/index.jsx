@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   BiGrid,
   BiUser,
+  BiWallet,
   BiCreditCard,
   BiData,
   BiPhone,
@@ -15,10 +16,10 @@ import {
   BiChevronDown,
   BiChevronUp,
 } from "react-icons/bi";
-import Dropdown from "../dropdown";
-import Dashboards from "../dashboard";
 
-const NavandSideBar = () => {
+import Dropdown from "../dropdown";
+
+const NavandSideBar = ({ children }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -48,14 +49,19 @@ const NavandSideBar = () => {
   // Define sidebar items
   const sidebarItems = [
     {
-      path: "/dashboard",
+      path: "/homepage",
       icon: <BiGrid className="text-xl" />,
       label: "Dashboard",
     },
     {
-      path: "/profile",
+      path: "/homepage/profile",
       icon: <BiUser className="text-xl" />,
       label: "Profile",
+    },
+    {
+      path: "/homepage/wallet",
+      icon: <BiWallet className="text-xl" />,
+      label: "Wallet",
     },
     {
       path: "#",
@@ -107,7 +113,7 @@ const NavandSideBar = () => {
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md flex items-center justify-between p-4 z-50">
         {/* Logo Section */}
         <div className="flex items-center">
-          <Link to="/dashboard" className="flex items-center">
+          <Link to="/homepage" className="flex items-center">
             <img
               src="https://arewagate.com/images/general/favicon2.png"
               alt="Logo"
@@ -239,7 +245,7 @@ const NavandSideBar = () => {
             marginLeft: isCollapsed ? "5rem" : "16rem", // Adjust margin for mobile
           }}
         >
-          <Dashboards isCollapsed={isCollapsed} />
+          {children}
         </main>
       </div>
 
@@ -248,9 +254,6 @@ const NavandSideBar = () => {
           Copyright © 2025 <strong>ArewaGate</strong> All Rights Reserved.
         </p>
       </footer>
-
-      {/* Mobile-Specific Styles */}
-
     </div>
   );
 };

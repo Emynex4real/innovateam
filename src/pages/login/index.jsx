@@ -58,7 +58,7 @@ const Login = () => {
           </div>
 
           {/* <!-- Login Button --> */}
-          <Link to={'/dashboard'}>
+          <Link to={'/homepage'}>
           <button className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-300">
             Login
           </button>
