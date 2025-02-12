@@ -80,7 +80,7 @@ const NavandSideBar = ({ children }) => {
       label: "Buy Data",
     },
     {
-      path: "/airtime",
+      path: "/homepage/buy-airtime",
       icon: <BiPhone className="text-xl" />,
       label: "Airtime",
     },
@@ -89,8 +89,11 @@ const NavandSideBar = ({ children }) => {
       icon: <BiBook className="text-xl" />,
       label: "JAMB Services",
       subItems: [
-        { path: "/jamb-services/registration", label: "JAMB Registration" },
-        { path: "/jamb-services/results", label: "JAMB Results" },
+        { path: "/homepage/o-level-upload", label: "O'level Upload" },
+        { path: "/homepage/admission-letter", label: "Admission Letter" },
+        { path: "/homepage/original-result", label: "Original Result" },
+        { path: "/homepage/pin-vending", label: "PIN Vending" },
+        { path: "/homepage/reprinting-jamb-caps", label: "Reprinting & JAMB CAPS" },
       ],
     },
     {
