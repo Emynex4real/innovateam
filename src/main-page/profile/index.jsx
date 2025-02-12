@@ -53,16 +53,16 @@ const Profiles = () => {
               className="w-24 h-24 rounded-full mx-auto mb-4"
             />
             <h2 className="text-xl font-bold">{profile.fullName}</h2>
-            <p className="text-gray-600">{profile.email}</p>
+            <p className="text-gray-600 break-words">{profile.email}</p>
           </div>
 
           {/* Big Container (Tabs and Content) */}
           <div className="w-full md:w-3/4 bg-white rounded-lg shadow-lg p-6">
             {/* Tabs */}
-            <div className="flex space-x-4 border-b mb-6">
+            <div className="flex flex-col md:flex-row space-x-0 md:space-x-4 space-y-2 md:space-y-0 border-b mb-6">
               <button
                 onClick={() => setActiveTab("overview")}
-                className={`py-2 px-4 hover:bg-gray-100 ${
+                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
                   activeTab === "overview" ? "border-b-2 border-blue-500" : ""
                 }`}
               >
@@ -70,7 +70,7 @@ const Profiles = () => {
               </button>
               <button
                 onClick={() => setActiveTab("editProfile")}
-                className={`py-2 px-4 hover:bg-gray-100 ${
+                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
                   activeTab === "editProfile"
                     ? "border-b-2 border-blue-500"
                     : ""
@@ -80,7 +80,7 @@ const Profiles = () => {
               </button>
               <button
                 onClick={() => setActiveTab("bankDetails")}
-                className={`py-2 px-4 hover:bg-gray-100 ${
+                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
                   activeTab === "bankDetails"
                     ? "border-b-2 border-blue-500"
                     : ""
@@ -90,7 +90,7 @@ const Profiles = () => {
               </button>
               <button
                 onClick={() => setActiveTab("changePassword")}
-                className={`py-2 px-4 hover:bg-gray-100 ${
+                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
                   activeTab === "changePassword"
                     ? "border-b-2 border-blue-500"
                     : ""
@@ -111,48 +111,48 @@ const Profiles = () => {
                     personal information, bank details, and password.
                   </p>
 
-                  <div class="container mx-auto">
-                    <div class="bg-white rounded-lg p-6">
-                      <h1 class="text-2xl font-bold mb-4">Profile Details</h1>
-                      <div class="space-y-4">
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">Full Name:</span>
-                          <span class="w-2/3">Michael Balogun Temidayo</span>
+                  <div className="container mx-auto">
+                    <div className="bg-white rounded-lg p-6">
+                      <h1 className="text-2xl font-bold mb-4">Profile Details</h1>
+                      <div className="space-y-4">
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">Full Name:</span>
+                          <span className="w-full md:w-2/3">Michael Balogun Temidayo</span>
                         </div>
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">Email Address:</span>
-                          <span class="w-2/3">michaelbalogun34@gmail.com</span>
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">Email Address:</span>
+                          <span className="w-full md:w-2/3 break-words">michaelbalogun34@gmail.com</span>
                         </div>
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">Mobile Number:</span>
-                          <span class="w-2/3">08033772750</span>
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">Mobile Number:</span>
+                          <span className="w-full md:w-2/3">08033772750</span>
                         </div>
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">State:</span>
-                          <span class="w-2/3">Lagos</span>
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">State:</span>
+                          <span className="w-full md:w-2/3">Lagos</span>
                         </div>
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">Gender:</span>
-                          <span class="w-2/3">Male</span>
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">Gender:</span>
+                          <span className="w-full md:w-2/3">Male</span>
                         </div>
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">Date of Birth:</span>
-                          <span class="w-2/3">1990-01-01</span>
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">Date of Birth:</span>
+                          <span className="w-full md:w-2/3">1990-01-01</span>
                         </div>
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">BVN:</span>
-                          <span class="w-2/3">12345678901</span>
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">BVN:</span>
+                          <span className="w-full md:w-2/3">12345678901</span>
                         </div>
-                        <div class="flex items-center">
-                          <span class="w-1/3 font-medium">NIN:</span>
-                          <span class="w-2/3">12345678901</span>
+                        <div className="flex flex-col md:flex-row items-center">
+                          <span className="w-full md:w-1/3 font-medium">NIN:</span>
+                          <span className="w-full md:w-2/3">12345678901</span>
                         </div>
                       </div>
-                      <div class="mt-6 flex space-x-4">
-                        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
+                      <div className="mt-6 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                        <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
                           Edit Profile
                         </button>
-                        <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300">
+                        <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300">
                           Change Password
                         </button>
                       </div>
@@ -226,7 +226,7 @@ const Profiles = () => {
                     </div>
                     <button
                       type="submit"
-                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      className="w-full md:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                     >
                       Save Changes
                     </button>
@@ -277,7 +277,7 @@ const Profiles = () => {
                     </div>
                     <button
                       type="submit"
-                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      className="w-full md:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                     >
                       Save Bank Details
                     </button>
@@ -328,7 +328,7 @@ const Profiles = () => {
                     </div>
                     <button
                       type="submit"
-                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      className="w-full md:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                     >
                       Change Password
                     </button>

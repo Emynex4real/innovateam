@@ -10,6 +10,8 @@ import NavandSideBar from "./main-page/navandsidebar";
 import Dashboard from "./main-page/dashboard/index";
 import Profiles from "./main-page/profile";
 import Wallet from "./main-page/wallet";
+import WaecResultChecker from "./main-page/result checker/waec result checker";
+import DataSubscription from "./main-page/data-subscription";
 
 function App() {
   const location = useLocation();
@@ -41,6 +43,9 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profiles />} />
                 <Route path="/wallet" element={<Wallet />} />
+                <Route path="/buy-data" element={<DataSubscription />} />
+                <Route path="/scratch-card/waec-checker" element={<WaecResultChecker />} />
+                
               </Routes>
             </NavandSideBar>
           }

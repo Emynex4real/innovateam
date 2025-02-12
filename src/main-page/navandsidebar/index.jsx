@@ -68,12 +68,14 @@ const NavandSideBar = ({ children }) => {
       icon: <BiCreditCard className="text-xl" />,
       label: "Scratch Cards",
       subItems: [
-        { path: "/scratch-card/buy", label: "Buy Scratch Cards" },
-        { path: "/scratch-card/history", label: "Scratch Card History" },
+        { path: "/homepage/scratch-card/waec-checker", label: "WAEC Result Checker" },
+        { path: "/scratch-card/history", label: "NECO Result Checker" },
+        { path: "/scratch-card/history", label: "NBAIS Result Checker" },
+        { path: "/scratch-card/history", label: "NABTEB Result Checker" },
       ],
     },
     {
-      path: "/buy-data",
+      path: "/homepage/buy-data",
       icon: <BiData className="text-xl" />,
       label: "Buy Data",
     },
@@ -162,6 +164,9 @@ const NavandSideBar = ({ children }) => {
           }`}
           style={{
             zIndex: 1000, // Ensure sidebar is above other content
+            maxHeight: "calc(100vh - 5rem)", // Adjust height to fit viewport
+            overflowY: "auto", // Enable vertical scrolling
+            overflowX: "hidden", // Disable horizontal scrolling
           }}
         >
           {/* Collapse/Expand Button */}
@@ -249,11 +254,11 @@ const NavandSideBar = ({ children }) => {
         </main>
       </div>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-md p-4 text-center">
+      {/* <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-md p-4 text-center">
         <p>
           Copyright © 2025 <strong>ArewaGate</strong> All Rights Reserved.
         </p>
-      </footer>
+      </footer> */}
     </div>
   );
 };
