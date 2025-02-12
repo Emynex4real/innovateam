@@ -40,20 +40,23 @@ function App() {
           path="/homepage/*"
           element={
             <NavandSideBar>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/profile" element={<Profiles />} />
-                <Route path="/wallet" element={<Wallet />} />
-                <Route path="/buy-data" element={<DataSubscription />} />
-                <Route path="/scratch-card/waec-checker" element={<WaecResultChecker />} />
-                <Route path="/buy-airtime" element={<AirtimeSubscription />} />
-                <Route path="/buy-admission-letter" element={<AirtimeSubscription />} />
-                <Route path="/buy-olevel-upload" element={<AirtimeSubscription />} />
-                <Route path="/buy-pin-vending" element={<AirtimeSubscription />} />
-                <Route path="/buy-original-result" element={<AirtimeSubscription />} />
-                <Route path="/buy-reprinting" element={<AirtimeSubscription />} />
-                
-              </Routes>
+                <div className="bg-gray-100 min-h-screen mt-20 p-6 ml-20 md:ml-0">
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/profile" element={<Profiles />} />
+                    <Route path="/wallet" element={<Wallet />} />
+                    <Route path="/buy-data" element={<DataSubscription />} />
+                    <Route path="/scratch-card/waec-checker" element={<WaecResultChecker />} />
+                    <Route path="/buy-airtime" element={<AirtimeSubscription />} />
+                    <Route path="/buy-admission-letter" element={<AirtimeSubscription />} />
+                    <Route path="/buy-olevel-upload" element={<AirtimeSubscription />} />
+                    <Route path="/buy-pin-vending" element={<AirtimeSubscription />} />
+                    <Route path="/buy-original-result" element={<AirtimeSubscription />} />
+                    <Route path="/buy-reprinting" element={<AirtimeSubscription />} />
+                    
+                  </Routes>
+
+                </div>
             </NavandSideBar>
           }
         />

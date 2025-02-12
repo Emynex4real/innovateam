@@ -42,7 +42,7 @@ const Profiles = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen mt-20 p-6 ml-20 md:ml-0">
+    <div className="">
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Small Container (Profile Picture, Name, Email) */}

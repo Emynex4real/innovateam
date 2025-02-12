@@ -49,7 +49,7 @@ const Wallet = () => {
   };
 
   return (
-    <div className="bg-gray-100 font-sans min-h-screen mt-20 p-6 ml-20 md:ml-0">
+    <div className="">
       <div className="container mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Wallet Details Container */}

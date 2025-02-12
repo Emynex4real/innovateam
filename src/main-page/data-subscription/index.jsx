@@ -20,7 +20,7 @@ const DataSubscription = () => {
   };
 
   return (
-    <div className="font-sans min-h-screen mt-20 p-6 ml-20 md:ml-0">
+    <div className="">
       {/* Data Subscription Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Data Subscription</h2>

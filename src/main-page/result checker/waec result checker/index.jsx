@@ -15,7 +15,7 @@ const WaecResultChecker = () => {
 
   return (
     <div>
-      <div className="font-sans min-h-screen mt-20 p-6 ml-20 md:ml-0">
+      <div className="">
         <div className="container mx-auto p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* First Container: Quantity and Amount */}

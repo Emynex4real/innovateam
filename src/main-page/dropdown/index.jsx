@@ -58,7 +58,7 @@ const Dropdown = () => {
           <ul className="py-2">
             <li>
               <Link
-                to="/profile"
+                to="/homepage/profile"
                 className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
               >
                 <BiUser className="mr-2" />
