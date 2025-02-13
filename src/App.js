@@ -13,6 +13,13 @@ import Wallet from "./main-page/wallet";
 import WaecResultChecker from "./main-page/result checker/waec result checker";
 import DataSubscription from "./main-page/data-subscription";
 import AirtimeSubscription from "./main-page/airtime-subscription";
+import OLevelUpload from "./main-page/jamb services/olevel upload";
+import AdmissionLetter from "./main-page/jamb services/admission letter";
+import OriginalResult from "./main-page/jamb services/original result";
+import JambPinVending from "./main-page/jamb services/pin vending";
+import CapsPrinting from "./main-page/jamb services/reprinting";
+import Transactions from "./main-page/transactions";
+import Support from "./main-page/support";
 
 function App() {
   const location = useLocation();
@@ -40,23 +47,50 @@ function App() {
           path="/homepage/*"
           element={
             <NavandSideBar>
-                <div className="bg-gray-100 min-h-screen mt-20 p-6 ml-20 md:ml-0">
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/profile" element={<Profiles />} />
-                    <Route path="/wallet" element={<Wallet />} />
-                    <Route path="/buy-data" element={<DataSubscription />} />
-                    <Route path="/scratch-card/waec-checker" element={<WaecResultChecker />} />
-                    <Route path="/buy-airtime" element={<AirtimeSubscription />} />
-                    <Route path="/buy-admission-letter" element={<AirtimeSubscription />} />
-                    <Route path="/buy-olevel-upload" element={<AirtimeSubscription />} />
-                    <Route path="/buy-pin-vending" element={<AirtimeSubscription />} />
-                    <Route path="/buy-original-result" element={<AirtimeSubscription />} />
-                    <Route path="/buy-reprinting" element={<AirtimeSubscription />} />
-                    
-                  </Routes>
-
-                </div>
+              <div className="bg-gray-100 min-h-screen mt-20 p-6 ml-20 md:ml-0">
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/profile" element={<Profiles />} />
+                  <Route path="/wallet" element={<Wallet />} />
+                  <Route path="/buy-data" element={<DataSubscription />} />
+                  <Route
+                    path="/scratch-card/waec-checker"
+                    element={<WaecResultChecker />}
+                  />
+                  <Route
+                    path="/buy-airtime"
+                    element={<AirtimeSubscription />}
+                  />
+                  <Route
+                    path="/buy-admission-letter"
+                    element={<AdmissionLetter />}
+                  />
+                  <Route
+                    path="/buy-olevel-upload"
+                    element={<OLevelUpload />}
+                  />
+                  <Route
+                    path="/buy-pin-vending"
+                    element={<JambPinVending />}
+                  />
+                  <Route
+                    path="/buy-original-result"
+                    element={<OriginalResult />}
+                  />
+                  <Route
+                    path="/reprinting-jamb-caps"
+                    element={<CapsPrinting />}
+                  />
+                  <Route
+                    path="/transactions"
+                    element={<Transactions />}
+                  />
+                  <Route
+                    path="/support"
+                    element={<Support />}
+                  />
+                </Routes>
+              </div>
             </NavandSideBar>
           }
         />
