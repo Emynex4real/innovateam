@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BiGrid,
@@ -22,6 +22,7 @@ const NavandSideBar = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [openDropdown, setOpenDropdown] = useState(null);
   const location = useLocation();
+  const sidebarRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -33,6 +34,17 @@ const NavandSideBar = ({ children }) => {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, [isDropdownOpen]);
+
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setIsCollapsed(true);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   // Toggle dropdown
   const toggleDropdown = (label) => {
@@ -155,6 +167,7 @@ const NavandSideBar = ({ children }) => {
       <div className="">
         {/* Sidebar */}
         <aside
+          ref={sidebarRef}
           className={`fixed top-20 left-0 bottom-0 bg-white shadow-md p-4 transition-all duration-300 ease-in-out ${
             isCollapsed ? "w-20" : "w-64"
           }`}
