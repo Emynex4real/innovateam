@@ -11,8 +11,6 @@ import {
   BiListCheck,
   BiSupport,
   BiLogOut,
-  BiChevronLeft,
-  BiChevronRight,
   BiChevronDown,
   BiChevronUp,
 } from "react-icons/bi";
@@ -35,11 +33,6 @@ const NavandSideBar = ({ children }) => {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, [isDropdownOpen]);
-
-  // Toggle sidebar collapse
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-  };
 
   // Toggle dropdown
   const toggleDropdown = (label) => {
@@ -171,20 +164,9 @@ const NavandSideBar = ({ children }) => {
             overflowY: "auto", // Enable vertical scrolling
             overflowX: "hidden", // Disable horizontal scrolling
           }}
+          onMouseEnter={() => setIsCollapsed(false)}
+          onMouseLeave={() => setIsCollapsed(true)}
         >
-          {/* Collapse/Expand Button */}
-          <button
-            onClick={toggleSidebar}
-            className="absolute -right-3 top-10 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors duration-200"
-            aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isCollapsed ? (
-              <BiChevronRight className="text-xl" />
-            ) : (
-              <BiChevronLeft className="text-xl" />
-            )}
-          </button>
-
           {/* Sidebar Items */}
           <ul>
             {sidebarItems.map((item) => (
@@ -256,12 +238,6 @@ const NavandSideBar = ({ children }) => {
           {children}
         </main>
       </div>
-
-      {/* <footer className="fixed bottom-0 left-0 right-0 bg-white shadow-md p-4 text-center">
-        <p>
-          Copyright © 2025 <strong>ArewaGate</strong> All Rights Reserved.
-        </p>
-      </footer> */}
     </div>
   );
 };
