@@ -7,7 +7,7 @@ const Profiles = () => {
     email: "michaelbalogun34@gmail.com",
     mobileNumber: "08033772750",
     bvn: "12345678910",
-    nin: '987654321'
+    nin: "987654321",
   });
   const [bankDetails, setBankDetails] = useState({
     bankName: "",
@@ -19,6 +19,18 @@ const Profiles = () => {
     newPassword: "",
     confirmNewPassword: "",
   });
+  const [notification, setNotification] = useState({
+    visible: false,
+    message: "",
+  });
+
+  // Show notification
+  const showNotification = (message) => {
+    setNotification({ visible: true, message });
+    setTimeout(() => {
+      setNotification({ visible: false, message: "" });
+    }, 3000); // Hide notification after 3 seconds
+  };
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
@@ -39,10 +51,26 @@ const Profiles = () => {
     e.preventDefault();
     // Handle form submission logic here
     console.log("Form submitted");
+
+    // Show notification based on the active tab
+    if (activeTab === "editProfile") {
+      showNotification("Profile updated successfully!");
+    } else if (activeTab === "bankDetails") {
+      showNotification("Bank details updated successfully!");
+    } else if (activeTab === "changePassword") {
+      showNotification("Password changed successfully!");
+    }
   };
 
   return (
     <div className="">
+      {/* Floating Notification */}
+      {notification.visible && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+          {notification.message}
+        </div>
+      )}
+
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Small Container (Profile Picture, Name, Email) */}
@@ -117,15 +145,15 @@ const Profiles = () => {
                       <div className="space-y-4">
                         <div className="flex flex-col md:flex-row items-center">
                           <span className="w-full md:w-1/3 font-medium">Full Name:</span>
-                          <span className="w-full md:w-2/3">Michael Balogun Temidayo</span>
+                          <span className="w-full md:w-2/3">{profile.fullName}</span>
                         </div>
                         <div className="flex flex-col md:flex-row items-center">
                           <span className="w-full md:w-1/3 font-medium">Email Address:</span>
-                          <span className="w-full md:w-2/3 break-words">michaelbalogun34@gmail.com</span>
+                          <span className="w-full md:w-2/3 break-words">{profile.email}</span>
                         </div>
                         <div className="flex flex-col md:flex-row items-center">
                           <span className="w-full md:w-1/3 font-medium">Mobile Number:</span>
-                          <span className="w-full md:w-2/3">08033772750</span>
+                          <span className="w-full md:w-2/3">{profile.mobileNumber}</span>
                         </div>
                         <div className="flex flex-col md:flex-row items-center">
                           <span className="w-full md:w-1/3 font-medium">State:</span>
@@ -141,18 +169,24 @@ const Profiles = () => {
                         </div>
                         <div className="flex flex-col md:flex-row items-center">
                           <span className="w-full md:w-1/3 font-medium">BVN:</span>
-                          <span className="w-full md:w-2/3">12345678901</span>
+                          <span className="w-full md:w-2/3">{profile.bvn}</span>
                         </div>
                         <div className="flex flex-col md:flex-row items-center">
                           <span className="w-full md:w-1/3 font-medium">NIN:</span>
-                          <span className="w-full md:w-2/3">12345678901</span>
+                          <span className="w-full md:w-2/3">{profile.nin}</span>
                         </div>
                       </div>
                       <div className="mt-6 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
-                        <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
+                        <button
+                          onClick={() => setActiveTab("editProfile")}
+                          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
+                        >
                           Edit Profile
                         </button>
-                        <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300">
+                        <button
+                          onClick={() => setActiveTab("changePassword")}
+                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
+                        >
                           Change Password
                         </button>
                       </div>
