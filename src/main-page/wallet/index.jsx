@@ -42,7 +42,7 @@ const Wallet = () => {
   const transactionCharge = 50.0; // Example transaction charge
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Wallet Details Container */}
