@@ -12,13 +12,10 @@ const Home = () => {
         <div className="w-screen flex items-center justify-center flex-wrap gap-40 break-words px-5">
           <div className="content-text flex flex-col gap-4 justify-center break-words">
             <h1 className="lg:text-5xl sm:text-5xl font-bold header text-3xl ">
-              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Neque,
-              quibusdam.
+            Empowering Your Future with Quality Education
             </h1>
             <p className="text-xl lg:text-2xl md:container ">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Eum ab
-              necessitatibus quasi autem error, inventore soluta aspernatur
-              pariatur repudiandae recusandae!
+            Join thousands of students who have achieved their dreams with our comprehensive learning resources and expert guidance.
             </p>
             <div className="flex items-center gap-4 flex-wrap">
               <Link to={'/signup'}>
