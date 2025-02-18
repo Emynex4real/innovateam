@@ -24,7 +24,7 @@ const OLevelUpload = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen">
-      <div className="max-w-6xl mx-auto">
+      <div className="container mx-auto">
         <h1 className="text-2xl font-bold mb-6">OLEVEL UPLOAD</h1>
 
         <div className="flex flex-col md:flex-row gap-6">
