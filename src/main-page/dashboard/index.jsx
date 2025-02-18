@@ -4,6 +4,7 @@ import necoResultChecker from "../../images/neco-result-checker.jpg";
 import nabtebResultChecker from "../../images/nabteb-result-checker.jpg";
 import nbaisResultChecker from "../../images/nbais-result-checker.jpg";
 import waecGce from "../../images/waec-gce.jpg";
+import { Link } from "react-router-dom";
 
 const Dashboards = () => {
   // Data for balance and recent transactions
@@ -80,12 +81,12 @@ const Dashboards = () => {
               <h4 className="text-xl font-bold text-green-500">
                 Balance: <span className="font-bold">{balanceData.totalBalance}</span>
               </h4>
-              <a
-                href="#"
+              <Link
+                to="/homepage/wallet"
                 className="bg-blue-500 text-white px-4 py-2 rounded-md lg:text-sm hover:bg-blue-600 transition-colors duration-300 text-xs"
               >
                 Fund Wallet
-              </a>
+              </Link>
             </div>
             <ul className="mt-4">
               {balanceData.items.map((item, index) => (
