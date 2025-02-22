@@ -63,7 +63,7 @@ const Wallet = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-nunito">
+    <div className="bg-gray-50 min-h-screen font-nunito">
       <div className="max-w-6xl mx-auto">
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Wallet Details */}

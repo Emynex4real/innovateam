@@ -47,7 +47,7 @@ function App() {
           path="/homepage/*"
           element={
             <NavandSideBar>
-              <div className="min-h-screen p-6 ml-20 md:ml-0">
+              <div className=" min-h-screen p-4 ml-16 md:ml-0">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/profile" element={<Profiles />} />
