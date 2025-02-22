@@ -1,7 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BiUser, BiLogOut, BiChevronDown, BiChevronUp } from 'react-icons/bi';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  BiUser,
+  BiLogOut,
+  BiChevronDown,
+  BiChevronUp,
+  BiCog,
+} from "react-icons/bi";
+import { motion } from "framer-motion";
 
 const Dropdown = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -16,16 +22,16 @@ const Dropdown = () => {
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Handle logout
   const handleLogout = () => {
     // Simulate logout logic
-    console.log('User logged out');
-    document.getElementById('logout-form')?.submit(); // If logout form exists
-    navigate('/login');
+    console.log("User logged out");
+    document.getElementById("logout-form")?.submit(); // If logout form exists
+    navigate("/login");
   };
 
   // Animation variants
@@ -46,7 +52,7 @@ const Dropdown = () => {
         aria-label="User menu"
       >
         <div className="w-10 h-10 bg-primary-color rounded-full flex items-center justify-center text-white text-lg font-medium">
-          {getInitials('Michael Balogun Temidayo')}
+          {getInitials("Michael Balogun Temidayo")}
         </div>
         <span className="hidden md:block text-sm font-medium text-text-color truncate max-w-[150px]">
           Michael Balogun Temidayo
@@ -67,16 +73,23 @@ const Dropdown = () => {
           exit="exit"
           className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 z-50"
         >
+          
           <div className="p-4 border-b border-gray-200">
-            <h6 className="text-sm font-semibold text-text-color truncate">Michael Balogun Temidayo</h6>
-            <span className="text-xs text-gray-500 truncate block">michaelbalogun34@gmail.com</span>
+            <h6 className="text-sm font-semibold text-text-color truncate">
+              Michael Balogun Temidayo
+            </h6>
+            <span className="text-xs text-gray-500 truncate block">
+              michaelbalogun34@gmail.com
+            </span>
           </div>
           <ul className="py-2">
             <li>
               <Link
                 to="/homepage/profile"
                 className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-all duration-200 ${
-                  location.pathname === '/homepage/profile' ? 'bg-gray-100 font-semibold' : ''
+                  location.pathname === "/homepage/profile"
+                    ? "bg-gray-100 font-semibold"
+                    : ""
                 }`}
                 onClick={() => setIsDropdownOpen(false)}
               >
@@ -93,6 +106,15 @@ const Dropdown = () => {
                 Sign Out
               </button>
             </li>
+            <li>
+              <Link
+                to="/homepage/settings"
+                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                <BiCog className="mr-2 text-primary-color" />
+                Settings
+              </Link>
+            </li>
           </ul>
         </motion.div>
       )}
@@ -102,7 +124,7 @@ const Dropdown = () => {
 
 // Helper function to get initials
 const getInitials = (name) => {
-  const names = name.split(' ');
+  const names = name.split(" ");
   return names.length > 1
     ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
     : names[0][0].toUpperCase();

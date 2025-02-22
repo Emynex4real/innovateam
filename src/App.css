@@ -780,3 +780,28 @@ aside:focus::-webkit-scrollbar-thumb {
 aside:hover::-webkit-scrollbar-track {
   background: #edf2f7; /* Light background */
 }
+
+
+
+/* Ensure Tailwind utilities work with custom variables DROPDOWN */
+@layer utilities {
+  .bg-primary-color {
+    background-color: var(--primary-color);
+  }
+  .text-primary-color {
+    color: var(--primary-color);
+  }
+}
+
+/* Focus ring */
+.focus\:ring-primary-color:focus {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .w-64 {
+    width: 100%;
+    max-width: 16rem;
+  }
+}
