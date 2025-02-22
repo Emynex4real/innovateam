@@ -1,147 +1,369 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const OLevelUpload = () => {
   const [type, setType] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [amount, setAmount] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const [history, setHistory] = useState([
+    {
+      id: 1,
+      type: 'UTME',
+      fullname: 'Not set',
+      profileCode: `PROF-${Math.floor(10000 + Math.random() * 90000)}`,
+      status: 'Waiting',
+      remark: '0',
+      submittedOn: new Date().toLocaleString(),
+    },
+  ]);
+  const [showQueryPopup, setShowQueryPopup] = useState(false);
+  const [selectedQueryId, setSelectedQueryId] = useState(null);
+  const [complaint, setComplaint] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const baseFees = { UTME: 400, 'Direct entry': 500 };
+
+  // Update history from child component
+  useEffect(() => {
+    const { updatedEntry } = location.state || {};
+    if (updatedEntry) {
+      setHistory((prevHistory) =>
+        prevHistory.map((item) =>
+          item.id === updatedEntry.id
+            ? {
+                ...item,
+                type: updatedEntry.type,
+                fullname: updatedEntry.fullname,
+                profileCode: updatedEntry.profileCode,
+                status: updatedEntry.status,
+                submittedOn: new Date().toLocaleString(),
+              }
+            : item
+        )
+      );
+      // Clear the location state to prevent re-triggering
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, navigate, location.pathname]);
+
+  const calculateTotalAmount = () => {
+    if (!type || !quantity) return 0;
+    return baseFees[type] * parseInt(quantity);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission
+    setMessage({ text: '', type: '' });
+
+    if (!type) {
+      setMessage({ text: 'Please select a type.', type: 'error' });
+      return;
+    }
+    if (!quantity || parseInt(quantity) < 1) {
+      setMessage({ text: 'Please select a valid quantity.', type: 'error' });
+      return;
+    }
+
+    const qty = parseInt(quantity);
+    const newEntries = Array.from({ length: qty }, (_, index) => ({
+      id: history.length + 1 + index,
+      type,
+      fullname: 'Not set',
+      profileCode: `PROF-${Math.floor(10000 + Math.random() * 90000)}`,
+      status: 'Waiting',
+      remark: '0',
+      submittedOn: new Date().toLocaleString(),
+    }));
+
+    setHistory([...newEntries, ...history]);
+    setMessage({ text: `Added ${qty} new entries. Click 'New Entry' to proceed.`, type: 'success' });
+    setType('');
+    setQuantity('');
+  };
+
+  const handleNewEntry = (id) => {
+    const entry = history.find((item) => item.id === id);
+    navigate('/homepage/olevel-entry', {
+      state: {
+        id,
+        type: entry.type,
+        quantity: 1,
+        amount: `₦${baseFees[entry.type]}`,
+        fullname: entry.fullname,
+      },
+    });
   };
 
   const handleRequery = (id) => {
-    // Handle requery action
-    console.log(`Requery task with ID: ${id}`);
-    alert(`Requery task with ID: ${id}`); // Example: Show an alert for demonstration
+    setSelectedQueryId(id);
+    setShowQueryPopup(true);
   };
 
   const handleDownload = (filename) => {
-    // Handle download action
     console.log(`Download file: ${filename}`);
-    alert(`Download file: ${filename}`); // Example: Show an alert for demonstration
+    setMessage({ text: `Downloading file: ${filename}`, type: 'success' });
+  };
+
+  const handleQueryProceed = () => {
+    if (!complaint.trim()) {
+      setMessage({ text: 'Please enter your complaint.', type: 'error' });
+      return;
+    }
+    console.log(`Query for task ID: ${selectedQueryId}, Complaint: ${complaint}`);
+    setMessage({ text: `Query submitted for task ID: ${selectedQueryId}`, type: 'info' });
+    setShowQueryPopup(false);
+    setComplaint('');
+  };
+
+  const handleQueryCancel = () => {
+    setShowQueryPopup(false);
+    setComplaint('');
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="bg-gray-50 min-h-screen py-8 font-nunito">
       <div className="container mx-auto">
-        <h1 className="text-2xl font-bold mb-6">OLEVEL UPLOAD</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-text-color mb-8">O-Level Upload</h1>
 
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="w-full md:w-96 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+          />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+        >
           {/* OLevel Upload Form */}
-          <div className="flex-1 bg-white p-6 rounded-lg shadow-md">
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Type</label>
+          <div className="bg-white p-8 rounded-xl shadow-md">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="type" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Type
+                </label>
                 <select
+                  id="type"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
                 >
                   <option value="">Select Type</option>
-                  <option value="Type1">UTME</option>
-                  <option value="Type2">Direct entry</option>
+                  <option value="UTME">UTME (₦400 per unit)</option>
+                  <option value="Direct entry">Direct Entry (₦500 per unit)</option>
                 </select>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Quantity</label>
+              <div>
+                <label htmlFor="quantity" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Quantity
+                </label>
                 <select
+                  id="quantity"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
                 >
                   <option value="">Select Quantity</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
-                  <option value="6">6</option>
-                  <option value="7">7</option>
+                  {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
                 </select>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Amount</label>
+              <div>
+                <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Total Amount
+                </label>
                 <input
                   type="text"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  id="amount"
+                  value={type && quantity ? `₦${calculateTotalAmount()}` : ''}
+                  readOnly
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
                 />
               </div>
 
+              {message.text && (
+                <div
+                  className={`p-3 rounded-lg text-sm font-medium ${
+                    message.type === 'success'
+                      ? 'bg-green-100 text-green-700'
+                      : message.type === 'info'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-red-100 text-red-700'
+                  }`}
+                >
+                  {message.text}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+                className="w-full bg-primary-color text-white py-3 rounded-md font-semibold hover:bg-green-600 transition-all duration-200"
               >
                 Proceed
               </button>
             </form>
           </div>
 
-          {/* How It Works Section */}
-          <div className="flex-1 bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">HOW IT WORKS</h2>
-            <ul className="list-disc list-inside">
-              <li>Fill the form with your accurate details and submit</li>
-              <li>Click the "Proceed" button to make payment for the service</li>
-              <li>Upon successful payment, scroll down for new entry. Click on new entry to submit fresh job.</li>
-              <li>Once your Job is done, you will be sent a confirmation email and you will be able to print out your processed job.</li>
+          {/* How It Works */}
+          <div className="bg-white p-8 rounded-xl shadow-md">
+            <h2 className="text-xl font-semibold text-text-color mb-6">How It Works</h2>
+            <ul className="list-disc list-inside space-y-4 text-gray-600 text-sm">
+              <li>Fill the form with accurate details and submit.</li>
+              <li>Click "Proceed" to add new entries to the history.</li>
+              <li>Click "New Entry" to input O-Level results (min 8, max 9 subjects).</li>
+              <li>Make payment after submission.</li>
+              <li>Download your result or requery once processed.</li>
             </ul>
           </div>
-        </div>
+        </motion.div>
 
-        {/* OLevel Upload History */}
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">OLEVEL UPLOAD HISTORY</h2>
-          <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2">#</th>
-                  <th className="px-4 py-2">Action</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Filename</th>
-                  <th className="px-4 py-2">Profile Code/KeyNo.</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Screenshot</th>
-                  <th className="px-4 py-2">Remark</th>
-                  <th className="px-4 py-2">Submitted On</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                      <td className="border px-4 py-2">1</td>
-                  <td className="border px-4 py-2">
-                    <button
-                      onClick={() => handleRequery(1)} // Pass the task ID or relevant data
-                      className="bg-yellow-500 text-white p-1 rounded-md hover:bg-yellow-600"
-                    >
-                      Query
-                    </button>
-                  </td>
-                  <td className="border px-4 py-2">UTME</td>
-                  <td className="border px-4 py-2">INNOWNO DIMANUEL</td>
-                  <td className="border px-4 py-2">12345</td>
-                  <td className="border px-4 py-2 text-green-600">Processed</td>
-                  <td className="border px-4 py-2">
-                    <button
-                      onClick={() => handleDownload('UTME')}
-                      className="bg-blue-500 text-white p-1 rounded-md hover:bg-blue-600"
-                    >
-                      Download
-                    </button>
-                  </td>
-                  <td className="border px-4 py-2">0</td>
-                  <td className="border px-4 py-2">2025-03/12 10:22:46</td>
-                </tr>
-                {/* Add more rows as needed */}
-              </tbody>
-            </table>
+        {/* History */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-12"
+        >
+          <h2 className="text-xl md:text-2xl font-semibold text-text-color mb-6">O-Level Upload History</h2>
+          <div className="bg-white p-8 rounded-xl shadow-md overflow-x-auto">
+            {history.length === 0 ? (
+              <p className="text-gray-500 text-center py-6">No upload history yet.</p>
+            ) : (
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">#</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Action</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Type</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Full Name</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Profile Code</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Status</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Screenshot</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Remark</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold">Submitted On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200">
+                      <td className="py-4 px-6 text-gray-700">{item.id}</td>
+                      <td className="py-4 px-6">
+                        {item.status === 'Waiting' ? (
+                          <button
+                            onClick={() => handleNewEntry(item.id)}
+                            className="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
+                          >
+                            New Entry
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRequery(item.id)}
+                            className="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
+                          >
+                            Query
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-4 px-6 text-gray-700">{item.type}</td>
+                      <td className="py-4 px-6 text-gray-700">{item.fullname}</td>
+                      <td className="py-4 px-6 text-gray-700">{item.profileCode}</td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            item.status === 'Processed'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-orange-100 text-orange-700'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <button
+                          onClick={() => handleDownload(item.fullname || item.type)}
+                          className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all duration-200 text-sm"
+                          disabled={item.status !== 'Processed'}
+                        >
+                          Download
+                        </button>
+                      </td>
+                      <td className="py-4 px-6 text-gray-700">{item.remark}</td>
+                      <td className="py-4 px-6 text-gray-700">{item.submittedOn}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        </div>
+        </motion.div>
+
+        {/* Query Popup */}
+        {showQueryPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full"
+            >
+              <h2 className="text-xl font-semibold text-text-color mb-6">Query</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                <strong>Notice:</strong> A 500 Naira fee may be deducted if the error is not ours.
+              </p>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Type</label>
+                  <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.type || 'UTME'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                  <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.fullname || 'Not set'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Profile Code</label>
+                  <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.profileCode || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Complaint</label>
+                  <textarea
+                    value={complaint}
+                    onChange={(e) => setComplaint(e.target.value)}
+                    placeholder="Enter your complaint..."
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+                    rows={4}
+                  />
+                </div>
+              </div>
+              <div className="mt-8 flex justify-end gap-4">
+                <button
+                  onClick={handleQueryCancel}
+                  className="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleQueryProceed}
+                  className="bg-primary-color text-white py-2 px-6 rounded-md hover:bg-green-600 transition-all duration-200"
+                >
+                  Proceed
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

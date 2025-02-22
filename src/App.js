@@ -20,6 +20,7 @@ import JambPinVending from "./main-page/jamb services/pin vending";
 import CapsPrinting from "./main-page/jamb services/reprinting";
 import Transactions from "./main-page/transactions";
 import Support from "./main-page/support";
+import OLevelEntry from "./main-page/jamb services/olevel upload/new entry";
 
 function App() {
   const location = useLocation();
@@ -88,6 +89,9 @@ function App() {
                   <Route
                     path="/support"
                     element={<Support />}
+                  />
+                  <Route path="/olevel-entry" 
+                    element={<OLevelEntry />}
                   />
                 </Routes>
               </div>
