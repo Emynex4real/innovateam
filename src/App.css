@@ -30,6 +30,8 @@
 
 .container-box {
   min-height: 50vh;
+  width: 90%;
+  /* border: 1px solid black; */
 }
 
 .header {
@@ -47,6 +49,8 @@
 
 .background-color {
   background-color: #f8f7f1;
+  /* width: 80%;
+  margin: auto; */
 }
 
 .services-box {
@@ -494,6 +498,30 @@
   .social-icon svg {
     fill: #e0e0e0;
   }
+}
+
+
+/* additional css */
+.font-nunito {
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Optimize for mobile */
+@media (max-width: 768px) {
+  .content-text {
+    width: 100%;
+  }
+  
+  .image {
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+/* Enhance accessibility */
+:focus-visible {
+  outline: 2px solid var(--secondary-color);
+  outline-offset: 2px;
 }
 
 /* Print Styles */

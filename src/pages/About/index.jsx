@@ -1,57 +1,79 @@
-import aboutus from '../../images/arewa_gate_about-2.jpg'
+import { useEffect } from 'react';
+import aboutus from '../../images/arewa_gate_about-2.jpg';
 
 const About = () => {
-    return ( <div>
-        <main className='py-5 flex flex-col gap-10 px-5' >
-            <section className='flex gap-10 justify-center items-center py-24 flex-wrap'>
-                <div>
-                    <img src={aboutus} alt="" className='w-96 rounded-2xl'/>
-                </div>
-                <div className='w-96'>
-                <h1 className='text-2xl font-bold'>About Us</h1>
-                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nostrum consectetur, harum velit porro quidem dolores molestias quisquam, maxime ad architecto odit rerum ipsam explicabo unde facilis alias et omnis iusto fugiat, aut fugit vero? Dolores hic ab fuga delectus facilis fugiat maiores, eveniet, eum eligendi beatae distinctio sed? Vitae, minima?</p>
-                </div>
+  const qualities = [
+    { id: 1, title: 'We are Professional', icon: 'flaticon-reward', description: 'Expert team delivering top-notch services' },
+    { id: 2, title: 'Licensed and Certified', icon: 'flaticon-certificate', description: 'Fully accredited and recognized' },
+    { id: 3, title: '24/7 Customer Support', icon: 'flaticon-enterprise', description: 'Round-the-clock assistance' },
+    { id: 4, title: 'Fast & Secured', icon: 'flaticon-working-team', description: 'Swift and safe operations' },
+  ];
 
-            </section>
-            <section id="qualities" class="index-2">
-        <div class="container border flex justify-center">
-            <div class="">
-              <div class="content ">
-              <div class="row flex gap-5">
-            <div class="py-3 px-5">
-              <div class="icon"><i class="flat flaticon-reward border"></i></div>
-              <div class="heading">
-                <h5>We are Professional</h5>
-              </div>
-              
-            </div>
-            <div class="">
-              <div class="icon"><i class="flat flaticon-certificate"></i></div>
-              <div class="heading">
-                <h5>Licensed and Certified</h5>
-              </div>
-              
-            </div>
-            <div class="">
-              <div class="icon"><i class="flat flaticon-enterprise"></i></div>
-              <div class="heading">
-                <h5>24/7 Customer Support</h5>
-              </div>
-              
-            </div>
-            <div class="">
-              <div class="icon"><i class="flat flaticon-working-team"></i></div>
-              <div class="heading">
-                <h5>Fast &amp; Secured</h5>
-              </div>
-              
-            </div>
-          </div></div>
+  useEffect(() => {
+    // Optional: Add animation trigger on scroll
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-fade-in-up');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    document.querySelectorAll('.quality-card').forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <main className="py-12 px-4 font-nunito bg-background-color min-h-screen">
+      {/* About Section */}
+      <section className="max-w-6xl mx-auto py-16 flex flex-col lg:flex-row gap-10 items-center justify-center">
+        <div className="lg:w-1/2 flex justify-center">
+          <img 
+            src={aboutus} 
+            alt="About Us" 
+            className="w-full max-w-md rounded-2xl shadow-lg object-cover"
+            loading="lazy"
+          />
         </div>
+        <div className="lg:w-1/2 space-y-6 text-center lg:text-left">
+          <h1 className="text-3xl md:text-4xl font-bold text-text-color">About Us</h1>
+          <p className="text-gray-600 text-base md:text-lg leading-relaxed">
+            We are a dedicated team committed to empowering individuals through quality education and reliable services. 
+            With years of experience, we provide comprehensive solutions tailored to your needs, ensuring excellence 
+            and satisfaction in every step. Our mission is to bridge the gap between opportunity and achievement, 
+            offering innovative and secure services that make a difference.
+          </p>
+          <button className="bg-primary-color text-white px-6 py-2 rounded-md font-medium hover:bg-green-600 transition-colors duration-200">
+            Learn More
+          </button>
         </div>
-    </section>
-        </main>
-    </div> );
-}
- 
+      </section>
+
+      {/* Qualities Section */}
+      <section id="qualities" className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-text-color mb-12">Why Choose Us</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {qualities.map((quality) => (
+              <div 
+                key={quality.id} 
+                className="quality-card flex flex-col items-center text-center p-6 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-200"
+              >
+                <div className="mb-4">
+                  <i className={`flat ${quality.icon} text-4xl text-primary-color`}></i>
+                </div>
+                <h5 className="text-lg font-semibold text-text-color mb-2">{quality.title}</h5>
+                <p className="text-gray-600 text-sm">{quality.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+};
+
 export default About;

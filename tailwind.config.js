@@ -1,13 +1,13 @@
+/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/**/*.{html,js,jsx,ts,tsx}",
+    './src/**/*.{js,jsx,ts,tsx}', // Adjust based on your file structure
   ],
   theme: {
     extend: {
-      fontFamily: {
-        title: ['Roboto', 'sans-serif'], // Define fonts correctly
-        body: ['Lato', 'sans-serif'],   // Ensure no syntax issues
-      }
+      colors: {
+        'primary-color': 'var(--primary-color)', // Maps to your CSS variable
+      },
     },
   },
   plugins: [],

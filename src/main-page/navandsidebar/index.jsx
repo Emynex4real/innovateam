@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   BiGrid,
   BiUser,
@@ -13,37 +13,31 @@ import {
   BiLogOut,
   BiChevronDown,
   BiChevronUp,
-} from "react-icons/bi";
-
-import Dropdown from "../dropdown";
+  BiMenu,
+} from 'react-icons/bi';
+import Dropdown from '../dropdown';
 
 const NavandSideBar = ({ children }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [openDropdown, setOpenDropdown] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const sidebarRef = useRef(null);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (isDropdownOpen && !e.target.closest(".dropdown")) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [isDropdownOpen]);
+  // Toggle sidebar for mobile
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  // Close sidebar when clicking outside
+  // Handle outside click to close sidebar
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setIsSidebarOpen(false);
         setIsCollapsed(true);
       }
     };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Toggle dropdown
@@ -51,104 +45,156 @@ const NavandSideBar = ({ children }) => {
     setOpenDropdown(openDropdown === label ? null : label);
   };
 
-  // Define sidebar items
+  // Handle logout
+  const handleLogout = () => {
+    document.getElementById('logout-form').submit();
+    navigate('/login');
+  };
+
   const sidebarItems = [
+    { path: '/homepage', icon: <BiGrid />, label: 'Dashboard' },
+    { path: '/homepage/profile', icon: <BiUser />, label: 'Profile' },
+    { path: '/homepage/wallet', icon: <BiWallet />, label: 'Wallet' },
     {
-      path: "/homepage",
-      icon: <BiGrid className="text-xl" />,
-      label: "Dashboard",
-    },
-    {
-      path: "/homepage/profile",
-      icon: <BiUser className="text-xl" />,
-      label: "Profile",
-    },
-    {
-      path: "/homepage/wallet",
-      icon: <BiWallet className="text-xl" />,
-      label: "Wallet",
-    },
-    {
-      path: "#",
-      icon: <BiCreditCard className="text-xl" />,
-      label: "Scratch Cards",
+      path: '#',
+      icon: <BiCreditCard />,
+      label: 'Scratch Cards',
       subItems: [
-        { path: "/homepage/scratch-card/waec-checker", label: "WAEC Result Checker" },
-        { path: "/scratch-card/history", label: "NECO Result Checker" },
-        { path: "/scratch-card/history", label: "NBAIS Result Checker" },
-        { path: "/scratch-card/history", label: "NABTEB Result Checker" },
+        { path: '/homepage/scratch-card/waec-checker', label: 'WAEC Result Checker' },
+        { path: '/homepage/scratch-card/neco-checker', label: 'NECO Result Checker' },
+        { path: '/homepage/scratch-card/nbais-checker', label: 'NBAIS Result Checker' },
+        { path: '/homepage/scratch-card/nabteb-checker', label: 'NABTEB Result Checker' },
       ],
     },
+    { path: '/homepage/buy-data', icon: <BiData />, label: 'Buy Data' },
+    { path: '/homepage/buy-airtime', icon: <BiPhone />, label: 'Airtime' },
     {
-      path: "/homepage/buy-data",
-      icon: <BiData className="text-xl" />,
-      label: "Buy Data",
-    },
-    {
-      path: "/homepage/buy-airtime",
-      icon: <BiPhone className="text-xl" />,
-      label: "Airtime",
-    },
-    {
-      path: "#",
-      icon: <BiBook className="text-xl" />,
-      label: "JAMB Services",
+      path: '#',
+      icon: <BiBook />,
+      label: 'JAMB Services',
       subItems: [
-        { path: "/homepage/buy-olevel-upload", label: "O'level Upload" },
-        { path: "/homepage/buy-admission-letter", label: "Admission Letter" },
-        { path: "/homepage/buy-original-result", label: "Original Result" },
-        { path: "/homepage/buy-pin-vending", label: "PIN Vending" },
-        { path: "/homepage/reprinting-jamb-caps", label: "Reprinting & JAMB CAPS" },
+        { path: '/homepage/buy-olevel-upload', label: "O'level Upload" },
+        { path: '/homepage/buy-admission-letter', label: 'Admission Letter' },
+        { path: '/homepage/buy-original-result', label: 'Original Result' },
+        { path: '/homepage/buy-pin-vending', label: 'PIN Vending' },
+        { path: '/homepage/reprinting-jamb-caps', label: 'Reprinting & JAMB CAPS' },
       ],
     },
-    {
-      path: "/homepage/transactions",
-      icon: <BiListCheck className="text-xl" />,
-      label: "Transactions",
-    },
-    {
-      path: "/homepage/support",
-      icon: <BiSupport className="text-xl" />,
-      label: "Support",
-    },
-    {
-      path: "/login",
-      icon: <BiLogOut className="text-xl" />,
-      label: "Logout",
-    },
+    { path: '/homepage/transactions', icon: <BiListCheck />, label: 'Transactions' },
+    { path: '/homepage/support', icon: <BiSupport />, label: 'Support' },
+    { path: '/login', icon: <BiLogOut />, label: 'Logout', onClick: handleLogout },
   ];
 
   return (
-    <div className="bg-gray-100">
-      <header className="fixed top-0 left-0 right-0 bg-white shadow-md flex items-center justify-between p-4 z-50">
-        {/* Logo Section */}
-        <div className="flex items-center">
-          <Link to="/homepage" className="flex items-center">
+    <div className="min-h-screen bg-gray-50 font-nunito">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleSidebar}
+            className="lg:hidden text-gray-700 hover:text-primary-color focus:outline-none"
+            aria-label="Toggle Sidebar"
+          >
+            <BiMenu className="h-6 w-6" />
+          </button>
+          <Link to="/homepage" className="flex items-center gap-2">
             <img
               src="https://arewagate.com/images/general/favicon2.png"
-              alt="Logo"
-              className="h-8 w-8"
+              alt="ArewaGate Logo"
+              className="h-8 w-8 transition-transform duration-200 hover:scale-105"
             />
-            <span className="hidden lg:block ml-2 text-xl font-bold">
-              ArewaGate
-            </span>
+            <span className="text-xl font-bold text-text-color hidden md:block">ArewaGate</span>
           </Link>
         </div>
-
-        {/* Navigation Section */}
-        <nav className="flex items-center space-x-6">
-          {/* Profile Dropdown */}
+        <nav className="flex items-center gap-6">
           <Dropdown />
         </nav>
       </header>
 
-      {/* Logout Form */}
-      <form
-        id="logout-form"
-        action="https://arewagate.com/logout"
-        method="POST"
-        className="d-none"
+      {/* Marquee */}
+      <div className="fixed top-14 left-0 right-0 h-6 bg-primary-color text-white z-50 flex items-center justify-center overflow-hidden">
+        <p className="text-sm font-medium whitespace-nowrap animate-marquee">
+          HAPPY NEW YEAR 2025 - Wishing you a prosperous and joyful year ahead! 🎉✨
+        </p>
+      </div>
+
+      {/* Sidebar */}
+      <aside
+        ref={sidebarRef}
+        className={`fixed top-20 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out z-40 ${
+          isSidebarOpen || !isCollapsed ? 'w-64' : 'w-16'
+        } lg:${isCollapsed ? 'w-16' : 'w-64'}`}
+        style={{ maxHeight: 'calc(100vh - 5rem)', overflowY: 'auto' }}
+        onMouseEnter={() => setIsCollapsed(false)}
+        onMouseLeave={() => setIsCollapsed(true)}
       >
+        <ul className="p-4 space-y-2">
+          {sidebarItems.map((item) => (
+            <li key={item.label}>
+              <div
+                className={`flex items-center justify-between p-2 rounded-lg transition-all duration-200 ${
+                  location.pathname === item.path || item.subItems?.some((sub) => sub.path === location.pathname)
+                    ? 'bg-primary-color text-white'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-primary-color'
+                }`}
+              >
+                <Link
+                  to={item.path}
+                  className="flex items-center flex-grow"
+                  onClick={item.onClick || null}
+                >
+                  <span className="text-2xl">{item.icon}</span>
+                  <span className={`ml-3 ${isCollapsed && !isSidebarOpen ? 'hidden' : 'block'} text-sm font-medium`}>
+                    {item.label}
+                  </span>
+                </Link>
+                {item.subItems && (
+                  <button
+                    onClick={() => toggleDropdown(item.label)}
+                    className={`p-1 ${isCollapsed && !isSidebarOpen ? 'hidden' : 'block'} hover:bg-gray-200 rounded-full`}
+                  >
+                    {openDropdown === item.label ? (
+                      <BiChevronUp className="text-lg" />
+                    ) : (
+                      <BiChevronDown className="text-lg" />
+                    )}
+                  </button>
+                )}
+              </div>
+              {item.subItems && openDropdown === item.label && (
+                <ul className={`pl-8 mt-1 space-y-1 ${isCollapsed && !isSidebarOpen ? 'hidden' : 'block'} animate-fade-in-up`}>
+                  {item.subItems.map((subItem) => (
+                    <li key={subItem.path}>
+                      <Link
+                        to={subItem.path}
+                        className={`block p-2 rounded-lg text-sm transition-all duration-200 ${
+                          location.pathname === subItem.path
+                            ? 'bg-green-100 text-primary-color font-semibold'
+                            : 'text-gray-600 hover:bg-gray-100 hover:text-primary-color'
+                        }`}
+                      >
+                        {subItem.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </aside>
+
+      {/* Main Content */}
+      <main
+        className={`transition-all duration-300 ease-in-out pt-24 ${
+          isSidebarOpen || !isCollapsed ? 'lg:ml-64 ml-0' : 'lg:ml-16 ml-0'
+        }`}
+      >
+        {children}
+      </main>
+
+      {/* Logout Form */}
+      <form id="logout-form" action="https://arewagate.com/logout" method="POST" className="hidden">
         <input
           type="hidden"
           name="_token"
@@ -157,100 +203,14 @@ const NavandSideBar = ({ children }) => {
         />
       </form>
 
-      <div className="fixed top-16 left-0 right-0 h-5 flex items-center justify-center overflow-hidden bg-gradient-to-r from-green-500 to-green-600 z-50 marquee">
-        <p className="text-white text-sm font-medium whitespace-nowrap animate-marquee">
-          HAPPY NEW YEAR 2025 - Wishing you a prosperous and joyful year ahead!
-          🎉✨
-        </p>
-      </div>
-
-      <div className="">
-        {/* Sidebar */}
-        <aside
-          ref={sidebarRef}
-          className={`fixed top-20 left-0 bottom-0 bg-white shadow-md p-4 transition-all duration-300 ease-in-out ${
-            isCollapsed ? "w-20" : "w-64"
-          }`}
-          style={{
-            zIndex: 1000, // Ensure sidebar is above other content
-            maxHeight: "calc(100vh - 5rem)", // Adjust height to fit viewport
-            overflowY: "auto", // Enable vertical scrolling
-            overflowX: "hidden", // Disable horizontal scrolling
-          }}
-          onMouseEnter={() => setIsCollapsed(false)}
-          onMouseLeave={() => setIsCollapsed(true)}
-        >
-          {/* Sidebar Items */}
-          <ul>
-            {sidebarItems.map((item) => (
-              <li key={item.path} className="mb-2">
-                <div
-                  className={`flex items-center justify-between p-2 rounded-lg transition-colors duration-200 ${
-                    location.pathname === item.path
-                      ? "bg-green-500 text-white"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-green-500"
-                  }`}
-                >
-                  <Link to={item.path} className="flex items-center flex-grow">
-                    {item.icon}
-                    <span className={`ml-2 ${isCollapsed ? "hidden" : "block"}`}>
-                      {item.label}
-                    </span>
-                  </Link>
-                  {item.subItems && (
-                    <button
-                      onClick={() => toggleDropdown(item.label)}
-                      className="p-1 hover:bg-gray-200 rounded-full transition-colors duration-200"
-                    >
-                      {openDropdown === item.label ? (
-                        <BiChevronUp className="text-xl" />
-                      ) : (
-                        <BiChevronDown className="text-xl" />
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Dropdown Items */}
-                {item.subItems && openDropdown === item.label && (
-                  <ul
-                    className={`pl-6 mt-2 space-y-1 transition-all duration-300 ease-in-out ${
-                      isCollapsed ? "opacity-0 h-0" : "opacity-100 h-auto"
-                    }`}
-                  >
-                    {item.subItems.map((subItem) => (
-                      <li key={subItem.path}>
-                        <Link
-                          to={subItem.path}
-                          className={`flex items-center p-2 rounded-lg transition-colors duration-200 ${
-                            location.pathname === subItem.path
-                              ? "bg-green-500 text-white"
-                              : "text-gray-700 hover:bg-gray-100 hover:text-green-500"
-                          }`}
-                        >
-                          <span className="ml-2">{subItem.label}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        {/* Main Content Area */}
-        <main
-          className={`transition-all duration-300 ease-in-out ${
-            isCollapsed ? "ml-20" : "ml-64"
-          }`}
-          style={{
-            marginLeft: isCollapsed ? "5rem" : "16rem", // Adjust margin for mobile
-          }}
-        >
-          {children}
-        </main>
-      </div>
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 };
