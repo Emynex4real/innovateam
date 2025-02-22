@@ -123,15 +123,16 @@ const OLevelUpload = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8 font-nunito">
-      <div className="container mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-text-color mb-8">O-Level Upload</h1>
+    <div className="bg-gray-50 min-h-screen py-6 font-nunito">
+      <div className="container mx-auto px-4">
+        <h1 className="text-xl md:text-2xl font-bold text-text-color mb-6">O-Level Upload</h1>
 
-        <div className="mb-6">
+        {/* Search Input */}
+        <div className="mb-4">
           <input
             type="text"
             placeholder="Search..."
-            className="w-full md:w-96 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+            className="w-full md:w-96 p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
           />
         </div>
 
@@ -139,20 +140,20 @@ const OLevelUpload = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
           {/* OLevel Upload Form */}
-          <div className="bg-white p-8 rounded-xl shadow-md">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white p-6 rounded-xl shadow-md">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="type" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="type" className="block text-sm font-semibold text-gray-700 mb-1">
                   Type
                 </label>
                 <select
                   id="type"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+                  className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
                 >
                   <option value="">Select Type</option>
                   <option value="UTME">UTME (₦400 per unit)</option>
@@ -161,14 +162,14 @@ const OLevelUpload = () => {
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="quantity" className="block text-sm font-semibold text-gray-700 mb-1">
                   Quantity
                 </label>
                 <select
                   id="quantity"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+                  className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
                 >
                   <option value="">Select Quantity</option>
                   {[1, 2, 3, 4, 5, 6, 7].map((num) => (
@@ -178,7 +179,7 @@ const OLevelUpload = () => {
               </div>
 
               <div>
-                <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-1">
                   Total Amount
                 </label>
                 <input
@@ -186,13 +187,13 @@ const OLevelUpload = () => {
                   id="amount"
                   value={type && quantity ? `₦${calculateTotalAmount()}` : ''}
                   readOnly
-                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
+                  className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
                 />
               </div>
 
               {message.text && (
                 <div
-                  className={`p-3 rounded-lg text-sm font-medium ${
+                  className={`p-2 rounded-lg text-sm font-medium ${
                     message.type === 'success'
                       ? 'bg-green-100 text-green-700'
                       : message.type === 'info'
@@ -206,7 +207,7 @@ const OLevelUpload = () => {
 
               <button
                 type="submit"
-                className="w-full bg-primary-color text-white py-3 rounded-md font-semibold hover:bg-green-600 transition-all duration-200"
+                className="w-full bg-primary-color text-white py-2 rounded-md font-semibold hover:bg-green-600 transition-all duration-200"
               >
                 Proceed
               </button>
@@ -214,9 +215,9 @@ const OLevelUpload = () => {
           </div>
 
           {/* How It Works */}
-          <div className="bg-white p-8 rounded-xl shadow-md">
-            <h2 className="text-xl font-semibold text-text-color mb-6">How It Works</h2>
-            <ul className="list-disc list-inside space-y-4 text-gray-600 text-sm">
+          <div className="bg-white p-6 rounded-xl shadow-md">
+            <h2 className="text-lg font-semibold text-text-color mb-4">How It Works</h2>
+            <ul className="list-disc list-inside space-y-2 text-gray-600 text-sm">
               <li>Fill the form with accurate details and submit.</li>
               <li>Click "Proceed" to add new entries to the history.</li>
               <li>Click "New Entry" to input O-Level results (min 8, max 9 subjects).</li>
@@ -231,54 +232,54 @@ const OLevelUpload = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-12"
+          className="mt-8"
         >
-          <h2 className="text-xl md:text-2xl font-semibold text-text-color mb-6">O-Level Upload History</h2>
-          <div className="bg-white p-8 rounded-xl shadow-md overflow-x-auto">
+          <h2 className="text-lg md:text-xl font-semibold text-text-color mb-4">O-Level Upload History</h2>
+          <div className="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
             {history.length === 0 ? (
-              <p className="text-gray-500 text-center py-6">No upload history yet.</p>
+              <p className="text-gray-500 text-center py-4">No upload history yet.</p>
             ) : (
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100 text-gray-700">
                   <tr>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">#</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Action</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Type</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Full Name</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Profile Code</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Status</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Screenshot</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Remark</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold">Submitted On</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">#</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Action</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Type</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Full Name</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Profile Code</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Status</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Screenshot</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Remark</th>
+                    <th className="py-2 px-4 text-left text-sm font-semibold">Submitted On</th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.map((item) => (
                     <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200">
-                      <td className="py-4 px-6 text-gray-700">{item.id}</td>
-                      <td className="py-4 px-6">
+                      <td className="py-2 px-4 text-gray-700">{item.id}</td>
+                      <td className="py-2 px-4">
                         {item.status === 'Waiting' ? (
                           <button
                             onClick={() => handleNewEntry(item.id)}
-                            className="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
+                            className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
                           >
                             New Entry
                           </button>
                         ) : (
                           <button
                             onClick={() => handleRequery(item.id)}
-                            className="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
+                            className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
                           >
                             Query
                           </button>
                         )}
                       </td>
-                      <td className="py-4 px-6 text-gray-700">{item.type}</td>
-                      <td className="py-4 px-6 text-gray-700">{item.fullname}</td>
-                      <td className="py-4 px-6 text-gray-700">{item.profileCode}</td>
-                      <td className="py-4 px-6">
+                      <td className="py-2 px-4 text-gray-700">{item.type}</td>
+                      <td className="py-2 px-4 text-gray-700">{item.fullname}</td>
+                      <td className="py-2 px-4 text-gray-700">{item.profileCode}</td>
+                      <td className="py-2 px-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
                             item.status === 'Processed'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-orange-100 text-orange-700'
@@ -287,17 +288,17 @@ const OLevelUpload = () => {
                           {item.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-2 px-4">
                         <button
                           onClick={() => handleDownload(item.fullname || item.type)}
-                          className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all duration-200 text-sm"
+                          className="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 transition-all duration-200 text-sm"
                           disabled={item.status !== 'Processed'}
                         >
                           Download
                         </button>
                       </td>
-                      <td className="py-4 px-6 text-gray-700">{item.remark}</td>
-                      <td className="py-4 px-6 text-gray-700">{item.submittedOn}</td>
+                      <td className="py-2 px-4 text-gray-700">{item.remark}</td>
+                      <td className="py-2 px-4 text-gray-700">{item.submittedOn}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -317,13 +318,13 @@ const OLevelUpload = () => {
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full"
+              className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full"
             >
-              <h2 className="text-xl font-semibold text-text-color mb-6">Query</h2>
-              <p className="text-sm text-gray-600 mb-6">
+              <h2 className="text-lg font-semibold text-text-color mb-4">Query</h2>
+              <p className="text-sm text-gray-600 mb-4">
                 <strong>Notice:</strong> A 500 Naira fee may be deducted if the error is not ours.
               </p>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Type</label>
                   <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.type || 'UTME'}</p>
@@ -347,16 +348,16 @@ const OLevelUpload = () => {
                   />
                 </div>
               </div>
-              <div className="mt-8 flex justify-end gap-4">
+              <div className="mt-6 flex justify-end gap-4">
                 <button
                   onClick={handleQueryCancel}
-                  className="bg-gray-500 text-white py-2 px-6 rounded-md hover:bg-gray-600 transition-all duration-200"
+                  className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-all duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleQueryProceed}
-                  className="bg-primary-color text-white py-2 px-6 rounded-md hover:bg-green-600 transition-all duration-200"
+                  className="bg-primary-color text-white py-2 px-4 rounded-md hover:bg-green-600 transition-all duration-200"
                 >
                   Proceed
                 </button>

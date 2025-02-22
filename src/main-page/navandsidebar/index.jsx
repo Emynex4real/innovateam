@@ -128,7 +128,7 @@ const NavandSideBar = ({ children }) => {
         onMouseEnter={() => setIsCollapsed(false)}
         onMouseLeave={() => setIsCollapsed(true)}
       >
-        <ul className="p-4 space-y-2">
+        <ul className="p-3 space-y-2">
           {sidebarItems.map((item) => (
             <li key={item.label}>
               <div

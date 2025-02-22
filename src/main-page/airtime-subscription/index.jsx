@@ -69,7 +69,7 @@ const AirtimeSubscription = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 font-nunito max-w-4xl">
+    <div className="container mx-auto px-4 py-8 font-nunito">
       {/* Airtime Subscription Section */}
       <section className="bg-white rounded-xl shadow-lg p-6 mb-8 transition-all duration-300 hover:shadow-xl">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Airtime Subscription</h2>
