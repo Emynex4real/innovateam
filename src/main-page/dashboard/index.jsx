@@ -76,7 +76,7 @@ const Dashboards = () => {
   const toggleTransactions = () => setShowAllTransactions((prev) => !prev);
 
   return (
-    <div className=" bg-gray-50 font-nunito">
+    <div className=" bg-gray-50 min-h-screen font-nunito">
       {/* Balance Section */}
       <motion.section
         variants={containerVariants}
