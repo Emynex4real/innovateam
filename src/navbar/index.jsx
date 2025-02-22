@@ -6,6 +6,7 @@ const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const sidebarRef = useRef(null);
+  const toggleButtonRef = useRef(null); // Ref for the toggle button
   const navigate = useNavigate();
 
   // Toggle sidebar
@@ -13,17 +14,27 @@ const NavBar = () => {
     setIsSidebarOpen((prev) => !prev);
   };
 
-  // Close sidebar when clicking outside
+  // Close sidebar explicitly
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
+  // Close sidebar when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-        setIsSidebarOpen(false);
+      if (
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target) &&
+        toggleButtonRef.current &&
+        !toggleButtonRef.current.contains(event.target) // Exclude toggle button
+      ) {
+        closeSidebar();
       }
     };
 
     const handleEscapeKey = (event) => {
       if (event.key === 'Escape') {
-        setIsSidebarOpen(false);
+        closeSidebar();
       }
     };
 
@@ -41,7 +52,7 @@ const NavBar = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchQuery('');
-      setIsSidebarOpen(false);
+      closeSidebar(); // Close sidebar after search
     }
   };
 
@@ -55,7 +66,7 @@ const NavBar = () => {
     <nav className="w-full bg-white shadow-md sticky top-0 z-50 font-nunito">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
-        <Link to="/" className="flex items-center" onClick={() => setIsSidebarOpen(false)}>
+        <Link to="/" className="flex items-center" onClick={closeSidebar}>
           <img src={logo} alt="Arewa Gate Logo" className="h-10 md:h-12 transition-transform duration-200 hover:scale-105" />
         </Link>
 
@@ -105,29 +116,32 @@ const NavBar = () => {
 
         {/* Mobile Menu Button */}
         <button
+          ref={toggleButtonRef}
           className="lg:hidden focus:outline-none p-2"
           onClick={toggleSidebar}
           aria-label="Toggle Navigation Menu"
           aria-expanded={isSidebarOpen}
         >
-          <div className={`burger ${isSidebarOpen ? 'open' : ''}`}>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+          <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {isSidebarOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
         </button>
       </div>
 
       {/* Mobile Sidebar */}
       <div
         ref={sidebarRef}
-        className={`sidebar fixed top-0 left-0 h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'open' : ''
+        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:hidden z-50 overflow-y-auto`}
       >
         <div className="p-5 flex justify-between items-center border-b border-gray-200">
           <img src={logo} alt="Arewa Gate Logo" className="h-10" />
-          <button onClick={toggleSidebar} className="text-gray-600 hover:text-primary-color" aria-label="Close Sidebar">
+          <button onClick={closeSidebar} className="text-gray-600 hover:text-primary-color" aria-label="Close Sidebar">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -139,7 +153,7 @@ const NavBar = () => {
               <Link
                 to={item.path}
                 className="flex items-center p-3 text-gray-700 hover:bg-gray-100 hover:text-primary-color rounded-md transition-all duration-200"
-                onClick={toggleSidebar}
+                onClick={closeSidebar}
               >
                 <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
@@ -172,7 +186,7 @@ const NavBar = () => {
             <Link
               to="/login"
               className="block w-full bg-primary-color text-white p-3 rounded-md text-center font-medium hover:bg-green-600 transition-all duration-200"
-              onClick={toggleSidebar}
+              onClick={closeSidebar}
             >
               Login
             </Link>
@@ -182,9 +196,9 @@ const NavBar = () => {
 
       {/* Overlay for Sidebar */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
-          onClick={toggleSidebar}
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={closeSidebar}
           aria-hidden="true"
         />
       )}
