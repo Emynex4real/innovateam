@@ -91,7 +91,7 @@ const Profiles = () => {
               <button
                 onClick={() => setActiveTab("overview")}
                 className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
-                  activeTab === "overview" ? "border-b-2 border-blue-500" : ""
+                  activeTab === "overview" ? "border-b-2 border-green-500" : ""
                 }`}
               >
                 Overview
@@ -100,7 +100,7 @@ const Profiles = () => {
                 onClick={() => setActiveTab("editProfile")}
                 className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
                   activeTab === "editProfile"
-                    ? "border-b-2 border-blue-500"
+                    ? "border-b-2 border-green-500"
                     : ""
                 }`}
               >
@@ -110,7 +110,7 @@ const Profiles = () => {
                 onClick={() => setActiveTab("bankDetails")}
                 className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
                   activeTab === "bankDetails"
-                    ? "border-b-2 border-blue-500"
+                    ? "border-b-2 border-green-500"
                     : ""
                 }`}
               >
@@ -120,7 +120,7 @@ const Profiles = () => {
                 onClick={() => setActiveTab("changePassword")}
                 className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
                   activeTab === "changePassword"
-                    ? "border-b-2 border-blue-500"
+                    ? "border-b-2 border-green-500"
                     : ""
                 }`}
               >
@@ -179,7 +179,7 @@ const Profiles = () => {
                       <div className="mt-6 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
                         <button
                           onClick={() => setActiveTab("editProfile")}
-                          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
+                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
                         >
                           Edit Profile
                         </button>
@@ -260,7 +260,7 @@ const Profiles = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full md:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      className="w-full md:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                     >
                       Save Changes
                     </button>
@@ -311,7 +311,7 @@ const Profiles = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full md:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      className="w-full md:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                     >
                       Save Bank Details
                     </button>
@@ -362,7 +362,7 @@ const Profiles = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full md:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      className="w-full md:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                     >
                       Change Password
                     </button>

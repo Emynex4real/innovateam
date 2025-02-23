@@ -30,7 +30,7 @@ const Dropdown = () => {
   const handleLogout = () => {
     // Simulate logout logic
     console.log("User logged out");
-    document.getElementById("logout-form")?.submit(); // If logout form exists
+    // document.getElementById("logout-form")?.submit(); // If logout form exists
     navigate("/login");
   };
 
