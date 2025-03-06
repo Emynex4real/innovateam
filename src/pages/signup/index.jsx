@@ -1,59 +1,59 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../components/auth";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phoneNumber: '',
-    password: '',
-    confirmPassword: '',
+    name: "",
+    email: "",
+    phoneNumber: "",
+    password: "",
+    confirmPassword: "",
     agreeToTerms: false,
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth(); // Add this
+  
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
-    // Clear error for the field being edited
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.name.trim()) newErrors.name = "Name is required";
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = "Invalid email format";
     }
     if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = 'Phone number is required';
+      newErrors.phoneNumber = "Phone number is required";
     } else if (!/^\d{10,15}$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = 'Enter a valid phone number (10-15 digits)';
+      newErrors.phoneNumber = "Enter a valid phone number (10-15 digits)";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = "Password must be at least 8 characters";
     }
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.confirmPassword !== formData.password) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = 'You must agree to the terms';
+      newErrors.agreeToTerms = "You must agree to the terms";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -64,12 +64,25 @@ const SignUp = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call - replace with actual signup logic
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Sign up successful:', formData);
-      navigate('/login'); // Redirect to login after signup
+      const userData = {
+        name: formData.name,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        password: formData.password,
+      };
+      const existingUser = localStorage.getItem("user");
+      if (existingUser) {
+        setErrors({ submit: "A user is already registered. Use that account or reset." });
+        setIsLoading(false);
+        return;
+      }
+      localStorage.setItem("user", JSON.stringify(userData));
+      login(); // Auto-login after signup
+      console.log("Sign up successful:", userData);
+      navigate("/homepage"); // Direct to homepage instead of login
     } catch (error) {
-      setErrors({ submit: 'Signup failed. Please try again.' });
+      setErrors({ submit: "Signup failed. Please try again." });
     } finally {
       setIsLoading(false);
     }
@@ -78,15 +91,11 @@ const SignUp = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 font-nunito">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8 transition-all duration-300 hover:shadow-2xl">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-text-color">Create Account</h1>
           <p className="text-gray-600 mt-2 text-sm">Join us today</p>
         </div>
-
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
               Full Name
@@ -105,8 +114,6 @@ const SignUp = () => {
             />
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
-
-          {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
@@ -125,8 +132,6 @@ const SignUp = () => {
             />
             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
           </div>
-
-          {/* Phone Number */}
           <div>
             <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number
@@ -145,8 +150,6 @@ const SignUp = () => {
             />
             {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
           </div>
-
-          {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -165,8 +168,6 @@ const SignUp = () => {
             />
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
           </div>
-
-          {/* Confirm Password */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password
@@ -187,8 +188,6 @@ const SignUp = () => {
               <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
             )}
           </div>
-
-          {/* Terms and Conditions */}
           <div className="flex items-start">
             <input
               type="checkbox"
@@ -209,13 +208,9 @@ const SignUp = () => {
           {errors.agreeToTerms && (
             <p className="text-red-500 text-xs mt-1 ml-6">{errors.agreeToTerms}</p>
           )}
-
-          {/* Submit Error */}
           {errors.submit && (
             <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-md">{errors.submit}</p>
           )}
-
-          {/* Sign Up Button */}
           <button
             type="submit"
             className="w-full bg-primary-color text-white py-3 rounded-md font-semibold hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -230,8 +225,6 @@ const SignUp = () => {
             {isLoading ? 'Signing Up...' : 'Sign Up'}
           </button>
         </form>
-
-        {/* Login Link */}
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
           <Link to="/login" className="text-primary-color font-semibold hover:text-green-600 transition-colors duration-200">

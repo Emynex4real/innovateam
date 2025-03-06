@@ -1,31 +1,37 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../components/auth";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      // Simulate API call (replace with actual authentication logic)
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      if (email && password) {
-        // Successful login
-        navigate('/homepage');
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+
+      if (!storedUser) {
+        throw new Error("No account exists. Please sign up first.");
+      }
+
+      if (storedUser.email === email && storedUser.password === password) {
+        login(); // Update auth state
+        navigate("/homepage");
       } else {
-        throw new Error('Please fill in all fields');
+        throw new Error("Invalid email or password.");
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -33,30 +39,24 @@ const Login = () => {
 
   const handleSocialLogin = (provider) => {
     setIsLoading(true);
-    // Implement social login logic here (e.g., Google, Facebook OAuth)
     console.log(`Logging in with ${provider}`);
     setTimeout(() => setIsLoading(false), 1000);
+    setError("Social login not available yet.");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 font-nunito">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 transform transition-all duration-300 hover:shadow-2xl">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-text-color">Welcome Back</h1>
           <p className="text-gray-600 mt-2 text-sm">Sign in to your account</p>
         </div>
-
-        {/* Error Message */}
         {error && (
           <div className="mb-6 p-3 bg-red-100 text-red-700 rounded-md text-sm animate-fade-in-up">
             {error}
           </div>
         )}
-
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
@@ -72,8 +72,6 @@ const Login = () => {
               disabled={isLoading}
             />
           </div>
-
-          {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -89,8 +87,6 @@ const Login = () => {
               disabled={isLoading}
             />
           </div>
-
-          {/* Remember Me & Forgot Password */}
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center cursor-pointer">
               <input
@@ -106,8 +102,6 @@ const Login = () => {
               Forgot Password?
             </Link>
           </div>
-
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-primary-color text-white py-3 rounded-md font-semibold hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
@@ -119,21 +113,17 @@ const Login = () => {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
             ) : null}
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
-
-        {/* Divider */}
         <div className="my-6 flex items-center">
           <div className="flex-1 h-px bg-gray-200"></div>
           <span className="mx-4 text-sm text-gray-500">or continue with</span>
           <div className="flex-1 h-px bg-gray-200"></div>
         </div>
-
-        {/* Social Login */}
         <div className="grid grid-cols-2 gap-4">
           <button
-            onClick={() => handleSocialLogin('Facebook')}
+            onClick={() => handleSocialLogin("Facebook")}
             className="flex items-center justify-center py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed text-sm"
             disabled={isLoading}
           >
@@ -143,7 +133,7 @@ const Login = () => {
             Facebook
           </button>
           <button
-            onClick={() => handleSocialLogin('Google')}
+            onClick={() => handleSocialLogin("Google")}
             className="flex items-center justify-center py-2 px-4 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-200 disabled:bg-gray-200 disabled:cursor-not-allowed text-sm"
             disabled={isLoading}
           >
@@ -156,10 +146,8 @@ const Login = () => {
             Google
           </button>
         </div>
-
-        {/* Sign Up Link */}
         <p className="mt-6 text-center text-sm text-gray-600">
-          Don’t have an account?{' '}
+          Don’t have an account?{" "}
           <Link to="/signup" className="text-primary-color font-semibold hover:text-green-600 transition-colors duration-200">
             Sign Up
           </Link>

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BiGrid,
   BiUser,
@@ -14,8 +14,9 @@ import {
   BiChevronDown,
   BiChevronUp,
   BiMenu,
-} from 'react-icons/bi';
-import Dropdown from '../dropdown';
+} from "react-icons/bi";
+import Dropdown from "../dropdown";
+import { useAuth } from "../../components/auth"; // Import useAuth
 
 const NavandSideBar = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -24,11 +25,10 @@ const NavandSideBar = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
+  const { logout } = useAuth(); // Get logout from AuthContext
 
-  // Toggle sidebar for mobile
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  // Handle outside click to close sidebar
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
@@ -36,53 +36,53 @@ const NavandSideBar = ({ children }) => {
         setIsCollapsed(true);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Toggle dropdown
   const toggleDropdown = (label) => {
     setOpenDropdown(openDropdown === label ? null : label);
   };
 
-  // Handle logout
   const handleLogout = () => {
-    document.getElementById('logout-form').submit();
-    navigate('/login');
+    logout(); // Clear auth state and localStorage
+    navigate("/login"); // Redirect to login page
+    // If you still need the external form submission, uncomment below:
+    // document.getElementById("logout-form").submit();
   };
 
   const sidebarItems = [
-    { path: '/homepage', icon: <BiGrid />, label: 'Dashboard' },
-    { path: '/homepage/profile', icon: <BiUser />, label: 'Profile' },
-    { path: '/homepage/wallet', icon: <BiWallet />, label: 'Wallet' },
+    { path: "/homepage", icon: <BiGrid />, label: "Dashboard" },
+    { path: "/homepage/profile", icon: <BiUser />, label: "Profile" },
+    { path: "/homepage/wallet", icon: <BiWallet />, label: "Wallet" },
     {
-      path: '#',
+      path: "#",
       icon: <BiCreditCard />,
-      label: 'Scratch Cards',
+      label: "Scratch Cards",
       subItems: [
-        { path: '/homepage/scratch-card/waec-checker', label: 'WAEC Result Checker' },
-        { path: '/homepage/scratch-card/neco-checker', label: 'NECO Result Checker' },
-        { path: '/homepage/scratch-card/nbais-checker', label: 'NBAIS Result Checker' },
-        { path: '/homepage/scratch-card/nabteb-checker', label: 'NABTEB Result Checker' },
+        { path: "/homepage/scratch-card/waec-checker", label: "WAEC Result Checker" },
+        { path: "/homepage/scratch-card/neco-checker", label: "NECO Result Checker" },
+        { path: "/homepage/scratch-card/nbais-checker", label: "NBAIS Result Checker" },
+        { path: "/homepage/scratch-card/nabteb-checker", label: "NABTEB Result Checker" },
       ],
     },
-    { path: '/homepage/buy-data', icon: <BiData />, label: 'Buy Data' },
-    { path: '/homepage/buy-airtime', icon: <BiPhone />, label: 'Airtime' },
+    { path: "/homepage/buy-data", icon: <BiData />, label: "Buy Data" },
+    { path: "/homepage/buy-airtime", icon: <BiPhone />, label: "Airtime" },
     {
-      path: '#',
+      path: "#",
       icon: <BiBook />,
-      label: 'JAMB Services',
+      label: "JAMB Services",
       subItems: [
-        { path: '/homepage/buy-olevel-upload', label: "O'level Upload" },
-        { path: '/homepage/buy-admission-letter', label: 'Admission Letter' },
-        { path: '/homepage/buy-original-result', label: 'Original Result' },
-        { path: '/homepage/buy-pin-vending', label: 'PIN Vending' },
-        { path: '/homepage/reprinting-jamb-caps', label: 'Reprinting & JAMB CAPS' },
+        { path: "/homepage/buy-olevel-upload", label: "O'level Upload" },
+        { path: "/homepage/buy-admission-letter", label: "Admission Letter" },
+        { path: "/homepage/buy-original-result", label: "Original Result" },
+        { path: "/homepage/buy-pin-vending", label: "PIN Vending" },
+        { path: "/homepage/reprinting-jamb-caps", label: "Reprinting & JAMB CAPS" },
       ],
     },
-    { path: '/homepage/transactions', icon: <BiListCheck />, label: 'Transactions' },
-    { path: '/homepage/support', icon: <BiSupport />, label: 'Support' },
-    { path: '/login', icon: <BiLogOut />, label: 'Logout', onClick: handleLogout },
+    { path: "/homepage/transactions", icon: <BiListCheck />, label: "Transactions" },
+    { path: "/homepage/support", icon: <BiSupport />, label: "Support" },
+    { path: "/login", icon: <BiLogOut />, label: "Logout", onClick: handleLogout },
   ];
 
   return (
@@ -122,9 +122,9 @@ const NavandSideBar = ({ children }) => {
       <aside
         ref={sidebarRef}
         className={`fixed top-20 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out z-40 ${
-          isSidebarOpen || !isCollapsed ? 'w-64' : 'w-16'
-        } lg:${isCollapsed ? 'w-16' : 'w-64'}`}
-        style={{ maxHeight: 'calc(100vh - 5rem)', overflowY: 'auto' }}
+          isSidebarOpen || !isCollapsed ? "w-64" : "w-16"
+        } lg:${isCollapsed ? "w-16" : "w-64"}`}
+        style={{ maxHeight: "calc(100vh - 5rem)", overflowY: "auto" }}
         onMouseEnter={() => setIsCollapsed(false)}
         onMouseLeave={() => setIsCollapsed(true)}
       >
@@ -134,8 +134,8 @@ const NavandSideBar = ({ children }) => {
               <div
                 className={`flex items-center justify-between p-2 rounded-lg transition-all duration-200 ${
                   location.pathname === item.path || item.subItems?.some((sub) => sub.path === location.pathname)
-                    ? 'bg-primary-color text-white'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-primary-color'
+                    ? "bg-primary-color text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-primary-color"
                 }`}
               >
                 <Link
@@ -144,14 +144,14 @@ const NavandSideBar = ({ children }) => {
                   onClick={item.onClick || null}
                 >
                   <span className="text-2xl">{item.icon}</span>
-                  <span className={`ml-3 ${isCollapsed && !isSidebarOpen ? 'hidden' : 'block'} text-sm font-medium`}>
+                  <span className={`ml-3 ${isCollapsed && !isSidebarOpen ? "hidden" : "block"} text-sm font-medium`}>
                     {item.label}
                   </span>
                 </Link>
                 {item.subItems && (
                   <button
                     onClick={() => toggleDropdown(item.label)}
-                    className={`p-1 ${isCollapsed && !isSidebarOpen ? 'hidden' : 'block'} hover:bg-gray-200 rounded-full`}
+                    className={`p-1 ${isCollapsed && !isSidebarOpen ? "hidden" : "block"} hover:bg-gray-200 rounded-full`}
                   >
                     {openDropdown === item.label ? (
                       <BiChevronUp className="text-lg" />
@@ -162,15 +162,15 @@ const NavandSideBar = ({ children }) => {
                 )}
               </div>
               {item.subItems && openDropdown === item.label && (
-                <ul className={`pl-8 mt-1 space-y-1 ${isCollapsed && !isSidebarOpen ? 'hidden' : 'block'} animate-fade-in-up`}>
+                <ul className={`pl-8 mt-1 space-y-1 ${isCollapsed && !isSidebarOpen ? "hidden" : "block"} animate-fade-in-up`}>
                   {item.subItems.map((subItem) => (
                     <li key={subItem.path}>
                       <Link
                         to={subItem.path}
                         className={`block p-2 rounded-lg text-sm transition-all duration-200 ${
                           location.pathname === subItem.path
-                            ? 'bg-green-100 text-primary-color font-semibold'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-primary-color'
+                            ? "bg-green-100 text-primary-color font-semibold"
+                            : "text-gray-600 hover:bg-gray-100 hover:text-primary-color"
                         }`}
                       >
                         {subItem.label}
@@ -187,13 +187,14 @@ const NavandSideBar = ({ children }) => {
       {/* Main Content */}
       <main
         className={`transition-all duration-300 ease-in-out pt-24 ${
-          isSidebarOpen || !isCollapsed ? 'lg:ml-64 ml-0' : 'lg:ml-16 ml-0'
+          isSidebarOpen || !isCollapsed ? "lg:ml-64 ml-0" : "lg:ml-16 ml-0"
         }`}
       >
         {children}
       </main>
 
-      {/* Logout Form */}
+      {/* Logout Form (Optional) */}
+      {/* Remove or keep this if you need to submit to an external backend */}
       <form id="logout-form" action="https://arewagate.com/logout" method="POST" className="hidden">
         <input
           type="hidden"
