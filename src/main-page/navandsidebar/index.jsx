@@ -15,8 +15,9 @@ import {
   BiChevronUp,
   BiMenu,
 } from "react-icons/bi";
+import { AiOutlineRobot } from "react-icons/ai"; // Import AiOutlineRobot instead
 import Dropdown from "../dropdown";
-import { useAuth } from "../../components/auth"; // Import useAuth
+import { useAuth } from "../../components/auth";
 
 const NavandSideBar = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -25,7 +26,7 @@ const NavandSideBar = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
-  const { logout } = useAuth(); // Get logout from AuthContext
+  const { logout } = useAuth();
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
@@ -45,10 +46,8 @@ const NavandSideBar = ({ children }) => {
   };
 
   const handleLogout = () => {
-    logout(); // Clear auth state and localStorage
-    navigate("/login"); // Redirect to login page
-    // If you still need the external form submission, uncomment below:
-    // document.getElementById("logout-form").submit();
+    logout();
+    navigate("/login");
   };
 
   const sidebarItems = [
@@ -80,13 +79,14 @@ const NavandSideBar = ({ children }) => {
         { path: "/homepage/reprinting-jamb-caps", label: "Reprinting & JAMB CAPS" },
       ],
     },
+    { path: "/homepage/ai-examiner", icon: <AiOutlineRobot />, label: "AI Examiner" },
     { path: "/homepage/transactions", icon: <BiListCheck />, label: "Transactions" },
     { path: "/homepage/support", icon: <BiSupport />, label: "Support" },
     { path: "/login", icon: <BiLogOut />, label: "Logout", onClick: handleLogout },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 font-nunito">
+    <div className="flex flex-col min-h-screen bg-gray-50 font-nunito">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
@@ -97,7 +97,7 @@ const NavandSideBar = ({ children }) => {
           >
             <BiMenu className="h-6 w-6" />
           </button>
-          <Link to="/homepage" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <img
               src="https://arewagate.com/images/general/favicon2.png"
               alt="ArewaGate Logo"
@@ -186,15 +186,48 @@ const NavandSideBar = ({ children }) => {
 
       {/* Main Content */}
       <main
-        className={`transition-all duration-300 ease-in-out pt-24 ${
+        className={`transition-all duration-300 ease-in-out pt-24 flex-grow ${
           isSidebarOpen || !isCollapsed ? "lg:ml-64 ml-0" : "lg:ml-16 ml-0"
         }`}
       >
         {children}
       </main>
 
+      {/* Footer */}
+      <footer
+        className={`bg-white text-black py-2 transition-all duration-300 ease-in-out border-t border-gray-100 shadow-md ${
+          isSidebarOpen || !isCollapsed ? "lg:ml-64 ml-0" : "lg:ml-16 ml-0"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center gap-3 mb-4 md:mb-0">
+            <img
+              src="https://arewagate.com/images/general/favicon2.png"
+              alt="ArewaGate Logo"
+              className="h-8 w-8"
+            />
+            <span className="text-xl font-semibold">ArewaGate</span>
+          </div>
+          <div className="text-gray-800 text-sm text-center md:text-right">
+            <p>© {new Date().getFullYear()} ArewaGate. All rights reserved.</p>
+            <p className="mt-2">
+              <Link to="/support" className="text-gray-800 hover:text-green-400 transition-colors">
+                Support
+              </Link>{" "}
+              |{" "}
+              <Link to="/about" className="text-gray-800 hover:text-green-400 transition-colors ml-2">
+                About Us
+              </Link>{" "}
+              |{" "}
+              <Link to="/blogs" className="text-gray-800 hover:text-green-400 transition-colors ml-2">
+                Blogs
+              </Link>
+            </p>
+          </div>
+        </div>
+      </footer>
+
       {/* Logout Form (Optional) */}
-      {/* Remove or keep this if you need to submit to an external backend */}
       <form id="logout-form" action="https://arewagate.com/logout" method="POST" className="hidden">
         <input
           type="hidden"

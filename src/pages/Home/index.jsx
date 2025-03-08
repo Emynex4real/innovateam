@@ -2,7 +2,7 @@ import whatsapp from "../../images/whatsapp-removebg-preview.png";
 import image from "../../images/pexels-cottonbro-6344238.jpg";
 import OurServices from "./our services";
 import Data from "./../accordion/data";
-import { useNavigate } from "react-router-dom"; // Changed from Link to useNavigate
+import { Link, useNavigate } from "react-router-dom"; // Changed from Link to useNavigate
 import { useState } from "react";
 import { useAuth } from "../../components/auth";
 
@@ -42,16 +42,19 @@ const Home = () => {
                 Join thousands of students who have achieved their dreams with our comprehensive learning resources and expert guidance.
               </p>
               <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start items-center">
-                <button onClick={handleProceed} className="animated-button">
+              <Link to={'/signup'}>
+                <button className="animated-button">
                   <svg className="arr-2" viewBox="0 0 24 24">
                     <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z" />
                   </svg>
-                  <span className="text">Proceed</span>
+                  <span className="text">Sign Up</span>
                   <span className="circle" />
                   <svg className="arr-1" viewBox="0 0 24 24">
                     <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z" />
                   </svg>
                 </button>
+              
+              </Link>
                 <div className="tooltip-container">
                   <div className="button-content">
                     <svg className="share-icon" viewBox="0 0 24 24">
