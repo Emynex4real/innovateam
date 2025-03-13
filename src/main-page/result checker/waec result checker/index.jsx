@@ -68,7 +68,7 @@ const WaecResultChecker = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-nunito">
+    <div className="bg-gray-50 min-h-screen font-nunito lg:ml-0 md:ml-20">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

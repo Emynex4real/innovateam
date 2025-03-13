@@ -179,7 +179,7 @@ const Profiles = () => {
                       <div className="mt-6 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
                         <button
                           onClick={() => setActiveTab("editProfile")}
-                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
+                          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
                         >
                           Edit Profile
                         </button>
