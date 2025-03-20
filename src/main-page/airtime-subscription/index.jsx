@@ -66,7 +66,7 @@ const AirtimeSubscription = () => {
       setAmount("");
       setIsLoading(false);
     }, 1000); // Simulated delay
-  };
+  }; 
 
   return (
     <div className="container mx-auto px-4 py-8 font-nunito">

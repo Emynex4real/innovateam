@@ -256,7 +256,7 @@ const Profiles = () => {
                         value={profile.bvn}
                         onChange={handleProfileChange}
                         className="w-full p-2 border rounded"
-                      />
+                      /> 
                     </div>
                     <button
                       type="submit"
