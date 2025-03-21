@@ -5,6 +5,7 @@ import Data from "./../accordion/data";
 import { Link, useNavigate } from "react-router-dom"; // Changed from Link to useNavigate
 import { useState } from "react";
 import { useAuth } from "../../components/auth";
+import ShareButton from "../../layouts/sharebtn";
 
 const Home = () => {
   const [email, setEmail] = useState("");
@@ -55,7 +56,7 @@ const Home = () => {
                 </button>
               
               </Link>
-                <div className="tooltip-container">
+                {/* <div className="tooltip-container">
                   <div className="button-content">
                     <svg className="share-icon" viewBox="0 0 24 24">
                       <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10z"/>
@@ -76,7 +77,8 @@ const Home = () => {
                       ))}
                     </div>
                   </div>
-                </div>
+                </div> */}
+                <ShareButton />
               </div>
             </div>
             <div className="lg:w-1/2 space-y-8">
