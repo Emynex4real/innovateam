@@ -35,10 +35,16 @@ const Data = () => {
   ];
 
   return (
-    <div className="container">
-      <h1 className="text-3xl font-bold text-center mb-6">FAQs</h1>
-      <Accordion items={accordionItems} />
-    </div>
+    // <div className="container">
+    //   <h1 className="text-3xl font-bold text-center mb-6">FAQs</h1>
+    //   <Accordion items={accordionItems} />
+    // </div>
+       <div className="py-10">
+       <h1 className="text-4xl font-bold text-center text-gray-800 mb-10">
+         Frequently Asked Questions
+       </h1>
+       <Accordion items={accordionItems} allowMultiple={true} />
+     </div>
   );
 };
 
