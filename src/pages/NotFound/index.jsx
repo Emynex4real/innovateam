@@ -1,9 +1,9 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 // Optional: Add an image for the 404 page (e.g., a "lost" illustration)
-import notFoundImage from "../../images/error.png"; // You can add an image in src/assets/
+import notFoundImage from '../../images/error.png'; // Adjusted to your path
 
 const NotFound = () => {
   // Animation variants for the main content
@@ -12,7 +12,7 @@ const NotFound = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.8, ease: "easeOut" },
+      transition: { duration: 0.8, ease: 'easeOut' },
     },
   };
 
@@ -22,7 +22,7 @@ const NotFound = () => {
     visible: {
       scale: 1,
       opacity: 1,
-      transition: { duration: 1, ease: "easeOut" },
+      transition: { duration: 1, ease: 'easeOut' },
     },
   };
 
@@ -30,8 +30,22 @@ const NotFound = () => {
   const buttonVariants = {
     hover: {
       scale: 1.05,
-      boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+      boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.2)',
       transition: { duration: 0.3 },
+    },
+  };
+
+  // Animation for the background circles
+  const circleVariants = {
+    animate: {
+      scale: [1, 1.3, 1],
+      opacity: [0.15, 0.25, 0.15], // Reduced opacity to be less distracting
+      rotate: [0, 20, -20, 0], // Kept the rotation for a playful effect
+      transition: {
+        repeat: Infinity,
+        duration: 8,
+        ease: 'easeInOut',
+      },
     },
   };
 
@@ -80,9 +94,22 @@ const NotFound = () => {
           </Link>
         </motion.div>
       </motion.div>
+
+      {/* Decorative Background Elements with Animation */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-green-200 rounded-full opacity-20 -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-green-300 rounded-full opacity-20 translate-x-1/2 translate-y-1/2" />
+        {/* Top-Left Circle */}
+        <motion.div
+          className="absolute top-0 left-0 w-96 h-96 bg-blue-200 rounded-full opacity-20 -translate-x-1/2 -translate-y-1/2"
+          variants={circleVariants}
+          animate="animate"
+        />
+        {/* Bottom-Right Circle */}
+        <motion.div
+          className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300 rounded-full opacity-20 translate-x-1/2 translate-y-1/2"
+          variants={circleVariants}
+          animate="animate"
+          transition={{ repeat: Infinity, duration: 8, delay: 0.5 }} // Re-added delay for out-of-sync animation
+        />
       </div>
     </div>
   );
