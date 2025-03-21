@@ -74,15 +74,15 @@ const NotFound = () => {
         >
           <Link
             to="/"
-            className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-medium rounded-lg shadow-md hover:from-blue-600 hover:to-blue-800 transition-all duration-300"
+            className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-700 text-white font-medium rounded-lg shadow-md hover:from-green-600 hover:to-green-800 transition-all duration-300"
           >
             Back to Home
           </Link>
         </motion.div>
       </motion.div>
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200 rounded-full opacity-20 -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300 rounded-full opacity-20 translate-x-1/2 translate-y-1/2" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-green-200 rounded-full opacity-20 -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-green-300 rounded-full opacity-20 translate-x-1/2 translate-y-1/2" />
       </div>
     </div>
   );
