@@ -16,8 +16,9 @@ import {
   BiMenu,
 } from "react-icons/bi";
 import { AiOutlineRobot } from "react-icons/ai"; // Import AiOutlineRobot instead
-import Dropdown from "../dropdown";
+// import Dropdown from "../dropdown";
 import { useAuth } from "../../components/auth";
+import Dropdown from './../../pages/dropdown/index';
 
 const NavandSideBar = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
