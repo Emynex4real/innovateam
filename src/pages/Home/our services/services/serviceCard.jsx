@@ -28,7 +28,7 @@ const ServiceCard = ({ id, title, image, price, category, onProceed }) => {
           </div>
 
           <button
-            on çıkartClick={() => onProceed(title)}
+            on onClick={() => onProceed(title)}
             className="flex items-center gap-1 text-blue-600 font-medium hover:underline transition-all"
           >
             Get Access

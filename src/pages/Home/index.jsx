@@ -175,7 +175,7 @@ const Home = () => {
           {/* <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8">
             Our Educational Services
           </h2> */}
-          <OurServices />
+          <OurServices isAuthenticated={isAuthenticated}/>
         </div>
       </section>
 
