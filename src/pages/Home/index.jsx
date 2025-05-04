@@ -53,9 +53,9 @@ const Home = () => {
   );
 
   const stats = [
-    { num: "2800+", text: "Students Reached", icon: <Users className="w-6 h-6 text-blue-600" /> },
-    { num: "850+", text: "Secured Admissions", icon: <Award className="w-6 h-6 text-blue-600" /> },
-    { num: "2K+", text: "Satisfied Students", icon: <Star className="w-6 h-6 text-blue-600" /> },
+    { num: "2800+", text: "Students Reached", icon: <Users className="w-6 h-6 text-green-600" /> },
+    { num: "850+", text: "Secured Admissions", icon: <Award className="w-6 h-6 text-green-600" /> },
+    { num: "2K+", text: "Satisfied Students", icon: <Star className="w-6 h-6 text-green-600" /> },
   ];
 
   return (
@@ -67,7 +67,7 @@ const Home = () => {
             <div className="space-y-6 text-center md:text-left">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-gray-900">
                 Empowering Your Future with <br />
-                <span className="text-blue-600">Quality Education</span>
+                <span className="text-green-600">Quality Education</span>
               </h1>
               <p className="text-base sm:text-lg text-gray-600 font-light">
                 Join thousands of students who have achieved their dreams with our comprehensive learning resources.
@@ -81,7 +81,7 @@ const Home = () => {
                     onClick={() => setCategory(cat.name)}
                     className={`flex items-center px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition-all ${
                       category === cat.name
-                        ? 'bg-blue-600 text-white shadow-md'
+                        ? 'bg-green-600 text-white shadow-md'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
@@ -98,7 +98,7 @@ const Home = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for a resource..."
-                  className="w-full px-4 py-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-800"
+                  className="w-full px-4 py-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
                   aria-label="Search for a resource"
                 />
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
@@ -107,7 +107,7 @@ const Home = () => {
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center md:justify-start">
                 <Link
                   to="/signup"
-                  className="flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-full font-semibold shadow-sm hover:bg-blue-700 hover:scale-105 transition-all"
+                  className="flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-full font-semibold shadow-sm hover:bg-green-700 hover:scale-105 transition-all"
                   aria-label="Sign up"
                 >
                   Sign Up
@@ -161,7 +161,7 @@ const Home = () => {
                 className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105 text-center"
               >
                 {stat.icon}
-                <h3 className="text-xl sm:text-2xl font-bold text-blue-600 mt-2">{stat.num}</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-green-600 mt-2">{stat.num}</h3>
                 <p className="text-sm text-gray-600">{stat.text}</p>
               </div>
             ))}
@@ -216,7 +216,7 @@ const Home = () => {
       <section className="py-12 sm:py-16 bg-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
-            <div className="bg-blue-600 text-white p-6 sm:p-8 rounded-2xl shadow-xl">
+            <div className="bg-green-600 text-white p-6 sm:p-8 rounded-2xl shadow-xl">
               <h2 className="text-xl sm:text-2xl font-bold mb-4">Subscribe to Our Newsletter</h2>
               <p className="mb-4 text-white/90 text-sm sm:text-base">
                 Stay updated with the latest educational resources and updates.
@@ -232,7 +232,7 @@ const Home = () => {
                 />
                 <button
                   type="submit"
-                  className="w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all"
+                  className="w-full bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all"
                 >
                   {subscribed ? "Subscribed!" : "Subscribe"}
                 </button>
@@ -245,7 +245,7 @@ const Home = () => {
               </p>
               <div className="flex items-center justify-center gap-3">
                 <img src={whatsapp} alt="WhatsApp" className="w-8 h-8" />
-                <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                <p className="text-xl sm:text-2xl font-bold text-green-600">
                   +234 803 377 2750
                 </p>
               </div>

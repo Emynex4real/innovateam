@@ -24,12 +24,12 @@ const ServiceCard = ({ id, title, image, price, category, onProceed }) => {
         <div className="flex justify-between items-center mt-2 sm:mt-3">
           <div className="flex items-center gap-1.5">
             <span className="text-xs sm:text-sm text-gray-500">Price:</span>
-            <span className="font-bold text-blue-600">₦{price.toLocaleString()}</span>
+            <span className="font-bold text-green-600">₦{price.toLocaleString()}</span>
           </div>
 
           <button
             on onClick={() => onProceed(title)}
-            className="flex items-center gap-1 text-blue-600 font-medium hover:underline transition-all"
+            className="flex items-center gap-1 text-green-600 font-medium hover:underline transition-all"
           >
             Get Access
             <ChevronRight className="h-4 w-4" />
@@ -38,7 +38,7 @@ const ServiceCard = ({ id, title, image, price, category, onProceed }) => {
 
         <button
           onClick={() => onProceed(title)}
-          className="mt-3 sm:mt-4 w-full py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+          className="mt-3 sm:mt-4 w-full py-2 sm:py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all flex items-center justify-center gap-2"
         >
           Proceed Now
         </button>
