@@ -9,16 +9,65 @@ import datasubscription from "../../../images/data-subscription.jpg";
 import olevelupload from "../../../images/olevel-upload.jpg";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import { useAuth } from "../../../components/auth";
+import { BookOpen } from 'lucide-react';
 
 const servicesData = [
-  { id: 1, title: "WAEC Result Checker", image: waecchecker, price: 3400, category: "Exam Scratch Cards" },
-  { id: 2, title: "NECO Result Checker", image: necochecker, price: 1300, category: "Exam Scratch Cards" },
-  { id: 3, title: "NABTEB Result Checker", image: nabtebchecker, price: 900, category: "Exam Scratch Cards" },
-  { id: 4, title: "WAEC Verification", image: waecverification, price: 5000, category: "Other Services" },
-  { id: 5, title: "NIN Registration", image: nin, price: 2000, category: "Other Services" },
-  { id: 6, title: "BVN Verification", image: bvn, price: 1500, category: "Other Services" },
-  { id: 7, title: "Data Subscription", image: datasubscription, price: 200, category: "Data Subscription" },
-  { id: 8, title: "O-Level Upload", image: olevelupload, price: 1000, category: "Other Services" },
+  {
+    id: 1,
+    title: "WAEC Result Checker",
+    image: waecchecker,
+    price: 3400,
+    category: "Exam Scratch Cards",
+  },
+  {
+    id: 2,
+    title: "NECO Result Checker",
+    image: necochecker,
+    price: 1300,
+    category: "Exam Scratch Cards",
+  },
+  {
+    id: 3,
+    title: "NABTEB Result Checker",
+    image: nabtebchecker,
+    price: 900,
+    category: "Exam Scratch Cards",
+  },
+  {
+    id: 4,
+    title: "WAEC Verification",
+    image: waecverification,
+    price: 5000,
+    category: "Other Services",
+  },
+  {
+    id: 5,
+    title: "NIN Registration",
+    image: nin,
+    price: 2000,
+    category: "Other Services",
+  },
+  {
+    id: 6,
+    title: "BVN Verification",
+    image: bvn,
+    price: 1500,
+    category: "Other Services",
+  },
+  {
+    id: 7,
+    title: "Data Subscription",
+    image: datasubscription,
+    price: 200,
+    category: "Data Subscription",
+  },
+  {
+    id: 8,
+    title: "O-Level Upload",
+    image: olevelupload,
+    price: 1000,
+    category: "Other Services",
+  },
 ];
 
 const OurServices = () => {
@@ -26,11 +75,17 @@ const OurServices = () => {
   const navigate = useNavigate(); // Add useNavigate
   const { isAuthenticated } = useAuth(); // Add useAuth to check auth status
 
-  const filteredServices = filter === "All"
-    ? servicesData
-    : servicesData.filter((service) => service.category === filter);
+  const filteredServices =
+    filter === "All"
+      ? servicesData
+      : servicesData.filter((service) => service.category === filter);
 
-  const categories = ["All", "Exam Scratch Cards", "Data Subscription", "Other Services"];
+  const categories = [
+    "All",
+    "Exam Scratch Cards",
+    "Data Subscription",
+    "Other Services",
+  ];
 
   const handleProceed = (title) => {
     if (isAuthenticated) {
@@ -44,11 +99,11 @@ const OurServices = () => {
 
   return (
     <section className="py-12 px-4 font-nunito bg-background-color">
-      <div className="max-w-6xl mx-auto">
-        {/* Heading */}
-        <h1 className="text-3xl md:text-4xl font-bold text-center text-text-color mb-8">
-          Our Services
-        </h1>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-12 flex items-center justify-center">
+          <BookOpen className="w-8 h-8 mr-2 text-blue-600" />
+          Explore Our Educational Services
+        </h2>
 
         {/* Filter Tabs */}
         <div className="mb-10 flex justify-center">
@@ -57,9 +112,11 @@ const OurServices = () => {
               <li
                 key={category}
                 className={`px-4 py-2 rounded-md cursor-pointer transition-colors duration-200 text-sm md:text-base font-medium
-                  ${filter === category
-                    ? "bg-primary-color text-white bg-green-500"
-                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"}`}
+                  ${
+                    filter === category
+                      ? "bg-primary-color text-white bg-green-500"
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                  }`}
                 onClick={() => setFilter(category)}
               >
                 {category}
@@ -102,7 +159,9 @@ const OurServices = () => {
         {/* Empty State */}
         {filteredServices.length === 0 && (
           <div className="text-center py-10">
-            <p className="text-gray-600 text-base">No services available in this category.</p>
+            <p className="text-gray-600 text-base">
+              No services available in this category.
+            </p>
           </div>
         )}
       </div>
