@@ -59,7 +59,7 @@ const Home = () => {
   ];
 
   return (
-    <main className="min-h-screen font-nunito bg-gray-50">
+    <main className="min-h-screen font-nunito bg-gray-50 px-7 sm:px-10 lg:px-16">
       {/* Hero Section */}
       <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-b from-white to-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
