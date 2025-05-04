@@ -28,7 +28,7 @@ const servicesData = [
     title: "NECO Result Checker",
     image: necoResultChecker,
     price: 1300,
-    category: "Exam Scratch Cards",
+    category: "Exam Scratch Cards", 
   },
   {
     id: 3,
