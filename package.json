@@ -5,7 +5,8 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "cra-template": "1.2.0",
-    "framer-motion": "^12.4.7",
+    "framer-motion": "^12.11.0",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.507.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
