@@ -1,158 +1,290 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../components/auth";
+import { useAuth } from "../../contexts/AuthContext";
+import { motion } from "framer-motion";
+import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 const Login = () => {
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  // Get auth context
+  const auth = useAuth();
+  const { login, register, isAuthenticated, loading, forgotPassword, error } = auth;
+
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
+  const [showSocial, setShowSocial] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-
-      if (!storedUser) {
-        throw new Error("No account exists. Please sign up first.");
-      }
-
-      if (storedUser.email === email && storedUser.password === password) {
-        login(); // Update auth state
-        navigate("/homepage");
+      const result = await login({ email, password }, rememberMe);
+      if (result.success) {
+        navigate("/dashboard");
       } else {
-        throw new Error("Invalid email or password.");
+        alert("Login failed. Please check your credentials.");
       }
-    } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed. Please try again.");
     }
   };
 
-  const handleSocialLogin = (provider) => {
-    setIsLoading(true);
-    console.log(`Logging in with ${provider}`);
-    setTimeout(() => setIsLoading(false), 1000);
-    setError("Social login not available yet.");
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      const result = await register({ email, password });
+      if (result.success) {
+        navigate("/login");
+      } else {
+        alert("Registration failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      alert("Registration failed. Please try again.");
+    }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      alert("Please enter your email address");
+      return;
+    }
+    try {
+      await forgotPassword(email);
+      alert("Password reset instructions have been sent to your email");
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      alert("Failed to send password reset instructions");
+    }
+  };
+
+  const handleSocialLogin = async (provider) => {
+    console.log("Social login attempt:", { provider });
+    alert("Development mode: Social login functionality will be implemented with backend connection");
+  };
+
+  if (isAuthenticated) {
+    navigate("/dashboard");
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 font-nunito">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 transform transition-all duration-300 hover:shadow-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-md w-full space-y-8 p-8 rounded-2xl bg-white shadow-xl"
+      >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-text-color">Welcome Back</h1>
-          <p className="text-gray-600 mt-2 text-sm">Sign in to your account</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            {showRegister ? "Create Account" : "Welcome Back"}
+          </h2>
+          <p className="text-gray-500">{showRegister ? "Create your account" : "Sign in to your account"}</p>
         </div>
         {error && (
-          <div className="mb-6 p-3 bg-red-100 text-red-700 rounded-md text-sm animate-fade-in-up">
+          <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded-md text-center mb-4">
             {error}
           </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-color focus:border-transparent transition-all duration-200 bg-gray-50 text-sm"
-              placeholder="you@example.com"
-              required
-              disabled={isLoading}
-            />
+        <form
+          className="space-y-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (showRegister) {
+              handleRegister(e);
+            } else {
+              handleLogin(e);
+            }
+          }}
+        >
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email address
+                </label>
+                <div className="relative">
+                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="appearance-none rounded-md relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    className="appearance-none rounded-md relative block w-full px-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-500"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <button
+                  type="button"
+                  onClick={() => setShowSocial(!showSocial)}
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  {showSocial ? "Back to Email" : "Sign in with social"}
+                </button>
+              </div>
+            </div>
+
+            {showSocial ? (
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSocialLogin("google")}
+                    className="relative w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.44-3.147 2.307-2.307 3.533-5.56 3.533-9.387 0-.773-.093-1.52-.28-2.24h-11.693z"/>
+                    </svg>
+                    <span className="ml-2">Google</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSocialLogin("facebook")}
+                    className="relative w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.35C0 23.407.593 24 1.325 24H12.82v-6.294H9.692v-3.622h3.128V8.41c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24h-1.92c-1.5 0-1.794.721-1.794 1.763v2.312h3.589l-.467 3.622h-3.12V24h6.116c.734 0 1.325-.593 1.325-1.325V1.325C24 .593 23.407 0 22.675 0z"/>
+                    </svg>
+                    <span className="ml-2">Facebook</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSocialLogin("twitter")}
+                    className="relative w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span className="ml-2">Twitter</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span>Loading...</span>
+                  </div>
+                ) : showRegister ? (
+                  "Create Account"
+                ) : (
+                  "Sign in"
+                )}
+              </button>
+            </div>
           </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-color focus:border-transparent transition-all duration-200 bg-gray-50 text-sm"
-              placeholder="••••••••"
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={() => setRememberMe(!rememberMe)}
-                className="w-4 h-4 text-primary-color border-gray-300 rounded focus:ring-primary-color disabled:opacity-50"
-                disabled={isLoading}
-              />
-              <span className="ml-2 text-gray-600">Remember me</span>
-            </label>
-            <Link to="/forgot-password" className="text-primary-color hover:text-green-600 transition-colors duration-200">
-              Forgot Password?
-            </Link>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-primary-color text-white py-3 rounded-md font-semibold hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
-            ) : null}
-            {isLoading ? "Logging in..." : "Login"}
-          </button>
         </form>
-        <div className="my-6 flex items-center">
-          <div className="flex-1 h-px bg-gray-200"></div>
-          <span className="mx-4 text-sm text-gray-500">or continue with</span>
-          <div className="flex-1 h-px bg-gray-200"></div>
+        <div className="text-center mt-6">
+          <p className="text-sm text-gray-600">
+            {showRegister ? "Already have an account?" : "Don't have an account?"}
+            <button
+              type="button"
+              onClick={() => setShowRegister(!showRegister)}
+              className="font-medium text-indigo-600 hover:text-indigo-500 ml-2 transition-colors duration-200"
+            >
+              {showRegister ? "Sign in" : "Create account"}
+            </button>
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => handleSocialLogin("Facebook")}
-            className="flex items-center justify-center py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed text-sm"
-            disabled={isLoading}
-          >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-            Facebook
-          </button>
-          <button
-            onClick={() => handleSocialLogin("Google")}
-            className="flex items-center justify-center py-2 px-4 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-200 disabled:bg-gray-200 disabled:cursor-not-allowed text-sm"
-            disabled={isLoading}
-          >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none">
-              <path d="M21.805 10.023H12.43v4.007h5.33c-.24 1.29-.96 2.4-2.04 3.24v2.64h3.36c1.96-1.8 3.12-4.44 3.12-7.56 0-.72-.12-1.44-.4-2.04zm-17.52 0v4.007h3.36v-4.007H4.285zm0-4.008V10.02h3.36V6.015H4.285zm8.145-2.004H20.5c1.2 0 2.28.36 3.12.96v-.96c0-2.76-2.28-5.04-5.04-5.04h-6.15V3.01z" fill="#4285F4" />
-              <path d="M12.43 20.99c2.76 0 5.04-1.8 5.88-4.2h-5.88v-4.007h9.36c.12.36.24.72.24 1.08 0 4.44-3 7.56-7.56 7.56-4.44 0-8.04-3.6-8.04-8.04s3.6-8.04 8.04-8.04c1.92 0 3.6.72 4.92 1.92l2.88-2.88C18.97 1.33 16.09 0 12.43 0 5.95 0 1.33 4.62 1.33 11.11s4.62 11.11 11.1 11.11z" fill="#34A853" />
-              <path d="M6.645 6.015V10.02h3.36V6.015H6.645z" fill="#FBBC05" />
-              <path d="M12.43 16.983h5.88c-.84 2.4-3.12 4.2-5.88 4.2-4.44 0-8.04-3.6-8.04-8.04H1.33c0 6.48 4.62 11.11 11.1 11.11 2.88 0 5.52-1.08 7.56-2.88l-3.36-2.64c-1.08.84-2.4 1.44-3.6 1.44z" fill="#EA4335" />
-            </svg>
-            Google
-          </button>
-        </div>
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Don’t have an account?{" "}
-          <Link to="/signup" className="text-primary-color font-semibold hover:text-green-600 transition-colors duration-200">
-            Sign Up
-          </Link>
-        </p>
-      </div>
+      </motion.div>
     </div>
   );
 };

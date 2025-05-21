@@ -1,380 +1,309 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { FiUser, FiMail, FiLock, FiPhone, FiMapPin, FiCalendar, FiEye, FiEyeOff } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 
-const Profiles = () => {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [profile, setProfile] = useState({
-    fullName: "Michael Balogun Temidayo",
-    email: "michaelbalogun34@gmail.com",
-    mobileNumber: "08033772750",
-    bvn: "12345678910",
-    nin: "987654321",
+const Profile = () => {
+  const { user, updateProfile, logout, error } = useAuth();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    birthdate: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
-  const [bankDetails, setBankDetails] = useState({
-    bankName: "",
-    accountNumber: "",
-    accountName: "",
-  });
-  const [password, setPassword] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmNewPassword: "",
-  });
-  const [notification, setNotification] = useState({
-    visible: false,
-    message: "",
-  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // Show notification
-  const showNotification = (message) => {
-    setNotification({ visible: true, message });
-    setTimeout(() => {
-      setNotification({ visible: false, message: "" });
-    }, 3000); // Hide notification after 3 seconds
-  };
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        birthdate: user.birthdate || ''
+      });
+    }
+  }, [user]);
 
-  const handleProfileChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfile({ ...profile, [name]: value });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleBankDetailsChange = (e) => {
-    const { name, value } = e.target;
-    setBankDetails({ ...bankDetails, [name]: value });
-  };
-
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPassword({ ...password, [name]: value });
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission logic here
-    console.log("Form submitted");
-
-    // Show notification based on the active tab
-    if (activeTab === "editProfile") {
-      showNotification("Profile updated successfully!");
-    } else if (activeTab === "bankDetails") {
-      showNotification("Bank details updated successfully!");
-    } else if (activeTab === "changePassword") {
-      showNotification("Password changed successfully!");
+    setLoading(true);
+    try {
+      await updateProfile({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        birthdate: formData.birthdate
+      });
+      setSuccessMessage('Profile updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Profile update error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (formData.newPassword !== formData.confirmPassword) {
+      alert('New passwords do not match');
+      return;
+    }
+    setLoading(true);
+    try {
+      await updateProfile({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword
+      });
+      setSuccessMessage('Password changed successfully!');
+      setShowChangePassword(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Password change error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+
   return (
-    <div className="">
-      {/* Floating Notification */}
-      {notification.visible && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
-          {notification.message}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-4xl mx-auto px-4 py-8"
+    >
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="border-b border-gray-200 pb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <FiUser className="inline-block w-6 h-6 mr-2 text-indigo-600" />
+            Profile Settings
+          </h1>
+          <p className="text-gray-600">Manage your account information and preferences</p>
         </div>
-      )}
 
-      <div className="container mx-auto">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Small Container (Profile Picture, Name, Email) */}
-          <div className="w-full md:w-1/4 bg-white rounded-lg shadow-lg p-6 text-center">
-            <img
-              src="https://play-lh.googleusercontent.com/BaaIfoR6ZCqccqiE8OwRtXIhiM6Yyj6sut6ZFCuo7spKBfsEZbJE8r2dHBtwSEGSXpc"
-              alt="Profile Picture"
-              className="w-24 h-24 rounded-full mx-auto mb-4"
-            />
-            <h2 className="text-xl font-bold">{profile.fullName}</h2>
-            <p className="text-gray-600 break-words">{profile.email}</p>
+        {successMessage && (
+          <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded my-4">
+            {successMessage}
           </div>
+        )}
 
-          {/* Big Container (Tabs and Content) */}
-          <div className="w-full md:w-3/4 bg-white rounded-lg shadow-lg p-6">
-            {/* Tabs */}
-            <div className="flex flex-col md:flex-row space-x-0 md:space-x-4 space-y-2 md:space-y-0 border-b mb-6">
-              <button
-                onClick={() => setActiveTab("overview")}
-                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
-                  activeTab === "overview" ? "border-b-2 border-green-500" : ""
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab("editProfile")}
-                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
-                  activeTab === "editProfile"
-                    ? "border-b-2 border-green-500"
-                    : ""
-                }`}
-              >
-                Edit Profile
-              </button>
-              <button
-                onClick={() => setActiveTab("bankDetails")}
-                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
-                  activeTab === "bankDetails"
-                    ? "border-b-2 border-green-500"
-                    : ""
-                }`}
-              >
-                Bank Details
-              </button>
-              <button
-                onClick={() => setActiveTab("changePassword")}
-                className={`py-2 px-4 hover:bg-gray-100 text-left md:text-center ${
-                  activeTab === "changePassword"
-                    ? "border-b-2 border-green-500"
-                    : ""
-                }`}
-              >
-                Change Password
-              </button>
-            </div>
+        {error && (
+          <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded my-4">
+            {error}
+          </div>
+        )}
 
-            {/* Content */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              {/* Overview Content */}
-              {activeTab === "overview" && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold">Overview</h3>
-                  <p>
-                    Welcome to your profile dashboard. Here you can manage your
-                    personal information, bank details, and password.
-                  </p>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <FiUser className="inline-block w-4 h-4 mr-2" />
+                Full Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              />
+            </div>
 
-                  <div className="container mx-auto">
-                    <div className="bg-white rounded-lg p-6">
-                      <h1 className="text-2xl font-bold mb-4">Profile Details</h1>
-                      <div className="space-y-4">
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">Full Name:</span>
-                          <span className="w-full md:w-2/3">{profile.fullName}</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">Email Address:</span>
-                          <span className="w-full md:w-2/3 break-words">{profile.email}</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">Mobile Number:</span>
-                          <span className="w-full md:w-2/3">{profile.mobileNumber}</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">State:</span>
-                          <span className="w-full md:w-2/3">Lagos</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">Gender:</span>
-                          <span className="w-full md:w-2/3">Male</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">Date of Birth:</span>
-                          <span className="w-full md:w-2/3">1990-01-01</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">BVN:</span>
-                          <span className="w-full md:w-2/3">{profile.bvn}</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center">
-                          <span className="w-full md:w-1/3 font-medium">NIN:</span>
-                          <span className="w-full md:w-2/3">{profile.nin}</span>
-                        </div>
-                      </div>
-                      <div className="mt-6 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
-                        <button
-                          onClick={() => setActiveTab("editProfile")}
-                          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
-                        >
-                          Edit Profile
-                        </button>
-                        <button
-                          onClick={() => setActiveTab("changePassword")}
-                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
-                        >
-                          Change Password
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <FiMail className="inline-block w-4 h-4 mr-2" />
+                Email address
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              />
+            </div>
 
-              {/* Edit Profile Content */}
-              {activeTab === "editProfile" && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold">Edit Profile</h3>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={profile.fullName}
-                        onChange={handleProfileChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Email</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={profile.email}
-                        onChange={handleProfileChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Mobile Number
-                      </label>
-                      <input
-                        type="text"
-                        name="mobileNumber"
-                        value={profile.mobileNumber}
-                        onChange={handleProfileChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        NIN
-                      </label>
-                      <input
-                        type="text"
-                        name="nin"
-                        value={profile.nin}
-                        onChange={handleProfileChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        BVN
-                      </label>
-                      <input
-                        type="text"
-                        name="bvn"
-                        value={profile.bvn}
-                        onChange={handleProfileChange}
-                        className="w-full p-2 border rounded"
-                      /> 
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full md:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                    >
-                      Save Changes
-                    </button>
-                  </form>
-                </div>
-              )}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                <FiPhone className="inline-block w-4 h-4 mr-2" />
+                Phone number
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              />
+            </div>
 
-              {/* Bank Details Content */}
-              {activeTab === "bankDetails" && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold">Bank Details</h3>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Bank Name
-                      </label>
-                      <input
-                        type="text"
-                        name="bankName"
-                        value={bankDetails.bankName}
-                        onChange={handleBankDetailsChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Account Number
-                      </label>
-                      <input
-                        type="text"
-                        name="accountNumber"
-                        value={bankDetails.accountNumber}
-                        onChange={handleBankDetailsChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Account Name
-                      </label>
-                      <input
-                        type="text"
-                        name="accountName"
-                        value={bankDetails.accountName}
-                        onChange={handleBankDetailsChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full md:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                    >
-                      Save Bank Details
-                    </button>
-                  </form>
-                </div>
-              )}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                <FiMapPin className="inline-block w-4 h-4 mr-2" />
+                Address
+              </label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              />
+            </div>
 
-              {/* Change Password Content */}
-              {activeTab === "changePassword" && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold">Change Password</h3>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Current Password
-                      </label>
-                      <input
-                        type="password"
-                        name="currentPassword"
-                        value={password.currentPassword}
-                        onChange={handlePasswordChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        New Password
-                      </label>
-                      <input
-                        type="password"
-                        name="newPassword"
-                        value={password.newPassword}
-                        onChange={handlePasswordChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">
-                        Confirm New Password
-                      </label>
-                      <input
-                        type="password"
-                        name="confirmNewPassword"
-                        value={password.confirmNewPassword}
-                        onChange={handlePasswordChange}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full md:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                    >
-                      Change Password
-                    </button>
-                  </form>
-                </div>
-              )}
+            <div className="col-span-2">
+              <label htmlFor="birthdate" className="block text-sm font-medium text-gray-700">
+                <FiCalendar className="inline-block w-4 h-4 mr-2" />
+                Birthdate
+              </label>
+              <input
+                type="date"
+                id="birthdate"
+                name="birthdate"
+                value={formData.birthdate}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              />
             </div>
           </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() => setShowChangePassword(!showChangePassword)}
+            className="flex items-center text-indigo-600 hover:text-indigo-500 text-sm"
+          >
+            <FiLock className="w-4 h-4 mr-2" />
+            {showChangePassword ? 'Hide Password Settings' : 'Change Password'}
+          </button>
+
+          {showChangePassword && (
+            <form onSubmit={handlePasswordChange} className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  id="currentPassword"
+                  name="currentPassword"
+                  value={formData.currentPassword}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                  New Password
+                </label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="newPassword"
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pr-10"
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-500"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    'Change Password'
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        <div className="mt-8">
+          <button
+            onClick={logout}
+            className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <FiLock className="w-4 h-4 mr-2" />
+            Logout
+          </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-export default Profiles;
+export default Profile;

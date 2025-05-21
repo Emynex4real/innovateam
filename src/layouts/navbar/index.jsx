@@ -77,7 +77,7 @@ const NavBar = () => {
               <li key={item.label}>
                 <Link
                   to={item.path}
-                  className="text-gray-700 text-base font-medium hover:text-primary-color hover:border-b-2 hover:border-primary-color pb-1 transition-all duration-200"
+                  className="text-gray-700 text-base font-medium hover:text-green-500 hover:border-b-2 hover:border-green-500 pb-1 transition-all duration-200"
                 >
                   {item.label}
                 </Link>

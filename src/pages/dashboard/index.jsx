@@ -1,30 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion'; // For animations
+import { motion, AnimatePresence } from 'framer-motion';
+import format from 'date-fns/format';
 import waecResultChecker from '../../images/waec-result-checker.jpg';
 import necoResultChecker from '../../images/neco-result-checker.jpg';
 import nabtebResultChecker from '../../images/nabteb-result-checker.jpg';
-import nbaisResultChecker from '../../images/nbais-result-checker.jpg';
+import nbaisResultChecker from '../../images/nabteb-result-checker.jpg';
 import waecGce from '../../images/waec-gce.jpg';
+import { FiChevronDown, FiChevronUp, FiRefreshCcw, FiSearch } from 'react-icons/fi';
+import { useTransactions } from '../../contexts/TransactionContext';
 
 const Dashboards = () => {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { transactions } = useTransactions();
 
-  // Data for balance and recent transactions
+  // Enhanced data structures
   const balanceData = {
     totalBalance: '₦0.00',
     items: [
-      { label: 'Scratch Cards', value: 0 },
-      { label: 'MTN Data Coupon', value: 0 },
+      { label: 'Scratch Cards', value: 0, icon: 'scr' },
+      { label: 'MTN Data Coupon', value: 0, icon: 'data' },
+      { label: 'Available Credits', value: 0, icon: 'credit' },
     ],
   };
 
-  const recentTransactions = [
-    { label: 'Olevel upload Slot', amount: '₦800.00', date: '2025-02-20' },
-    { label: 'e-Wallet Topup', amount: '₦800.00', date: '2025-02-19' },
-    { label: 'WAEC Checker', amount: '₦3,400.00', date: '2025-02-18' },
-    { label: 'Data Purchase', amount: '₦200.00', date: '2025-02-17' },
-  ];
+  // Use transactions from context
+  const recentTransactions = transactions.map(tx => ({
+    ...tx,
+    date: tx.date.split('T')[0]
+  }));
 
   const services = [
     {
@@ -32,18 +38,27 @@ const Dashboards = () => {
       price: '₦3,400.00',
       image: waecResultChecker,
       link: '/homepage/scratch-card/waec-checker',
+      category: 'education',
+      popularity: 'high',
+      features: ['Instant results', 'Secure payment', '24/7 support']
     },
     {
       title: 'NECO Result Checker',
       price: '₦1,300.00',
       image: necoResultChecker,
       link: '/homepage/scratch-card/neco-checker',
+      category: 'education',
+      popularity: 'medium',
+      features: ['Fast processing', 'Easy to use', 'Detailed reports']
     },
     {
       title: 'NABTEB Result Checker',
       price: '₦900.00',
       image: nabtebResultChecker,
       link: '/homepage/scratch-card/nabteb-checker',
+      category: 'education',
+      popularity: 'low',
+      features: ['Quick results', 'Affordable', 'User-friendly']
     },
     {
       title: 'NBAIS Result Checker',
@@ -122,12 +137,12 @@ const Dashboards = () => {
               )}
             </div>
             <ul className="mt-4 space-y-3">
-              {(showAllTransactions ? recentTransactions : recentTransactions.slice(0, 2)).map((transaction, index) => (
+              {(showAllTransactions ? recentTransactions : recentTransactions.slice(0, 2)).map((transaction) => (
                 <motion.li
-                  key={index}
+                  key={transaction.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: transaction.id * 0.1 }}
                   className="flex justify-between items-center text-sm text-gray-600"
                 >
                   <div>
