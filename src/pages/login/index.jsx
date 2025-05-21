@@ -8,7 +8,7 @@ import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 const Login = () => {
   const navigate = useNavigate();
   const { login, register, isAuthenticated, loading, forgotPassword, error } = useAuth();
-  
+
   // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +33,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
-    
+
     if (!email || !password) {
       setFormError("Please fill in all fields");
       return;
@@ -279,14 +279,13 @@ const Login = () => {
         </form>
 
         <div className="text-center text-sm text-gray-600">
-          {showRegister ? "Already have an account?" : "Need an account?"}
-          <button
-            type="button"
-            onClick={() => setShowRegister(!showRegister)}
+          Need an account?
+          <Link
+            to="/signup"
             className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200"
           >
-            {showRegister ? "Sign In" : "Sign Up"}
-          </button>
+            Sign Up
+          </Link>
         </div>
       </motion.div>
     </div>
