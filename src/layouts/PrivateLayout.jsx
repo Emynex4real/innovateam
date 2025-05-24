@@ -7,7 +7,7 @@ const PrivateLayout = ({ children }) => {
   return (
     <PrivateRoute>
       <NavandSideBar>
-        <div className="min-h-screen p-4">{children}</div>
+        <div className="p-4">{children}</div>
       </NavandSideBar>
     </PrivateRoute>
   );

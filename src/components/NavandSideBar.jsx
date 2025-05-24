@@ -24,10 +24,12 @@ const NavandSideBar = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
-  const { logout } = useAuth();
+  const userDropdownRef = useRef(null);
+  const { logout, user } = useAuth();
   const { walletBalance } = useTransactions();
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
@@ -38,9 +40,23 @@ const NavandSideBar = ({ children }) => {
         setIsSidebarOpen(false);
         setIsCollapsed(true);
       }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) {
+        setIsUserDropdownOpen(false);
+      }
     };
+
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
   }, []);
 
   const toggleDropdown = (label) => {
@@ -110,11 +126,60 @@ const NavandSideBar = ({ children }) => {
           </Link>
         </div>
         <nav className="flex items-center gap-6">
-          <div className="flex items-center gap-4">
-            <div className="text-sm font-medium">
-              <span className="text-gray-500">Balance:</span>
-              <span className="ml-2 text-green-500">₦{(walletBalance || 0).toLocaleString()}</span>
-            </div>
+          <div className="relative" ref={userDropdownRef}>
+            <button
+              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+              className="flex items-center space-x-2 text-gray-700 hover:text-green-500 focus:outline-none"
+            >
+              <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center">
+                {user?.email?.charAt(0)?.toUpperCase()}
+              </div>
+              <svg
+                className={`w-4 h-4 transition-transform duration-200 ${isUserDropdownOpen ? 'transform rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isUserDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="text-sm text-gray-500">Signed in as</div>
+                  <div className="text-sm font-medium text-gray-900 truncate">{user?.email}</div>
+                </div>
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="text-sm text-gray-500">Balance</div>
+                  <div className="text-sm font-medium text-gray-900">₦{(walletBalance || 0).toLocaleString()}</div>
+                </div>
+                <Link
+                  to="/dashboard"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                  onClick={() => setIsUserDropdownOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/dashboard/profile"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                  onClick={() => setIsUserDropdownOpen(false)}
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsUserDropdownOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
           </div>
         </nav>
       </header>
