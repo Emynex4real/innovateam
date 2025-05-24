@@ -1,16 +1,13 @@
 import React, { useState } from "react";
+import { useTransactions } from "../../contexts/TransactionContext";
 
 const AirtimeSubscription = () => {
+  const { walletBalance, addTransaction, transactions } = useTransactions();
   const [network, setNetwork] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
-  const [transactions, setTransactions] = useState([
-    { id: 1, date: "2025-02-12", network: "MTN", amount: "₦1000", status: "Success" },
-    { id: 2, date: "2025-02-11", network: "Airtel", amount: "₦500", status: "Failed" },
-    { id: 3, date: "2025-02-10", network: "Glo", amount: "₦1500", status: "Success" },
-  ]);
 
   // Validate Nigerian mobile number (e.g., 11 digits starting with 0)
   const validateMobileNumber = (number) => {
@@ -43,30 +40,51 @@ const AirtimeSubscription = () => {
       return;
     }
 
+    const numericAmount = parseFloat(amount.replace("₦", "").replace(/[^\d.]/g, ""));
+
+    // Check wallet balance
+    if (numericAmount > walletBalance) {
+      setMessage({
+        text: "Insufficient wallet balance. Please fund your wallet.",
+        type: "error",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     // Simulate API call
     setTimeout(() => {
-      const formattedAmount = `₦${parseFloat(amount.replace("₦", "").replace(/[^\d.]/g, "")).toLocaleString()}`;
-      const newTransaction = {
-        id: transactions.length + 1,
-        date: new Date().toISOString().split("T")[0], // Current date
-        network,
-        amount: formattedAmount,
-        status: Math.random() > 0.2 ? "Success" : "Failed", // Random success/failure for demo
-      };
+      const success = Math.random() > 0.2; // Random success/failure for demo
 
-      setTransactions([newTransaction, ...transactions]); // Add new transaction to top
-      setMessage({
-        text: `Airtime of ${formattedAmount} subscribed to ${network} on ${mobileNumber}!`,
-        type: "success",
-      });
-      setNetwork("");
-      setMobileNumber("");
-      setAmount("");
+      if (success) {
+        // Add transaction
+        addTransaction({
+          label: `${network} Airtime Recharge`,
+          description: `Airtime recharge to ${mobileNumber}`,
+          amount: numericAmount,
+          type: "debit",
+          category: "airtime",
+          status: "Successful",
+          paymentMethod: "wallet",
+        });
+
+        setMessage({
+          text: `Airtime of ₦${numericAmount.toLocaleString()} subscribed to ${network} on ${mobileNumber}!`,
+          type: "success",
+        });
+        setNetwork("");
+        setMobileNumber("");
+        setAmount("");
+      } else {
+        setMessage({
+          text: "Transaction failed. Please try again.",
+          type: "error",
+        });
+      }
       setIsLoading(false);
     }, 1000); // Simulated delay
-  }; 
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 font-nunito">
@@ -157,41 +175,47 @@ const AirtimeSubscription = () => {
       {/* Transactions Section */}
       <section className="bg-white rounded-xl shadow-lg p-6 transition-all duration-300 hover:shadow-xl">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Recent Transactions</h2>
-        {transactions.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No transactions yet.</p>
+        {transactions.filter(t => t.category === 'airtime').length === 0 ? (
+          <p className="text-gray-500 text-center py-4">No airtime transactions yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
               <thead className="bg-gray-100 text-gray-700">
                 <tr>
                   <th className="py-3 px-4 text-left font-semibold text-sm">Date</th>
-                  <th className="py-3 px-4 text-left font-semibold text-sm">Network</th>
+                  <th className="py-3 px-4 text-left font-semibold text-sm">Description</th>
                   <th className="py-3 px-4 text-left font-semibold text-sm">Amount</th>
                   <th className="py-3 px-4 text-left font-semibold text-sm">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction) => (
-                  <tr
-                    key={transaction.id}
-                    className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <td className="py-3 px-4 text-gray-700">{transaction.date}</td>
-                    <td className="py-3 px-4 text-gray-700">{transaction.network}</td>
-                    <td className="py-3 px-4 text-gray-700">{transaction.amount}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          transaction.status === "Success"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {transaction.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {transactions
+                  .filter(t => t.category === 'airtime')
+                  .map((transaction) => (
+                    <tr
+                      key={transaction.id}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                    >
+                      <td className="py-3 px-4 text-gray-700">
+                        {new Date(transaction.timestamp).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">{transaction.label}</td>
+                      <td className="py-3 px-4 text-gray-700">
+                        ₦{transaction.amount.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            transaction.status === "Successful"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {transaction.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
