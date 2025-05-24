@@ -6,11 +6,12 @@ import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTransactions } from '../../contexts/TransactionContext';
 
-const waecResultChecker = 'https://arewagate.com/images/services/waec-result-checker.jpg';
-const necoResultChecker = 'https://arewagate.com/images/services/neco-result-checker.jpg';
-const nabtebResultChecker = 'https://arewagate.com/images/services/nabteb-result-checker.jpg';
-const nbaisResultChecker = 'https://arewagate.com/images/services/nbais-result-checker.jpg';
-const waecGce = 'https://arewagate.com/images/services/waec-gce.jpg';
+// Service images
+const waecResultChecker = '/images/services/waec-result-checker.jpg';
+const necoResultChecker = '/images/services/neco-result-checker.jpg';
+const nabtebResultChecker = '/images/services/nabteb-result-checker.jpg';
+const nbaisResultChecker = '/images/services/nbais-result-checker.jpg';
+const waecGce = '/images/services/waec-gce.jpg';
 
 const Dashboard = () => {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
@@ -100,15 +101,6 @@ const Dashboard = () => {
 
   const toggleTransactions = () => setShowAllTransactions((prev) => !prev);
 
-  const handleAddTransaction = () => {
-    addTransaction({
-      label: 'Test Transaction',
-      amount: 5000,
-      type: 'credit',
-      paymentMethod: 'test',
-      category: 'wallet',
-    });
-  };
 
   const handlePurchaseService = (service) => {
     const amount = parseFloat(service.price.replace('₦', '').replace(',', ''));
@@ -183,12 +175,6 @@ const Dashboard = () => {
             <div className="flex justify-between items-center pb-4 border-b border-gray-200">
               <h4 className="text-xl font-semibold text-gray-800">Recent Transactions</h4>
               <div className="flex items-center gap-4">
-                <button
-                  onClick={handleAddTransaction}
-                  className="text-green-500 text-sm font-medium hover:underline"
-                >
-                  Add Test Transaction
-                </button>
                 {recentTransactions.length > 2 && (
                   <button
                     onClick={toggleTransactions}
