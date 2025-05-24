@@ -1,3 +1,4 @@
+// src/App.js
 import React, { Suspense, useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
@@ -5,7 +6,7 @@ import PublicLayout from "./layouts/PublicLayout";
 import PrivateLayout from "./layouts/PrivateLayout";
 import publicRoutes from "./routes/publicRoutes";
 import privateRoutes from "./routes/privateRoutes";
-import PrivateRoute from "./components/privateRouter";
+import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TransactionProvider } from "./contexts/TransactionContext";
 
@@ -66,26 +67,20 @@ function App() {
     <AuthProvider>
       <TransactionProvider>
         <ErrorBoundary>
-          <Routes>
-            {publicRoutes.map((route) => (
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <Routes>
+              {publicRoutes.map((route) => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={<PublicLayout>{route.element}</PublicLayout>}
+                />
+              ))}
               <Route
-                key={route.path}
-                path={route.path}
+                path="/dashboard/*"
                 element={
-                  <PublicLayout>
-                    <Suspense fallback={<div>Loading...</div>}>
-                      {route.element}
-                    </Suspense>
-                  </PublicLayout>
-                }
-              />
-            ))}
-            <Route
-              path="/dashboard/*"
-              element={
-                <PrivateRoute>
-                  <PrivateLayout>
-                    <Suspense fallback={<div>Loading...</div>}>
+                  <PrivateRoute>
+                    <PrivateLayout>
                       <Routes>
                         {privateRoutes.map((route) => (
                           <Route
@@ -95,12 +90,12 @@ function App() {
                           />
                         ))}
                       </Routes>
-                    </Suspense>
-                  </PrivateLayout>
-                </PrivateRoute>
-              }
-            />
-          </Routes>
+                    </PrivateLayout>
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
         </ErrorBoundary>
       </TransactionProvider>
     </AuthProvider>

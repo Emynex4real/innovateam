@@ -1,3 +1,4 @@
+// src/contexts/AuthContext.js
 import { createContext, useContext, useEffect } from "react";
 import { create } from "zustand";
 
@@ -59,46 +60,6 @@ const useAuthStore = create((set) => ({
     localStorage.removeItem("user");
     set({ user: null, isAuthenticated: false, error: null, loading: false });
     return { success: true };
-  },
-
-  forgotPassword: async (email) => {
-    try {
-      set({ loading: true, error: null });
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      if (storedUser.email !== email) {
-        throw new Error("Email not found");
-      }
-      set({ loading: false });
-      return { success: true };
-    } catch (error) {
-      set({ error: error.message, loading: false });
-      return { success: false, error: { response: { data: { message: error.message } } } };
-    }
-  },
-
-  resetPassword: async (token, newPassword) => {
-    try {
-      set({ loading: true, error: null });
-      set({ loading: false });
-      return { success: true };
-    } catch (error) {
-      set({ error: error.message, loading: false });
-      return { success: false, error: { response: { data: { message: error.message } } } };
-    }
-  },
-
-  updateProfile: async (userData) => {
-    try {
-      set({ loading: true, error: null });
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const updatedUser = { ...storedUser, ...userData };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      set({ user: { email: updatedUser.email, name: updatedUser.name }, loading: false });
-      return { success: true, user: updatedUser };
-    } catch (error) {
-      set({ error: error.message, loading: false });
-      return { success: false, error: { response: { data: { message: error.message } } } };
-    }
   },
 
   checkAuth: async () => {

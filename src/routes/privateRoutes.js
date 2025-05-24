@@ -1,24 +1,25 @@
+// src/routes/privateRoutes.js
 import { lazy } from "react";
 
-const Dashboard = lazy(() => import("./../pages/dashboard/index"));
-const Profiles = lazy(() => import("./../pages/profile/index"));
-const Wallet = lazy(() => import("./../pages/wallet/index"));
-const WaecResultChecker = lazy(() => import("./../pages/result checker/waec result checker/index"));
-const NecoResultChecker = lazy(() => import("../pages/result checker/nbais result checker/index"));
-const NbaisResultChecker = lazy(() => import("./../pages/result checker/nbais result checker/index"));
-const NabtebResultChecker = lazy(() => import("./../pages/result checker/nabteb result checker/index"));
-const WaecGce = lazy(() => import("./../pages/result checker/waec gce/index"));
-const DataSubscription = lazy(() => import("./../pages/data-subscription/index"));
-const AirtimeSubscription = lazy(() => import("./../pages/airtime-subscription/index"));
-const OLevelUpload = lazy(() => import("./../pages/jamb services/olevel upload/index"));
-const AdmissionLetter = lazy(() => import("./../pages/jamb services/admission letter/index"));
-const OriginalResult = lazy(() => import("./../pages/jamb services/original result/index"));
-const JambPinVending = lazy(() => import("./../pages/jamb services/pin vending/index"));
-const CapsPrinting = lazy(() => import("./../pages/jamb services/reprinting/index"));
-const OLevelEntry = lazy(() => import("./../pages/jamb services/olevel upload/new entry/index"));
-const Transactions = lazy(() => import("./../pages/transactions/index"));
-const Support = lazy(() => import("./../pages/support/index"));
-const AiExaminer = lazy(() => import("./../pages/ai examiner/index"));
+const Dashboard = lazy(() => import("../pages/dashboard/index"));
+const Profiles = lazy(() => import("../pages/profile/index"));
+const Wallet = lazy(() => import("../pages/wallet/index"));
+const WaecResultChecker = lazy(() => import("../pages/result checker/waec result checker/index"));
+const NecoResultChecker = lazy(() => import("../pages/result checker/neco result checker/index")); // Fixed path
+const NbaisResultChecker = lazy(() => import("../pages/result checker/nbais result checker/index"));
+const NabtebResultChecker = lazy(() => import("../pages/result checker/nabteb result checker/index"));
+const WaecGce = lazy(() => import("../pages/result checker/waec gce/index"));
+const DataSubscription = lazy(() => import("../pages/data-subscription/index"));
+const AirtimeSubscription = lazy(() => import("../pages/airtime-subscription/index"));
+const OLevelUpload = lazy(() => import("../pages/jamb services/olevel upload/index"));
+const AdmissionLetter = lazy(() => import("../pages/jamb services/admission letter/index"));
+const OriginalResult = lazy(() => import("../pages/jamb services/original result/index"));
+const JambPinVending = lazy(() => import("../pages/jamb services/pin vending/index"));
+const CapsPrinting = lazy(() => import("../pages/jamb services/reprinting/index"));
+const OLevelEntry = lazy(() => import("../pages/jamb services/olevel upload/new entry/index"));
+const Transactions = lazy(() => import("../pages/transactions/index"));
+const Support = lazy(() => import("../pages/support/index"));
+const AiExaminer = lazy(() => import("../pages/ai examiner/index"));
 
 const privateRoutes = [
   { path: "/", element: <Dashboard />, title: "Dashboard" },

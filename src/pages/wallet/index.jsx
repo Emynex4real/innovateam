@@ -1,3 +1,4 @@
+// src/pages/wallet/index.jsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTransactions } from '../../contexts/TransactionContext';
@@ -10,8 +11,7 @@ const Wallet = () => {
   const [error, setError] = useState('');
 
   const { walletBalance, fundWallet, getRecentTransactions } = useTransactions();
-  const transactions = getRecentTransactions(5); // Get last 5 transactions
-
+  const transactions = getRecentTransactions(5);
   const transactionCharge = 50.0;
 
   const handlePayment = () => {
@@ -28,12 +28,8 @@ const Wallet = () => {
     setIsLoading(true);
     const amount = parseFloat(paymentAmount);
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Add the transaction using the context
       fundWallet(amount, 'card');
-      
       setPaymentAmount('');
       setShowInput(false);
       setShowPaymentPreview(false);
@@ -44,7 +40,6 @@ const Wallet = () => {
     }
   };
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -56,22 +51,21 @@ const Wallet = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-nunito lg:ml-0 md:ml-20">
-      <div className="mx-auto">
+    <div className="bg-gray-50 min-h-screen font-nunito p-6">
+      <div className="mx-auto max-w-6xl">
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Wallet Details */}
           <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-xl font-semibold text-text-color mb-4">Wallet Details</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Wallet Details</h2>
             <div className="space-y-6">
               <div className="bg-green-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Available Balance</p>
-                <p className="text-3xl font-bold text-primary-color">₦{walletBalance.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-green-500">₦{(walletBalance || 0).toLocaleString()}</p>
               </div>
 
               <div className="space-y-4">
                 <button
                   onClick={() => setShowInput(!showInput)}
-                  className="w-full bg-primary-color text-white py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
+                  className="w-full bg-green-500 text-white py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
                 >
                   {showInput ? 'Cancel' : 'Pay With Card'}
                 </button>
@@ -85,14 +79,14 @@ const Wallet = () => {
                       placeholder="Enter amount (₦)"
                       className={`w-full px-4 py-2 rounded-md border ${
                         error ? 'border-red-500' : 'border-gray-300'
-                      } bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200`}
+                      } bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200`}
                       min="1"
                       disabled={isLoading}
                     />
                     {error && <p className="text-red-500 text-xs">{error}</p>}
                     <button
                       onClick={handlePayment}
-                      className="w-full bg-primary-color text-white py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="w-full bg-green-500 text-white py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Processing...' : 'Submit Payment'}
@@ -120,13 +114,12 @@ const Wallet = () => {
             </div>
           </motion.div>
 
-          {/* Recent Transactions */}
           <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-xl font-semibold text-text-color mb-4">Recent Transactions</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Transactions</h2>
             <div className="space-y-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Last Recharge</p>
-                <p className="text-2xl font-bold text-primary-color">
+                <p className="text-2xl font-bold text-green-500">
                   ₦{transactions[0]?.amount.toFixed(2) || '0.00'}
                 </p>
               </div>
@@ -140,15 +133,15 @@ const Wallet = () => {
                     className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-all duration-200"
                   >
                     <div>
-                      <p className="text-gray-700 text-sm font-medium">{transaction.type}</p>
-                      <p className="text-xs text-gray-400">{transaction.date}</p>
+                      <p className="text-gray-700 text-sm font-medium">{transaction.label}</p>
+                      <p className="text-xs text-gray-400">{transaction.date.split('T')[0]}</p>
                     </div>
                     <p
                       className={`text-sm font-semibold ${
-                        transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                        transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
                       }`}
                     >
-                      {transaction.amount > 0 ? '+' : '-'} ₦{Math.abs(transaction.amount).toFixed(2)}
+                      {transaction.type === 'credit' ? '+' : '-'} ₦{Math.abs(transaction.amount).toFixed(2)}
                     </p>
                   </motion.div>
                 ))}
@@ -157,14 +150,13 @@ const Wallet = () => {
                 )}
               </div>
 
-              <button className="w-full bg-primary-color text-white py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200">
+              <button className="w-full bg-green-500 text-white py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200">
                 View All Transactions
               </button>
             </div>
           </motion.div>
         </motion.div>
 
-        {/* Payment Preview Modal */}
         {showPaymentPreview && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -177,7 +169,7 @@ const Wallet = () => {
               animate={{ scale: 1 }}
               className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg"
             >
-              <h2 className="text-xl font-semibold text-text-color mb-4">Payment Preview</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Payment Preview</h2>
               <div className="space-y-3 text-sm">
                 <p><strong>Transaction:</strong> e-Wallet Topup</p>
                 <p><strong>Invoice No:</strong> AG-{Date.now()}-HAW1M</p>
@@ -196,7 +188,7 @@ const Wallet = () => {
                 </button>
                 <button
                   onClick={confirmPayment}
-                  className="bg-primary-color text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="bg-green-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                   disabled={isLoading}
                 >
                   {isLoading && <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" /><path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" /></svg>}

@@ -1,11 +1,16 @@
-import React from "react";
-import NavandSideBar from "./navandsidebar";
-// import NavandSideBar from "../pages/navandsidebar/index"; // Correct path
+// src/layouts/PrivateLayout.jsx
+import React from 'react';
+import NavandSideBar from "../components/NavandSideBar";
+import PrivateRoute from "../components/PrivateRoute";
 
-const PrivateLayout = ({ children }) => (
-  <NavandSideBar>
-    <div className="min-h-screen p-4 ml-16 md:ml-4">{children}</div>
-  </NavandSideBar>
-);
+const PrivateLayout = ({ children }) => {
+  return (
+    <PrivateRoute>
+      <NavandSideBar>
+        <div className="min-h-screen p-4">{children}</div>
+      </NavandSideBar>
+    </PrivateRoute>
+  );
+};
 
 export default PrivateLayout;

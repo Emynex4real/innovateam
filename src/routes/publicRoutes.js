@@ -1,11 +1,12 @@
+// src/routes/publicRoutes.js
 import { lazy } from "react";
 
-const Home = lazy(() => import("./../pages/Home/index"));
+const Home = lazy(() => import("../pages/Home/index"));
 const About = lazy(() => import("../pages/About/index"));
-const Blogs = lazy(() => import("./../pages/Blogs/index"));
-const Login = lazy(() => import("./../pages/login/index"));
-const Register = lazy(() => import("./../pages/register/index")); // Fixed path
-const NotFound = lazy(() => import("./../pages/NotFound/index"));
+const Blogs = lazy(() => import("../pages/Blogs/index"));
+const Login = lazy(() => import("../pages/login/index"));
+const Register = lazy(() => import("../pages/register/index"));
+const NotFound = lazy(() => import("../pages/NotFound/index"));
 
 const publicRoutes = [
   { path: "/", element: <Home />, title: "Home" },

@@ -1,29 +1,19 @@
+// src/pages/transactions/index.jsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTransactions } from '../../contexts/TransactionContext';
 
 const Transactions = () => {
-  const [transactions] = useState([
-    { id: 1, description: 'Olevel upload Slot', quantity: 2, amount: 800.00, date: '2025-02-12', status: 'Successful', details: 'Uploaded WAEC results' },
-    { id: 2, description: 'e-Wallet Topup', quantity: 1, amount: 800.00, date: '2025-02-12', status: 'Successful', details: 'Card payment' },
-    { id: 3, description: 'Caps printing Slot', quantity: 1, amount: 300.00, date: '2025-02-10', status: 'Successful', details: 'Printed JAMB CAPS' },
-    { id: 4, description: 'e-Wallet Topup', quantity: 1, amount: 300.00, date: '2025-02-10', status: 'Successful', details: 'Bank transfer' },
-    { id: 5, description: 'Olevel upload Slot', quantity: 2, amount: 800.00, date: '2025-02-06', status: 'Successful', details: 'Uploaded NECO results' },
-    { id: 6, description: 'e-Wallet Topup', quantity: 1, amount: 800.00, date: '2025-02-06', status: 'Successful', details: 'Card payment' },
-    { id: 7, description: 'Olevel upload Slot', quantity: 1, amount: 400.00, date: '2025-01-07', status: 'Successful', details: 'Uploaded WAEC results' },
-    { id: 8, description: 'e-Wallet Topup', quantity: 1, amount: 400.00, date: '2025-01-07', status: 'Successful', details: 'Bank transfer' },
-  ]);
-
+  const { transactions } = useTransactions();
   const [filter, setFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const itemsPerPage = 5;
 
-  // Filter transactions
   const filteredTransactions = transactions.filter((t) =>
-    filter === 'all' ? true : t.description.toLowerCase().includes(filter.toLowerCase())
+    filter === 'all' ? true : t.label.toLowerCase().includes(filter.toLowerCase())
   );
 
-  // Pagination
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const paginatedTransactions = filteredTransactions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -38,7 +28,6 @@ const Transactions = () => {
     setSelectedTransaction(transaction);
   };
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -57,9 +46,8 @@ const Transactions = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-2xl md:text-3xl font-bold text-text-color mb-6">Transactions</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Transactions</h1>
 
-          {/* Filter */}
           <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center">
             <select
               value={filter}
@@ -67,16 +55,16 @@ const Transactions = () => {
                 setFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full sm:w-64 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200 text-sm"
+              className="w-full sm:w-64 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-sm"
             >
               <option value="all">All Transactions</option>
-              <option value="Olevel upload">O-Level Upload</option>
               <option value="e-Wallet Topup">e-Wallet Topup</option>
+              <option value="Transaction Charge">Transaction Charge</option>
+              <option value="Olevel upload">O-Level Upload</option>
               <option value="Caps printing">Caps Printing</option>
             </select>
           </div>
 
-          {/* Transactions Table */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -103,17 +91,17 @@ const Transactions = () => {
                     </td>
                   </tr>
                 ) : (
-                  paginatedTransactions.map((transaction) => (
+                  paginatedTransactions.map((transaction, index) => (
                     <motion.tr
                       key={transaction.id}
                       variants={rowVariants}
                       className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200"
                     >
-                      <td className="py-3 px-4 text-gray-700">{transaction.id}</td>
-                      <td className="py-3 px-4 text-gray-700">{transaction.description}</td>
-                      <td className="py-3 px-4 text-gray-700">{transaction.quantity}</td>
+                      <td className="py-3 px-4 text-gray-700">{index + 1 + (currentPage - 1) * itemsPerPage}</td>
+                      <td className="py-3 px-4 text-gray-700">{transaction.label}</td>
+                      <td className="py-3 px-4 text-gray-700">{transaction.quantity || 1}</td>
                       <td className="py-3 px-4 text-gray-700">₦{transaction.amount.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-gray-700">{transaction.date}</td>
+                      <td className="py-3 px-4 text-gray-700">{transaction.date.split('T')[0]}</td>
                       <td className="py-3 px-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -128,7 +116,7 @@ const Transactions = () => {
                       <td className="py-3 px-4">
                         <button
                           onClick={() => handleViewDetails(transaction)}
-                          className="bg-primary-color text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
+                          className="bg-green-500 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
                         >
                           View
                         </button>
@@ -139,7 +127,6 @@ const Transactions = () => {
               </tbody>
             </table>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-between items-center py-3 px-4 border-t border-gray-200">
                 <button
@@ -165,7 +152,6 @@ const Transactions = () => {
         </motion.div>
       </div>
 
-      {/* Transaction Details Modal */}
       {selectedTransaction && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -181,20 +167,20 @@ const Transactions = () => {
             className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-semibold text-text-color mb-4">Transaction Details</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Transaction Details</h2>
             <div className="space-y-3 text-sm text-gray-700">
               <p><strong>ID:</strong> {selectedTransaction.id}</p>
-              <p><strong>Description:</strong> {selectedTransaction.description}</p>
-              <p><strong>Quantity:</strong> {selectedTransaction.quantity}</p>
+              <p><strong>Description:</strong> {selectedTransaction.label}</p>
+              <p><strong>Quantity:</strong> {selectedTransaction.quantity || 1}</p>
               <p><strong>Amount:</strong> ₦{selectedTransaction.amount.toFixed(2)}</p>
-              <p><strong>Date:</strong> {selectedTransaction.date}</p>
+              <p><strong>Date:</strong> {selectedTransaction.date.split('T')[0]}</p>
               <p><strong>Status:</strong> {selectedTransaction.status}</p>
-              <p><strong>Details:</strong> {selectedTransaction.details}</p>
+              <p><strong>Details:</strong> {selectedTransaction.description}</p>
             </div>
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setSelectedTransaction(null)}
-                className="bg-primary-color text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
+                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
               >
                 Close
               </button>
