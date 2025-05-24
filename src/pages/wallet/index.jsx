@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTransactions } from '../../contexts/TransactionContext';
 
 const Wallet = () => {
   const [showInput, setShowInput] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [balance, setBalance] = useState(0.0);
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: 'Topup', amount: 400.0, date: '2025-01-22', status: 'Successful' },
-    { id: 2, type: 'Topup', amount: 800.0, date: '2025-02-17', status: 'Successful' },
-    { id: 3, type: 'Topup', amount: 300.0, date: '2025-02-21', status: 'Successful' },
-  ]);
   const [showPaymentPreview, setShowPaymentPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const { walletBalance, fundWallet, getRecentTransactions } = useTransactions();
+  const transactions = getRecentTransactions(5); // Get last 5 transactions
 
   const transactionCharge = 50.0;
 
@@ -32,15 +30,10 @@ const Wallet = () => {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      setBalance((prev) => prev + amount);
-      const newTransaction = {
-        id: transactions.length + 1,
-        type: 'Topup',
-        amount: amount,
-        date: new Date().toISOString().split('T')[0],
-        status: 'Successful',
-      };
-      setTransactions((prev) => [newTransaction, ...prev].slice(0, 5)); // Keep latest 5
+      
+      // Add the transaction using the context
+      fundWallet(amount, 'card');
+      
       setPaymentAmount('');
       setShowInput(false);
       setShowPaymentPreview(false);
@@ -72,7 +65,7 @@ const Wallet = () => {
             <div className="space-y-6">
               <div className="bg-green-50 p-4 rounded-lg">
                 <p className="text-gray-600 text-sm">Available Balance</p>
-                <p className="text-3xl font-bold text-primary-color">₦{balance.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-primary-color">₦{walletBalance.toLocaleString()}</p>
               </div>
 
               <div className="space-y-4">

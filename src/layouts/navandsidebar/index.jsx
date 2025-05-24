@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTransactions } from "../../contexts/TransactionContext";
 import {
   BiGrid,
   BiUser,
@@ -15,10 +16,9 @@ import {
   BiChevronUp,
   BiMenu,
 } from "react-icons/bi";
-import { AiOutlineRobot } from "react-icons/ai"; // Import AiOutlineRobot instead
-// import Dropdown from "../dropdown";
-import { useAuth } from "../../components/auth";
-import Dropdown from './../../pages/dropdown/index';
+import { AiOutlineRobot } from "react-icons/ai";
+import { useAuth } from "../../contexts/AuthContext"; // Fixed import path
+// import Dropdown from "./../../pages/dropdown/index"; // Removed until confirmed
 
 const NavandSideBar = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -28,7 +28,9 @@ const NavandSideBar = ({ children }) => {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   const { logout } = useAuth();
-
+  const { getWalletBalance } = useTransactions();
+  const walletBalance = getWalletBalance();
+  
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
   useEffect(() => {
@@ -46,48 +48,49 @@ const NavandSideBar = ({ children }) => {
     setOpenDropdown(openDropdown === label ? null : label);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
   const sidebarItems = [
-    { path: "/homepage", icon: <BiGrid />, label: "Dashboard" },
-    { path: "/homepage/profile", icon: <BiUser />, label: "Profile" },
-    { path: "/homepage/wallet", icon: <BiWallet />, label: "Wallet" },
+    { path: "/dashboard", icon: <BiGrid />, label: "Dashboard" },
+    { path: "/dashboard/profile", icon: <BiUser />, label: "Profile" },
+    { path: "/dashboard/wallet", icon: <BiWallet />, label: "Wallet" },
     {
       path: "#",
       icon: <BiCreditCard />,
       label: "Scratch Cards",
       subItems: [
-        { path: "/homepage/scratch-card/waec-checker", label: "WAEC Result Checker" },
-        { path: "/homepage/scratch-card/neco-checker", label: "NECO Result Checker" },
-        { path: "/homepage/scratch-card/nbais-checker", label: "NBAIS Result Checker" },
-        { path: "/homepage/scratch-card/nabteb-checker", label: "NABTEB Result Checker" },
+        { path: "/dashboard/scratch-card/waec-checker", label: "WAEC Result Checker" },
+        { path: "/dashboard/scratch-card/neco-checker", label: "NECO Result Checker" },
+        { path: "/dashboard/scratch-card/nbais-checker", label: "NBAIS Result Checker" },
+        { path: "/dashboard/scratch-card/nabteb-checker", label: "NABTEB Result Checker" },
       ],
     },
-    { path: "/homepage/buy-data", icon: <BiData />, label: "Buy Data" },
-    { path: "/homepage/buy-airtime", icon: <BiPhone />, label: "Airtime" },
+    { path: "/dashboard/buy-data", icon: <BiData />, label: "Buy Data" },
+    { path: "/dashboard/buy-airtime", icon: <BiPhone />, label: "Airtime" },
     {
       path: "#",
       icon: <BiBook />,
       label: "JAMB Services",
       subItems: [
-        { path: "/homepage/buy-olevel-upload", label: "O'level Upload" },
-        { path: "/homepage/buy-admission-letter", label: "Admission Letter" },
-        { path: "/homepage/buy-original-result", label: "Original Result" },
-        { path: "/homepage/buy-pin-vending", label: "PIN Vending" },
-        { path: "/homepage/reprinting-jamb-caps", label: "Reprinting & JAMB CAPS" },
+        { path: "/dashboard/buy-olevel-upload", label: "O'level Upload" },
+        { path: "/dashboard/buy-admission-letter", label: "Admission Letter" },
+        { path: "/dashboard/buy-original-result", label: "Original Result" },
+        { path: "/dashboard/buy-pin-vending", label: "PIN Vending" },
+        { path: "/dashboard/reprinting-jamb-caps", label: "Reprinting & JAMB CAPS" },
       ],
     },
-    { path: "/homepage/ai-examiner", icon: <AiOutlineRobot />, label: "AI Examiner" },
-    { path: "/homepage/transactions", icon: <BiListCheck />, label: "Transactions" },
-    { path: "/homepage/support", icon: <BiSupport />, label: "Support" },
+    { path: "/dashboard/ai-examiner", icon: <AiOutlineRobot />, label: "AI Examiner" },
+    { path: "/dashboard/transactions", icon: <BiListCheck />, label: "Transactions" },
+    { path: "/dashboard/support", icon: <BiSupport />, label: "Support" },
     { path: "/login", icon: <BiLogOut />, label: "Logout", onClick: handleLogout },
   ];
-
+  
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 font-nunito">
+      
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
@@ -108,7 +111,12 @@ const NavandSideBar = ({ children }) => {
           </Link>
         </div>
         <nav className="flex items-center gap-6">
-          <Dropdown />
+          <div className="flex items-center gap-4">
+            <div className="text-sm font-medium">
+              <span className="text-gray-500">Balance:</span>
+              <span className="ml-2 text-primary-color">₦{walletBalance.toLocaleString()}</span>
+            </div>
+          </div>
         </nav>
       </header>
 
@@ -227,16 +235,6 @@ const NavandSideBar = ({ children }) => {
           </div>
         </div>
       </footer>
-
-      {/* Logout Form (Optional) */}
-      <form id="logout-form" action="https://arewagate.com/logout" method="POST" className="hidden">
-        <input
-          type="hidden"
-          name="_token"
-          value="br4aLlNWcHccu11pONPbyv5whH7qcJj4zrfsBMMG"
-          autoComplete="off"
-        />
-      </form>
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (

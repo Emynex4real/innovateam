@@ -1,119 +1,134 @@
-import React, { createContext, useContext, useEffect } from 'react';
-import { create } from 'zustand';
+import { createContext, useContext, useEffect } from "react";
+import { create } from "zustand";
 
-const AuthContext = createContext({
-  user: null,
-  isAuthenticated: false,
-  loading: false,
-  error: null,
-  login: () => Promise.reject(new Error('AuthContext not initialized')),
-  register: () => Promise.reject(new Error('AuthContext not initialized')),
-  logout: () => {},
-  forgotPassword: () => Promise.reject(new Error('AuthContext not initialized')),
-  resetPassword: () => Promise.reject(new Error('AuthContext not initialized')),
-  updateProfile: () => Promise.reject(new Error('AuthContext not initialized')),
-  setUser: () => {},
-  setIsAuthenticated: () => {},
-  setLoading: () => {},
-  setError: () => {},
-});
+const AuthContext = createContext(null);
 
-// Create a store for auth state
 const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
-  loading: false,
+  loading: true,
   error: null,
-  
-  setUser: (userData) => set({ user: userData }),
-  setIsAuthenticated: (status) => set({ isAuthenticated: status }),
-  setLoading: (status) => set({ loading: status }),
-  setError: (error) => set({ error: error }),
+
+  login: async (credentials, rememberMe = false) => {
+    try {
+      set({ loading: true, error: null });
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      if (storedUser.email === credentials.email && storedUser.password === credentials.password) {
+        const user = { email: storedUser.email, name: storedUser.name };
+        if (rememberMe) {
+          localStorage.setItem("authToken", "mock-token");
+        } else {
+          sessionStorage.setItem("authToken", "mock-token");
+        }
+        set({ user, isAuthenticated: true, loading: false });
+        return { success: true, user };
+      }
+      throw new Error("Invalid credentials");
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      return { success: false, error: { response: { data: { message: error.message } } } };
+    }
+  },
+
+  register: async (userData) => {
+    try {
+      set({ loading: true, error: null });
+      const existingUser = JSON.parse(localStorage.getItem("user") || "{}");
+      if (existingUser.email === userData.email) {
+        throw new Error("User already exists");
+      }
+      const user = {
+        email: userData.email,
+        name: userData.name,
+        phoneNumber: userData.phoneNumber,
+        password: userData.password,
+      };
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("authToken", "mock-token");
+      set({ user: { email: user.email, name: user.name }, isAuthenticated: true, loading: false });
+      return { success: true, user };
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      return { success: false, error: { response: { data: { message: error.message } } } };
+    }
+  },
+
+  logout: async () => {
+    localStorage.removeItem("authToken");
+    sessionStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    set({ user: null, isAuthenticated: false, error: null, loading: false });
+    return { success: true };
+  },
+
+  forgotPassword: async (email) => {
+    try {
+      set({ loading: true, error: null });
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      if (storedUser.email !== email) {
+        throw new Error("Email not found");
+      }
+      set({ loading: false });
+      return { success: true };
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      return { success: false, error: { response: { data: { message: error.message } } } };
+    }
+  },
+
+  resetPassword: async (token, newPassword) => {
+    try {
+      set({ loading: true, error: null });
+      set({ loading: false });
+      return { success: true };
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      return { success: false, error: { response: { data: { message: error.message } } } };
+    }
+  },
+
+  updateProfile: async (userData) => {
+    try {
+      set({ loading: true, error: null });
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const updatedUser = { ...storedUser, ...userData };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      set({ user: { email: updatedUser.email, name: updatedUser.name }, loading: false });
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      return { success: false, error: { response: { data: { message: error.message } } } };
+    }
+  },
+
+  checkAuth: async () => {
+    try {
+      set({ loading: true, error: null });
+      const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      if (token && storedUser.email) {
+        set({ user: { email: storedUser.email, name: storedUser.name }, isAuthenticated: true, loading: false });
+      } else {
+        set({ user: null, isAuthenticated: false, loading: false });
+      }
+    } catch (error) {
+      set({ user: null, isAuthenticated: false, loading: false, error: error.message });
+    }
+  },
 }));
 
-export const AuthProvider = ({ children }) => {
-  const { user, isAuthenticated, loading, error, setUser, setIsAuthenticated, setLoading, setError } = useAuthStore();
-
-  const login = async (credentials, rememberMe = false) => {
-    console.log('Login attempt:', { credentials, rememberMe });
-    alert('Development mode: Login functionality will be implemented with backend connection');
-    return { success: true, user: { email: credentials.email } };
-  };
-
-  const register = async (userData) => {
-    console.log('Registration attempt:', userData);
-    alert('Development mode: Registration functionality will be implemented with backend connection');
-    return { success: true, user: { email: userData.email } };
-  };
-
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('email');
-    setUser(null);
-    setIsAuthenticated(false);
-    setError(null);
-  };
-
-  const checkAuth = () => {
-    try {
-      // In development mode, we'll just set loading to false
-      setLoading(false);
-      setError(null);
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setError('Failed to check authentication status');
-    }
-  };
-
-  const forgotPassword = async (email) => {
-    console.log('Forgot password attempt:', email);
-    alert('Development mode: Password reset functionality will be implemented with backend connection');
-    return { success: true };
-  };
-
-  const resetPassword = async (token, newPassword) => {
-    console.log('Reset password attempt:', { token, newPassword });
-    alert('Development mode: Password reset functionality will be implemented with backend connection');
-    return { success: true };
-  };
-
-  const updateProfile = async (userData) => {
-    console.log('Update profile attempt:', userData);
-    alert('Development mode: Profile update functionality will be implemented with backend connection');
-    return { success: true, user: userData };
-  };
-
+export function AuthProvider({ children }) {
   useEffect(() => {
-    checkAuth();
-  }, []); // Check auth state on mount
+    useAuthStore.getState().checkAuth();
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      loading,
-      error,
-      login,
-      register,
-      logout,
-      forgotPassword,
-      resetPassword,
-      updateProfile,
-      setUser,
-      setIsAuthenticated,
-      setLoading,
-      setError,
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  return <AuthContext.Provider value={useAuthStore()}>{children}</AuthContext.Provider>;
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-};
+}

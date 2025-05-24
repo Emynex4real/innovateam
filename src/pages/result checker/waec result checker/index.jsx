@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useTransactions } from '../../../contexts/TransactionContext';
 
 const WaecResultChecker = () => {
   const [quantity, setQuantity] = useState(1);
@@ -26,18 +27,39 @@ const WaecResultChecker = () => {
     return { id: Date.now() + Math.random(), serial, pin, date: new Date().toLocaleDateString('en-CA') };
   };
 
+  const { makePayment, walletBalance } = useTransactions();
+
   const handlePurchase = async () => {
     setIsPurchasing(true);
     setNotification({ visible: false, message: '', type: '' });
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Check if user has enough balance
+      if (totalAmount > walletBalance) {
+        throw new Error('Insufficient wallet balance');
+      }
+
+      // Process the payment first
+      await makePayment(
+        totalAmount,
+        `Purchase of ${quantity} WAEC Result Checker Card${quantity > 1 ? 's' : ''}`,
+        'scratch_card'
+      );
+
+      // Generate the cards after successful payment
       const newCards = Array.from({ length: quantity }, () => generateCard());
       setPurchasedCards((prev) => [...newCards, ...prev]);
+      
       setNotification({ visible: true, message: `${quantity} WAEC card(s) purchased successfully!`, type: 'success' });
       setQuantity(1);
     } catch (error) {
-      setNotification({ visible: true, message: 'Purchase failed. Please try again.', type: 'error' });
+      setNotification({ 
+        visible: true, 
+        message: error.message === 'Insufficient wallet balance' 
+          ? 'Insufficient wallet balance. Please fund your wallet.'
+          : 'Purchase failed. Please try again.', 
+        type: 'error' 
+      });
     } finally {
       setIsPurchasing(false);
       setTimeout(() => setNotification({ visible: false, message: '', type: '' }), 2500);

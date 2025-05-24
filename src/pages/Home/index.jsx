@@ -3,7 +3,7 @@ import whatsapp from "../../images/whatsapp-removebg-preview.png";
 import image from "../../images/pexels-cottonbro-6344238.jpg";
 import OurServices from "./our services";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../components/auth";
+import { useAuth } from "../../contexts/AuthContext";
 import ShareButton from "../../layouts/sharebtn";
 import { ArrowRight, BookOpen, Star, Search, Users, Award } from 'lucide-react';
 // import TeacherSection from './TeacherSection'; // Import the new component
@@ -106,7 +106,7 @@ const Home = () => {
 
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center md:justify-start">
                 <Link
-                  to="/signup"
+                  to="/register"
                   className="flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-full font-semibold shadow-sm hover:bg-green-700 hover:scale-105 transition-all"
                   aria-label="Sign up"
                 >

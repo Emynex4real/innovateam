@@ -7,18 +7,15 @@ import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, register, isAuthenticated, loading, forgotPassword, error } = useAuth();
+  const { login, isAuthenticated, loading, forgotPassword } = useAuth();
 
-  // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
@@ -29,7 +26,6 @@ const Login = () => {
     visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -40,15 +36,17 @@ const Login = () => {
     }
 
     try {
-      const action = showRegister ? register : login;
-      const result = await action({ email, password }, rememberMe);
+      const result = await login({ email, password }, rememberMe);
       if (result.success) {
-        navigate(showRegister ? "/login" : "/dashboard");
+        setEmail("");
+        setPassword("");
+        setRememberMe(false);
+        navigate("/dashboard");
       } else {
-        setFormError("Invalid credentials. Please try again.");
+        setFormError(result.error?.response?.data?.message || "Invalid credentials");
       }
     } catch (error) {
-      console.error(`${showRegister ? "Registration" : "Login"} error:`, error);
+      console.error("Login error:", error);
       setFormError("An error occurred. Please try again.");
     }
   };
@@ -60,9 +58,13 @@ const Login = () => {
       return;
     }
     try {
-      await forgotPassword(email);
-      setFormError("");
-      alert("Password reset instructions sent to your email");
+      const result = await forgotPassword(email);
+      if (result.success) {
+        setFormError("");
+        alert("Password reset instructions sent to your email");
+      } else {
+        setFormError(result.error?.response?.data?.message || "Failed to send password reset instructions");
+      }
     } catch (error) {
       console.error("Forgot password error:", error);
       setFormError("Failed to send password reset instructions");
@@ -75,7 +77,6 @@ const Login = () => {
     alert("Social login is under development");
   };
 
-  // Redirect if authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/dashboard");
@@ -97,22 +98,20 @@ const Login = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            {showRegister ? "Create Account" : "Welcome Back"}
+            Welcome Back
           </motion.h2>
-          <p className="mt-2 text-gray-600 text-sm">
-            {showRegister ? "Join our learning platform" : "Access your learning journey"}
-          </p>
+          <p className="mt-2 text-gray-600 text-sm">Access your learning journey</p>
         </div>
 
         <AnimatePresence>
-          {(error || formError) && (
+          {formError && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md"
             >
-              {error || formError}
+              {formError}
             </motion.div>
           )}
         </AnimatePresence>
@@ -134,6 +133,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 text-gray-900"
                 placeholder="you@example.com"
+                disabled={loading}
               />
             </div>
           </motion.div>
@@ -147,13 +147,14 @@ const Login = () => {
               <input
                 id="password"
                 name="password"
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password"} // Fixed typo
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-12 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 text-gray-900"
                 placeholder="••••••••"
+                disabled={loading}
               />
               <button
                 type="button"
@@ -174,6 +175,7 @@ const Login = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                disabled={loading}
               />
               <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">
                 Remember me
@@ -270,8 +272,6 @@ const Login = () => {
                 </svg>
                 Loading...
               </div>
-            ) : showRegister ? (
-              "Create Account"
             ) : (
               "Sign In"
             )}
@@ -279,9 +279,9 @@ const Login = () => {
         </form>
 
         <div className="text-center text-sm text-gray-600">
-          Need an account?
+          Need an account?{" "}
           <Link
-            to="/signup"
+            to="/register"
             className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200"
           >
             Sign Up

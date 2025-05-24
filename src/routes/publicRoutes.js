@@ -1,23 +1,19 @@
-import React from 'react';
-import { lazy } from 'react';
+import { lazy } from "react";
 
-// Lazy load public page components
-const Home = lazy(() => import('./../pages/Home/index'));
-const About = lazy(() => import('../pages/About/index'));
-const Blogs = lazy(() => import('./../pages/Blogs/index'));
-const Login = lazy(() => import('./../pages/login/index'));
-const SignUp = lazy(() => import('./../pages/signup/index'));
-const NotFound = lazy(() => import('./../pages/NotFound/index'));
-// import NotFound from './../pages/NotFound/index';
-
+const Home = lazy(() => import("./../pages/Home/index"));
+const About = lazy(() => import("../pages/About/index"));
+const Blogs = lazy(() => import("./../pages/Blogs/index"));
+const Login = lazy(() => import("./../pages/login/index"));
+const Register = lazy(() => import("./../pages/register/index")); // Fixed path
+const NotFound = lazy(() => import("./../pages/NotFound/index"));
 
 const publicRoutes = [
-  { path: '/', element: <Home /> },
-  { path: '/about', element: <About /> },
-  { path: '/blogs', element: <Blogs /> },
-  { path: '/login', element: <Login /> },
-  { path: '/signup', element: <SignUp /> },
-  { path: '*', element: <NotFound /> }, // Catch-all for 404 errors
+  { path: "/", element: <Home />, title: "Home" },
+  { path: "/about", element: <About />, title: "About" },
+  { path: "/blogs", element: <Blogs />, title: "Blogs" },
+  { path: "/login", element: <Login />, title: "Login" },
+  { path: "/register", element: <Register />, title: "Register" },
+  { path: "*", element: <NotFound />, title: "Not Found" },
 ];
 
 export default publicRoutes;
