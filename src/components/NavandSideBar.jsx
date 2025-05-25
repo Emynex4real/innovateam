@@ -106,7 +106,15 @@ const NavandSideBar = ({ children }) => {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 font-nunito">
+    <div className="flex flex-col min-h-screen bg-gray-50 font-nunito relative">
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
           <button
@@ -186,12 +194,13 @@ const NavandSideBar = ({ children }) => {
 
       <aside
         ref={sidebarRef}
-        className={`fixed top-16 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out z-40 ${
-          isSidebarOpen || !isCollapsed ? "w-64" : "w-16"
-        } lg:${isCollapsed ? "w-16" : "w-64"}`}
+        className={`fixed top-16 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out z-50
+          ${isSidebarOpen ? 'left-0' : '-left-64'} lg:left-0
+          w-64 lg:w-auto lg:min-w-[4rem] lg:${isCollapsed ? 'lg:w-16' : 'lg:w-64'}
+        `}
         style={{ maxHeight: "calc(100vh - 4rem)", overflowY: "auto" }}
-        onMouseEnter={() => setIsCollapsed(false)}
-        onMouseLeave={() => setIsCollapsed(true)}
+        onMouseEnter={() => !isSidebarOpen && window.innerWidth >= 1024 && setIsCollapsed(false)}
+        onMouseLeave={() => !isSidebarOpen && window.innerWidth >= 1024 && setIsCollapsed(true)}
       >
         <ul className="p-3 space-y-2">
           {sidebarItems.map((item) => (
@@ -209,14 +218,14 @@ const NavandSideBar = ({ children }) => {
                   onClick={item.onClick || null}
                 >
                   <span className="text-2xl">{item.icon}</span>
-                  <span className={`ml-3 ${isCollapsed && !isSidebarOpen ? "hidden" : "block"} text-sm font-medium`}>
+                  <span className={`ml-3 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"} text-sm font-medium`}>
                     {item.label}
                   </span>
                 </Link>
                 {item.subItems && (
                   <button
                     onClick={() => toggleDropdown(item.label)}
-                    className={`p-1 ${isCollapsed && !isSidebarOpen ? "hidden" : "block"} hover:bg-gray-200 rounded-full`}
+                    className={`p-1 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"} hover:bg-gray-200 rounded-full`}
                   >
                     {openDropdown === item.label ? (
                       <BiChevronUp className="text-lg" />
@@ -227,7 +236,7 @@ const NavandSideBar = ({ children }) => {
                 )}
               </div>
               {item.subItems && openDropdown === item.label && (
-                <ul className={`pl-8 mt-1 space-y-1 ${isCollapsed && !isSidebarOpen ? "hidden" : "block"}`}>
+                <ul className={`pl-8 mt-1 space-y-1 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"}`}>
                   {item.subItems.map((subItem) => (
                     <li key={subItem.path}>
                       <Link
@@ -250,17 +259,25 @@ const NavandSideBar = ({ children }) => {
       </aside>
 
       <main
-        className={`transition-all duration-300 ease-in-out pt-16 flex-grow ${
-          isSidebarOpen || !isCollapsed ? "lg:ml-64 ml-0" : "lg:ml-16 ml-0"
-        }`}
+        className={`transition-all duration-300 ease-in-out pt-16 flex-grow
+          ${isSidebarOpen ? 'ml-0 lg:ml-64 blur-sm lg:blur-none' : 'ml-0 lg:ml-16'}
+          ${isCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
+        `}
+        onClick={() => isSidebarOpen && window.innerWidth < 1024 && setIsSidebarOpen(false)}
       >
-        {children}
+        <div 
+          className={`transition-opacity duration-300 
+            ${isSidebarOpen && window.innerWidth < 1024 ? 'opacity-50' : 'opacity-100'}
+          `}
+        >
+          {children}
+        </div>
       </main>
 
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={toggleSidebar}
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
         />
       )}
