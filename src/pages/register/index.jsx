@@ -95,7 +95,7 @@ const SignUp = () => {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8 transition-all duration-300 hover:shadow-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-600 mt-2 text-sm">Join us today</p>
+          <p className="text-gray-600 mt-2 text-sm">Josin us today</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

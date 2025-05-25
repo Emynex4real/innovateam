@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { KeyIcon, WalletIcon, ArrowPathIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { useJambTransaction } from '../../../hooks/useJambTransaction';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const JambPinVending = () => {
   const [type, setType] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [amount, setAmount] = useState(0); // Default amount is 0 until a type is selected
+  const [isLoading, setIsLoading] = useState(false);
+  const { processJambTransaction, walletBalance } = useJambTransaction();
 
   const handleTypeChange = (e) => {
     const selectedType = e.target.value;
@@ -29,22 +36,81 @@ const JambPinVending = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
-    console.log({ type, quantity, amount });
-    alert(`Form submitted with Type: ${type}, Quantity: ${quantity}, Amount: ${amount}`);
+    
+    if (!type) {
+      toast.error('Please select a type');
+      return;
+    }
+
+    if (amount > walletBalance) {
+      toast.error('Insufficient wallet balance!', {
+        description: `Required: ₦${amount.toLocaleString()}, Balance: ₦${walletBalance.toLocaleString()}`,
+        duration: 5000,
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await processJambTransaction({
+        amount: amount,
+        serviceType: 'JAMB Pin',
+        description: `${type === '7150' ? 'UTME ONLY' : 'UTME WITH MOCK'} Pin`,
+        quantity: quantity,
+      });
+
+      if (result.success) {
+        toast.success('Transaction successful!', {
+          description: `Amount: ₦${amount.toLocaleString()}, Type: ${type === '7150' ? 'UTME ONLY' : 'UTME WITH MOCK'}, Quantity: ${quantity}`,
+          duration: 5000,
+        });
+        // Reset form
+        setType('');
+        setQuantity(1);
+        setAmount(0);
+      }
+    } catch (error) {
+      toast.error('Transaction failed', {
+        description: 'Please try again or contact support if the issue persists.',
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="">
-      <div className="">
-        <h1 className="text-2xl font-bold mb-6">JAMB PIN VENDING</h1>
+    <div className="bg-gray-50 min-h-screen py-6 font-nunito">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      <div className="container mx-auto px-4">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-green-100 rounded-full">
+            <KeyIcon className="w-6 h-6 text-green-600" />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">JAMB Pin Vending</h1>
+        </div>
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* JAMB PIN Vending Form */}
-          <div className="flex-1 bg-white p-6 rounded-lg shadow-md">
-            <form onSubmit={handleSubmit}>
+          <div className="flex-1 bg-white p-6 rounded-xl shadow-md">
+            <div className="flex items-center gap-3 mb-6">
+              <ShoppingCartIcon className="w-6 h-6 text-green-600" />
+              <h2 className="text-lg font-bold text-gray-800">Pin Details</h2>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700">Type</label>
                 <select
@@ -73,28 +139,52 @@ const JambPinVending = () => {
                 </select>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Amount</label>
-                <input
-                  type="text"
-                  value={`₦${amount}`}
-                  readOnly
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100"
-                />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Amount</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={`₦${amount}`}
+                    readOnly
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-700 cursor-not-allowed"
+                  />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                    <WalletIcon className="w-5 h-5 text-gray-400" />
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Wallet Balance: <span className="font-medium text-gray-700">₦{walletBalance.toLocaleString()}</span>
+                </p>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+                disabled={isLoading || !type}
+                className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 px-6 rounded-xl font-semibold
+                  hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2
+                  disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Proceed
+                {isLoading ? (
+                  <>
+                    <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCartIcon className="w-5 h-5" />
+                    Proceed
+                  </>
+                )}
               </button>
             </form>
           </div>
 
           {/* How It Works Section */}
-          <div className="flex-1 bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">HOW IT WORKS</h2>
+          <div className="flex-1 bg-white p-6 rounded-xl shadow-md">
+            <div className="flex items-center gap-3 mb-6">
+              <KeyIcon className="w-6 h-6 text-green-600" />
+              <h2 className="text-lg font-bold text-gray-800">How It Works</h2>
+            </div>
             <ul className="list-disc list-inside">
               <li>Fill the form with your accurate details and submit</li>
               <li>Click the “Proceed” button to make payment for the service</li>

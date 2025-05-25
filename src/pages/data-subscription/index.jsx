@@ -7,6 +7,7 @@ const DataSubscription = () => {
   const { addTransaction, walletBalance, transactions } = useTransactions();
   const [network, setNetwork] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [showPlans, setShowPlans] = useState(false);
@@ -57,7 +58,7 @@ const DataSubscription = () => {
 
   // Format mobile number as user types
   const formatMobileNumber = (number) => {
-    const cleaned = number.replace(/\D/g, '');
+    const cleaned = number.replace(/\D/g, "");
     return cleaned.substring(0, 11);
   };
 
@@ -82,12 +83,18 @@ const DataSubscription = () => {
     setTimeout(() => {
       window.scrollTo({
         top: window.scrollY + 300,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }, 100);
   };
 
-  const handleBuyPlan = (plan) => {
+  const handleBuyPlan = () => {
+    if (!selectedPlan) {
+      setMessage({ text: "Please select a data plan.", type: "error" });
+      return;
+    }
+
+    const plan = dataPlans[network].find((p) => p.id === parseInt(selectedPlan));
     const numericAmount = parseFloat(plan.amount.replace("₦", "").replace(/[^\d.]/g, ""));
     if (numericAmount > walletBalance) {
       setMessage({
@@ -122,6 +129,7 @@ const DataSubscription = () => {
         setShowPlans(false);
         setNetwork("");
         setMobileNumber("");
+        setSelectedPlan("");
       } else {
         setMessage({
           text: "Transaction failed. Please try again later.",
@@ -136,6 +144,7 @@ const DataSubscription = () => {
     setShowPlans(false);
     setNetwork("");
     setMobileNumber("");
+    setSelectedPlan("");
     setMessage({ text: "", type: "" });
   };
 
@@ -261,7 +270,7 @@ const DataSubscription = () => {
               </div>
             </div>
 
-            {/* Data Plans Section */}
+            {/* Data Plans Dropdown Section */}
             {showPlans && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -282,44 +291,58 @@ const DataSubscription = () => {
                     {network === "9mobile" && (
                       <div className="w-6 h-6 flex items-center justify-center bg-green-600 rounded-full text-xs font-bold text-white">9</div>
                     )}
-                    Available {network} Data Plans
+                    Select {network} Data Plan
                   </h3>
                 </div>
 
                 <div className="p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {network && dataPlans[network].map((plan) => (
-                      <motion.div
-                        key={plan.id}
-                        variants={itemVariants}
-                        className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100 relative overflow-hidden"
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="dataPlan" className="block text-sm font-medium text-gray-700">
+                        Choose Data Plan
+                      </label>
+                      <select
+                        id="dataPlan"
+                        value={selectedPlan}
+                        onChange={(e) => setSelectedPlan(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={isLoading}
                       >
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-full filter blur-xl opacity-30 -mr-12 -mt-12"></div>
-                        <div className="relative z-10">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-1">{plan.name}</h3>
-                          <p className="text-sm text-gray-500 mb-3">Validity: {plan.validity}</p>
-                          <p className="text-3xl font-bold text-green-600 mb-4">{plan.amount}</p>
-                          <button
-                            type="button"
-                            onClick={() => handleBuyPlan(plan)}
-                            className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-600 transition-all duration-300 shadow-lg shadow-green-500/20 disabled:from-gray-400 disabled:to-gray-400"
-                            disabled={isLoading}
-                          >
-                            {isLoading ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                                Processing...
-                              </span>
-                            ) : (
-                              "Buy Now"
-                            )}
-                          </button>
-                        </div>
-                      </motion.div>
-                    ))}
+                        <option value="">Select a data plan</option>
+                        {network &&
+                          dataPlans[network].map((plan) => (
+                            <option key={plan.id} value={plan.id}>
+                              {plan.name} - {plan.amount} ({plan.validity})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleBuyPlan}
+                      className={`w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 rounded-xl font-semibold
+                        hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2
+                        ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
+                      `}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Processing...
+                        </span>
+                      ) : (
+                        "Buy Now"
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -336,60 +359,60 @@ const DataSubscription = () => {
             )}
           </motion.div>
         </div>
-      </div>
 
-      {/* Transactions Section */}
-      <section className="bg-white rounded-xl shadow-lg p-6 mt-8 transition-all duration-300 hover:shadow-xl">
-        <h2 className="text-xl font-bold mb-4">Recent Transactions</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {transactions
-                .filter((transaction) => transaction.category === "data")
-                .map((transaction) => (
-                  <tr key={transaction.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(transaction.date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {transaction.description}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₦{transaction.amount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          transaction.status === "Successful"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {transaction.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        {/* Transactions Section */}
+        <section className="bg-white rounded-xl shadow-lg p-6 mt-8 transition-all duration-300 hover:shadow-xl">
+          <h2 className="text-xl font-bold mb-4">Recent Transactions</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {transactions
+                  .filter((transaction) => transaction.category === "data")
+                  .map((transaction) => (
+                    <tr key={transaction.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {transaction.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ₦{transaction.amount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            transaction.status === "Successful"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {transaction.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
   );
 };

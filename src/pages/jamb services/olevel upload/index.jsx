@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DocumentTextIcon, AcademicCapIcon, ClipboardDocumentListIcon, ArrowPathIcon, XMarkIcon, WalletIcon } from '@heroicons/react/24/outline';
+import { useJambTransaction } from '../../../hooks/useJambTransaction';
 
 const OLevelUpload = () => {
   const [type, setType] = useState('');
@@ -53,7 +55,9 @@ const OLevelUpload = () => {
     return baseFees[type] * parseInt(quantity);
   };
 
-  const handleSubmit = (e) => {
+  const { processJambTransaction, walletBalance } = useJambTransaction();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
 
@@ -67,6 +71,21 @@ const OLevelUpload = () => {
     }
 
     const qty = parseInt(quantity);
+    const totalAmount = calculateTotalAmount();
+
+    // Process payment
+    const result = await processJambTransaction({
+      amount: totalAmount,
+      serviceType: 'O-Level Upload',
+      description: `${type} O-Level Upload`,
+      quantity: qty,
+    });
+
+    if (!result.success) {
+      setMessage({ text: result.error, type: 'error' });
+      return;
+    }
+
     const newEntries = Array.from({ length: qty }, (_, index) => ({
       id: history.length + 1 + index,
       type,
@@ -125,15 +144,25 @@ const OLevelUpload = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-6 font-nunito">
       <div className="container mx-auto px-4">
-        <h1 className="text-xl md:text-2xl font-bold text-text-color mb-6">O-Level Upload</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-green-100 rounded-full">
+            <DocumentTextIcon className="w-6 h-6 text-green-600" />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">O-Level Upload</h1>
+        </div>
 
         {/* Search Input */}
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full md:w-96 p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
-          />
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <input
+              type="text"
+              placeholder="Search by name or profile code..."
+              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+            />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2">
+              <ClipboardDocumentListIcon className="w-5 h-5 text-gray-400" />
+            </div>
+          </div>
         </div>
 
         <motion.div
@@ -144,7 +173,11 @@ const OLevelUpload = () => {
         >
           {/* OLevel Upload Form */}
           <div className="bg-white p-6 rounded-xl shadow-md">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-center gap-3 mb-6">
+              <AcademicCapIcon className="w-6 h-6 text-green-600" />
+              <h2 className="text-lg font-bold text-gray-800">Upload Details</h2>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="type" className="block text-sm font-semibold text-gray-700 mb-1">
                   Type
@@ -182,13 +215,21 @@ const OLevelUpload = () => {
                 <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-1">
                   Total Amount
                 </label>
-                <input
-                  type="text"
-                  id="amount"
-                  value={type && quantity ? `₦${calculateTotalAmount()}` : ''}
-                  readOnly
-                  className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="amount"
+                    value={type && quantity ? `₦${calculateTotalAmount()}` : ''}
+                    readOnly
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-700 cursor-not-allowed"
+                  />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                    <WalletIcon className="w-5 h-5 text-gray-400" />
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Wallet Balance: <span className="font-medium text-gray-700">₦{walletBalance.toLocaleString()}</span>
+                </p>
               </div>
 
               {message.text && (
@@ -207,8 +248,10 @@ const OLevelUpload = () => {
 
               <button
                 type="submit"
-                className="w-full bg-primary-color text-white py-2 rounded-md font-semibold hover:bg-green-600 transition-all duration-200"
+                className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 px-6 rounded-xl font-semibold
+                  hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2"
               >
+                <ArrowPathIcon className="w-5 h-5" />
                 Proceed
               </button>
             </form>
@@ -216,7 +259,10 @@ const OLevelUpload = () => {
 
           {/* How It Works */}
           <div className="bg-white p-6 rounded-xl shadow-md">
-            <h2 className="text-lg font-semibold text-text-color mb-4">How It Works</h2>
+            <div className="flex items-center gap-3 mb-6">
+              <DocumentTextIcon className="w-6 h-6 text-green-600" />
+              <h2 className="text-lg font-bold text-gray-800">How It Works</h2>
+            </div>
             <ul className="list-disc list-inside space-y-2 text-gray-600 text-sm">
               <li>Fill the form with accurate details and submit.</li>
               <li>Click "Proceed" to add new entries to the history.</li>
@@ -234,7 +280,7 @@ const OLevelUpload = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-8"
         >
-          <h2 className="text-lg md:text-xl font-semibold text-text-color mb-4">O-Level Upload History</h2>
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">O-Level Upload History</h2>
           <div className="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
             {history.length === 0 ? (
               <p className="text-gray-500 text-center py-4">No upload history yet.</p>
@@ -308,63 +354,73 @@ const OLevelUpload = () => {
         </motion.div>
 
         {/* Query Popup */}
-        {showQueryPopup && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          >
+        <AnimatePresence>
+          {showQueryPopup && (
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             >
-              <h2 className="text-lg font-semibold text-text-color mb-4">Query</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                <strong>Notice:</strong> A 500 Naira fee may be deducted if the error is not ours.
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
-                  <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.type || 'UTME'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.fullname || 'Not set'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Profile Code</label>
-                  <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.profileCode || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Complaint</label>
-                  <textarea
-                    value={complaint}
-                    onChange={(e) => setComplaint(e.target.value)}
-                    placeholder="Enter your complaint..."
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
-                    rows={4}
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-4">
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full relative"
+              >
                 <button
                   onClick={handleQueryCancel}
-                  className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-all duration-200"
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  Cancel
+                  <XMarkIcon className="w-6 h-6" />
                 </button>
-                <button
-                  onClick={handleQueryProceed}
-                  className="bg-primary-color text-white py-2 px-4 rounded-md hover:bg-green-600 transition-all duration-200"
-                >
-                  Proceed
-                </button>
-              </div>
+                <h2 className="text-lg font-semibold text-text-color mb-4">Query</h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  <strong>Notice:</strong> A 500 Naira fee may be deducted if the error is not ours.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Type</label>
+                    <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.type || 'UTME'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                    <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.fullname || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Profile Code</label>
+                    <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.profileCode || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Complaint</label>
+                    <textarea
+                      value={complaint}
+                      onChange={(e) => setComplaint(e.target.value)}
+                      placeholder="Enter your complaint..."
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-4">
+                  <button
+                    onClick={handleQueryCancel}
+                    className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleQueryProceed}
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-500 text-white py-3 px-6 rounded-xl font-semibold
+                      hover:from-green-700 hover:to-green-600 transition-all duration-300"
+                  >
+                    Submit Query
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiMail, FiLock, FiEye, FiEyeOff, FiHome, FiArrowLeft } from "react-icons/fi";
 import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
+import toast from 'react-hot-toast';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const Login = () => {
         setRememberMe(false);
         navigate("/dashboard");
       } else {
+        toast.error(result.error?.response?.data?.message || "Invalid credentials");
         setFormError(result.error?.response?.data?.message || "Invalid credentials");
       }
     } catch (error) {
@@ -61,7 +63,7 @@ const Login = () => {
       const result = await forgotPassword(email);
       if (result.success) {
         setFormError("");
-        alert("Password reset instructions sent to your email");
+        toast.success("Password reset instructions sent to your email");
       } else {
         setFormError(result.error?.response?.data?.message || "Failed to send password reset instructions");
       }
@@ -74,7 +76,7 @@ const Login = () => {
   const handleSocialLogin = async (provider) => {
     console.log("Social login attempt:", { provider });
     setFormError("");
-    alert("Social login is under development");
+    toast.info("Social login is coming soon!");
   };
 
   useEffect(() => {
@@ -84,12 +86,19 @@ const Login = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-color/10 via-white to-gray-50 flex items-center justify-center p-4 relative">
+      <Link 
+        to="/" 
+        className="absolute top-4 left-4 flex items-center gap-2 text-gray-600 hover:text-primary-color transition-colors duration-200"
+      >
+        <FiArrowLeft className="w-5 h-5" />
+        <span>Back to Home</span>
+      </Link>
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 space-y-6 font-inter"
+        className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6 font-inter backdrop-blur-sm bg-white/90 border border-white/20"
       >
         <div className="text-center">
           <motion.h2
@@ -131,7 +140,7 @@ const Login = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 text-gray-900"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-color focus:border-primary-color transition-all duration-200 placeholder-gray-400 text-gray-900 bg-white/50"
                 placeholder="you@example.com"
                 disabled={loading}
               />
@@ -147,12 +156,12 @@ const Login = () => {
               <input
                 id="password"
                 name="password"
-                type={showPassword ? "text" : "password"} // Fixed typo
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400 text-gray-900"
+                className="w-full pl-10 pr-12 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-color focus:border-primary-color transition-all duration-200 placeholder-gray-400 text-gray-900 bg-white/50"
                 placeholder="••••••••"
                 disabled={loading}
               />
@@ -174,7 +183,7 @@ const Login = () => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary-color focus:ring-primary-color border-gray-300 rounded"
                 disabled={loading}
               />
               <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">
@@ -237,13 +246,21 @@ const Login = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors duration-200"
-                >
-                  Forgot your password?
-                </button>
+                <div className="text-center space-y-4">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-primary-color hover:text-green-600 transition-colors duration-200"
+                  >
+                    Forgot your password?
+                  </button>
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <span>Don't have an account?</span>
+                    <Link to="/signup" className="text-primary-color hover:text-green-600 transition-colors duration-200 font-medium">
+                      Sign up
+                    </Link>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -251,29 +268,19 @@ const Login = () => {
           <motion.button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-medium text-sm hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="w-full py-3 px-4 bg-primary-color hover:bg-green-600 text-white font-medium rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
           >
             {loading ? (
-              <div className="flex items-center justify-center">
-                <svg
-                  className="animate-spin h-5 w-5 mr-2 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Loading...
-              </div>
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                />
+                <span>Signing in...</span>
+              </>
             ) : (
-              "Sign In"
+              <span>Sign in</span>
             )}
           </motion.button>
         </form>

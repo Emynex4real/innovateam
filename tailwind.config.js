@@ -10,11 +10,16 @@ module.exports = {
         'bounce-delay': 'bounce 1s infinite',
         'spin-slow': 'spin 3s linear infinite',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'subtle-shift': 'subtle-shift 8s linear infinite',
       },
       keyframes: {
         bounce: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-25%)' },
+        },
+        'subtle-shift': {
+          '0%': { backgroundPosition: '0% 0%' },
+          '100%': { backgroundPosition: '100% 100%' },
         },
       },
       colors: {
