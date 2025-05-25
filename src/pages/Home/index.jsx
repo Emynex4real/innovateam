@@ -9,7 +9,7 @@ import { ArrowRight, BookOpen, Star, Search, Users, Award } from 'lucide-react';
 // import TeacherSection from './TeacherSection'; // Import the new component
 import TeacherSection from './teachee/index';
 
-import NavBar from "./navBar";
+import NavBar from "./navBar/index";
 
 const Home = () => {
   const [email, setEmail] = useState("");
@@ -62,7 +62,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {!isAuthenticated && <NavBar />}
+      <NavBar />
     <main className="min-h-screen font-nunito bg-gray-50 sm:px-10 lg:px-16">
       {/* Hero Section */}
       <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-b from-white to-gray-100">
