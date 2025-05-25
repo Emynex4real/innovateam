@@ -143,7 +143,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-400 via-green-500 to-green-700 flex items-center justify-center p-4 font-nunito relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-primary-color/10 via-white to-gray-50 flex items-center justify-center p-4 font-nunito relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-radial from-white/20 to-transparent opacity-50"></div>
       <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
       <div className="absolute inset-0 -z-10">
