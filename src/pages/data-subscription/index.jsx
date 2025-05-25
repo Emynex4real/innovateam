@@ -1,42 +1,64 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useTransactions } from "../../contexts/TransactionContext";
+import { PhoneIcon, WifiIcon } from "@heroicons/react/24/outline";
 
 const DataSubscription = () => {
-  const { walletBalance, addTransaction, transactions } = useTransactions();
+  const { addTransaction, walletBalance, transactions } = useTransactions();
   const [network, setNetwork] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [showPlans, setShowPlans] = useState(false);
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } },
+  };
+
   // Data plans for each network
   const dataPlans = {
     MTN: [
-      { id: 1, name: "1GB Daily", amount: "₦300" },
-      { id: 2, name: "5GB Weekly", amount: "₦1500" },
-      { id: 3, name: "10GB Monthly", amount: "₦3500" },
+      { id: 1, name: "500MB Daily", amount: "₦150", validity: "1 Day" },
+      { id: 2, name: "1GB Daily", amount: "₦300", validity: "1 Day" },
+      { id: 3, name: "2GB Weekly", amount: "₦500", validity: "7 Days" },
+      { id: 4, name: "5GB Monthly", amount: "₦1500", validity: "30 Days" },
+      { id: 5, name: "10GB Monthly", amount: "₦3000", validity: "30 Days" },
+      { id: 6, name: "20GB Monthly", amount: "₦5000", validity: "30 Days" },
     ],
     Airtel: [
-      { id: 1, name: "500MB Daily", amount: "₦200" },
-      { id: 2, name: "2GB Weekly", amount: "₦1000" },
-      { id: 3, name: "6GB Monthly", amount: "₦2500" },
+      { id: 1, name: "500MB Daily", amount: "₦200", validity: "1 Day" },
+      { id: 2, name: "2GB Weekly", amount: "₦1000", validity: "7 Days" },
+      { id: 3, name: "6GB Monthly", amount: "₦2500", validity: "30 Days" },
     ],
     Glo: [
-      { id: 1, name: "800MB Daily", amount: "₦250" },
-      { id: 2, name: "4GB Weekly", amount: "₦1200" },
-      { id: 3, name: "8GB Monthly", amount: "₦3000" },
+      { id: 1, name: "800MB Daily", amount: "₦250", validity: "1 Day" },
+      { id: 2, name: "4GB Weekly", amount: "₦1200", validity: "7 Days" },
+      { id: 3, name: "8GB Monthly", amount: "₦3000", validity: "30 Days" },
     ],
     "9mobile": [
-      { id: 1, name: "1GB Daily", amount: "₦350" },
-      { id: 2, name: "3GB Weekly", amount: "₦1100" },
-      { id: 3, name: "7GB Monthly", amount: "₦2800" },
+      { id: 1, name: "1GB Daily", amount: "₦350", validity: "1 Day" },
+      { id: 2, name: "3GB Weekly", amount: "₦1100", validity: "7 Days" },
+      { id: 3, name: "7GB Monthly", amount: "₦2800", validity: "30 Days" },
     ],
   };
 
   // Validate Nigerian mobile number
   const validateMobileNumber = (number) => {
     const regex = /^0[7-9][0-1]\d{8}$/;
-    return regex.test(number);
+    return regex.test(number.trim());
+  };
+
+  // Format mobile number as user types
+  const formatMobileNumber = (number) => {
+    const cleaned = number.replace(/\D/g, '');
+    return cleaned.substring(0, 11);
   };
 
   const handleProceed = (e) => {
@@ -56,14 +78,17 @@ const DataSubscription = () => {
       return;
     }
 
-    // Show data plans instead of submitting
     setShowPlans(true);
+    setTimeout(() => {
+      window.scrollTo({
+        top: window.scrollY + 300,
+        behavior: 'smooth'
+      });
+    }, 100);
   };
 
   const handleBuyPlan = (plan) => {
     const numericAmount = parseFloat(plan.amount.replace("₦", "").replace(/[^\d.]/g, ""));
-
-    // Check wallet balance
     if (numericAmount > walletBalance) {
       setMessage({
         text: "Insufficient wallet balance. Please fund your wallet.",
@@ -73,15 +98,13 @@ const DataSubscription = () => {
     }
 
     setIsLoading(true);
-    setShowPlans(false);
 
     // Simulate API call
     setTimeout(() => {
-      const success = Math.random() > 0.2; // Random success/failure for demo
-
+      const success = Math.random() > 0.2;
       if (success) {
-        // Add transaction
         addTransaction({
+          id: transactions.length + 1,
           label: `${network} ${plan.name}`,
           description: `Data subscription to ${mobileNumber}`,
           amount: numericAmount,
@@ -89,17 +112,19 @@ const DataSubscription = () => {
           category: "data",
           status: "Successful",
           paymentMethod: "wallet",
+          date: new Date().toISOString(),
         });
 
         setMessage({
-          text: `Purchased ${plan.name} for ${network} on ${mobileNumber}!`,
+          text: `Successfully purchased ${plan.name} for ${mobileNumber}!`,
           type: "success",
         });
+        setShowPlans(false);
         setNetwork("");
         setMobileNumber("");
       } else {
         setMessage({
-          text: "Transaction failed. Please try again.",
+          text: "Transaction failed. Please try again later.",
           type: "error",
         });
       }
@@ -109,153 +134,261 @@ const DataSubscription = () => {
 
   const handleCancel = () => {
     setShowPlans(false);
+    setNetwork("");
+    setMobileNumber("");
     setMessage({ text: "", type: "" });
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-nunito lg:ml-0 md:ml-20">
-      {/* Data Subscription Section */}
-      <section className="bg-white rounded-xl shadow-lg p-6 mb-8 transition-all duration-300 hover:shadow-xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Data Subscription</h2>
-        <form onSubmit={handleProceed} className="space-y-6">
-          <div>
-            <label htmlFor="network" className="block text-sm font-semibold text-gray-700 mb-2">
-              Network
-            </label>
-            <select
-              id="network"
-              className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-              value={network}
-              onChange={(e) => setNetwork(e.target.value)}
-              disabled={isLoading || showPlans}
-            >
-              <option value="">Select Network</option>
-              <option value="MTN">MTN</option>
-              <option value="Airtel">Airtel</option>
-              <option value="Glo">Glo</option>
-              <option value="9mobile">9mobile</option>
-            </select>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-nunito lg:ml-0 md:ml-20 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <div className="relative">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight mb-2 relative z-10">
+              Data Subscription
+            </h1>
+            <p className="text-gray-600 text-lg relative z-10">Purchase data bundles for any network</p>
+            <div className="absolute -top-6 -left-6 w-24 h-24 bg-green-100 rounded-full filter blur-xl opacity-60"></div>
+            <div className="absolute top-10 -right-4 w-16 h-16 bg-green-50 rounded-full filter blur-lg opacity-40"></div>
           </div>
+        </motion.div>
 
-          <div>
-            <label htmlFor="mobileNumber" className="block text-sm font-semibold text-gray-700 mb-2">
-              Mobile Number
-            </label>
-            <input
-              type="text"
-              id="mobileNumber"
-              className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-              placeholder="e.g., 08012345678"
-              value={mobileNumber}
-              onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ""))}
-              maxLength={11}
-              disabled={isLoading || showPlans}
-            />
-          </div>
-
-          {message.text && (
-            <div
-              className={`p-3 rounded-lg text-sm font-medium ${
-                message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full bg-green-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-300"
-            disabled={isLoading || showPlans}
+        {/* Data Subscription Section */}
+        <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8"
           >
-            Proceed
-          </button>
-        </form>
+            <div className="bg-white rounded-2xl shadow-xl p-8 relative overflow-hidden border border-gray-100">
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <WifiIcon className="h-8 w-8 text-green-500" />
+                  <h2 className="text-2xl font-bold text-gray-800">Buy Data Bundle</h2>
+                </div>
 
-        {/* Data Plans Section */}
-        {showPlans && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">
-              Choose a Data Plan for {network}
-            </h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              {dataPlans[network].map((plan) => (
-                <div
-                  key={plan.id}
-                  className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex justify-between items-center"
-                >
-                  <div>
-                    <p className="text-gray-800 font-medium">{plan.name}</p>
-                    <p className="text-gray-600">{plan.amount}</p>
+                <form onSubmit={handleProceed} className="space-y-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                    {["MTN", "Airtel", "Glo", "9mobile"].map((net) => (
+                      <motion.button
+                        key={net}
+                        type="button"
+                        variants={itemVariants}
+                        onClick={() => setNetwork(net)}
+                        className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2
+                          ${network === net
+                            ? "border-green-500 bg-green-50 text-green-700"
+                            : "border-gray-200 hover:border-green-200 hover:bg-green-50/30"}
+                          ${isLoading || showPlans ? "opacity-50 cursor-not-allowed" : ""}
+                        `}
+                        disabled={isLoading || showPlans}
+                      >
+                        {net === "MTN" && (
+                          <div className="w-12 h-12 flex items-center justify-center bg-yellow-400 rounded-full">
+                            <span className="text-2xl font-bold text-white">M</span>
+                          </div>
+                        )}
+                        {net === "Airtel" && (
+                          <div className="w-12 h-12 flex items-center justify-center bg-red-500 rounded-full">
+                            <span className="text-2xl font-bold text-white">A</span>
+                          </div>
+                        )}
+                        {net === "Glo" && (
+                          <div className="w-12 h-12 flex items-center justify-center bg-green-500 rounded-full">
+                            <span className="text-2xl font-bold text-white">G</span>
+                          </div>
+                        )}
+                        {net === "9mobile" && (
+                          <div className="w-12 h-12 flex items-center justify-center bg-green-600 rounded-full">
+                            <span className="text-2xl font-bold text-white">9</span>
+                          </div>
+                        )}
+                        <span className="font-medium">{net}</span>
+                      </motion.button>
+                    ))}
                   </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700">
+                      Mobile Number
+                    </label>
+                    <div className="relative">
+                      <PhoneIcon className="h-5 w-5 text-gray-400 absolute left-3 top-3" />
+                      <input
+                        type="tel"
+                        id="mobileNumber"
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(formatMobileNumber(e.target.value))}
+                        placeholder="Enter mobile number (e.g., 08012345678)"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={isLoading || showPlans}
+                        maxLength="11"
+                      />
+                    </div>
+                    {mobileNumber && !validateMobileNumber(mobileNumber) && (
+                      <p className="text-sm text-red-500">Please enter a valid Nigerian mobile number</p>
+                    )}
+                  </div>
+
+                  {message.text && (
+                    <div
+                      className={`p-4 rounded-lg ${
+                        message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
+                      }`}
+                    >
+                      {message.text}
+                    </div>
+                  )}
+
                   <button
-                    onClick={() => handleBuyPlan(plan)}
-                    className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-all duration-300"
-                    disabled={isLoading}
+                    type="submit"
+                    className={`w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 rounded-xl font-semibold
+                      hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2
+                      ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
+                    `}
+                    disabled={isLoading || showPlans}
                   >
-                    {isLoading ? "Buying..." : "Buy"}
+                    Proceed to Select Plan
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Data Plans Section */}
+            {showPlans && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
+              >
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    {network === "MTN" && (
+                      <div className="w-6 h-6 flex items-center justify-center bg-yellow-400 rounded-full text-xs font-bold text-white">M</div>
+                    )}
+                    {network === "Airtel" && (
+                      <div className="w-6 h-6 flex items-center justify-center bg-red-500 rounded-full text-xs font-bold text-white">A</div>
+                    )}
+                    {network === "Glo" && (
+                      <div className="w-6 h-6 flex items-center justify-center bg-green-500 rounded-full text-xs font-bold text-white">G</div>
+                    )}
+                    {network === "9mobile" && (
+                      <div className="w-6 h-6 flex items-center justify-center bg-green-600 rounded-full text-xs font-bold text-white">9</div>
+                    )}
+                    Available {network} Data Plans
+                  </h3>
+                </div>
+
+                <div className="p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {network && dataPlans[network].map((plan) => (
+                      <motion.div
+                        key={plan.id}
+                        variants={itemVariants}
+                        className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100 relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-full filter blur-xl opacity-30 -mr-12 -mt-12"></div>
+                        <div className="relative z-10">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-1">{plan.name}</h3>
+                          <p className="text-sm text-gray-500 mb-3">Validity: {plan.validity}</p>
+                          <p className="text-3xl font-bold text-green-600 mb-4">{plan.amount}</p>
+                          <button
+                            type="button"
+                            onClick={() => handleBuyPlan(plan)}
+                            className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-600 transition-all duration-300 shadow-lg shadow-green-500/20 disabled:from-gray-400 disabled:to-gray-400"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Processing...
+                              </span>
+                            ) : (
+                              "Buy Now"
+                            )}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-6 bg-gray-50 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="w-full bg-white border-2 border-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    Back to Selection
                   </button>
                 </div>
-              ))}
-            </div>
-            <button
-              onClick={handleCancel}
-              className="mt-4 w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-all duration-300"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </section>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+      </div>
 
       {/* Transactions Section */}
-      <section className="bg-white rounded-xl shadow-lg p-6 transition-all duration-300 hover:shadow-xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Recent Transactions</h2>
-        {transactions.filter(t => t.category === 'data').length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No data transactions yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white">
-              <thead className="bg-gray-100 text-gray-700">
-                <tr>
-                  <th className="py-3 px-4 text-left font-semibold text-sm">Date</th>
-                  <th className="py-3 px-4 text-left font-semibold text-sm">Description</th>
-                  <th className="py-3 px-4 text-left font-semibold text-sm">Amount</th>
-                  <th className="py-3 px-4 text-left font-semibold text-sm">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions
-                  .filter(t => t.category === 'data')
-                  .map((transaction) => (
-                    <tr
-                      key={transaction.id}
-                      className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200"
-                    >
-                      <td className="py-3 px-4 text-gray-700">
-                        {new Date(transaction.timestamp).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">{transaction.label}</td>
-                      <td className="py-3 px-4 text-gray-700">
-                        ₦{transaction.amount.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            transaction.status === "Successful"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {transaction.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <section className="bg-white rounded-xl shadow-lg p-6 mt-8 transition-all duration-300 hover:shadow-xl">
+        <h2 className="text-xl font-bold mb-4">Recent Transactions</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Description
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {transactions
+                .filter((transaction) => transaction.category === "data")
+                .map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(transaction.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {transaction.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ₦{transaction.amount}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          transaction.status === "Successful"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {transaction.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

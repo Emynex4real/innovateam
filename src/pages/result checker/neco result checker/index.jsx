@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ClipboardIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useTransactions } from '../../../contexts/TransactionContext'; // Assuming the useTransactions hook is in a separate file
 
 const NecoResultChecker = () => {
+  const { addTransaction, walletBalance } = useTransactions();
   const [quantity, setQuantity] = useState(1);
   const [purchasedCards, setPurchasedCards] = useState([
     { id: 1, serial: 'NEC-1234-5678-9101', pin: '987654321', date: '2025-02-20' },
@@ -32,6 +34,15 @@ const NecoResultChecker = () => {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Reduced delay for better UX
+      // Process the payment
+      addTransaction({
+        amount: totalAmount,
+        type: 'debit',
+        label: 'NECO Result Checker',
+        description: `Purchase of ${quantity} NECO Result Checker Card${quantity > 1 ? 's' : ''}`,
+        category: 'scratch_card',
+        status: 'Successful'
+      });
       const newCards = Array.from({ length: quantity }, () => generateCard());
       setPurchasedCards((prev) => [...newCards, ...prev]);
       setNotification({ visible: true, message: `${quantity} NECO card(s) purchased successfully!`, type: 'success' });
@@ -63,7 +74,7 @@ const NecoResultChecker = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-nunito">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-nunito">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -71,8 +82,12 @@ const NecoResultChecker = () => {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="mb-10"
         >
-          <h1 className="text-2xl md:text-3xl font-bold text-text-color mb-6 tracking-tight">NECO Result Checker</h1>
-          <p className="text-gray-600 mt-2">Purchase your NECO scratch cards with ease</p>
+          <div className="relative">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight mb-2 relative z-10">NECO Result Checker</h1>
+            <p className="text-gray-600 text-lg relative z-10">Purchase your NECO scratch cards with ease</p>
+            <div className="absolute -top-6 -left-6 w-24 h-24 bg-green-100 rounded-full filter blur-xl opacity-60"></div>
+            <div className="absolute top-10 -right-4 w-16 h-16 bg-green-50 rounded-full filter blur-lg opacity-40"></div>
+          </div>
         </motion.div>
 
         {/* Notification */}
@@ -81,7 +96,7 @@ const NecoResultChecker = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className={`fixed bottom-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white font-medium ${
+            className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-xl backdrop-blur-sm text-white font-medium flex items-center gap-3 ${
               notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
             }`}
           >
@@ -91,7 +106,8 @@ const NecoResultChecker = () => {
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Purchase Section */}
-          <motion.div variants={cardVariants} className="bg-white p-8 rounded-2xl shadow-lg">
+          <motion.div variants={cardVariants} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-green-50 rounded-full filter blur-3xl opacity-30 -mr-20 -mt-20"></div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Purchase NECO Scratch Cards</h2>
             <div className="space-y-6">
               <div>
@@ -99,7 +115,7 @@ const NecoResultChecker = () => {
                 <select
                   value={quantity}
                   onChange={handleQuantityChange}
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-800 shadow-sm"
+                  className="w-full p-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-800 shadow-sm hover:border-gray-300 appearance-none"
                   disabled={isPurchasing}
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
@@ -113,12 +129,12 @@ const NecoResultChecker = () => {
                   type="text"
                   value={`₦${totalAmount.toLocaleString()}`}
                   readOnly
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-800 font-medium cursor-not-allowed"
+                  className="w-full p-4 border border-gray-200 rounded-xl bg-gradient-to-r from-green-50 to-green-100/30 text-gray-800 font-medium cursor-not-allowed"
                 />
               </div>
               <button
                 onClick={handlePurchase}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-4 rounded-xl font-semibold hover:from-green-700 hover:to-green-600 transition-all duration-300 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-500/20"
                 disabled={isPurchasing}
               >
                 {isPurchasing && (
@@ -133,7 +149,8 @@ const NecoResultChecker = () => {
           </motion.div>
 
           {/* Purchased Cards Section */}
-          <motion.div variants={cardVariants} className="bg-white p-8 rounded-2xl shadow-lg">
+          <motion.div variants={cardVariants} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-green-50 rounded-full filter blur-3xl opacity-30 -mr-20 -mt-20"></div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Purchased Cards</h2>
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
               {purchasedCards.length === 0 ? (
@@ -144,7 +161,8 @@ const NecoResultChecker = () => {
                     key={card.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="p-4 bg-gray-50 rounded-lg shadow-sm hover:bg-gray-100 transition-all duration-200 flex justify-between items-center"
+                    whileHover={{ scale: 1.02 }}
+                    className="p-5 bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex justify-between items-center border border-gray-100/50 group"
                   >
                     <div>
                       <p className="text-sm text-gray-800"><strong>Serial:</strong> {card.serial}</p>
@@ -153,7 +171,7 @@ const NecoResultChecker = () => {
                     </div>
                     <button
                       onClick={() => copyCardDetails(card)}
-                      className="p-2 text-gray-600 hover:text-green-600 transition-colors duration-200"
+                      className="p-2.5 text-gray-500 hover:text-green-600 transition-all duration-200 hover:bg-green-50 rounded-lg group-hover:scale-110"
                       title="Copy Details"
                     >
                       {copiedCardId === card.id ? (

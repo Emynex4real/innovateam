@@ -27,7 +27,7 @@ const WaecResultChecker = () => {
     return { id: Date.now() + Math.random(), serial, pin, date: new Date().toLocaleDateString('en-CA') };
   };
 
-  const { makePayment, walletBalance } = useTransactions();
+  const { addTransaction, walletBalance } = useTransactions();
 
   const handlePurchase = async () => {
     setIsPurchasing(true);
@@ -39,12 +39,15 @@ const WaecResultChecker = () => {
         throw new Error('Insufficient wallet balance');
       }
 
-      // Process the payment first
-      await makePayment(
-        totalAmount,
-        `Purchase of ${quantity} WAEC Result Checker Card${quantity > 1 ? 's' : ''}`,
-        'scratch_card'
-      );
+      // Process the payment
+      addTransaction({
+        amount: totalAmount,
+        type: 'debit',
+        label: 'WAEC Result Checker',
+        description: `Purchase of ${quantity} WAEC Result Checker Card${quantity > 1 ? 's' : ''}`,
+        category: 'scratch_card',
+        status: 'Successful'
+      });
 
       // Generate the cards after successful payment
       const newCards = Array.from({ length: quantity }, () => generateCard());
@@ -90,7 +93,7 @@ const WaecResultChecker = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-nunito lg:ml-0 md:ml-20">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-nunito lg:ml-0 md:ml-20">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -98,8 +101,12 @@ const WaecResultChecker = () => {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="mb-12"
         >
-          <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">WAEC Result Checker</h1>
-          <p className="text-gray-600 mt-2 text-lg">Purchase your WAEC scratch cards seamlessly</p>
+          <div className="relative">
+            <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight mb-2 relative z-10">WAEC Result Checker</h1>
+            <p className="text-gray-600 text-lg relative z-10">Purchase your WAEC scratch cards seamlessly</p>
+            <div className="absolute -top-6 -left-6 w-24 h-24 bg-green-100 rounded-full filter blur-xl opacity-60"></div>
+            <div className="absolute top-10 -right-4 w-16 h-16 bg-green-50 rounded-full filter blur-lg opacity-40"></div>
+          </div>
         </motion.div>
 
         {/* Notification */}
@@ -108,7 +115,7 @@ const WaecResultChecker = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className={`fixed bottom-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white font-medium ${
+            className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-xl backdrop-blur-sm text-white font-medium flex items-center gap-3 ${
               notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
             }`}
           >
@@ -126,7 +133,7 @@ const WaecResultChecker = () => {
                 <select
                   value={quantity}
                   onChange={handleQuantityChange}
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-800 shadow-sm hover:border-gray-300"
+                  className="w-full p-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-800 shadow-sm hover:border-gray-300 appearance-none"
                   disabled={isPurchasing}
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
@@ -140,12 +147,12 @@ const WaecResultChecker = () => {
                   type="text"
                   value={`₦${totalAmount.toLocaleString()}`}
                   readOnly
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-800 font-medium cursor-not-allowed"
+                  className="w-full p-4 border border-gray-200 rounded-xl bg-gradient-to-r from-green-50 to-green-100/30 text-gray-800 font-medium cursor-not-allowed"
                 />
               </div>
               <button
                 onClick={handlePurchase}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-4 rounded-xl font-semibold hover:from-green-700 hover:to-green-600 transition-all duration-300 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-500/20"
                 disabled={isPurchasing}
               >
                 {isPurchasing && (
@@ -181,7 +188,8 @@ const WaecResultChecker = () => {
                     key={card.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="p-4 bg-gray-50 rounded-lg shadow-sm hover:bg-gray-100 transition-all duration-200 flex justify-between items-center"
+                    whileHover={{ scale: 1.02 }}
+                    className="p-5 bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex justify-between items-center border border-gray-100/50 group"
                   >
                     <div>
                       <p className="text-sm text-gray-800"><strong>Serial:</strong> {card.serial}</p>
@@ -190,7 +198,7 @@ const WaecResultChecker = () => {
                     </div>
                     <button
                       onClick={() => copyCardDetails(card)}
-                      className="p-2 text-gray-600 hover:text-green-600 transition-colors duration-200"
+                      className="p-2.5 text-gray-500 hover:text-green-600 transition-all duration-200 hover:bg-green-50 rounded-lg group-hover:scale-110"
                       title="Copy Details"
                     >
                       {copiedCardId === card.id ? (

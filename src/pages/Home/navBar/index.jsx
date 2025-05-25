@@ -157,7 +157,7 @@ const NavBar = () => {
                     Dashboard
                   </Link>
                   <Link
-                    to="/profile"
+                    to="/dashboard/profile"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500"
                     onClick={() => setIsDropdownOpen(false)}
                   >
@@ -286,7 +286,7 @@ const NavBar = () => {
                     Dashboard
                   </Link>
                   <Link
-                    to="/profile"
+                    to="/dashboard/profile"
                     className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500 rounded-md"
                     onClick={closeSidebar}
                   >
