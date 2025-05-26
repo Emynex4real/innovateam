@@ -1,20 +1,46 @@
 // src/routes/publicRoutes.js
-import { lazy } from "react";
+import React, { lazy } from "react";
 
-const Home = lazy(() => import("../pages/Home/index"));
-const About = lazy(() => import("../pages/About/index"));
-const Blogs = lazy(() => import("../pages/Blogs/index"));
-const Login = lazy(() => import("../pages/login/index"));
-const Register = lazy(() => import("../pages/register/index"));
-const NotFound = lazy(() => import("../pages/NotFound/index"));
+// Lazy load components
+const Home = lazy(() => import("../pages/Home"));
+const About = lazy(() => import("../pages/About"));
+const Blogs = lazy(() => import("../pages/Blogs"));
+const Login = lazy(() => import("../pages/login"));
+const Register = lazy(() => import("../pages/register"));
+const NotFound = lazy(() => import("../pages/NotFound"));
 
+// Define public routes
 const publicRoutes = [
-  { path: "/", element: <Home />, title: "Home" },
-  { path: "/about", element: <About />, title: "About" },
-  { path: "/blogs", element: <Blogs />, title: "Blogs" },
-  { path: "/login", element: <Login />, title: "Login" },
-  { path: "/register", element: <Register />, title: "Register" },
-  { path: "*", element: <NotFound />, title: "Not Found" },
+  { 
+    path: "/", 
+    element: React.createElement(Home),
+    title: "Home" 
+  },
+  { 
+    path: "/about", 
+    element: React.createElement(About),
+    title: "About" 
+  },
+  { 
+    path: "/blogs", 
+    element: React.createElement(Blogs),
+    title: "Blogs" 
+  },
+  { 
+    path: "/login", 
+    element: React.createElement(Login),
+    title: "Login" 
+  },
+  { 
+    path: "/register", 
+    element: React.createElement(Register),
+    title: "Register" 
+  },
+  { 
+    path: "*", 
+    element: React.createElement(NotFound),
+    title: "Not Found" 
+  },
 ];
 
 export default publicRoutes;
