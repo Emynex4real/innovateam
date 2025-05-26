@@ -104,7 +104,7 @@ const OLevelUpload = () => {
 
   const handleNewEntry = (id) => {
     const entry = history.find((item) => item.id === id);
-    navigate('/homepage/olevel-entry', {
+    navigate('/dashboard/olevel-entry', {
       state: {
         id,
         type: entry.type,
