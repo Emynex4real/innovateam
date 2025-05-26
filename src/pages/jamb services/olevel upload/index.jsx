@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DocumentTextIcon, AcademicCapIcon, ClipboardDocumentListIcon, ArrowPathIcon, XMarkIcon, WalletIcon } from '@heroicons/react/24/outline';
 import { useJambTransaction } from '../../../hooks/useJambTransaction';
+import { useDarkMode } from '../../../contexts/DarkModeContext';
 
 const OLevelUpload = () => {
+  const { isDarkMode } = useDarkMode();
   const [type, setType] = useState('');
   const [quantity, setQuantity] = useState('');
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -142,13 +144,21 @@ const OLevelUpload = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen py-6 font-nunito">
+    <div className={`min-h-screen py-6 font-nunito transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50'
+    }`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-green-100 rounded-full">
-            <DocumentTextIcon className="w-6 h-6 text-green-600" />
+          <div className={`p-3 ${
+            isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+          } rounded-full`}>
+            <DocumentTextIcon className={`w-6 h-6 ${
+              isDarkMode ? 'text-green-400' : 'text-green-600'
+            }`} />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">O-Level Upload</h1>
+          <h1 className={`text-2xl md:text-3xl font-bold ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+          }`}>O-Level Upload</h1>
         </div>
 
         {/* Search Input */}
@@ -157,10 +167,16 @@ const OLevelUpload = () => {
             <input
               type="text"
               placeholder="Search by name or profile code..."
-              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                isDarkMode 
+                  ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                  : 'bg-white border-gray-200 placeholder-gray-400'
+              }`}
             />
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <ClipboardDocumentListIcon className="w-5 h-5 text-gray-400" />
+              <ClipboardDocumentListIcon className={`w-5 h-5 ${
+                isDarkMode ? 'text-dark-text-secondary' : 'text-gray-400'
+              }`} />
             </div>
           </div>
         </div>
@@ -172,21 +188,33 @@ const OLevelUpload = () => {
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
           {/* OLevel Upload Form */}
-          <div className="bg-white p-6 rounded-xl shadow-md">
+          <div className={`${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white'
+          } p-6 rounded-xl shadow-md border`}>
             <div className="flex items-center gap-3 mb-6">
-              <AcademicCapIcon className="w-6 h-6 text-green-600" />
-              <h2 className="text-lg font-bold text-gray-800">Upload Details</h2>
+              <AcademicCapIcon className={`w-6 h-6 ${
+                isDarkMode ? 'text-green-400' : 'text-green-600'
+              }`} />
+              <h2 className={`text-lg font-bold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>Upload Details</h2>
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="type" className="block text-sm font-semibold text-gray-700 mb-1">
+                <label htmlFor="type" className={`block text-sm font-semibold mb-1 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}>
                   Type
                 </label>
                 <select
                   id="type"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+                  className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                      : 'bg-gray-50 border-gray-300'
+                  }`}
                 >
                   <option value="">Select Type</option>
                   <option value="UTME">UTME (₦400 per unit)</option>
@@ -195,14 +223,20 @@ const OLevelUpload = () => {
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm font-semibold text-gray-700 mb-1">
+                <label htmlFor="quantity" className={`block text-sm font-semibold mb-1 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}>
                   Quantity
                 </label>
                 <select
                   id="quantity"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+                  className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                      : 'bg-gray-50 border-gray-300'
+                  }`}
                 >
                   <option value="">Select Quantity</option>
                   {[1, 2, 3, 4, 5, 6, 7].map((num) => (
@@ -212,7 +246,9 @@ const OLevelUpload = () => {
               </div>
 
               <div>
-                <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-1">
+                <label htmlFor="amount" className={`block text-sm font-semibold mb-1 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}>
                   Total Amount
                 </label>
                 <div className="relative">
@@ -221,14 +257,24 @@ const OLevelUpload = () => {
                     id="amount"
                     value={type && quantity ? `₦${calculateTotalAmount()}` : ''}
                     readOnly
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-700 cursor-not-allowed"
+                    className={`w-full pl-12 pr-4 py-3 border rounded-xl cursor-not-allowed ${
+                      isDarkMode 
+                        ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                        : 'bg-gray-100 border-gray-300 text-gray-700'
+                    }`}
                   />
                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                    <WalletIcon className="w-5 h-5 text-gray-400" />
+                    <WalletIcon className={`w-5 h-5 ${
+                      isDarkMode ? 'text-dark-text-secondary' : 'text-gray-400'
+                    }`} />
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Wallet Balance: <span className="font-medium text-gray-700">₦{walletBalance.toLocaleString()}</span>
+                <p className={`mt-2 text-sm ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                }`}>
+                  Wallet Balance: <span className={`font-medium ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>₦{walletBalance.toLocaleString()}</span>
                 </p>
               </div>
 
@@ -236,10 +282,16 @@ const OLevelUpload = () => {
                 <div
                   className={`p-2 rounded-lg text-sm font-medium ${
                     message.type === 'success'
-                      ? 'bg-green-100 text-green-700'
+                      ? isDarkMode 
+                        ? 'bg-green-900/30 text-green-400 border border-green-800'
+                        : 'bg-green-100 text-green-700'
                       : message.type === 'info'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-red-100 text-red-700'
+                        ? isDarkMode
+                          ? 'bg-blue-900/30 text-blue-400 border border-blue-800'
+                          : 'bg-blue-100 text-blue-700'
+                        : isDarkMode
+                          ? 'bg-red-900/30 text-red-400 border border-red-800'
+                          : 'bg-red-100 text-red-700'
                   }`}
                 >
                   {message.text}
@@ -248,8 +300,11 @@ const OLevelUpload = () => {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 px-6 rounded-xl font-semibold
-                  hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2"
+                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                  isDarkMode
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <ArrowPathIcon className="w-5 h-5" />
                 Proceed
@@ -257,101 +312,76 @@ const OLevelUpload = () => {
             </form>
           </div>
 
-          {/* How It Works */}
-          <div className="bg-white p-6 rounded-xl shadow-md">
+          {/* How It Works Section */}
+          <div className={`${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white'
+          } p-6 rounded-xl shadow-md border`}>
             <div className="flex items-center gap-3 mb-6">
-              <DocumentTextIcon className="w-6 h-6 text-green-600" />
-              <h2 className="text-lg font-bold text-gray-800">How It Works</h2>
+              <DocumentTextIcon className={`w-6 h-6 ${
+                isDarkMode ? 'text-green-400' : 'text-green-600'
+              }`} />
+              <h2 className={`text-lg font-bold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>How It Works</h2>
             </div>
-            <ul className="list-disc list-inside space-y-2 text-gray-600 text-sm">
-              <li>Fill the form with accurate details and submit.</li>
-              <li>Click "Proceed" to add new entries to the history.</li>
-              <li>Click "New Entry" to input O-Level results (min 8, max 9 subjects).</li>
-              <li>Make payment after submission.</li>
-              <li>Download your result or requery once processed.</li>
+            <ul className={`list-disc list-inside ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+            }`}>
+              <li>Fill the form with your accurate details and submit</li>
+              <li>Click the "Proceed" button to make payment for the service</li>
+              <li>Upon successful payment, scroll down for new entry. Click on new entry to submit fresh job.</li>
+              <li>Once your Job is done, you will be sent a confirmation email and you will be able to print out your processed job.</li>
             </ul>
           </div>
         </motion.div>
 
-        {/* History */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-8"
-        >
-          <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">O-Level Upload History</h2>
-          <div className="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
-            {history.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No upload history yet.</p>
-            ) : (
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100 text-gray-700">
-                  <tr>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">#</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Action</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Type</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Full Name</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Profile Code</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Status</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Screenshot</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Remark</th>
-                    <th className="py-2 px-4 text-left text-sm font-semibold">Submitted On</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200">
-                      <td className="py-2 px-4 text-gray-700">{item.id}</td>
-                      <td className="py-2 px-4">
-                        {item.status === 'Waiting' ? (
-                          <button
-                            onClick={() => handleNewEntry(item.id)}
-                            className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
-                          >
-                            New Entry
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRequery(item.id)}
-                            className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 transition-all duration-200 text-sm"
-                          >
-                            Query
-                          </button>
-                        )}
-                      </td>
-                      <td className="py-2 px-4 text-gray-700">{item.type}</td>
-                      <td className="py-2 px-4 text-gray-700">{item.fullname}</td>
-                      <td className="py-2 px-4 text-gray-700">{item.profileCode}</td>
-                      <td className="py-2 px-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            item.status === 'Processed'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-orange-100 text-orange-700'
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-2 px-4">
-                        <button
-                          onClick={() => handleDownload(item.fullname || item.type)}
-                          className="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 transition-all duration-200 text-sm"
-                          disabled={item.status !== 'Processed'}
-                        >
-                          Download
-                        </button>
-                      </td>
-                      <td className="py-2 px-4 text-gray-700">{item.remark}</td>
-                      <td className="py-2 px-4 text-gray-700">{item.submittedOn}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+        {/* O-Level Upload History */}
+        <div className="mt-8">
+          <h2 className={`text-xl font-bold mb-4 ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+          }`}>O-LEVEL UPLOAD HISTORY</h2>
+          <div className={`${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white'
+          } p-6 rounded-lg shadow-md overflow-x-auto border`}>
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Action</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Type</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Fullname</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Profile Code/RegNo.</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Status</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Screenshot</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Remark</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Submitted On</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="8" className={`text-center py-4 ${
+                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                  }`}>No Record Found!</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </motion.div>
+        </div>
 
         {/* Query Popup */}
         <AnimatePresence>

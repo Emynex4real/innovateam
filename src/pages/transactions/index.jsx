@@ -119,9 +119,9 @@ const Transactions = () => {
     <div className={`min-h-screen p-6 transition-colors duration-200 ${
       isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50 text-gray-800'
     }`}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         className={`max-w-4xl mx-auto rounded-xl shadow-lg ${
           isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
         }`}
@@ -137,8 +137,8 @@ const Transactions = () => {
               <p className={`mt-1 ${
                 isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
               }`}>View and manage your transaction history</p>
-              </div>
-                <button
+            </div>
+            <button
               className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors duration-200 ${
                 isDarkMode 
                   ? 'bg-dark-surface text-dark-text-primary hover:bg-dark-border' 
@@ -146,13 +146,13 @@ const Transactions = () => {
               }`}
             >
               <FiDownload className="w-4 h-4" />
-                  <span>Export</span>
-                </button>
+              <span>Export</span>
+            </button>
           </div>
 
           <div className="mt-4 flex gap-2">
             {['all', 'credit', 'debit'].map((type) => (
-                <button
+              <button
                 key={type}
                 onClick={() => setFilter(type)}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
@@ -166,10 +166,10 @@ const Transactions = () => {
                 }`}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}
-                </button>
+              </button>
             ))}
-              </div>
-            </div>
+          </div>
+        </div>
 
         <div className="p-6">
           {filteredTransactions.length === 0 ? (
@@ -200,7 +200,7 @@ const Transactions = () => {
                       <p className={`text-xs mt-1 ${
                         isDarkMode ? 'text-dark-text-tertiary' : 'text-gray-500'
                       }`}>{new Date(transaction.date).toLocaleString()}</p>
-                        </div>
+                    </div>
                     <div className="text-right">
                       <p className={`font-medium ${
                         transaction.type === 'credit' 
@@ -218,10 +218,10 @@ const Transactions = () => {
                   </div>
                 </motion.div>
               ))}
-                    </div>
-                          )}
-                        </div>
-        </motion.div>
+            </div>
+          )}
+        </div>
+      </motion.div>
 
       <AnimatePresence>
         {selectedTransaction && (
@@ -236,20 +236,33 @@ const Transactions = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl w-full max-w-2xl shadow-xl overflow-hidden"
+              className={`w-full max-w-2xl shadow-xl overflow-hidden rounded-xl ${
+                isDarkMode ? 'bg-dark-surface-secondary' : 'bg-white'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                <h2 className="text-xl font-semibold text-gray-800">Transaction Details</h2>
+              <div className={`px-6 py-4 border-b flex justify-between items-center ${
+                isDarkMode 
+                  ? 'bg-dark-surface border-dark-border' 
+                  : 'bg-gray-50 border-gray-200'
+              }`}>
+                <h2 className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                }`}>Transaction Details</h2>
                 <button
                   onClick={() => setSelectedTransaction(null)}
-                  className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  className={`transition-colors duration-200 ${
+                    isDarkMode 
+                      ? 'text-dark-text-secondary hover:text-dark-text-primary' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 >
                   <FaTimes size={20} />
                 </button>
               </div>
-
-              <div className="p-6 space-y-6">
+              <div className={`p-6 ${
+                isDarkMode ? 'bg-dark-surface' : 'bg-white'
+              }`}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaUpload, FaBook, FaQuestion, FaHistory } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import { Tab } from "@headlessui/react";
+import { useDarkMode } from "../../contexts/DarkModeContext";
 
 const AiExaminer = () => {
   const [file, setFile] = useState(null);
@@ -12,6 +13,7 @@ const AiExaminer = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [selectedTab, setSelectedTab] = useState(0);
   const [history, setHistory] = useState([]);
+  const { isDarkMode } = useDarkMode();
 
   // Allowed file types and size limit (15MB)
   const allowedFileTypes = [
@@ -92,16 +94,24 @@ const AiExaminer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-100'
+    }`}>
       <div className="max-w-4xl mx-auto">
         <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
-          <Tab.List className="flex space-x-1 rounded-xl bg-green-900/20 p-1">
+          <Tab.List className={`flex space-x-1 rounded-xl p-1 ${
+            isDarkMode ? 'bg-dark-surface-secondary' : 'bg-green-900/20'
+          }`}>
             <Tab
               className={({ selected }) =>
-                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 ${
+                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all duration-200 ${
                   selected
-                    ? 'bg-white shadow text-green-700'
-                    : 'text-gray-700 hover:bg-white/[0.12] hover:text-green-600'
+                    ? isDarkMode
+                      ? 'bg-dark-surface text-green-400 shadow-lg'
+                      : 'bg-white shadow text-green-700'
+                    : isDarkMode
+                      ? 'text-dark-text-secondary hover:bg-dark-border hover:text-green-400'
+                      : 'text-gray-700 hover:bg-white/[0.12] hover:text-green-600'
                 }`
               }
             >
@@ -109,10 +119,14 @@ const AiExaminer = () => {
             </Tab>
             <Tab
               className={({ selected }) =>
-                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 ${
+                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all duration-200 ${
                   selected
-                    ? 'bg-white shadow text-green-700'
-                    : 'text-gray-700 hover:bg-white/[0.12] hover:text-green-600'
+                    ? isDarkMode
+                      ? 'bg-dark-surface text-green-400 shadow-lg'
+                      : 'bg-white shadow text-green-700'
+                    : isDarkMode
+                      ? 'text-dark-text-secondary hover:bg-dark-border hover:text-green-400'
+                      : 'text-gray-700 hover:bg-white/[0.12] hover:text-green-600'
                 }`
               }
             >
@@ -120,10 +134,14 @@ const AiExaminer = () => {
             </Tab>
             <Tab
               className={({ selected }) =>
-                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 ${
+                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all duration-200 ${
                   selected
-                    ? 'bg-white shadow text-green-700'
-                    : 'text-gray-700 hover:bg-white/[0.12] hover:text-green-600'
+                    ? isDarkMode
+                      ? 'bg-dark-surface text-green-400 shadow-lg'
+                      : 'bg-white shadow text-green-700'
+                    : isDarkMode
+                      ? 'text-dark-text-secondary hover:bg-dark-border hover:text-green-400'
+                      : 'text-gray-700 hover:bg-white/[0.12] hover:text-green-600'
                 }`
               }
             >
@@ -133,18 +151,32 @@ const AiExaminer = () => {
 
           <Tab.Panels>
             <Tab.Panel>
-              <div className="bg-white p-8 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:shadow-xl">
+              <div className={`p-8 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:shadow-xl ${
+                isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+              }`}>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* File Upload */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-semibold mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                    }`}>
                       Upload Document
                     </label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-green-500 transition-colors">
+                    <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'border-dark-border hover:border-green-500' 
+                        : 'border-gray-300 hover:border-green-500'
+                    }`}>
                       <div className="space-y-1 text-center">
-                        <FaUpload className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600">
-                          <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500">
+                        <FaUpload className={`mx-auto h-12 w-12 ${
+                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-400'
+                        }`} />
+                        <div className={`flex text-sm ${
+                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                        }`}>
+                          <label htmlFor="file-upload" className={`relative cursor-pointer rounded-md font-medium ${
+                            isDarkMode ? 'text-green-400 hover:text-green-500' : 'text-green-600 hover:text-green-500'
+                          } focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500`}>
                             <span>Upload a file</span>
                             <input
                               id="file-upload"
@@ -156,7 +188,9 @@ const AiExaminer = () => {
                           </label>
                           <p className="pl-1">or drag and drop</p>
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className={`text-xs ${
+                          isDarkMode ? 'text-dark-text-tertiary' : 'text-gray-500'
+                        }`}>
                           PDF, DOCX, PPT, PNG, JPG up to 15MB
                         </p>
                       </div>
@@ -165,27 +199,39 @@ const AiExaminer = () => {
 
                   {/* Document Title */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-semibold mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                    }`}>
                       Document Title
                     </label>
                     <input
                       type="text"
                       value={documentTitle}
                       onChange={(e) => setDocumentTitle(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow shadow-sm hover:shadow-md"
+                      className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow shadow-sm hover:shadow-md ${
+                        isDarkMode 
+                          ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                          : 'border-gray-300'
+                      }`}
                       placeholder="Enter document title"
                     />
                   </div>
 
                   {/* Study Type */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-semibold mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                    }`}>
                       Question Type
                     </label>
                     <select
                       value={studyType}
                       onChange={(e) => setStudyType(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow shadow-sm hover:shadow-md"
+                      className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow shadow-sm hover:shadow-md ${
+                        isDarkMode 
+                          ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                          : 'border-gray-300'
+                      }`}
                     >
                       <option>Multiple Choice</option>
                       <option>True/False</option>
@@ -195,14 +241,20 @@ const AiExaminer = () => {
 
                   {/* Total Questions */}
                   <div>
-                    <label className="block text-gray-700 text-sm font-semibold mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                    }`}>
                       Total Questions
                     </label>
                     <input
                       type="number"
                       value={totalQuestions}
                       onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow shadow-sm hover:shadow-md"
+                      className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow shadow-sm hover:shadow-md ${
+                        isDarkMode 
+                          ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                          : 'border-gray-300'
+                      }`}
                       min="1"
                     />
                   </div>
@@ -213,9 +265,11 @@ const AiExaminer = () => {
                     disabled={isLoading}
                     className={`w-full py-3 rounded-lg text-white font-semibold transition-colors ${
                       isLoading
-                        ? "bg-green-400 cursor-not-allowed"
-                        : "bg-green-700 hover:bg-green-800"
-                    }`}
+                        ? isDarkMode ? 'bg-green-600/50' : 'bg-green-400'
+                        : isDarkMode
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : 'bg-green-700 hover:bg-green-800'
+                    } disabled:cursor-not-allowed`}
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
@@ -250,104 +304,70 @@ const AiExaminer = () => {
             </Tab.Panel>
 
             <Tab.Panel>
-              <div className="bg-white p-8 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:shadow-xl">
-                {generatedQuestions.length > 0 ? (
+              <div className={`p-8 rounded-lg shadow-lg ${
+                isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+              }`}>
+                {generatedQuestions.length === 0 ? (
+                  <p className={`text-center py-8 ${
+                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                  }`}>
+                    No questions generated yet. Generate some questions first!
+                  </p>
+                ) : (
                   <div className="space-y-6">
-                    <h3 className="text-2xl font-bold mb-6">Generated Questions</h3>
-                    {generatedQuestions.map((q, index) => (
-                      <div key={q.id} className="p-6 bg-gray-50 rounded-lg">
-                        <h4 className="font-semibold text-lg mb-4">
-                          Question {index + 1}: {q.question}
-                        </h4>
-                        {q.type === 'Multiple Choice' && (
-                          <div className="ml-4 space-y-2">
-                            {q.options.map((option, i) => (
-                              <div key={i} className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name={`question-${q.id}`}
-                                  id={`q${q.id}-option${i}`}
-                                  className="h-4 w-4 text-green-600 focus:ring-green-500"
-                                />
-                                <label htmlFor={`q${q.id}-option${i}`} className="ml-3">
-                                  {option}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {q.type === 'True/False' && (
-                          <div className="ml-4 space-y-2">
-                            {['True', 'False'].map((option, i) => (
-                              <div key={i} className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name={`question-${q.id}`}
-                                  id={`q${q.id}-option${i}`}
-                                  className="h-4 w-4 text-green-600 focus:ring-green-500"
-                                />
-                                <label htmlFor={`q${q.id}-option${i}`} className="ml-3">
-                                  {option}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {q.type === 'Fill in the Blank' && (
-                          <div className="ml-4">
-                            <input
-                              type="text"
-                              name={`question-${q.id}`}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                              placeholder="Your answer"
-                            />
-                          </div>
-                        )}
+                    {generatedQuestions.map((question, index) => (
+                      <div key={question.id} className={`p-6 rounded-lg ${
+                        isDarkMode ? 'bg-dark-surface border border-dark-border' : 'bg-gray-50'
+                      }`}>
+                        <h3 className={`font-medium mb-4 ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                        }`}>
+                          {index + 1}. {question.question}
+                        </h3>
+                        <div className="space-y-2">
+                          {question.options.map((option, optIndex) => (
+                            <div key={optIndex} className={`p-3 rounded-lg ${
+                              isDarkMode 
+                                ? 'bg-dark-surface-secondary hover:bg-dark-border' 
+                                : 'bg-white hover:bg-gray-100'
+                            } transition-colors duration-200`}>
+                              {option}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <FaQuestion className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No questions generated</h3>
-                    <p className="mt-1 text-sm text-gray-500">Generate questions to see them here.</p>
                   </div>
                 )}
               </div>
             </Tab.Panel>
 
             <Tab.Panel>
-              <div className="bg-white p-8 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform hover:shadow-xl">
-                {history.length > 0 ? (
-                  <div className="space-y-6">
-                    <h3 className="text-2xl font-bold mb-6">Generation History</h3>
+              <div className={`p-8 rounded-lg shadow-lg ${
+                isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+              }`}>
+                {history.length === 0 ? (
+                  <p className={`text-center py-8 ${
+                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                  }`}>
+                    No history yet. Generate some questions first!
+                  </p>
+                ) : (
+                  <div className="space-y-4">
                     {history.map((item) => (
-                      <div key={item.id} className="p-6 bg-gray-50 rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-semibold text-lg">{item.title}</h4>
-                            <p className="text-sm text-gray-500">
-                              {new Date(item.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setGeneratedQuestions(item.questions);
-                              setSelectedTab(1);
-                            }}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            View Questions
-                          </button>
-                        </div>
+                      <div key={item.id} className={`p-4 rounded-lg ${
+                        isDarkMode ? 'bg-dark-surface border border-dark-border' : 'bg-gray-50'
+                      }`}>
+                        <h3 className={`font-medium ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                        }`}>{item.title}</h3>
+                        <p className={`text-sm ${
+                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                        }`}>
+                          {item.type} • {new Date(item.timestamp).toLocaleString()}
+                        </p>
                       </div>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <FaHistory className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No history yet</h3>
-                    <p className="mt-1 text-sm text-gray-500">Your generation history will appear here.</p>
                   </div>
                 )}
               </div>

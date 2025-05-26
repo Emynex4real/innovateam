@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'react-hot-toast';
 import { XCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import { useDarkMode } from '../../../../contexts/DarkModeContext';
 
 // Reducer for form state management
 const formReducer = (state, action) => {
@@ -27,6 +28,7 @@ const OLevelEntry = () => {
   const { state } = useLocation();
   const { id, type, quantity, amount, fullname: initialFullname } = state || {};
   const navigate = useNavigate();
+  const { isDarkMode } = useDarkMode();
 
   // Initial form state with exactly 9 subjects
   const initialFormState = {
@@ -243,305 +245,287 @@ const OLevelEntry = () => {
   };
 
   return (
-    <div className="min-h-screen py-12 font-sans bg-gradient-to-b from-gray-100 to-green-50">
+    <div className={`min-h-screen py-12 font-sans transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gradient-to-b from-gray-100 to-green-50'
+    }`}>
       <Toaster position="top-right" />
       <div className="container mx-auto px-4 sm:px-6 lg:max-w-6xl">
         {/* Progress Indicator */}
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-semibold text-gray-800">Form Progress</h3>
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full"
-            >
-              {progress}%
-            </motion.span>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className={`text-lg font-semibold ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+            }`}>Form Progress</h2>
+            <span className={`text-sm font-medium ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+            }`}>{progress}% Complete</span>
           </div>
-          <div className="relative w-full bg-gray-200 rounded-full h-3 shadow-sm">
+          <div className={`h-2 rounded-full ${
+            isDarkMode ? 'bg-dark-border' : 'bg-gray-200'
+          }`}>
             <motion.div
-              className="bg-gradient-to-r from-green-600 to-green-400 h-3 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-              style={{ boxShadow: '0 2px 6px rgba(59, 130, 246, 0.3)' }}
+              className={`h-full rounded-full ${
+                isDarkMode ? 'bg-green-600' : 'bg-green-500'
+              }`}
             />
           </div>
         </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-4xl font-bold text-white bg-gradient-to-r from-green-600 to-green-800 p-4 rounded-lg mb-8 shadow-md"
-        >
-          O-Level Result Upload
-        </motion.h1>
+        {/* Form Container */}
+        <div className={`${
+          isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white border-gray-100'
+        } rounded-2xl shadow-xl p-6 md:p-8 border`}>
+          <div className="flex justify-between items-center mb-8">
+            <h1 className={`text-2xl md:text-3xl font-bold ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+            }`}>O-Level Entry Form</h1>
+            <div className="flex gap-4">
+              <button
+                onClick={handleClearForm}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  isDarkMode 
+                    ? 'bg-dark-surface hover:bg-dark-border text-dark-text-primary' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                Clear Form
+              </button>
+              <button
+                onClick={handleCancel}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  isDarkMode 
+                    ? 'bg-red-900/30 text-red-400 hover:bg-red-900/40' 
+                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                }`}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl p-8"
-        >
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Personal Information Section */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-800 bg-green-50 p-3 rounded-lg">Personal Information</h2>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className={`text-lg font-semibold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
-                  <input
-                    type="text"
-                    value={type || 'UTME'}
-                    readOnly
-                    className="mt-2 block w-full rounded-lg border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed focus:ring-green-500 focus:border-green-500 text-base py-3 px-4"
-                    aria-label="Form type"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name *</label>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>
+                    Full Name
+                  </label>
                   <input
                     type="text"
                     value={formData.fullname}
                     onChange={(e) => handleInputChange('fullname', e.target.value)}
-                    className="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                    placeholder="Enter full name"
-                    required
-                    disabled={isSubmitting}
-                    aria-label="Full name"
+                    className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                        : 'border-gray-200 placeholder-gray-400'
+                    }`}
+                    placeholder="Enter your full name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">JAMB Reg. No. (Optional)</label>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>
+                    JAMB Registration Number (Optional)
+                  </label>
                   <input
                     type="text"
                     value={formData.jambRegNo}
                     onChange={(e) => handleInputChange('jambRegNo', e.target.value)}
-                    className="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                    placeholder="e.g., 12345678AB"
-                    disabled={isSubmitting}
-                    aria-label="JAMB registration number"
+                    className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                        : 'border-gray-200 placeholder-gray-400'
+                    }`}
+                    placeholder="Enter JAMB registration number"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Subjects Section */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-800 bg-green-50 p-3 rounded-lg">Subjects (All 9 required)</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-green-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Subject</th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Grade</th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Reg. No.</th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Year</th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Exam Type</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <AnimatePresence>
-                      {formData.courses.map((course, index) => (
-                        <motion.tr
-                          key={index}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="hover:bg-green-50/50"
+            {/* O-Level Results */}
+            <div className="space-y-4">
+              <h3 className={`text-lg font-semibold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>O-Level Results</h3>
+              <div className="grid grid-cols-1 gap-6">
+                {formData.courses.map((course, index) => (
+                  <div key={index} className={`p-4 rounded-xl border ${
+                    isDarkMode ? 'border-dark-border bg-dark-surface' : 'border-gray-200 bg-gray-50'
+                  }`}>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div className="md:col-span-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                        }`}>
+                          Subject {index + 1}
+                        </label>
+                        <select
+                          value={course.subject}
+                          onChange={(e) => handleCourseChange(index, 'subject', e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                            isDarkMode 
+                              ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                              : 'border-gray-200'
+                          }`}
                         >
-                          <td className="px-6 py-4">
-                            <select
-                              value={course.subject}
-                              onChange={(e) => handleCourseChange(index, 'subject', e.target.value)}
-                              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                              disabled={isSubmitting}
-                              aria-label={`Subject ${index + 1}`}
-                              required
-                            >
-                              <option value="">Select Subject</option>
-                              {oLevelSubjects.map((subject) => (
-                                <option key={subject} value={subject}>
-                                  {subject}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="px-6 py-4">
-                            <select
-                              value={course.grade}
-                              onChange={(e) => handleCourseChange(index, 'grade', e.target.value)}
-                              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                              disabled={isSubmitting}
-                              aria-label={`Grade ${index + 1}`}
-                              required
-                            >
-                              <option value="">Select Grade</option>
-                              {['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'].map((grade) => (
-                                <option key={grade} value={grade}>{grade}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="px-6 py-4">
-                            <input
-                              type="text"
-                              value={course.regNo}
-                              onChange={(e) => handleCourseChange(index, 'regNo', e.target.value)}
-                              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                              placeholder="Enter Reg. No."
-                              disabled={isSubmitting}
-                              aria-label={`Registration number ${index + 1}`}
-                              required
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <input
-                              type="number"
-                              value={course.year}
-                              onChange={(e) => handleCourseChange(index, 'year', e.target.value)}
-                              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                              placeholder="Enter Year"
-                              min="1980"
-                              max={new Date().getFullYear()}
-                              disabled={isSubmitting}
-                              aria-label={`Year ${index + 1}`}
-                              required
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <select
-                              value={course.examType}
-                              onChange={(e) => handleCourseChange(index, 'examType', e.target.value)}
-                              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                              disabled={isSubmitting}
-                              aria-label={`Exam type ${index + 1}`}
-                              required
-                            >
-                              <option value="">Select Exam Type</option>
-                              {['WAEC', 'NECO', 'WAEC GCE', 'NECO GCE', 'NBAIS'].map((type) => (
-                                <option key={type} value={type}>{type}</option>
-                              ))}
-                            </select>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
+                          <option value="">Select Subject</option>
+                          {oLevelSubjects.map((subject) => (
+                            <option key={subject} value={subject} className={
+                              isDarkMode ? 'bg-dark-surface text-dark-text-primary' : ''
+                            }>{subject}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                        }`}>
+                          Grade
+                        </label>
+                        <select
+                          value={course.grade}
+                          onChange={(e) => handleCourseChange(index, 'grade', e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                            isDarkMode 
+                              ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                              : 'border-gray-200'
+                          }`}
+                        >
+                          <option value="">Grade</option>
+                          {['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'].map((grade) => (
+                            <option key={grade} value={grade} className={
+                              isDarkMode ? 'bg-dark-surface text-dark-text-primary' : ''
+                            }>{grade}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                        }`}>
+                          Exam Type
+                        </label>
+                        <select
+                          value={course.examType}
+                          onChange={(e) => handleCourseChange(index, 'examType', e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                            isDarkMode 
+                              ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                              : 'border-gray-200'
+                          }`}
+                        >
+                          <option value="">Select</option>
+                          {['WAEC', 'NECO', 'NABTEB'].map((type) => (
+                            <option key={type} value={type} className={
+                              isDarkMode ? 'bg-dark-surface text-dark-text-primary' : ''
+                            }>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                        }`}>
+                          Year
+                        </label>
+                        <input
+                          type="number"
+                          value={course.year}
+                          onChange={(e) => handleCourseChange(index, 'year', e.target.value)}
+                          min="1980"
+                          max={new Date().getFullYear()}
+                          className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                            isDarkMode 
+                              ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                              : 'border-gray-200'
+                          }`}
+                          placeholder="YYYY"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* File Uploads Section */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-800 bg-green-50 p-3 rounded-lg">File Uploads</h2>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {/* File Upload Section */}
+            <div className="space-y-4">
+              <h3 className={`text-lg font-semibold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>Document Upload</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">O-Level Result File *</label>
-                  <input
-                    type="file"
-                    onChange={(e) => handleFileChange('oLevelFile', e.target.files[0])}
-                    className="mt-2 block w-full text-base text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-green-100 file:text-green-700 hover:file:bg-green-200 disabled:bg-gray-100"
-                    accept=".pdf,.jpg,.png"
-                    disabled={isSubmitting}
-                    aria-label="O-Level result file upload"
-                    required
-                  />
-                  {formData.oLevelFile && (
-                    <div className="mt-3 flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                      <span className="text-base text-gray-600 truncate max-w-[250px]">{formData.oLevelFile.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleFileChange('oLevelFile', null)}
-                        className="text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-md p-2"
-                        aria-label="Remove O-Level result file"
-                      >
-                        <XCircle className="w-6 h-6" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Second Sitting File (Optional)</label>
-                  <input
-                    type="file"
-                    onChange={(e) => handleFileChange('secondSittingFile', e.target.files[0])}
-                    className="mt-2 block w-full text-base text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-green-100 file:text-green-700 hover:file:bg-green-200 disabled:bg-gray-100"
-                    accept=".pdf,.jpg,.png"
-                    disabled={isSubmitting}
-                    aria-label="Second sitting file upload"
-                  />
-                  {formData.secondSittingFile && (
-                    <div className="mt-3 flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                      <span className="text-base text-gray-600 truncate max-w-[250px]">{formData.secondSittingFile.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleFileChange('secondSittingFile', null)}
-                        className="text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-md p-2"
-                        aria-label="Remove second sitting file"
-                      >
-                        <XCircle className="w-6 h-6" />
-                      </button>
-                    </div>
-                  )}
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>
+                    O-Level Result (Required)
+                  </label>
+                  <div className={`p-4 border-2 border-dashed rounded-xl text-center ${
+                    isDarkMode 
+                      ? 'border-dark-border hover:border-green-600' 
+                      : 'border-gray-300 hover:border-green-500'
+                  }`}>
+                    <input
+                      type="file"
+                      onChange={(e) => handleFileChange('oLevelFile', e.target.files[0])}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      id="oLevelFile"
+                    />
+                    <label htmlFor="oLevelFile" className="cursor-pointer">
+                      <div className={`text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                      }`}>
+                        {formData.oLevelFile ? (
+                          <span className="text-green-500">
+                            {formData.oLevelFile.name}
+                          </span>
+                        ) : (
+                          <>
+                            <span className={`font-medium ${
+                              isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                            }`}>Click to upload</span> or drag and drop
+                          </>
+                        )}
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Additional Information */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Additional Information (Optional)</label>
-              <textarea
-                value={formData.additionalInfo}
-                onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
-                className="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-base py-3 px-4 disabled:bg-gray-100"
-                placeholder="Provide any additional information..."
-                disabled={isSubmitting}
-                rows={5}
-                aria-label="Additional information"
-              />
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            {/* Submit Button */}
+            <div className="flex justify-end gap-4">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 inline-flex justify-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white text-base font-semibold rounded-lg hover:from-green-700 hover:to-green-600 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md transition-all duration-200"
-                aria-label="Submit form"
+                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                  isDarkMode
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isSubmitting ? (
-                  <svg className="animate-spin h-6 w-6 mr-3" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" />
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" />
-                  </svg>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Submitting...
+                  </div>
                 ) : (
-                  <CheckCircle className="w-5 h-5 mr-2" />
+                  'Submit Entry'
                 )}
-                {isSubmitting ? 'Submitting...' : 'Submit Entry'}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="flex-1 inline-flex justify-center px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-500 text-white text-base font-semibold rounded-lg hover:from-gray-700 hover:to-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md transition-all duration-200"
-                disabled={isSubmitting}
-                aria-label="Cancel form"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleClearForm}
-                className="flex-1 inline-flex justify-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 text-white text-base font-semibold rounded-lg hover:from-red-700 hover:to-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md transition-all duration-200"
-                disabled={isSubmitting}
-                aria-label="Clear form"
-              >
-                Clear Form
               </button>
             </div>
           </form>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

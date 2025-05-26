@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaMapMarkerAlt, FaEnvelope, FaPhone, FaLink, FaArrowRight, FaSpinner } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 
 const Support = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ const Support = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('general');
   const [faqExpanded, setFaqExpanded] = useState(null);
+  const { isDarkMode } = useDarkMode();
 
   const supportCategories = [
     { id: 'general', label: 'General Support' },
@@ -79,26 +81,40 @@ const Support = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 font-nunito">
+    <div className={`min-h-screen p-4 font-nunito transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50'
+    }`}>
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12 p-8 bg-white rounded-xl shadow-lg"
+          className={`text-center mb-12 p-8 rounded-xl shadow-lg ${
+            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+          }`}
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">How Can We Help You?</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto mb-8">Choose a category below or search for specific help. Our support team is here to assist you 24/7.</p>
+          <h1 className={`text-3xl md:text-4xl font-bold mb-4 ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+          }`}>How Can We Help You?</h1>
+          <p className={`max-w-2xl mx-auto mb-8 ${
+            isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+          }`}>Choose a category below or search for specific help. Our support team is here to assist you 24/7.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {supportCategories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`p-4 rounded-lg transition-all duration-200 ${selectedCategory === category.id
-                  ? 'bg-primary-color text-white shadow-lg scale-105'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                className={`p-4 rounded-lg transition-all duration-200 ${
+                  selectedCategory === category.id
+                    ? isDarkMode
+                      ? 'bg-green-600 text-white shadow-lg scale-105'
+                      : 'bg-primary-color text-white shadow-lg scale-105'
+                    : isDarkMode
+                      ? 'bg-dark-surface text-dark-text-secondary hover:bg-dark-border'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 {category.label}
               </button>
@@ -110,23 +126,39 @@ const Support = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mb-12 bg-white rounded-xl shadow-lg p-8"
+          className={`mb-12 p-8 rounded-xl shadow-lg ${
+            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+          }`}
         >
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Frequently Asked Questions</h2>
+          <h2 className={`text-2xl font-bold mb-6 ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+          }`}>Frequently Asked Questions</h2>
           <div className="space-y-4">
             {faqs.map((faq, index) => (
               <motion.div
                 key={index}
-                className="border border-gray-200 rounded-lg overflow-hidden"
+                className={`border rounded-lg overflow-hidden ${
+                  isDarkMode ? 'border-dark-border' : 'border-gray-200'
+                }`}
                 initial={false}
               >
                 <button
-                  className="w-full p-4 text-left flex justify-between items-center bg-gray-50 hover:bg-gray-100"
+                  className={`w-full p-4 text-left flex justify-between items-center transition-colors duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface hover:bg-dark-border' 
+                      : 'bg-gray-50 hover:bg-gray-100'
+                  }`}
                   onClick={() => setFaqExpanded(faqExpanded === index ? null : index)}
                 >
-                  <span className="font-medium text-gray-700">{faq.question}</span>
+                  <span className={`font-medium ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>{faq.question}</span>
                   <FaArrowRight
-                    className={`transform transition-transform duration-200 ${faqExpanded === index ? 'rotate-90' : ''}`}
+                    className={`transform transition-transform duration-200 ${
+                      faqExpanded === index ? 'rotate-90' : ''
+                    } ${
+                      isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                    }`}
                   />
                 </button>
                 <AnimatePresence>
@@ -136,9 +168,13 @@ const Support = () => {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="border-t border-gray-200"
+                      className={`border-t ${
+                        isDarkMode ? 'border-dark-border' : 'border-gray-200'
+                      }`}
                     >
-                      <div className="p-4 bg-white text-gray-600">
+                      <div className={`p-4 ${
+                        isDarkMode ? 'bg-dark-surface text-dark-text-secondary' : 'bg-white text-gray-600'
+                      }`}>
                         {faq.answer}
                       </div>
                     </motion.div>
@@ -154,7 +190,9 @@ const Support = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="bg-white rounded-xl shadow-lg w-full flex flex-col lg:flex-row overflow-hidden"
+          className={`rounded-xl shadow-lg w-full flex flex-col lg:flex-row overflow-hidden ${
+            isDarkMode ? 'bg-dark-surface-secondary' : 'bg-white'
+          }`}
         >
           {/* Contact Information */}
           <div className="bg-gradient-to-br from-primary-color to-green-600 text-white p-8 lg:w-1/3 flex flex-col gap-8">
@@ -207,9 +245,15 @@ const Support = () => {
           </div>
 
           {/* Contact Form */}
-          <div className="p-8 lg:w-2/3">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Send Us a Message</h2>
-            <p className="text-gray-600 mb-6">Fill out the form below and we'll get back to you as soon as possible.</p>
+          <div className={`p-8 lg:w-2/3 ${
+            isDarkMode ? 'bg-dark-surface' : 'bg-white'
+          }`}>
+            <h2 className={`text-2xl font-bold mb-4 ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+            }`}>Send Us a Message</h2>
+            <p className={`mb-6 ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+            }`}>Fill out the form below and we'll get back to you as soon as possible.</p>
             <form onSubmit={handleSubmit} className="space-y-6">
               {[
                 { label: 'Your Name', name: 'name', type: 'text', placeholder: 'Full Name' },
@@ -217,7 +261,9 @@ const Support = () => {
                 { label: 'Subject', name: 'subject', type: 'text', placeholder: 'Subject' },
               ].map((field) => (
                 <div key={field.name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={field.name}>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`} htmlFor={field.name}>
                     {field.label}
                   </label>
                   <input
@@ -226,9 +272,13 @@ const Support = () => {
                     name={field.name}
                     value={formData[field.name]}
                     onChange={handleChange}
-                    className={`w-full p-4 border ${
-                      errors[field.name] ? 'border-red-500' : 'border-gray-300'
-                    } rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200`}
+                    className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200 ${
+                      errors[field.name]
+                        ? 'border-red-500'
+                        : isDarkMode
+                          ? 'border-dark-border bg-dark-surface text-dark-text-primary'
+                          : 'border-gray-300 bg-gray-50'
+                    }`}
                     placeholder={field.placeholder}
                     required
                     disabled={isSubmitting}
@@ -238,7 +288,9 @@ const Support = () => {
               ))}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="message">
+                <label className={`block text-sm font-medium mb-1 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`} htmlFor="message">
                   Message
                 </label>
                 <textarea
@@ -246,28 +298,39 @@ const Support = () => {
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
-                  className={`w-full p-4 border ${
-                    errors.message ? 'border-red-500' : 'border-gray-300'
-                  } rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200 h-32`}
-                  placeholder="Your message..."
+                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200 ${
+                    errors.message
+                      ? 'border-red-500'
+                      : isDarkMode
+                        ? 'border-dark-border bg-dark-surface text-dark-text-primary'
+                        : 'border-gray-300 bg-gray-50'
+                  }`}
+                  rows={4}
+                  placeholder="Your message"
                   required
                   disabled={isSubmitting}
                 />
                 {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
               </div>
 
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="bg-primary-color text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-600 transform hover:scale-105 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 shadow-lg"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting && (
-                    <FaSpinner className="animate-spin h-5 w-5" />
-                  )}
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors duration-200 ${
+                  isDarkMode
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-primary-color hover:bg-primary-color-dark text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Message'
+                )}
+              </button>
             </form>
           </div>
         </motion.div>

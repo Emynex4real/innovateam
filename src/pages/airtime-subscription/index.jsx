@@ -3,6 +3,7 @@ import { useTransactions } from "../../contexts/TransactionContext";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import { PhoneIcon } from "@heroicons/react/24/outline";
+import { useDarkMode } from "../../contexts/DarkModeContext";
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -43,6 +44,7 @@ const AirtimeSubscription = () => {
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
+  const { isDarkMode } = useDarkMode();
 
   const formatAmount = (value) => {
     // Remove all non-digit characters except decimal point
@@ -59,8 +61,6 @@ const AirtimeSubscription = () => {
     setMessage({ text: "", type: "" });
   };
 
-
-
   // Validate Nigerian mobile number (e.g., 11 digits starting with 0)
   const validateMobileNumber = (number) => {
     const regex = /^0[7-9][0-1]\d{8}$/; // Matches 070, 080, 090, 081, etc.
@@ -72,8 +72,6 @@ const AirtimeSubscription = () => {
     const numericAmt = parseFloat(amt.replace("₦", "").replace(/[^\d.]/g, ""));
     return !isNaN(numericAmt) && numericAmt >= 50 && numericAmt <= 10000;
   };
-
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -143,19 +141,27 @@ const AirtimeSubscription = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 font-nunito relative">
+    <div className={`min-h-screen transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gradient-to-b from-gray-50 to-white'
+    } container mx-auto px-4 py-8 font-nunito relative`}>
       {isLoading && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center"
+          className={`fixed inset-0 ${
+            isDarkMode ? 'bg-black/40' : 'bg-black/20'
+          } backdrop-blur-sm z-50 flex items-center justify-center`}
         >
-          <div className="bg-white rounded-2xl p-6 shadow-xl flex items-center gap-4">
+          <div className={`${
+            isDarkMode ? 'bg-dark-surface-secondary' : 'bg-white'
+          } rounded-2xl p-6 shadow-xl flex items-center gap-4`}>
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-green-200 animate-spin border-t-green-500"></div>
               <div className="w-12 h-12 rounded-full border-4 border-green-500/30 animate-ping absolute inset-0"></div>
             </div>
-            <p className="text-gray-600 font-medium">Processing your request...</p>
+            <p className={`${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-600'
+            } font-medium`}>Processing your request...</p>
           </div>
         </motion.div>
       )}
@@ -167,14 +173,22 @@ const AirtimeSubscription = () => {
       >
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-green-100 rounded-full">
-            <PhoneIcon className="w-6 h-6 text-green-600" />
+          <div className={`p-3 ${
+            isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+          } rounded-full`}>
+            <PhoneIcon className={`w-6 h-6 ${
+              isDarkMode ? 'text-green-400' : 'text-green-600'
+            }`} />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Airtime Subscription</h1>
+          <h1 className={`text-2xl md:text-3xl font-bold ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+          }`}>Airtime Subscription</h1>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div className={`${
+          isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white border-gray-100'
+        } rounded-2xl shadow-xl p-6 mb-8 border`}>
           <motion.form
             onSubmit={handleSubmit}
             variants={formVariants}
@@ -182,7 +196,9 @@ const AirtimeSubscription = () => {
           >
             {/* Network Selection */}
             <motion.div variants={itemVariants}>
-              <label htmlFor="network" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="network" className={`block text-sm font-medium mb-2 ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+              }`}>
                 Select Network Provider
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -193,14 +209,22 @@ const AirtimeSubscription = () => {
                     onClick={() => setNetwork(provider)}
                     className={`p-4 rounded-xl border-2 transition-all duration-300
                       ${network === provider
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 hover:border-green-200 hover:bg-green-50"}
+                        ? isDarkMode
+                          ? 'border-green-600 bg-green-900/30 text-green-400'
+                          : 'border-green-500 bg-green-50 text-green-700'
+                        : isDarkMode
+                          ? 'border-dark-border hover:border-green-800 hover:bg-green-900/20'
+                          : 'border-gray-200 hover:border-green-200 hover:bg-green-50'
+                      }
                     `}
                     disabled={isLoading}
                   >
                     <div className="text-center">
                       <div className={`w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center
-                        ${network === provider ? "bg-green-500" : "bg-gray-200"}
+                        ${network === provider 
+                          ? isDarkMode ? 'bg-green-600' : 'bg-green-500'
+                          : isDarkMode ? 'bg-dark-border' : 'bg-gray-200'
+                        }
                       `}>
                         <span className="text-white text-xs font-bold">
                           {provider === "MTN" ? "M" :
@@ -208,7 +232,9 @@ const AirtimeSubscription = () => {
                            provider === "Glo" ? "G" : "9"}
                         </span>
                       </div>
-                      <span className="text-sm font-medium">{provider}</span>
+                      <span className={`text-sm font-medium ${
+                        isDarkMode ? 'text-dark-text-primary' : ''
+                      }`}>{provider}</span>
                     </div>
                   </button>
                 ))}
@@ -217,14 +243,20 @@ const AirtimeSubscription = () => {
 
             {/* Mobile Number Input */}
             <motion.div variants={itemVariants}>
-              <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="mobileNumber" className={`block text-sm font-medium mb-2 ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+              }`}>
                 Mobile Number
               </label>
               <div className="relative">
                 <input
                   type="text"
                   id="mobileNumber"
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                      : 'border-gray-200 placeholder-gray-400'
+                  }`}
                   placeholder="Enter mobile number"
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ""))}
@@ -232,77 +264,87 @@ const AirtimeSubscription = () => {
                   disabled={isLoading}
                 />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                  <PhoneIcon className="w-5 h-5 text-gray-400" />
+                  <PhoneIcon className={`w-5 h-5 ${
+                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-400'
+                  }`} />
                 </div>
               </div>
             </motion.div>
 
             {/* Amount Input */}
             <motion.div variants={itemVariants}>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="amount" className={`block text-sm font-medium mb-2 ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+              }`}>
                 Amount
               </label>
               <div className="relative">
                 <input
                   type="text"
                   id="amount"
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                      : 'border-gray-200 placeholder-gray-400'
+                  }`}
                   placeholder="Enter amount"
                   value={amount}
                   onChange={(e) => setAmount(formatAmount(e.target.value))}
                   disabled={isLoading}
                 />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
-                  ₦
-                </div>
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 font-medium ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                }`}>₦</div>
               </div>
-              <p className="mt-2 text-sm text-gray-500">Amount range: ₦50 - ₦10,000</p>
             </motion.div>
-
-            {/* Message Display */}
-            {message.text && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`p-4 rounded-xl text-sm font-medium ${message.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
-              >
-                {message.text}
-              </motion.div>
-            )}
 
             {/* Action Buttons */}
             <motion.div variants={itemVariants} className="flex gap-4">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300"
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
+                  isDarkMode
+                    ? 'bg-dark-surface hover:bg-dark-border text-dark-text-primary'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                }`}
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`flex-1 bg-gradient-to-r from-green-600 to-green-500 text-white py-3 px-6 rounded-xl font-semibold
-                  hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2
-                  ${isLoading ? "opacity-75 cursor-not-allowed" : ""}
-                `}
-                disabled={isLoading}
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDarkMode
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+                disabled={isLoading || !network || !mobileNumber || !amount}
               >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  "Proceed"
-                )}
+                {isLoading ? 'Processing...' : 'Purchase Airtime'}
               </button>
             </motion.div>
           </motion.form>
         </div>
+
+        {/* Message Display */}
+        {message.text && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-4 rounded-xl mb-8 ${
+              message.type === 'success'
+                ? isDarkMode 
+                  ? 'bg-green-900/30 text-green-400 border border-green-800'
+                  : 'bg-green-50 text-green-800 border border-green-200'
+                : isDarkMode
+                  ? 'bg-red-900/30 text-red-400 border border-red-800'
+                  : 'bg-red-50 text-red-800 border border-red-200'
+            }`}
+          >
+            {message.text}
+          </motion.div>
+        )}
 
         {/* Transactions Section */}
         <motion.div

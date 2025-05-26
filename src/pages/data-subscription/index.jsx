@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useTransactions } from "../../contexts/TransactionContext";
 import { PhoneIcon, WifiIcon } from "@heroicons/react/24/outline";
+import { useDarkMode } from "../../contexts/DarkModeContext";
 
 const DataSubscription = () => {
   const { addTransaction, walletBalance, transactions } = useTransactions();
@@ -11,6 +12,7 @@ const DataSubscription = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [showPlans, setShowPlans] = useState(false);
+  const { isDarkMode } = useDarkMode();
 
   // Animation variants
   const containerVariants = {
@@ -149,7 +151,9 @@ const DataSubscription = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-nunito lg:ml-0 md:ml-20 py-8">
+    <div className={`min-h-screen transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gradient-to-b from-gray-50 to-white'
+    } lg:ml-0 md:ml-20 py-8`}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
         <motion.div
@@ -159,12 +163,20 @@ const DataSubscription = () => {
           className="mb-8"
         >
           <div className="relative">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight mb-2 relative z-10">
+            <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight mb-2 relative z-10 ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+            }`}>
               Data Subscription
             </h1>
-            <p className="text-gray-600 text-lg relative z-10">Purchase data bundles for any network</p>
-            <div className="absolute -top-6 -left-6 w-24 h-24 bg-green-100 rounded-full filter blur-xl opacity-60"></div>
-            <div className="absolute top-10 -right-4 w-16 h-16 bg-green-50 rounded-full filter blur-lg opacity-40"></div>
+            <p className={`text-lg relative z-10 ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+            }`}>Purchase data bundles for any network</p>
+            <div className={`absolute -top-6 -left-6 w-24 h-24 rounded-full filter blur-xl opacity-60 ${
+              isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+            }`}></div>
+            <div className={`absolute top-10 -right-4 w-16 h-16 rounded-full filter blur-lg opacity-40 ${
+              isDarkMode ? 'bg-green-900/20' : 'bg-green-50'
+            }`}></div>
           </div>
         </motion.div>
 
@@ -176,11 +188,15 @@ const DataSubscription = () => {
             animate="visible"
             className="space-y-8"
           >
-            <div className="bg-white rounded-2xl shadow-xl p-8 relative overflow-hidden border border-gray-100">
+            <div className={`rounded-2xl shadow-xl p-8 relative overflow-hidden border ${
+              isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white border-gray-100'
+            }`}>
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-6">
                   <WifiIcon className="h-8 w-8 text-green-500" />
-                  <h2 className="text-2xl font-bold text-gray-800">Buy Data Bundle</h2>
+                  <h2 className={`text-2xl font-bold ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Buy Data Bundle</h2>
                 </div>
 
                 <form onSubmit={handleProceed} className="space-y-6">
@@ -193,9 +209,14 @@ const DataSubscription = () => {
                         onClick={() => setNetwork(net)}
                         className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2
                           ${network === net
-                            ? "border-green-500 bg-green-50 text-green-700"
-                            : "border-gray-200 hover:border-green-200 hover:bg-green-50/30"}
-                          ${isLoading || showPlans ? "opacity-50 cursor-not-allowed" : ""}
+                            ? isDarkMode 
+                              ? 'border-green-600 bg-green-900/30 text-green-400'
+                              : 'border-green-500 bg-green-50 text-green-700'
+                            : isDarkMode
+                              ? 'border-dark-border hover:border-green-800 hover:bg-green-900/20'
+                              : 'border-gray-200 hover:border-green-200 hover:bg-green-50/30'
+                          }
+                          ${isLoading || showPlans ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
                         disabled={isLoading || showPlans}
                       >
@@ -219,24 +240,34 @@ const DataSubscription = () => {
                             <span className="text-2xl font-bold text-white">9</span>
                           </div>
                         )}
-                        <span className="font-medium">{net}</span>
+                        <span className={`font-medium ${
+                          isDarkMode ? 'text-dark-text-primary' : ''
+                        }`}>{net}</span>
                       </motion.button>
                     ))}
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="mobileNumber" className={`block text-sm font-medium ${
+                      isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                    }`}>
                       Mobile Number
                     </label>
                     <div className="relative">
-                      <PhoneIcon className="h-5 w-5 text-gray-400 absolute left-3 top-3" />
+                      <PhoneIcon className={`h-5 w-5 absolute left-3 top-3 ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-400'
+                      }`} />
                       <input
                         type="tel"
                         id="mobileNumber"
                         value={mobileNumber}
                         onChange={(e) => setMobileNumber(formatMobileNumber(e.target.value))}
                         placeholder="Enter mobile number (e.g., 08012345678)"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                          isDarkMode 
+                            ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                            : 'border-gray-200 placeholder-gray-400'
+                        }`}
                         disabled={isLoading || showPlans}
                         maxLength="11"
                       />
@@ -248,112 +279,119 @@ const DataSubscription = () => {
 
                   {message.text && (
                     <div
-                      className={`p-4 rounded-lg ${
-                        message.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
+                      className={`p-4 rounded-xl ${
+                        message.type === "success"
+                          ? isDarkMode 
+                            ? 'bg-green-900/30 text-green-400 border border-green-800'
+                            : 'bg-green-50 text-green-800 border border-green-200'
+                          : isDarkMode
+                            ? 'bg-red-900/30 text-red-400 border border-red-800'
+                            : 'bg-red-50 text-red-800 border border-red-200'
                       }`}
                     >
                       {message.text}
                     </div>
                   )}
 
-                  <button
-                    type="submit"
-                    className={`w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 rounded-xl font-semibold
-                      hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2
-                      ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                    `}
-                    disabled={isLoading || showPlans}
-                  >
-                    Proceed to Select Plan
-                  </button>
+                  <div className="flex gap-4">
+                    {!showPlans ? (
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`flex-1 py-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                          isDarkMode
+                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                        disabled={isLoading || !network || !validateMobileNumber(mobileNumber)}
+                      >
+                        Proceed
+                      </motion.button>
+                    ) : (
+                      <>
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleCancel}
+                          className={`flex-1 py-4 rounded-xl font-semibold transition-all duration-300 ${
+                            isDarkMode
+                              ? 'bg-dark-surface hover:bg-dark-border text-dark-text-primary'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                          }`}
+                        >
+                          Cancel
+                        </motion.button>
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleBuyPlan}
+                          className={`flex-1 py-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            isDarkMode
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : 'bg-green-500 hover:bg-green-600 text-white'
+                          }`}
+                          disabled={isLoading || !selectedPlan}
+                        >
+                          {isLoading ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                              Processing...
+                            </div>
+                          ) : (
+                            'Buy Now'
+                          )}
+                        </motion.button>
+                      </>
+                    )}
+                  </div>
                 </form>
               </div>
             </div>
 
-            {/* Data Plans Dropdown Section */}
+            {/* Data Plans Section */}
             {showPlans && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
+                className={`rounded-2xl shadow-xl p-8 border ${
+                  isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white border-gray-100'
+                }`}
               >
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    {network === "MTN" && (
-                      <div className="w-6 h-6 flex items-center justify-center bg-yellow-400 rounded-full text-xs font-bold text-white">M</div>
-                    )}
-                    {network === "Airtel" && (
-                      <div className="w-6 h-6 flex items-center justify-center bg-red-500 rounded-full text-xs font-bold text-white">A</div>
-                    )}
-                    {network === "Glo" && (
-                      <div className="w-6 h-6 flex items-center justify-center bg-green-500 rounded-full text-xs font-bold text-white">G</div>
-                    )}
-                    {network === "9mobile" && (
-                      <div className="w-6 h-6 flex items-center justify-center bg-green-600 rounded-full text-xs font-bold text-white">9</div>
-                    )}
-                    Select {network} Data Plan
-                  </h3>
-                </div>
-
-                <div className="p-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label htmlFor="dataPlan" className="block text-sm font-medium text-gray-700">
-                        Choose Data Plan
-                      </label>
-                      <select
-                        id="dataPlan"
-                        value={selectedPlan}
-                        onChange={(e) => setSelectedPlan(e.target.value)}
-                        className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        disabled={isLoading}
-                      >
-                        <option value="">Select a data plan</option>
-                        {network &&
-                          dataPlans[network].map((plan) => (
-                            <option key={plan.id} value={plan.id}>
-                              {plan.name} - {plan.amount} ({plan.validity})
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-
-                    <button
+                <h3 className={`text-xl font-semibold mb-6 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                }`}>Select Data Plan</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {dataPlans[network].map((plan) => (
+                    <motion.button
+                      key={plan.id}
                       type="button"
-                      onClick={handleBuyPlan}
-                      className={`w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 rounded-xl font-semibold
-                        hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2
-                        ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                      `}
-                      disabled={isLoading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedPlan(plan.id.toString())}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 text-left ${
+                        selectedPlan === plan.id.toString()
+                          ? isDarkMode 
+                            ? 'border-green-600 bg-green-900/30'
+                            : 'border-green-500 bg-green-50'
+                          : isDarkMode
+                            ? 'border-dark-border hover:border-green-800 hover:bg-green-900/20'
+                            : 'border-gray-200 hover:border-green-200 hover:bg-green-50/30'
+                      }`}
                     >
-                      {isLoading ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                          Processing...
-                        </span>
-                      ) : (
-                        "Buy Now"
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-gray-50 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="w-full bg-white border-2 border-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-300 flex items-center justify-center gap-2"
-                  >
-                    Back to Selection
-                  </button>
+                      <p className={`font-semibold mb-1 ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>{plan.name}</p>
+                      <p className={`text-lg font-bold ${
+                        isDarkMode ? 'text-green-400' : 'text-green-600'
+                      }`}>{plan.amount}</p>
+                      <p className={`text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                      }`}>Validity: {plan.validity}</p>
+                    </motion.button>
+                  ))}
                 </div>
               </motion.div>
             )}

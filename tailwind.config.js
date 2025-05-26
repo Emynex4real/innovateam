@@ -22,11 +22,22 @@ module.exports = {
         dark: {
           bg: '#121212',
           surface: '#1E1E1E',
+          'surface-secondary': '#252525',
+          'surface-tertiary': '#2E2E2E',
           border: '#2E2E2E',
+          'border-secondary': '#404040',
           text: {
             primary: '#FFFFFF',
             secondary: '#A0A0A0',
+            tertiary: '#6B7280',
           },
+          hover: '#2E2E2E',
+          active: '#404040',
+          input: {
+            bg: '#252525',
+            border: '#404040',
+            focus: '#4ade80',
+          }
         },
       },
       fontFamily: {

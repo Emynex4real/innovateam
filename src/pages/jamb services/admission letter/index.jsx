@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DocumentTextIcon, AcademicCapIcon, WalletIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useJambTransaction } from '../../../hooks/useJambTransaction';
 import { toast } from 'react-toastify';
+import { useDarkMode } from '../../../contexts/DarkModeContext';
 
 const AdmissionLetter = () => {
   const [type, setType] = useState('');
@@ -10,6 +11,7 @@ const AdmissionLetter = () => {
   const [amount, setAmount] = useState(1500); // Default amount for one admission letter
   const [isLoading, setIsLoading] = useState(false);
   const { processJambTransaction, walletBalance } = useJambTransaction();
+  const { isDarkMode } = useDarkMode();
 
   const handleQuantityChange = (e) => {
     const newQuantity = parseInt(e.target.value, 10);
@@ -49,29 +51,49 @@ const AdmissionLetter = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen py-6 font-nunito">
+    <div className={`min-h-screen py-6 font-nunito transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50'
+    }`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-green-100 rounded-full">
-            <DocumentTextIcon className="w-6 h-6 text-green-600" />
+          <div className={`p-3 ${
+            isDarkMode ? 'bg-green-900/30' : 'bg-green-100'
+          } rounded-full`}>
+            <DocumentTextIcon className={`w-6 h-6 ${
+              isDarkMode ? 'text-green-400' : 'text-green-600'
+            }`} />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Admission Letter</h1>
+          <h1 className={`text-2xl md:text-3xl font-bold ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+          }`}>Admission Letter</h1>
         </div>
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* Admission Letter Form */}
-          <div className="flex-1 bg-white p-6 rounded-xl shadow-md">
+          <div className={`flex-1 ${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white'
+          } p-6 rounded-xl shadow-md border`}>
             <div className="flex items-center gap-3 mb-6">
-              <AcademicCapIcon className="w-6 h-6 text-green-600" />
-              <h2 className="text-lg font-bold text-gray-800">Letter Details</h2>
+              <AcademicCapIcon className={`w-6 h-6 ${
+                isDarkMode ? 'text-green-400' : 'text-green-600'
+              }`} />
+              <h2 className={`text-lg font-bold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>Letter Details</h2>
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <label className={`block text-sm font-medium mb-1 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}>Type</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  className={`mt-1 block w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                      : 'border-gray-300'
+                  }`}
                 >
                   <option value="">Select Type</option>
                   <option value="Undergraduate">ADMISSION LETTER (₦1500)</option>
@@ -80,11 +102,17 @@ const AdmissionLetter = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Quantity</label>
+                <label className={`block text-sm font-medium mb-1 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}>Quantity</label>
                 <select
                   value={quantity}
                   onChange={handleQuantityChange}
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  className={`mt-1 block w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                      : 'border-gray-300'
+                  }`}
                 >
                   <option value="1">1</option>
                   <option value="2">2</option>
@@ -95,29 +123,43 @@ const AdmissionLetter = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Amount</label>
+                <label className={`block text-sm font-semibold mb-1 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}>Amount</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={`₦${amount}`}
                     readOnly
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-700 cursor-not-allowed"
+                    className={`w-full pl-12 pr-4 py-3 border rounded-xl cursor-not-allowed ${
+                      isDarkMode 
+                        ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                        : 'bg-gray-100 border-gray-300 text-gray-700'
+                    }`}
                   />
                   <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                    <WalletIcon className="w-5 h-5 text-gray-400" />
+                    <WalletIcon className={`w-5 h-5 ${
+                      isDarkMode ? 'text-dark-text-secondary' : 'text-gray-400'
+                    }`} />
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Wallet Balance: <span className="font-medium text-gray-700">₦{walletBalance.toLocaleString()}</span>
+                <p className={`mt-2 text-sm ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                }`}>
+                  Wallet Balance: <span className={`font-medium ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>₦{walletBalance.toLocaleString()}</span>
                 </p>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 px-6 rounded-xl font-semibold
-                  hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-2
-                  disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                  isDarkMode
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isLoading ? (
                   <>
@@ -135,14 +177,22 @@ const AdmissionLetter = () => {
           </div>
 
           {/* How It Works Section */}
-          <div className="flex-1 bg-white p-6 rounded-xl shadow-md">
+          <div className={`flex-1 ${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white'
+          } p-6 rounded-xl shadow-md border`}>
             <div className="flex items-center gap-3 mb-6">
-              <DocumentTextIcon className="w-6 h-6 text-green-600" />
-              <h2 className="text-lg font-bold text-gray-800">How It Works</h2>
+              <DocumentTextIcon className={`w-6 h-6 ${
+                isDarkMode ? 'text-green-400' : 'text-green-600'
+              }`} />
+              <h2 className={`text-lg font-bold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>How It Works</h2>
             </div>
-            <ul className="list-disc list-inside">
+            <ul className={`list-disc list-inside ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+            }`}>
               <li>Fill the form with your accurate details and submit</li>
-              <li>Click the “Proceed” button to make payment for the service</li>
+              <li>Click the "Proceed" button to make payment for the service</li>
               <li>Upon successful payment, scroll down for new entry. Click on new entry to submit fresh job.</li>
               <li>Once your Job is done, you will be sent a confirmation email and you will be able to print out your processed job.</li>
             </ul>
@@ -151,24 +201,46 @@ const AdmissionLetter = () => {
 
         {/* Admission Letter History */}
         <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">ADMISSION LETTER HISTORY</h2>
-          <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+          <h2 className={`text-xl font-bold mb-4 ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+          }`}>ADMISSION LETTER HISTORY</h2>
+          <div className={`${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white'
+          } p-6 rounded-lg shadow-md overflow-x-auto border`}>
             <table className="min-w-full">
               <thead>
                 <tr>
-                  <th className="px-4 py-2">Action</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Fullname</th>
-                  <th className="px-4 py-2">Profile Code/RegNo.</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Screenshot</th>
-                  <th className="px-4 py-2">Remark</th>
-                  <th className="px-4 py-2">Submitted On</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Action</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Type</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Fullname</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Profile Code/RegNo.</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Status</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Screenshot</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Remark</th>
+                  <th className={`px-4 py-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                  }`}>Submitted On</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td colSpan="8" className="text-center py-4">No Record Found!</td>
+                  <td colSpan="8" className={`text-center py-4 ${
+                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                  }`}>No Record Found!</td>
                 </tr>
               </tbody>
             </table>

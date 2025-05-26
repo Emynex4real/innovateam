@@ -15,7 +15,6 @@ const WaecResultChecker = () => {
   const [notification, setNotification] = useState({ visible: false, message: '', type: '' });
   const [copiedCardId, setCopiedCardId] = useState(null);
   const pricePerCard = 3500;
-  const { user } = useAuth();
   const { walletBalance } = useTransactions();
   const { isDarkMode } = useDarkMode();
 
@@ -109,10 +108,12 @@ const WaecResultChecker = () => {
           className="mb-12"
         >
           <div className="relative">
-            <h1 className={`text-4xl font-extrabold text-gray-800 tracking-tight mb-2 relative z-10 ${
-              isDarkMode ? 'text-dark-text-primary' : ''
+            <h1 className={`text-4xl font-extrabold tracking-tight mb-2 relative z-10 ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
             }`}>WAEC Result Checker</h1>
-            <p className="text-gray-600 text-lg relative z-10">Purchase your WAEC scratch cards seamlessly</p>
+            <p className={`text-lg relative z-10 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}>Purchase your WAEC scratch cards seamlessly</p>
             <div className="absolute -top-6 -left-6 w-24 h-24 bg-green-100 rounded-full filter blur-xl opacity-60"></div>
             <div className="absolute top-10 -right-4 w-16 h-16 bg-green-50 rounded-full filter blur-lg opacity-40"></div>
           </div>
@@ -125,7 +126,9 @@ const WaecResultChecker = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-xl backdrop-blur-sm text-white font-medium flex items-center gap-3 ${
-              notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+              notification.type === 'success' 
+                ? isDarkMode ? 'bg-green-600/90' : 'bg-green-500' 
+                : isDarkMode ? 'bg-red-600/90' : 'bg-red-500'
             }`}
           >
             {notification.message}
@@ -134,90 +137,94 @@ const WaecResultChecker = () => {
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Purchase Section */}
-          <motion.div variants={cardVariants} className={`bg-white p-8 rounded-2xl shadow-xl border border-gray-100 ${
-            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : ''
+          <motion.div variants={cardVariants} className={`p-8 rounded-2xl shadow-xl border ${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white border-gray-100'
           }`}>
-            <h2 className={`text-2xl font-semibold text-gray-800 mb-6 ${
-              isDarkMode ? 'text-dark-text-primary' : ''
+            <h2 className={`text-2xl font-semibold mb-6 ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
             }`}>Purchase WAEC Scratch Cards</h2>
             <div className="space-y-6">
               <div>
                 <label htmlFor="quantity" className={`block text-sm font-medium mb-2 ${
                   isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                }`}>
-                  Select Quantity
-                </label>
+                }`}>Select Quantity</label>
                 <select
                   id="quantity"
                   value={quantity}
                   onChange={handleQuantityChange}
-                  className={`w-full p-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-gray-800 shadow-sm hover:border-gray-300 appearance-none ${
-                    isDarkMode ? 'bg-dark-surface border border-dark-border' : ''
+                  className={`w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 appearance-none ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary hover:border-dark-border-secondary' 
+                      : 'bg-white border-gray-200 text-gray-800'
                   }`}
                   disabled={isPurchasing}
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <option key={num} value={num}>{num}</option>
+                    <option key={num} value={num} className={
+                      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : ''
+                    }>{num}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label htmlFor="totalAmount" className={`block text-sm font-medium mb-2 ${
                   isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                }`}>
-                  Total Amount
-                </label>
+                }`}>Total Amount</label>
                 <input
                   type="text"
                   id="totalAmount"
                   value={`₦${totalAmount.toLocaleString()}`}
                   readOnly
-                  className={`w-full p-4 border border-gray-200 rounded-xl bg-gradient-to-r from-green-50 to-green-100/30 text-gray-800 font-medium cursor-not-allowed ${
-                    isDarkMode ? 'bg-dark-surface border border-dark-border' : ''
+                  className={`w-full p-4 border rounded-xl font-medium cursor-not-allowed ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                      : 'bg-gradient-to-r from-green-50 to-green-100/30 border-gray-200 text-gray-800'
                   }`}
                 />
               </div>
               <button
                 onClick={handlePurchase}
-                className={`w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-4 rounded-xl font-semibold hover:from-green-700 hover:to-green-600 transition-all duration-300 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 ${
-                  isDarkMode ? 'bg-dark-surface-secondary' : ''
-                }`}
+                className={`w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-500/20`}
                 disabled={isPurchasing}
               >
-                {isPurchasing && (
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" />
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" />
-                  </svg>
+                {isPurchasing ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" />
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" />
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  'Purchase Now'
                 )}
-                {isPurchasing ? 'Processing...' : 'Purchase Now'}
               </button>
             </div>
           </motion.div>
 
           {/* Purchased Cards Section */}
-          <motion.div variants={cardVariants} className={`bg-white p-8 rounded-2xl shadow-xl border border-gray-100 ${
-            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : ''
+          <motion.div variants={cardVariants} className={`p-8 rounded-2xl shadow-xl border ${
+            isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : 'bg-white border-gray-100'
           }`}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className={`text-2xl font-semibold text-gray-800 ${
-                isDarkMode ? 'text-dark-text-primary' : ''
+              <h2 className={`text-2xl font-semibold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
               }`}>Your Purchased Cards</h2>
               {purchasedCards.length > 0 && (
                 <button
                   onClick={clearPurchasedCards}
-                  className={`text-sm text-red-600 hover:text-red-700 font-medium transition-colors duration-200 ${
-                    isDarkMode ? 'text-dark-text-secondary' : ''
+                  className={`text-sm font-medium transition-colors duration-200 ${
+                    isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
                   }`}
                 >
                   Clear All
                 </button>
               )}
             </div>
-            <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
               {purchasedCards.length === 0 ? (
-                <p className={`text-gray-500 text-center py-8 ${
-                  isDarkMode ? 'text-dark-text-secondary' : ''
+                <p className={`text-center py-8 ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
                 }`}>No purchased cards yet. Get started by purchasing one!</p>
               ) : (
                 purchasedCards.map((card) => (
@@ -226,30 +233,36 @@ const WaecResultChecker = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     whileHover={{ scale: 1.02 }}
-                    className={`p-5 bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex justify-between items-center border border-gray-100/50 group ${
-                      isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : ''
+                    className={`p-5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex justify-between items-center border group ${
+                      isDarkMode 
+                        ? 'bg-dark-surface border-dark-border hover:bg-dark-border' 
+                        : 'bg-gradient-to-r from-gray-50 to-white border-gray-100/50'
                     }`}
                   >
                     <div>
-                      <p className={`text-sm text-gray-800 ${
-                        isDarkMode ? 'text-dark-text-primary' : ''
+                      <p className={`text-sm ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
                       }`}><strong>Serial:</strong> {card.serial}</p>
-                      <p className={`text-sm text-gray-800 ${
-                        isDarkMode ? 'text-dark-text-primary' : ''
+                      <p className={`text-sm ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
                       }`}><strong>PIN:</strong> {card.pin}</p>
-                      <p className={`text-xs text-gray-600 ${
-                        isDarkMode ? 'text-dark-text-secondary' : ''
+                      <p className={`text-xs ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
                       }`}><strong>Date:</strong> {card.date}</p>
                     </div>
                     <button
                       onClick={() => copyCardDetails(card)}
-                      className={`p-2.5 text-gray-500 hover:text-green-600 transition-all duration-200 hover:bg-green-50 rounded-lg group-hover:scale-110 ${
-                        isDarkMode ? 'text-dark-text-secondary' : ''
+                      className={`p-2.5 transition-all duration-200 rounded-lg group-hover:scale-110 ${
+                        isDarkMode 
+                          ? 'text-dark-text-secondary hover:text-primary-400 hover:bg-dark-border' 
+                          : 'text-gray-500 hover:text-green-600 hover:bg-green-50'
                       }`}
                       title="Copy Details"
                     >
                       {copiedCardId === card.id ? (
-                        <CheckIcon className="h-5 w-5 text-green-500" />
+                        <CheckIcon className={`h-5 w-5 ${
+                          isDarkMode ? 'text-primary-400' : 'text-green-500'
+                        }`} />
                       ) : (
                         <ClipboardIcon className="h-5 w-5" />
                       )}
