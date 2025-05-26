@@ -371,6 +371,12 @@ const Register = () => {
                 <FaTwitter className="w-4 h-4 text-blue-400" />
               </button>
             </div>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <span>Already have an account?</span>
+                    <Link to="/login" className="text-primary-color hover:text-green-600 transition-colors duration-200 font-medium">
+                      Sign in
+                    </Link>
+                  </div>
           </form>
         </motion.div>
         {isLoading && <Loading />}

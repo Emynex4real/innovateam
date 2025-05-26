@@ -256,7 +256,7 @@ const Login = () => {
                   </button>
                   <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                     <span>Don't have an account?</span>
-                    <Link to="/signup" className="text-primary-color hover:text-green-600 transition-colors duration-200 font-medium">
+                    <Link to="/register" className="text-primary-color hover:text-green-600 transition-colors duration-200 font-medium">
                       Sign up
                     </Link>
                   </div>
