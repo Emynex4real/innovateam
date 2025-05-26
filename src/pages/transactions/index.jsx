@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { FaSearch, FaFilter, FaDownload, FaPrint, FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { useDarkMode } from '../../contexts/DarkModeContext';
+import { FiDownload, FiFilter } from 'react-icons/fi';
 
 const Transactions = () => {
   const { transactions } = useTransactions();
@@ -16,6 +18,7 @@ const Transactions = () => {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [showExportOptions, setShowExportOptions] = useState(false);
   const itemsPerPage = 10;
+  const { isDarkMode } = useDarkMode();
 
   const filteredTransactions = useMemo(() => {
     return transactions
@@ -113,261 +116,112 @@ const Transactions = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-nunito">
-      <div className="max-w-6xl mx-auto">
+    <div className={`min-h-screen p-6 transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50 text-gray-800'
+    }`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Transactions</h1>
-
-          <div className="mb-6 space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              <div className="relative w-full sm:w-96">
-                <input
-                  type="text"
-                  placeholder="Search transactions..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-sm"
-                />
-                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        className={`max-w-4xl mx-auto rounded-xl shadow-lg ${
+          isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+        }`}
+      >
+        <div className={`p-6 border-b ${
+          isDarkMode ? 'border-dark-border' : 'border-gray-200'
+        }`}>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className={`text-2xl font-bold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>Transactions</h1>
+              <p className={`mt-1 ${
+                isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+              }`}>View and manage your transaction history</p>
               </div>
-              
-              <div className="flex gap-2">
                 <button
-                  onClick={handleFilterToggle}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200"
-                >
-                  <FaFilter className={`${showFilters ? 'text-green-500' : 'text-gray-500'}`} />
-                  <span>Filter</span>
-                </button>
-                <button
-                  onClick={handleExport}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200"
-                >
-                  <FaDownload className="text-gray-500" />
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors duration-200 ${
+                isDarkMode 
+                  ? 'bg-dark-surface text-dark-text-primary hover:bg-dark-border' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <FiDownload className="w-4 h-4" />
                   <span>Export</span>
                 </button>
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            {['all', 'credit', 'debit'].map((type) => (
                 <button
-                  onClick={handlePrint}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200"
-                >
-                  <FaPrint className="text-gray-500" />
-                  <span>Print</span>
+                key={type}
+                onClick={() => setFilter(type)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  filter === type
+                    ? isDarkMode 
+                      ? 'bg-primary-600 text-white' 
+                      : 'bg-green-500 text-white'
+                    : isDarkMode
+                      ? 'bg-dark-surface text-dark-text-secondary hover:bg-dark-border'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
                 </button>
+            ))}
               </div>
             </div>
 
-            <AnimatePresence>
-              {showFilters && (
+        <div className="p-6">
+          {filteredTransactions.length === 0 ? (
+            <p className={`text-center py-8 ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+            }`}>No transactions found.</p>
+          ) : (
+            <div className="space-y-4">
+              {filteredTransactions.map((transaction) => (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
+                  key={transaction.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`p-4 rounded-lg transition-colors duration-200 ${
+                    isDarkMode 
+                      ? 'bg-dark-surface border border-dark-border hover:bg-dark-border' 
+                      : 'bg-gray-50 hover:bg-gray-100'
+                  }`}
                 >
-                  <div className="p-4 bg-gray-50 rounded-lg space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <select
-                        value={filter}
-                        onChange={(e) => {
-                          setFilter(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        className="w-full sm:w-64 p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-sm"
-                      >
-                        <option value="all">All Transactions</option>
-                        <option value="e-Wallet Topup">e-Wallet Topup</option>
-                        <option value="Transaction Charge">Transaction Charge</option>
-                        <option value="Olevel upload">O-Level Upload</option>
-                        <option value="Caps printing">Caps Printing</option>
-                      </select>
-
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                          <input
-                            type="date"
-                            name="start"
-                            value={dateRange.start}
-                            onChange={handleDateRangeChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-sm"
-                          />
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className={`font-medium ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>{transaction.label}</h3>
+                      <p className={`text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                      }`}>{transaction.description}</p>
+                      <p className={`text-xs mt-1 ${
+                        isDarkMode ? 'text-dark-text-tertiary' : 'text-gray-500'
+                      }`}>{new Date(transaction.date).toLocaleString()}</p>
                         </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                          <input
-                            type="date"
-                            name="end"
-                            value={dateRange.end}
-                            onChange={handleDateRangeChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-sm"
-                          />
-                        </div>
-                      </div>
+                    <div className="text-right">
+                      <p className={`font-medium ${
+                        transaction.type === 'credit' 
+                          ? 'text-green-500' 
+                          : isDarkMode ? 'text-red-400' : 'text-red-500'
+                      }`}>
+                        {transaction.type === 'credit' ? '+' : '-'} ₦{transaction.amount.toFixed(2)}
+                      </p>
+                      <p className={`text-xs mt-1 ${
+                        transaction.status === 'Successful'
+                          ? isDarkMode ? 'text-green-400' : 'text-green-500'
+                          : isDarkMode ? 'text-red-400' : 'text-red-500'
+                      }`}>{transaction.status}</p>
                     </div>
                   </div>
                 </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="bg-white rounded-xl shadow-md overflow-x-auto"
-          >
-            <table className="min-w-full">
-              <thead className="bg-gray-100 text-gray-700">
-                <tr>
-                  <th className="py-3 px-4 text-left text-sm font-semibold">#</th>
-                  <th 
-                    className="py-3 px-4 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 transition-colors duration-200"
-                    onClick={() => handleSort('label')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Description
-                      {sortConfig.key === 'label' && (
-                        <span className="text-green-500">
-                          {sortConfig.direction === 'asc' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-                        </span>
-                      )}
+              ))}
                     </div>
-                  </th>
-                  <th className="py-3 px-4 text-left text-sm font-semibold">Quantity</th>
-                  <th 
-                    className="py-3 px-4 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 transition-colors duration-200"
-                    onClick={() => handleSort('amount')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Amount
-                      {sortConfig.key === 'amount' && (
-                        <span className="text-green-500">
-                          {sortConfig.direction === 'asc' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    className="py-3 px-4 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 transition-colors duration-200"
-                    onClick={() => handleSort('date')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Date
-                      {sortConfig.key === 'date' && (
-                        <span className="text-green-500">
-                          {sortConfig.direction === 'asc' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    className="py-3 px-4 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 transition-colors duration-200"
-                    onClick={() => handleSort('status')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Status
-                      {sortConfig.key === 'status' && (
-                        <span className="text-green-500">
-                          {sortConfig.direction === 'asc' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th className="py-3 px-4 text-left text-sm font-semibold">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedTransactions.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="py-4 text-center text-gray-500">
-                      No transactions found
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedTransactions.map((transaction, index) => (
-                    <motion.tr
-                      key={transaction.id}
-                      variants={rowVariants}
-                      className="border-b border-gray-200 hover:bg-gray-50 transition-all duration-200"
-                    >
-                      <td className="py-3 px-4 text-gray-700">{index + 1 + (currentPage - 1) * itemsPerPage}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="text-gray-700 font-medium">{transaction.label}</span>
-                          {transaction.description && (
-                            <span className="text-gray-500 text-sm truncate max-w-xs">{transaction.description}</span>
                           )}
                         </div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">{transaction.quantity || 1}</td>
-                      <td className="py-3 px-4">
-                        <span className={`font-medium ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                          {transaction.type === 'credit' ? '+' : '-'}₦{transaction.amount.toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="text-gray-700">{new Date(transaction.date).toLocaleDateString()}</span>
-                          <span className="text-gray-500 text-sm">{new Date(transaction.date).toLocaleTimeString()}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            transaction.status === 'Successful'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
-                        >
-                          {transaction.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleViewDetails(transaction)}
-                          className="bg-green-500 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
-                        >
-                          View
-                        </button>
-                      </td>
-                    </motion.tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-
-            {totalPages > 1 && (
-              <div className="flex justify-between items-center py-3 px-4 border-t border-gray-200">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 transition-all duration-200"
-                >
-                  Previous
-                </button>
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 transition-all duration-200"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </motion.div>
         </motion.div>
-      </div>
 
       <AnimatePresence>
         {selectedTransaction && (

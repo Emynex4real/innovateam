@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FiSun, FiMoon } from 'react-icons/fi';
 import logo from '../../../images/arewa_gate_logo6.png';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTransactions } from '../../../contexts/TransactionContext';
+import { useDarkMode } from '../../../contexts/DarkModeContext';
 
 const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -14,6 +16,7 @@ const NavBar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const { walletBalance } = useTransactions();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Toggle sidebar
   const toggleSidebar = () => {
@@ -76,7 +79,9 @@ const NavBar = () => {
   ];
 
   return (
-    <nav className="w-full bg-white shadow-md sticky top-0 z-50 font-nunito">
+    <nav className={`w-full shadow-md sticky top-0 z-50 font-nunito transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-white text-gray-900'
+    }`}>
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center" onClick={closeSidebar}>
@@ -90,13 +95,30 @@ const NavBar = () => {
               <li key={item.label}>
                 <Link
                   to={item.path}
-                  className="text-gray-700 text-base font-medium hover:text-green-500 hover:border-b-2 hover:border-green-500 pb-1 transition-all duration-200"
+                  className={`text-base font-medium transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'text-dark-text-primary hover:text-primary-400' 
+                      : 'text-gray-700 hover:text-green-500'
+                  } hover:border-b-2 hover:border-green-500 pb-1`}
                 >
                   {item.label}
                 </Link>
               </li>
             ))}
           </ul>
+
+          {/* Dark Mode Toggle - Desktop */}
+          <button
+            onClick={toggleDarkMode}
+            className={`p-2 rounded-full transition-colors duration-200 ${
+              isDarkMode 
+                ? 'text-yellow-300 hover:bg-dark-border' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            aria-label="Toggle dark mode"
+          >
+            {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+          </button>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="relative">
@@ -105,11 +127,17 @@ const NavBar = () => {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="py-2 px-4 w-48 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-sm"
+              className={`py-2 px-4 w-48 rounded-md border transition-all duration-200 text-sm ${
+                isDarkMode
+                  ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:border-primary-500'
+                  : 'bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+              }`}
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-green-500"
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                isDarkMode ? 'text-dark-text-secondary hover:text-primary-400' : 'text-gray-500 hover:text-green-500'
+              }`}
               aria-label="Search"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,34 +221,55 @@ const NavBar = () => {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          ref={toggleButtonRef}
-          className="lg:hidden focus:outline-none p-2"
-          onClick={toggleSidebar}
-          aria-label="Toggle Navigation Menu"
-          aria-expanded={isSidebarOpen}
-        >
-          <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {isSidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
+        {/* Mobile Navigation */}
+        <div className="flex items-center gap-4 lg:hidden">
+          {/* Dark Mode Toggle - Mobile */}
+          <button
+            onClick={toggleDarkMode}
+            className={`p-2 rounded-full transition-colors duration-200 ${
+              isDarkMode 
+                ? 'text-yellow-300 hover:bg-dark-border' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            aria-label="Toggle dark mode"
+          >
+            {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+          </button>
+
+          {/* Mobile Menu Button */}
+          <button
+            ref={toggleButtonRef}
+            onClick={toggleSidebar}
+            className={`p-2 rounded-md ${
+              isDarkMode ? 'text-dark-text-primary hover:bg-dark-border' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            aria-label="Toggle menu"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Mobile Sidebar */}
       <div
         ref={sidebarRef}
-        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:hidden z-50 overflow-y-auto`}
+        className={`fixed inset-y-0 right-0 w-64 transform transition-transform duration-300 ease-in-out lg:hidden ${
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        } ${isDarkMode ? 'bg-dark-surface border-l border-dark-border' : 'bg-white border-l border-gray-200'}`}
       >
-        <div className="p-5 flex justify-between items-center border-b border-gray-200">
+        <div className={`p-5 flex justify-between items-center border-b ${
+          isDarkMode ? 'border-dark-border' : 'border-gray-200'
+        }`}>
           <img src={logo} alt="Arewa Gate Logo" className="h-10" />
-          <button onClick={closeSidebar} className="text-gray-600 hover:text-green-500" aria-label="Close Sidebar">
+          <button 
+            onClick={closeSidebar} 
+            className={`${
+              isDarkMode ? 'text-dark-text-secondary hover:text-primary-400' : 'text-gray-600 hover:text-green-500'
+            }`} 
+            aria-label="Close Sidebar"
+          >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -231,7 +280,11 @@ const NavBar = () => {
             <li key={item.label}>
               <Link
                 to={item.path}
-                className="flex items-center p-3 text-gray-700 hover:bg-gray-100 hover:text-green-500 rounded-md transition-all duration-200"
+                className={`flex items-center p-3 rounded-md transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'text-dark-text-primary hover:bg-dark-border' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-green-500'
+                }`}
                 onClick={closeSidebar}
               >
                 <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -248,11 +301,17 @@ const NavBar = () => {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-2 px-4 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                className={`w-full py-2 px-4 rounded-md border transition-all duration-200 ${
+                  isDarkMode
+                    ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:border-primary-500'
+                    : 'border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                }`}
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-green-500"
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                  isDarkMode ? 'text-dark-text-secondary hover:text-primary-400' : 'text-gray-500 hover:text-green-500'
+                }`}
                 aria-label="Search"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -262,7 +321,7 @@ const NavBar = () => {
             </form>
           </li>
           {isAuthenticated ? (
-            <li className="space-y-2">
+            <li>
               <div className="p-3 border-t border-gray-200">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center text-lg">
@@ -329,12 +388,11 @@ const NavBar = () => {
         </ul>
       </div>
 
-      {/* Overlay for Sidebar */}
+      {/* Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={closeSidebar}
-          aria-hidden="true"
         />
       )}
     </nav>

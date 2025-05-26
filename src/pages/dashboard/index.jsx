@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTransactions } from '../../contexts/TransactionContext';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 
 // Service images
 const waecResultChecker = '/images/services/waec-result-checker.jpg';
@@ -18,6 +19,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { transactions, walletBalance, getRecentTransactions, getTransactionsByType, addTransaction } =
     useTransactions();
+  const { isDarkMode } = useDarkMode();
 
   const balanceData = {
     totalBalance: `₦${(walletBalance || 0).toLocaleString()}`,
@@ -119,17 +121,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-nunito p-6">
+    <div className={`min-h-screen font-nunito p-6 transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50 text-gray-800'
+    }`}>
       <motion.section
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold text-gray-800">
+        <h1 className={`text-3xl font-bold ${
+          isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+        }`}>
           Welcome, {user?.name || 'User'}!
         </h1>
-        <p className="text-gray-600 text-sm mt-2">Manage your services and transactions below.</p>
+        <p className={`text-sm mt-2 ${
+          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+        }`}>Manage your services and transactions below.</p>
       </motion.section>
 
       <motion.section
@@ -141,10 +149,16 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300"
+            className={`rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 ${
+              isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+            }`}
           >
-            <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-              <h4 className="text-xl font-semibold text-gray-800">
+            <div className={`flex justify-between items-center pb-4 border-b ${
+              isDarkMode ? 'border-dark-border' : 'border-gray-200'
+            }`}>
+              <h4 className={`text-xl font-semibold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>
                 Wallet Balance:{' '}
                 <span className="text-green-500">{balanceData.totalBalance}</span>
               </h4>
@@ -159,7 +173,9 @@ const Dashboard = () => {
               {balanceData.items.map((item, index) => (
                 <li
                   key={index}
-                  className="flex justify-between items-center text-sm text-gray-600"
+                  className={`flex justify-between items-center text-sm ${
+                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                  }`}
                 >
                   <span>{item.label}</span>
                   <span className="font-medium">₦{item.value.toFixed(2)}</span>
@@ -170,29 +186,39 @@ const Dashboard = () => {
 
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300"
+            className={`rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 ${
+              isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+            }`}
           >
-            <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-              <h4 className="text-xl font-semibold text-gray-800">Recent Transactions</h4>
-              <div className="flex items-center gap-4">
-                {recentTransactions.length > 2 && (
-                  <button
-                    onClick={toggleTransactions}
-                    className="text-green-500 text-sm font-medium hover:underline"
-                  >
-                    {showAllTransactions ? 'Show Less' : 'View All'}
-                    {showAllTransactions ? (
-                      <FiChevronUp className="inline ml-1" />
-                    ) : (
-                      <FiChevronDown className="inline ml-1" />
-                    )}
-                  </button>
+            <div className={`flex justify-between items-center pb-4 border-b ${
+              isDarkMode ? 'border-dark-border' : 'border-gray-200'
+            }`}>
+              <h4 className={`text-xl font-semibold ${
+                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+              }`}>Recent Transactions</h4>
+              <button
+                onClick={toggleTransactions}
+                className={`flex items-center gap-1 text-sm font-medium ${
+                  isDarkMode ? 'text-primary-400 hover:text-primary-300' : 'text-green-500 hover:text-green-600'
+                }`}
+              >
+                {showAllTransactions ? (
+                  <>
+                    Show Less <FiChevronUp className="text-lg" />
+                  </>
+                ) : (
+                  <>
+                    Show All <FiChevronDown className="text-lg" />
+                  </>
                 )}
-              </div>
+              </button>
             </div>
+
             <ul className="mt-4 space-y-3">
               {recentTransactions.length === 0 && (
-                <li className="text-center text-gray-500 text-sm">No recent transactions</li>
+                <li className={`text-center text-sm ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                }`}>No recent transactions</li>
               )}
               {(showAllTransactions ? recentTransactions : recentTransactions.slice(0, 2)).map(
                 (transaction) => (
@@ -201,11 +227,15 @@ const Dashboard = () => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: transaction.id * 0.1 }}
-                    className="flex justify-between items-center text-sm text-gray-600"
+                    className={`flex justify-between items-center text-sm ${
+                      isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                    }`}
                   >
                     <div>
                       <span className="block">{transaction.label}</span>
-                      <span className="text-xs text-gray-400">
+                      <span className={`text-xs ${
+                        isDarkMode ? 'text-dark-text-tertiary' : 'text-gray-400'
+                      }`}>
                         {transaction.date.split('T')[0]} •{' '}
                         {transaction.type.replace('_', ' ').charAt(0).toUpperCase() +
                           transaction.type.replace('_', ' ').slice(1)}
@@ -213,7 +243,7 @@ const Dashboard = () => {
                     </div>
                     <span
                       className={`font-medium ${
-                        transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                        transaction.type === 'credit' ? 'text-green-500' : 'text-red-500'
                       }`}
                     >
                       {transaction.type === 'credit' ? '+' : '-'} ₦{transaction.amount.toFixed(2)}
@@ -232,14 +262,20 @@ const Dashboard = () => {
         animate="visible"
         className="mt-8"
       >
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Our Services</h1>
-        <p className="text-gray-600 text-sm mb-4">Explore our tailored solutions for your needs</p>
+        <h1 className={`text-2xl font-bold mb-2 ${
+          isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+        }`}>Our Services</h1>
+        <p className={`text-sm mb-4 ${
+          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+        }`}>Explore our tailored solutions for your needs</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service, index) => (
             <motion.div
               key={index}
               variants={cardVariants}
-              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              className={`rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 ${
+                isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+              }`}
             >
               <img
                 src={service.image}
@@ -248,8 +284,12 @@ const Dashboard = () => {
                 loading="lazy"
               />
               <div className="p-4">
-                <h5 className="text-lg font-semibold text-gray-800">{service.title}</h5>
-                <p className="text-gray-600 text-sm mt-1">{service.price}</p>
+                <h5 className={`text-lg font-semibold ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                }`}>{service.title}</h5>
+                <p className={`text-sm mt-1 ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                }`}>{service.price}</p>
                 <Link
                   to={service.link}
                   onClick={() => handlePurchaseService(service)}

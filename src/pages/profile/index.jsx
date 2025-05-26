@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiUser, FiMail, FiLock, FiPhone, FiMapPin, FiCalendar, FiEye, FiEyeOff, FiCamera, FiCheck, FiX } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiPhone, FiMapPin, FiCalendar, FiEye, FiEyeOff, FiCamera, FiCheck, FiX, FiEdit2, FiSave } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'react-hot-toast';
 import { debounce } from 'lodash';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 
 const Profile = memo(() => {
   const { user, updateProfile, logout } = useAuth();
+  const { isDarkMode } = useDarkMode();
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -26,6 +28,7 @@ const Profile = memo(() => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Validate password strength
   const validatePassword = (password) => {
@@ -204,6 +207,7 @@ const Profile = memo(() => {
       });
       toast.success('Profile updated successfully!');
       localStorage.removeItem('profileFormData');
+      setIsEditing(false);
     } catch (err) {
       const errorMsg = err.message || 'Failed to update profile. Please try again.';
       toast.error(errorMsg);
@@ -292,455 +296,159 @@ const Profile = memo(() => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen py-12 font-sans bg-white text-gray-900"
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && !showChangePassword) handleSubmit(e);
-        if (e.key === 'Escape') handleReset();
-      }}
-    >
+    <div className={`min-h-screen p-6 transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50 text-gray-800'
+    }`}>
       <Toaster position="top-right" />
-      <div className="container mx-auto px-4 sm:px-6 lg:max-w-3xl">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-600">Profile Completion</span>
-            <span className="text-sm font-medium text-green-500">{progress}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
             <motion.div
-              className="bg-green-500 h-2 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-        </div>
-
-        <motion.h1
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-3xl font-bold mb-8 text-gray-900 flex items-center justify-center"
-        >
-          <FiUser className="w-8 h-8 mr-2 text-green-500" />
-          Profile
-        </motion.h1>
-
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
-        >
-          {/* Avatar Section */}
-          <div
-            className={`flex justify-center mb-6 relative ${isDragging ? 'bg-gray-100' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="w-32 h-32 rounded-full overflow-hidden cursor-pointer relative border-2 border-green-500"
-              onClick={handleAvatarClick}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`max-w-2xl mx-auto rounded-xl shadow-lg ${
+          isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
+        }`}
+      >
+        <div className={`p-6 border-b ${
+          isDarkMode ? 'border-dark-border' : 'border-gray-200'
+        }`}>
+          <div className="flex justify-between items-center">
+            <h1 className={`text-2xl font-bold ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+            }`}>Profile Settings</h1>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors duration-200 ${
+                isDarkMode 
+                  ? 'bg-dark-surface text-dark-text-primary hover:bg-dark-border' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
             >
-              {formData.avatar ? (
-                <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
+              {isEditing ? (
+                <>
+                  <FiSave className="w-4 h-4" />
+                  <span>Save</span>
+                </>
               ) : (
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <FiUser className="w-16 h-16 text-gray-400" />
-                </div>
+                <>
+                  <FiEdit2 className="w-4 h-4" />
+                  <span>Edit</span>
+                </>
               )}
-              <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <FiCamera className="w-8 h-8 text-white" />
-              </div>
-            </motion.div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleAvatarChange}
-              accept="image/jpeg,image/png,image/gif"
-              className="hidden"
-              aria-label="Upload profile avatar"
-            />
-            {formData.avatar && (
-              <motion.button
-                whileHover={{ scale: 1.2 }}
-                type="button"
-                onClick={handleRemoveAvatar}
-                className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 shadow-sm"
-                aria-label="Remove avatar"
-              >
-                <FiX className="w-4 h-4" />
-              </motion.button>
-            )}
+            </button>
+          </div>
           </div>
 
+        <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="relative">
-                  <motion.input
+            <div>
+              <label 
+                htmlFor="name" 
+                className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}
+              >
+                Full Name
+              </label>
+              <input
                     type="text"
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className={`peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 ${formErrors.name ? 'border-red-500' : ''}`}
-                    placeholder="Full Name"
-                    disabled={loading}
-                    aria-label="Full name"
-                    required
-                    whileFocus={{ scale: 1.01 }}
-                  />
+                disabled={!isEditing}
+                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
+                  isDarkMode 
+                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
+                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
+                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
+              />
+            </div>
+
+            <div>
                   <label
-                    htmlFor="name"
-                    className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                  >
-                    Full Name *
+                htmlFor="email" 
+                className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}
+              >
+                Email Address
                   </label>
-                  {formErrors.name && <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>}
-                  {!formErrors.name && formData.name && (
-                    <FiCheck className="absolute right-3 top-3 text-green-500" />
-                  )}
-                </div>
-                <div className="relative">
-                  <motion.input
+              <input
                     type="email"
                     id="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 ${formErrors.email ? 'border-red-500' : ''}`}
-                    placeholder="Email"
-                    disabled={loading}
-                    aria-label="Email address"
-                    required
-                    whileFocus={{ scale: 1.01 }}
-                  />
+                disabled={!isEditing}
+                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
+                  isDarkMode 
+                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
+                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
+                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
+              />
+            </div>
+
+            <div>
                   <label
-                    htmlFor="email"
-                    className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                  >
-                    Email *
+                htmlFor="phone" 
+                className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}
+              >
+                Phone Number
                   </label>
-                  {formErrors.email && <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>}
-                  {!formErrors.email && formData.email && /\S+@\S+\.\S+/.test(formData.email) && (
-                    <FiCheck className="absolute right-3 top-3 text-green-500" />
-                  )}
-                </div>
-                <div className="relative">
-                  <motion.input
+              <input
                     type="tel"
                     id="phone"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 ${formErrors.phone ? 'border-red-500' : ''}`}
-                    placeholder="Phone"
-                    disabled={loading}
-                    aria-label="Phone number"
-                    whileFocus={{ scale: 1.01 }}
-                  />
+                disabled={!isEditing}
+                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
+                  isDarkMode 
+                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
+                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
+                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
+              />
+            </div>
+
+            <div>
                   <label
-                    htmlFor="phone"
-                    className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                  >
-                    Phone
+                htmlFor="address" 
+                className={`block text-sm font-medium mb-2 ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                }`}
+              >
+                Address
                   </label>
-                  {formErrors.phone && <p className="mt-1 text-sm text-red-500">{formErrors.phone}</p>}
-                  {!formErrors.phone && formData.phone && /^[\d\s-+()]+$/.test(formData.phone) && (
-                    <FiCheck className="absolute right-3 top-3 text-green-500" />
-                  )}
-                </div>
-                <div className="relative">
-                  <motion.input
-                    type="text"
+              <textarea
                     id="address"
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                    className="peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500"
-                    placeholder="Address"
-                    disabled={loading}
-                    aria-label="Address"
-                    whileFocus={{ scale: 1.01 }}
-                  />
-                  <label
-                    htmlFor="address"
-                    className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                  >
-                    Address
-                  </label>
-                  {formData.address && <FiCheck className="absolute right-3 top-3 text-green-500" />}
-                </div>
-                <div className="relative sm:col-span-2">
-                  <motion.input
-                    type="date"
-                    id="birthdate"
-                    name="birthdate"
-                    value={formData.birthdate}
-                    onChange={handleChange}
-                    className="peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500"
-                    disabled={loading}
-                    aria-label="Birthdate"
-                    whileFocus={{ scale: 1.01 }}
-                  />
-                  <label
-                    htmlFor="birthdate"
-                    className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                  >
-                    Birthdate
-                  </label>
-                  {formData.birthdate && <FiCheck className="absolute right-3 top-3 text-green-500" />}
-                </div>
-              </div>
+                disabled={!isEditing}
+                rows={3}
+                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
+                  isDarkMode 
+                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
+                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
+                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
+              />
             </div>
 
-            {/* Password Change */}
-            <AnimatePresence>
-              {showChangePassword && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-4 mt-6"
+            {isEditing && (
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-colors duration-200"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="relative">
-                      <motion.input
-                        type={showPassword ? 'text' : 'password'}
-                        id="currentPassword"
-                        name="currentPassword"
-                        value={formData.currentPassword}
-                        onChange={handleChange}
-                        className={`peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 ${formErrors.currentPassword ? 'border-red-500' : ''}`}
-                        placeholder="Current Password"
-                        disabled={loading}
-                        aria-label="Current password"
-                        required
-                        whileFocus={{ scale: 1.01 }}
-                      />
-                      <label
-                        htmlFor="currentPassword"
-                        className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                      >
-                        Current Password *
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                  Save Changes
                       </button>
-                      {formErrors.currentPassword && <p className="mt-1 text-sm text-red-500">{formErrors.currentPassword}</p>}
-                      {!formErrors.currentPassword && formData.currentPassword && (
-                        <FiCheck className="absolute right-10 top-3 text-green-500" />
-                      )}
-                    </div>
-                    <div className="relative">
-                      <motion.input
-                        type={showPassword ? 'text' : 'password'}
-                        id="newPassword"
-                        name="newPassword"
-                        value={formData.newPassword}
-                        onChange={handleChange}
-                        className={`peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 ${formErrors.newPassword ? 'border-red-500' : ''}`}
-                        placeholder="New Password"
-                        disabled={loading}
-                        aria-label="New password"
-                        required
-                        whileFocus={{ scale: 1.01 }}
-                      />
-                      <label
-                        htmlFor="newPassword"
-                        className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                      >
-                        New Password *
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                      </button>
-                      {formErrors.newPassword && <p className="mt-1 text-sm text-red-500">{formErrors.newPassword}</p>}
-                      {!formErrors.newPassword && formData.newPassword && (
-                        <FiCheck className="absolute right-10 top-3 text-green-500" />
-                      )}
-                      {formData.newPassword && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="mt-2 space-y-1"
-                        >
-                          <div className="flex gap-1">
-                            {[...Array(4)].map((_, i) => (
-                              <div
-                                key={i}
-                                className={`h-1 flex-1 rounded-full ${i < passwordStrength ? 'bg-green-500' : 'bg-gray-200'}`}
-                              />
-                            ))}
-                          </div>
-                          <p className="text-xs text-gray-600">
-                            Must include: 8+ characters, uppercase, number, special character
-                          </p>
-                        </motion.div>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <motion.input
-                        type={showPassword ? 'text' : 'password'}
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className={`peer w-full bg-white border border-gray-300 rounded-md px-4 py-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 ${formErrors.confirmPassword ? 'border-red-500' : ''}`}
-                        placeholder="Confirm Password"
-                        disabled={loading}
-                        aria-label="Confirm new password"
-                        required
-                        whileFocus={{ scale: 1.01 }}
-                      />
-                      <label
-                        htmlFor="confirmPassword"
-                        className="absolute left-4 -top-2.5 text-sm text-gray-600 bg-white px-1 transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-green-500"
-                      >
-                        Confirm Password *
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                      </button>
-                      {formErrors.confirmPassword && <p className="mt-1 text-sm text-red-500">{formErrors.confirmPassword}</p>}
-                      {!formErrors.confirmPassword && formData.confirmPassword && formData.newPassword === formData.confirmPassword && (
-                        <FiCheck className="absolute right-10 top-3 text-green-500" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-4">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      type="button"
-                      onClick={() => setShowChangePassword(false)}
-                      className="px-6 py-2 bg-gray-200 text-gray-900 rounded-md font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                      disabled={loading}
-                      aria-label="Cancel password change"
-                    >
-                      Cancel
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      type="button"
-                      onClick={handlePasswordChange}
-                      className="px-6 py-2 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                      disabled={loading}
-                      aria-label="Change password"
-                    >
-                      {loading ? (
-                        <svg className="animate-spin h-5 w-5 mr-2 inline" viewBox="0 0 24 24">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" />
-                          <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" />
-                        </svg>
-                      ) : (
-                        <FiCheck className="w-5 h-5 mr-2 inline" />
-                      )}
-                      Change Password
-                    </motion.button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Profile Preview */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-6 bg-white rounded-md p-4 flex items-center gap-4 border border-gray-200"
-            >
-              <div className="w-12 h-12 rounded-full overflow-hidden">
-                <img
-                  src={formData.avatar || 'https://via.placeholder.com/48'}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
               </div>
-              <div>
-                <p className="text-base font-medium text-gray-900">{formData.name || 'Your Name'}</p>
-                <p className="text-sm text-gray-600">{formData.email || 'your.email@example.com'}</p>
-              </div>
-            </motion.div>
-
-            {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-2 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                aria-label="Save profile changes"
-              >
-                {loading ? (
-                  <svg className="animate-spin h-5 w-5 mr-2 inline" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" />
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" />
-                  </svg>
-                ) : (
-                  <FiCheck className="w-5 h-5 mr-2 inline" />
-                )}
-                Save Changes
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                type="button"
-                onClick={handleReset}
-                className="flex-1 px-6 py-2 bg-gray-200 text-gray-900 rounded-md font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                disabled={loading}
-                aria-label="Reset form"
-              >
-                Reset
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                type="button"
-                onClick={() => setShowChangePassword(!showChangePassword)}
-                className="flex-1 px-6 py-2 bg-gray-200 text-gray-900 rounded-md font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                disabled={loading}
-                aria-label={showChangePassword ? 'Hide password settings' : 'Show password settings'}
-              >
-                {showChangePassword ? 'Hide Password' : 'Change Password'}
-              </motion.button>
-            </div>
+            )}
           </form>
-
-          {/* Logout */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            onClick={handleLogout}
-            className="w-full mt-6 px-6 py-2 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-            disabled={loading}
-            aria-label="Log out"
-          >
-            <FiLock className="w-5 h-5 mr-2 inline" />
-            Logout
-          </motion.button>
+        </div>
         </motion.div>
       </div>
-    </motion.div>
   );
 });
 

@@ -2,6 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, BookOpen, Star, Search, Users, Award } from 'lucide-react';
 import { useAuth } from "../../contexts/AuthContext";
+import { useDarkMode } from "../../contexts/DarkModeContext";
 import whatsapp from "../../images/whatsapp-removebg-preview.png";
 import image from "../../images/pexels-cottonbro-6344238.jpg";
 import ShareButton from "../../layouts/sharebtn";
@@ -17,6 +18,7 @@ const Home = () => {
   const [category, setCategory] = useState('All Resources');
   const [searchQuery, setSearchQuery] = useState('');
   const { isAuthenticated } = useAuth();
+  const { isDarkMode } = useDarkMode();
   const navigate = useNavigate();
 
   const handleSubscribe = (e) => {
@@ -53,19 +55,25 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-dark-bg' : 'bg-gray-50'}`}>
       <NavBar />
-      <main className="min-h-screen font-nunito bg-gray-50 sm:px-10 lg:px-16">
+      <main className={`min-h-screen font-nunito ${isDarkMode ? 'bg-dark-bg' : 'bg-gray-50'} sm:px-10 lg:px-16`}>
         {/* Hero Section */}
-        <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-b from-white to-gray-100">
+        <section className={`py-12 sm:py-16 lg:py-24 ${
+          isDarkMode ? 'bg-gradient-to-b from-dark-surface to-dark-bg' : 'bg-gradient-to-b from-white to-gray-100'
+        }`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="space-y-6 text-center md:text-left">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight text-gray-900">
+                <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+                }`}>
                   Empowering Your Future with <br />
                   <span className="text-green-600">Quality Education</span>
                 </h1>
-                <p className="text-base sm:text-lg text-gray-600 font-light">
+                <p className={`text-base sm:text-lg ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                } font-light`}>
                   Join thousands of students who have achieved their dreams with our comprehensive learning resources.
                 </p>
 
@@ -78,7 +86,9 @@ const Home = () => {
                       className={`flex items-center px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         category === cat.name
                           ? 'bg-green-600 text-white shadow-md'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          : isDarkMode
+                            ? 'bg-dark-surface text-dark-text-secondary hover:bg-dark-border'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
                       {cat.icon}
@@ -94,16 +104,26 @@ const Home = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for a resource..."
-                    className="w-full px-4 py-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+                    className={`w-full px-4 py-3 pl-10 rounded-lg border ${
+                      isDarkMode
+                        ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:border-primary-500'
+                        : 'border-gray-300 focus:ring-2 focus:ring-green-600 text-gray-800'
+                    }`}
                     aria-label="Search for a resource"
                   />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                  } w-5 h-5`} />
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center md:justify-start">
                   <Link
                     to="/register"
-                    className="flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-full font-semibold shadow-sm hover:bg-green-700 hover:scale-105 transition-all"
+                    className={`flex items-center justify-center px-6 py-3 rounded-full font-semibold shadow-sm transition-all ${
+                      isDarkMode
+                        ? 'bg-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    } hover:scale-105`}
                     aria-label="Sign up"
                   >
                     Sign Up
@@ -122,9 +142,11 @@ const Home = () => {
         </section>
 
         {/* Resource List */}
-        <section className="py-12 sm:py-16 bg-white">
+        <section className={`py-12 sm:py-16 ${isDarkMode ? 'bg-dark-surface' : 'bg-white'}`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
+            <h2 className={`text-2xl sm:text-3xl font-bold mb-6 text-center ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+            }`}>
               {category} ({filteredResources.length})
             </h2>
             {filteredResources.length > 0 ? (
@@ -132,19 +154,27 @@ const Home = () => {
                 {filteredResources.map((resource) => (
                   <div
                     key={resource.id}
-                    className="bg-gray-50 p-4 rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105"
+                    className={`p-4 rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105 ${
+                      isDarkMode ? 'bg-dark-bg' : 'bg-gray-50'
+                    }`}
                   >
-                    <h3 className="text-lg font-semibold text-gray-800">{resource.title}</h3>
-                    <p className="text-sm text-gray-600">{resource.category}</p>
+                    <h3 className={`text-lg font-semibold ${
+                      isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                    }`}>{resource.title}</h3>
+                    <p className={isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'}>{resource.category}</p>
                     <div className="flex items-center mt-2">
                       <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="ml-1 text-sm text-gray-600">{resource.rating}</span>
+                      <span className={`ml-1 text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                      }`}>{resource.rating}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600 text-center">No resources found for "{searchQuery}" in {category}.</p>
+              <p className={`text-center ${isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'}`}>
+                No resources found for "{searchQuery}" in {category}.
+              </p>
             )}
           </div>
         </section>

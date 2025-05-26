@@ -6,6 +6,7 @@ import PublicLayout from './layouts/PublicLayout';
 import AuthenticatedLayout from './layouts/AuthenticatedLayout';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
+import { DarkModeProvider } from './contexts/DarkModeContext';
 import { publicRoutes, privateRoutes } from './routes';
 import ErrorBoundary from './components/ErrorBoundary';
 import Loading from './components/Loading';
@@ -24,52 +25,54 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-          <Routes>
-            {publicRoutes.map(({ path, element, title }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  <PublicRoute>
-                    <PublicLayout>
-                      <Suspense fallback={<Loading />}>
-                        {element}
-                      </Suspense>
-                    </PublicLayout>
-                  </PublicRoute>
-                }
-              />
-            ))}
-            {privateRoutes.map(({ path, element, title }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  <PrivateRoute>
-                    <AuthenticatedLayout>
-                      <Suspense fallback={<Loading />}>
-                        {element}
-                      </Suspense>
-                    </AuthenticatedLayout>
-                  </PrivateRoute>
-                }
-              />
-            ))}
-          </Routes>
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-          />
-        </Router>
+        <DarkModeProvider>
+          <Router>
+            <Routes>
+              {publicRoutes.map(({ path, element, title }) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    <PublicRoute>
+                      <PublicLayout>
+                        <Suspense fallback={<Loading />}>
+                          {element}
+                        </Suspense>
+                      </PublicLayout>
+                    </PublicRoute>
+                  }
+                />
+              ))}
+              {privateRoutes.map(({ path, element, title }) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    <PrivateRoute>
+                      <AuthenticatedLayout>
+                        <Suspense fallback={<Loading />}>
+                          {element}
+                        </Suspense>
+                      </AuthenticatedLayout>
+                    </PrivateRoute>
+                  }
+                />
+              ))}
+            </Routes>
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
+          </Router>
+        </DarkModeProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

@@ -9,6 +9,7 @@ import privateRoutes from "./routes/privateRoutes";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TransactionProvider } from "./contexts/TransactionContext";
+import { DarkModeProvider } from "./contexts/DarkModeContext";
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null, errorInfo: null };
@@ -65,39 +66,41 @@ function App() {
 
   return (
     <AuthProvider>
-      <TransactionProvider>
-        <ErrorBoundary>
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-            <Routes>
-              {publicRoutes.map((route) => (
+      <DarkModeProvider>
+        <TransactionProvider>
+          <ErrorBoundary>
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+              <Routes>
+                {publicRoutes.map((route) => (
+                  <Route
+                    key={route.path}
+                    path={route.path}
+                    element={<PublicLayout>{route.element}</PublicLayout>}
+                  />
+                ))}
                 <Route
-                  key={route.path}
-                  path={route.path}
-                  element={<PublicLayout>{route.element}</PublicLayout>}
+                  path="/dashboard/*"
+                  element={
+                    <PrivateRoute>
+                      <PrivateLayout>
+                        <Routes>
+                          {privateRoutes.map((route) => (
+                            <Route
+                              key={route.path}
+                              path={route.path}
+                              element={route.element}
+                            />
+                          ))}
+                        </Routes>
+                      </PrivateLayout>
+                    </PrivateRoute>
+                  }
                 />
-              ))}
-              <Route
-                path="/dashboard/*"
-                element={
-                  <PrivateRoute>
-                    <PrivateLayout>
-                      <Routes>
-                        {privateRoutes.map((route) => (
-                          <Route
-                            key={route.path}
-                            path={route.path}
-                            element={route.element}
-                          />
-                        ))}
-                      </Routes>
-                    </PrivateLayout>
-                  </PrivateRoute>
-                }
-              />
-            </Routes>
-          </Suspense>
-        </ErrorBoundary>
-      </TransactionProvider>
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </TransactionProvider>
+      </DarkModeProvider>
     </AuthProvider>
   );
 }

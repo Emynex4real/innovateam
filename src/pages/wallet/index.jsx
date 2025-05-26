@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTransactions } from '../../contexts/TransactionContext';
 import { FiCreditCard, FiDollarSign, FiClock, FiArrowUp, FiArrowDown, FiX, FiClipboard, FiCheck } from 'react-icons/fi';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 
 const Wallet = () => {
   const [showInput, setShowInput] = useState(false);
@@ -12,10 +14,11 @@ const Wallet = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [copiedAccount, setCopiedAccount] = useState(null);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
-
+  const { user } = useAuth();
   const { walletBalance, fundWallet, getRecentTransactions } = useTransactions();
   const transactions = getRecentTransactions(5);
   const transactionCharge = 50.0;
+  const { isDarkMode } = useDarkMode();
 
   const handlePayment = () => {
     const amount = parseFloat(paymentAmount);
@@ -66,7 +69,9 @@ const Wallet = () => {
   };
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen font-nunito p-6">
+    <div className={`min-h-screen p-6 transition-colors duration-200 ${
+      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50 text-gray-800'
+    }`}>
       <div className="mx-auto max-w-6xl space-y-6">
         <AnimatePresence>
           {successMessage && (
@@ -90,9 +95,13 @@ const Wallet = () => {
           )}
         </AnimatePresence>
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6">
+          <motion.div variants={cardVariants} className={`bg-white rounded-xl shadow-md p-6 ${
+            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : ''
+          }`}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+              <h2 className={`text-xl font-semibold text-gray-800 flex items-center ${
+                isDarkMode ? 'text-dark-text-primary' : ''
+              }`}>
                 <FiDollarSign className="w-6 h-6 mr-2 text-green-500" />
                 Wallet Details
               </h2>
@@ -139,7 +148,9 @@ const Wallet = () => {
                   <div className="space-y-3">
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span className="text-gray-500">₦</span>
+                        <span className={`text-gray-500 ${
+                          isDarkMode ? 'text-dark-text-secondary' : ''
+                        }`}>₦</span>
                       </div>
                       <input
                         type="number"
@@ -148,7 +159,9 @@ const Wallet = () => {
                         placeholder="0.00"
                         className={`w-full pl-8 pr-4 py-3 rounded-xl border ${
                           error ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50'
-                        } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-lg font-medium`}
+                        } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-lg font-medium ${
+                          isDarkMode ? 'bg-dark-surface border-dark-border text-dark-text-primary' : ''
+                        }`}
                         min="1"
                         disabled={isLoading}
                       />
@@ -225,9 +238,13 @@ const Wallet = () => {
             </div>
           </motion.div>
 
-          <motion.div variants={cardVariants} className="bg-white rounded-xl shadow-md p-6">
+          <motion.div variants={cardVariants} className={`bg-white rounded-xl shadow-md p-6 ${
+            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : ''
+          }`}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+              <h2 className={`text-xl font-semibold text-gray-800 flex items-center ${
+                isDarkMode ? 'text-dark-text-primary' : ''
+              }`}>
                 <FiClock className="w-6 h-6 mr-2 text-green-500" />
                 Recent Transactions
               </h2>
@@ -323,14 +340,20 @@ const Wallet = () => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-gray-200/50 backdrop-blur-sm"
+                className={`bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-gray-200/50 backdrop-blur-sm ${
+                  isDarkMode ? 'bg-dark-surface border border-dark-border' : ''
+                }`}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-1">
+                    <h2 className={`text-2xl font-bold text-gray-800 flex items-center mb-1 ${
+                      isDarkMode ? 'text-dark-text-primary' : ''
+                    }`}>
                       Payment Details
                     </h2>
-                    <p className="text-gray-500 text-sm">Review your transaction details</p>
+                    <p className={`text-gray-500 text-sm ${
+                      isDarkMode ? 'text-dark-text-secondary' : ''
+                    }`}>Review your transaction details</p>
                   </div>
                   <button
                     onClick={() => setShowPaymentPreview(false)}
@@ -343,9 +366,13 @@ const Wallet = () => {
                 <div className="space-y-6">
                   <div className="bg-gradient-to-r from-green-50 to-green-100/50 p-6 rounded-xl border border-green-100">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-sm font-medium text-green-800">Amount to Pay</p>
+                      <p className={`text-sm font-medium text-green-800 ${
+                        isDarkMode ? 'text-dark-text-primary' : ''
+                      }`}>Amount to Pay</p>
                       <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-green-200">
-                        <p className="text-lg font-bold text-green-600">₦{parseFloat(paymentAmount || 0).toFixed(2)}</p>
+                        <p className={`text-lg font-bold text-green-600 ${
+                          isDarkMode ? 'text-dark-text-primary' : ''
+                        }`}>₦{parseFloat(paymentAmount || 0).toFixed(2)}</p>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-sm text-green-700">
@@ -354,25 +381,41 @@ const Wallet = () => {
                     </div>
                     <div className="h-px bg-green-200 my-3"></div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-green-800">Total Amount</p>
-                      <p className="text-lg font-bold text-green-600">₦{(parseFloat(paymentAmount || 0) + transactionCharge).toFixed(2)}</p>
+                      <p className={`text-sm font-medium text-green-800 ${
+                        isDarkMode ? 'text-dark-text-primary' : ''
+                      }`}>Total Amount</p>
+                      <p className={`text-lg font-bold text-green-600 ${
+                        isDarkMode ? 'text-dark-text-primary' : ''
+                      }`}>₦{(parseFloat(paymentAmount || 0) + transactionCharge).toFixed(2)}</p>
                     </div>
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-xl space-y-3 border border-gray-100">
                     <div className="flex justify-between">
-                      <p className="text-gray-500 text-sm">Transaction ID</p>
-                      <p className="text-gray-900 text-sm font-medium">AG-{Date.now()}-HAW1M</p>
+                      <p className={`text-gray-500 text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : ''
+                      }`}>Transaction ID</p>
+                      <p className={`text-gray-900 text-sm font-medium ${
+                        isDarkMode ? 'text-dark-text-primary' : ''
+                      }`}>AG-{Date.now()}-HAW1M</p>
                     </div>
                     <div className="flex justify-between">
-                      <p className="text-gray-500 text-sm">Date</p>
-                      <p className="text-gray-900 text-sm font-medium">{new Date().toLocaleString()}</p>
+                      <p className={`text-gray-500 text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : ''
+                      }`}>Date</p>
+                      <p className={`text-gray-900 text-sm font-medium ${
+                        isDarkMode ? 'text-dark-text-primary' : ''
+                      }`}>{new Date().toLocaleString()}</p>
                     </div>
                     <div className="flex justify-between">
-                      <p className="text-gray-500 text-sm">Payment Method</p>
+                      <p className={`text-gray-500 text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : ''
+                      }`}>Payment Method</p>
                       <div className="flex items-center gap-1.5">
                         <FiCreditCard className="w-4 h-4 text-gray-600" />
-                        <p className="text-gray-900 text-sm font-medium">Card Payment</p>
+                        <p className={`text-gray-900 text-sm font-medium ${
+                          isDarkMode ? 'text-dark-text-primary' : ''
+                        }`}>Card Payment</p>
                       </div>
                     </div>
                   </div>

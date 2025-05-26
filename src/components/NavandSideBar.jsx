@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTransactions } from "../contexts/TransactionContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import {
   BiGrid,
   BiUser,
@@ -31,6 +32,7 @@ const NavandSideBar = ({ children }) => {
   const userDropdownRef = useRef(null);
   const { logout, user } = useAuth();
   const { walletBalance } = useTransactions();
+  const { isDarkMode } = useDarkMode();
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
@@ -106,7 +108,9 @@ const NavandSideBar = ({ children }) => {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 font-nunito relative">
+    <div className={`flex flex-col min-h-screen font-nunito relative ${
+      isDarkMode ? 'bg-dark-surface' : 'bg-gray-50'
+    }`}>
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 
@@ -115,11 +119,15 @@ const NavandSideBar = ({ children }) => {
         />
       )}
       
-      <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 flex items-center justify-between px-4 py-3">
+      <header className={`fixed top-0 left-0 right-0 shadow-md z-50 flex items-center justify-between px-4 py-3 transition-colors duration-200 ${
+        isDarkMode ? 'bg-dark-surface text-dark-text-primary border-b border-dark-border' : 'bg-white text-gray-900'
+      }`}>
         <div className="flex items-center gap-4">
           <button
             onClick={toggleSidebar}
-            className="lg:hidden text-gray-700 hover:text-green-500 focus:outline-none"
+            className={`lg:hidden focus:outline-none ${
+              isDarkMode ? 'text-dark-text-primary hover:text-primary-400' : 'text-gray-700 hover:text-green-500'
+            }`}
             aria-label="Toggle Sidebar"
           >
             <BiMenu className="h-6 w-6" />
@@ -130,14 +138,18 @@ const NavandSideBar = ({ children }) => {
               alt="ArewaGate Logo"
               className="h-8 w-8 transition-transform duration-200 hover:scale-105"
             />
-            <span className="text-xl font-bold text-gray-800 hidden md:block">ArewaGate</span>
+            <span className={`text-xl font-bold hidden md:block ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+            }`}>ArewaGate</span>
           </Link>
         </div>
         <nav className="flex items-center gap-6">
           <div className="relative" ref={userDropdownRef}>
             <button
               onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="flex items-center space-x-2 text-gray-700 hover:text-green-500 focus:outline-none"
+              className={`flex items-center space-x-2 focus:outline-none ${
+                isDarkMode ? 'text-dark-text-primary hover:text-primary-400' : 'text-gray-700 hover:text-green-500'
+              }`}
             >
               <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center">
                 {user?.email?.charAt(0)?.toUpperCase()}
@@ -154,25 +166,39 @@ const NavandSideBar = ({ children }) => {
 
             {/* Dropdown Menu */}
             {isUserDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="text-sm text-gray-500">Signed in as</div>
-                  <div className="text-sm font-medium text-gray-900 truncate">{user?.email}</div>
+              <div className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-50 border ${
+                isDarkMode ? 'bg-dark-surface border-dark-border' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`px-4 py-2 border-b ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+                  <div className={`text-sm ${isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'}`}>Signed in as</div>
+                  <div className={`text-sm font-medium truncate ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+                  }`}>{user?.email}</div>
                 </div>
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="text-sm text-gray-500">Balance</div>
-                  <div className="text-sm font-medium text-gray-900">₦{(walletBalance || 0).toLocaleString()}</div>
+                <div className={`px-4 py-2 border-b ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
+                  <div className={`text-sm ${isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'}`}>Balance</div>
+                  <div className={`text-sm font-medium ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+                  }`}>₦{(walletBalance || 0).toLocaleString()}</div>
                 </div>
                 <Link
                   to="/dashboard"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                  className={`block px-4 py-2 text-sm ${
+                    isDarkMode 
+                      ? 'text-dark-text-primary hover:bg-dark-border hover:text-primary-400' 
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-green-500'
+                  }`}
                   onClick={() => setIsUserDropdownOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/dashboard/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                  className={`block px-4 py-2 text-sm ${
+                    isDarkMode 
+                      ? 'text-dark-text-primary hover:bg-dark-border hover:text-primary-400' 
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-green-500'
+                  }`}
                   onClick={() => setIsUserDropdownOpen(false)}
                 >
                   Profile
@@ -182,7 +208,9 @@ const NavandSideBar = ({ children }) => {
                     handleLogout();
                     setIsUserDropdownOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  className={`block w-full text-left px-4 py-2 text-sm text-red-600 ${
+                    isDarkMode ? 'hover:bg-dark-border' : 'hover:bg-gray-100'
+                  }`}
                 >
                   Sign out
                 </button>
@@ -194,10 +222,10 @@ const NavandSideBar = ({ children }) => {
 
       <aside
         ref={sidebarRef}
-        className={`fixed top-16 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out z-50
-          ${isSidebarOpen ? 'left-0' : '-left-64'} lg:left-0
-          w-64 lg:w-auto lg:min-w-[4rem] lg:${isCollapsed ? 'lg:w-16' : 'lg:w-64'}
-        `}
+        className={`fixed top-16 bottom-0 transition-all duration-300 ease-in-out z-50 ${
+          isDarkMode ? 'bg-dark-surface border-r border-dark-border' : 'bg-white shadow-lg'
+        } ${isSidebarOpen ? 'left-0' : '-left-64'} lg:left-0
+          w-64 lg:w-auto lg:min-w-[4rem] ${isCollapsed ? 'lg:w-16' : 'lg:w-64'}`}
         style={{ maxHeight: "calc(100vh - 4rem)", overflowY: "auto" }}
         onMouseEnter={() => !isSidebarOpen && window.innerWidth >= 1024 && setIsCollapsed(false)}
         onMouseLeave={() => !isSidebarOpen && window.innerWidth >= 1024 && setIsCollapsed(true)}
@@ -209,7 +237,9 @@ const NavandSideBar = ({ children }) => {
                 className={`flex items-center justify-between p-2 rounded-lg transition-all duration-200 ${
                   location.pathname === item.path || item.subItems?.some((sub) => sub.path === location.pathname)
                     ? "bg-green-500 text-white"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                    : isDarkMode
+                      ? "text-dark-text-primary hover:bg-dark-border hover:text-primary-400"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-green-500"
                 }`}
               >
                 <Link
@@ -225,7 +255,9 @@ const NavandSideBar = ({ children }) => {
                 {item.subItems && (
                   <button
                     onClick={() => toggleDropdown(item.label)}
-                    className={`p-1 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"} hover:bg-gray-200 rounded-full`}
+                    className={`p-1 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"} ${
+                      isDarkMode ? 'hover:bg-dark-border' : 'hover:bg-gray-200'
+                    } rounded-full`}
                   >
                     {openDropdown === item.label ? (
                       <BiChevronUp className="text-lg" />
@@ -243,8 +275,12 @@ const NavandSideBar = ({ children }) => {
                         to={subItem.path}
                         className={`block p-2 rounded-lg text-sm transition-all duration-200 ${
                           location.pathname === subItem.path
-                            ? "bg-green-100 text-green-500 font-semibold"
-                            : "text-gray-600 hover:bg-gray-100 hover:text-green-500"
+                            ? isDarkMode
+                              ? "bg-dark-border text-primary-400 font-semibold"
+                              : "bg-green-100 text-green-500 font-semibold"
+                            : isDarkMode
+                              ? "text-dark-text-secondary hover:bg-dark-border hover:text-primary-400"
+                              : "text-gray-600 hover:bg-gray-100 hover:text-green-500"
                         }`}
                       >
                         {subItem.label}
