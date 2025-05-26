@@ -3,16 +3,11 @@ import ServicesSection from './services/servicesSection';
 import waecResultChecker from '../../../images/waec-result-checker.jpg';
 import necoResultChecker from '../../../images/neco-result-checker.jpg';
 import nabtebResultChecker from '../../../images/nabteb-result-checker.jpg';
-import nbaisResultChecker from '../../../images/nbais-result-checker.jpg';
-import bvn from '../../../images/bvn.jpg';
 import waecGce from '../../../images/waec-gce.jpg';
 import nin from '../../../images/nin.jpg';
+import bvn from '../../../images/bvn.jpg';
 import dataSubscription from '../../../images/data-subscription.jpg';
 import olevelUpload from '../../../images/olevel-upload.jpg';
-import { useState } from "react";
-import { useEffect } from "react";
-import { data, useNavigate } from "react-router-dom";
-
 
 // Service data
 const servicesData = [

@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTransactions } from '../../contexts/TransactionContext';
-import { FaSearch, FaFilter, FaDownload, FaPrint, FaChevronDown, FaChevronUp, FaCalendar, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaDownload, FaPrint, FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const Transactions = () => {

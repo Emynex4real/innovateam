@@ -5,7 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import whatsapp from "../../images/whatsapp-removebg-preview.png";
 import image from "../../images/pexels-cottonbro-6344238.jpg";
 import ShareButton from "../../layouts/sharebtn";
-import NavBar from "./navBar/index";
+import NavBar from "./navBar";
 
 // Lazy loaded components
 const OurServices = React.lazy(() => import("./our services"));
@@ -25,14 +25,6 @@ const Home = () => {
       setSubscribed(true);
       setTimeout(() => setSubscribed(false), 3000);
       setEmail("");
-    }
-  };
-
-  const handleProceed = () => {
-    if (isAuthenticated) {
-      navigate("/homepage");
-    } else {
-      navigate("/login");
     }
   };
 

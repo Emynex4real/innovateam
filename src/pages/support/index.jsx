@@ -199,8 +199,8 @@ const Support = () => {
                 </div>
                 <div>
                   <h3 className="font-medium">Quick Links</h3>
-                  <a href="#" className="block text-sm text-green-100 hover:text-white transition-colors duration-200">Join Support Group</a>
-                  <a href="#" className="block text-sm text-green-100 hover:text-white transition-colors duration-200">Live Chat Support</a>
+                  <a href="https://chat.whatsapp.com/arewagate" className="block text-sm text-green-100 hover:text-white transition-colors duration-200">Join Support Group</a>
+                  <a href="https://support.arewagate.com/chat" className="block text-sm text-green-100 hover:text-white transition-colors duration-200">Live Chat Support</a>
                 </div>
               </div>
             </div>

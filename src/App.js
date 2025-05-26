@@ -1,5 +1,5 @@
 // src/App.js
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useMemo } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import PublicLayout from "./layouts/PublicLayout";
@@ -50,13 +50,13 @@ class ErrorBoundary extends React.Component {
 function App() {
   const location = useLocation();
 
-  const allRoutes = [
+  const allRoutes = useMemo(() => [
     ...publicRoutes,
     ...privateRoutes.map((route) => ({
       ...route,
       path: `/dashboard${route.path === "/" ? "" : route.path}`,
     })),
-  ];
+  ], []);
 
   useEffect(() => {
     const currentRoute = allRoutes.find((route) => route.path === location.pathname);
