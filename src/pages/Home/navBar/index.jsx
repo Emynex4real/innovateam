@@ -308,7 +308,7 @@ const NavBar = () => {
             <>
               <li>
                 <Link
-                  to="/signup"
+                  to="/register"
                   className="block w-full p-3 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200 text-center"
                   onClick={closeSidebar}
                 >
