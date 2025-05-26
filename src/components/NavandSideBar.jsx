@@ -92,7 +92,7 @@ const NavandSideBar = ({ children }) => {
       label: "JAMB Services",
       subItems: [
         { path: "/dashboard/buy-olevel-upload", label: "O-Level Upload" },
-        { path: "/dashboard/olevel-entry", label: "O-Level Entry" },
+        // { path: "/dashboard/olevel-entry", label: "O-Level Entry" },
         { path: "/dashboard/buy-admission-letter", label: "Admission Letter" },
         { path: "/dashboard/buy-original-result", label: "Original Result" },
         { path: "/dashboard/buy-pin-vending", label: "JAMB Pin Vending" },
