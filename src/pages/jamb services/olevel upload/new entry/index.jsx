@@ -82,7 +82,7 @@ const OLevelEntry = () => {
   }, [formData]);
 
   // Validation rules
-  const validateJambRegNo = (regNo) => /^[0-9]{8}[A-Z]{2}$/.test(regNo);
+  const validateJambRegNo = (regNo) => /^[0-9]{12}[A-Z]{2}$/.test(regNo);
   const validateYear = (year) => year >= 1980 && year <= new Date().getFullYear();
   const validateSubjects = (courses) => {
     const filledCourses = courses.filter(
