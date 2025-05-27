@@ -373,11 +373,94 @@ const OLevelUpload = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan="8" className={`text-center py-4 ${
-                    isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
-                  }`}>No Record Found!</td>
-                </tr>
+                {history.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className={`text-center py-4 ${
+                      isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                    }`}>No Record Found!</td>
+                  </tr>
+                ) : (
+                  history.map((entry) => (
+                    <tr key={entry.id} className={`${
+                      isDarkMode ? 'border-dark-border hover:bg-dark-surface/50' : 'border-gray-100 hover:bg-gray-50'
+                    } border-b transition-colors duration-200`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {entry.status === 'Waiting' && (
+                            <button
+                              onClick={() => handleNewEntry(entry.id)}
+                              className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                isDarkMode
+                                  ? 'bg-green-900/30 text-green-400 hover:bg-green-800/40'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              } transition-colors duration-200`}
+                            >
+                              New Entry
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleRequery(entry.id)}
+                            className={`px-3 py-1 text-xs rounded-full font-medium ${
+                              isDarkMode
+                                ? 'bg-blue-900/30 text-blue-400 hover:bg-blue-800/40'
+                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            } transition-colors duration-200`}
+                          >
+                            Query
+                          </button>
+                        </div>
+                      </td>
+                      <td className={`px-4 py-3 ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>{entry.type}</td>
+                      <td className={`px-4 py-3 ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>{entry.fullname}</td>
+                      <td className={`px-4 py-3 ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>{entry.profileCode}</td>
+                      <td className={`px-4 py-3`}>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          entry.status === 'Waiting'
+                            ? isDarkMode
+                              ? 'bg-yellow-900/30 text-yellow-400'
+                              : 'bg-yellow-100 text-yellow-700'
+                            : entry.status === 'Completed'
+                              ? isDarkMode
+                                ? 'bg-green-900/30 text-green-400'
+                                : 'bg-green-100 text-green-700'
+                              : isDarkMode
+                                ? 'bg-red-900/30 text-red-400'
+                                : 'bg-red-100 text-red-700'
+                        }`}>
+                          {entry.status}
+                        </span>
+                      </td>
+                      <td className={`px-4 py-3 ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>
+                        {entry.status === 'Completed' ? (
+                          <button
+                            onClick={() => handleDownload(`screenshot_${entry.id}.pdf`)}
+                            className={`text-xs underline ${
+                              isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
+                            }`}
+                          >
+                            Download
+                          </button>
+                        ) : (
+                          'N/A'
+                        )}
+                      </td>
+                      <td className={`px-4 py-3 ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>{entry.remark}</td>
+                      <td className={`px-4 py-3 ${
+                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                      }`}>{entry.submittedOn}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -390,44 +473,88 @@ const OLevelUpload = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              className={`fixed inset-0 ${
+                isDarkMode ? 'bg-black/40' : 'bg-black/20'
+              } backdrop-blur-sm z-50 flex items-center justify-center p-4`}
             >
               <motion.div
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full relative"
+                className={`${
+                  isDarkMode 
+                    ? 'bg-gray-800 border border-gray-700' 
+                    : 'bg-white'
+                } p-6 rounded-xl shadow-xl max-w-md w-full relative`}
               >
                 <button
                   onClick={handleQueryCancel}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                  className={`absolute top-4 right-4 ${
+                    isDarkMode 
+                      ? 'text-gray-500 hover:text-gray-400' 
+                      : 'text-gray-400 hover:text-gray-600'
+                  } transition-colors`}
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
-                <h2 className="text-lg font-semibold text-text-color mb-4">Query</h2>
-                <p className="text-sm text-gray-600 mb-4">
+                <h2 className={`text-lg font-semibold mb-4 ${
+                  isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                }`}>Query</h2>
+                <p className={`text-sm mb-4 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                   <strong>Notice:</strong> A 500 Naira fee may be deducted if the error is not ours.
                 </p>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Type</label>
-                    <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.type || 'UTME'}</p>
+                    <label className={`block text-sm font-medium ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Type</label>
+                    <p className={`mt-1 p-2 rounded-lg ${
+                      isDarkMode 
+                        ? 'bg-gray-700 text-gray-300' 
+                        : 'bg-gray-100 text-gray-900'
+                    }`}>
+                      {history.find((item) => item.id === selectedQueryId)?.type || 'UTME'}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                    <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.fullname || 'Not set'}</p>
+                    <label className={`block text-sm font-medium ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Full Name</label>
+                    <p className={`mt-1 p-2 rounded-lg ${
+                      isDarkMode 
+                        ? 'bg-gray-700 text-gray-300' 
+                        : 'bg-gray-100 text-gray-900'
+                    }`}>
+                      {history.find((item) => item.id === selectedQueryId)?.fullname || 'Not set'}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Profile Code</label>
-                    <p className="mt-1 p-2 bg-gray-100 rounded-lg">{history.find((item) => item.id === selectedQueryId)?.profileCode || 'N/A'}</p>
+                    <label className={`block text-sm font-medium ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Profile Code</label>
+                    <p className={`mt-1 p-2 rounded-lg ${
+                      isDarkMode 
+                        ? 'bg-gray-700 text-gray-300' 
+                        : 'bg-gray-100 text-gray-900'
+                    }`}>
+                      {history.find((item) => item.id === selectedQueryId)?.profileCode || 'N/A'}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Complaint</label>
+                    <label className={`block text-sm font-medium ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Complaint</label>
                     <textarea
                       value={complaint}
                       onChange={(e) => setComplaint(e.target.value)}
                       placeholder="Enter your complaint..."
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-color transition-all duration-200"
+                      className={`w-full p-2 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500 focus:ring-primary-color/30 focus:border-primary-color' 
+                          : 'border-gray-300 focus:ring-primary-color focus:border-primary-color'
+                      }`}
                       rows={4}
                     />
                   </div>
@@ -435,14 +562,21 @@ const OLevelUpload = () => {
                 <div className="mt-6 flex gap-4">
                   <button
                     onClick={handleQueryCancel}
-                    className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-300"
+                    className={`flex-1 px-6 py-3 border-2 rounded-xl font-semibold transition-all duration-300 ${
+                      isDarkMode
+                        ? 'border-gray-700 text-gray-300 hover:bg-gray-700'
+                        : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleQueryProceed}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-green-500 text-white py-3 px-6 rounded-xl font-semibold
-                      hover:from-green-700 hover:to-green-600 transition-all duration-300"
+                    className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-300 ${
+                      isDarkMode
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white'
+                    }`}
                   >
                     Submit Query
                   </button>

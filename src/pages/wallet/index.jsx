@@ -49,7 +49,7 @@ const Wallet = () => {
       setPaymentAmount('');
       setShowInput(false);
       setShowPaymentPreview(false);
-      setSuccessMessage('Payment successful! Your wallet has been credited.');
+      setSuccessMessage(`Payment successful! Your wallet has been credited with ₦${amount.toLocaleString()}.`);
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       setError('Payment failed. Please try again.');
@@ -165,16 +165,28 @@ const Wallet = () => {
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}
                         placeholder="0.00"
-                        className={`w-full pl-8 pr-4 py-3 rounded-xl border ${
-                          error ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50'
-                        } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-lg font-medium ${
-                          isDarkMode ? 'bg-dark-surface border-dark-border text-dark-text-primary' : ''
+                        className={`w-full pl-8 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all duration-200 text-lg font-medium ${
+                          error 
+                            ? isDarkMode
+                              ? 'border-red-500 bg-red-900/20 text-red-400'
+                              : 'border-red-500 bg-red-50 text-red-900'
+                            : isDarkMode
+                              ? 'border-gray-700 bg-gray-800 text-gray-100 placeholder-gray-500'
+                              : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400'
+                        } ${
+                          isDarkMode 
+                            ? 'focus:ring-green-500/30 focus:border-green-500'
+                            : 'focus:ring-green-500 focus:border-green-500'
                         }`}
                         min="1"
                         disabled={isLoading}
                       />
                     </div>
-                    {error && <p className="text-red-500 text-xs">{error}</p>}
+                    {error && (
+                      <p className={`text-xs ${
+                        isDarkMode ? 'text-red-400' : 'text-red-500'
+                      }`}>{error}</p>
+                    )}
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -418,7 +430,7 @@ const Wallet = () => {
                     <div className="flex items-center justify-between mb-4">
                       <p className={`text-sm font-medium ${
                         isDarkMode ? 'text-dark-text-primary' : 'text-green-800'
-                      }`}>Amount to Pay</p>
+                      }`}>Amount to Deposit</p>
                       <div className={`px-4 py-2 rounded-lg shadow-sm border ${
                         isDarkMode 
                           ? 'bg-dark-surface-secondary border-dark-border' 
@@ -444,7 +456,7 @@ const Wallet = () => {
                     <div className="flex items-center justify-between">
                       <p className={`text-sm font-medium ${
                         isDarkMode ? 'text-dark-text-primary' : 'text-green-800'
-                      }`}>Total Amount</p>
+                      }`}>Total Amount to Pay</p>
                       <p className={`text-lg font-bold ${
                         isDarkMode ? 'text-dark-text-primary' : 'text-green-600'
                       }`}>₦{(parseFloat(paymentAmount || 0) + transactionCharge).toFixed(2)}</p>
