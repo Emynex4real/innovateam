@@ -10,7 +10,7 @@ export const TransactionProvider = ({ children }) => {
 
   const fundWallet = (amount, paymentMethod) => {
     const charge = 50.0;
-    const newTransaction = {
+    const depositTransaction = {
       id: uuidv4(),
       label: 'e-Wallet Topup',
       description: `Funded wallet via ${paymentMethod}`,
@@ -26,14 +26,14 @@ export const TransactionProvider = ({ children }) => {
       label: 'Transaction Charge',
       description: `Charge for wallet funding`,
       amount: charge,
-      type: 'debit',
+      type: 'fee',
       category: 'wallet',
       date: new Date().toISOString(),
       status: 'Successful',
     };
 
-    setTransactions((prev) => [newTransaction, chargeTransaction, ...prev]);
-    setWalletBalance((prev) => prev + amount - charge);
+    setTransactions((prev) => [depositTransaction, chargeTransaction, ...prev]);
+    setWalletBalance((prev) => prev + amount);
   };
 
   const addTransaction = (transaction) => {

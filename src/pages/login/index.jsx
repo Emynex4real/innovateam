@@ -3,9 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiMail, FiLock, FiEye, FiEyeOff, FiHome, FiArrowLeft } from "react-icons/fi";
+import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi";
 import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 import toast from 'react-hot-toast';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
+import Button from "../../components/ui/button";
+import Input from "../../components/ui/input";
+import Label from "../../components/ui/label";
+import { Checkbox } from "../../components/ui/checkbox";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,11 +27,6 @@ const Login = () => {
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
-  };
-
-  const inputVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
   };
 
   const handleSubmit = async (e) => {
@@ -102,268 +102,194 @@ const Login = () => {
         <FiArrowLeft className="w-5 h-5" />
         <span>Back to Home</span>
       </Link>
+
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className={`max-w-md w-full rounded-2xl shadow-xl p-8 space-y-6 font-inter backdrop-blur-sm border ${
-          isDarkMode 
-            ? 'bg-gray-800/90 border-gray-700 text-gray-100' 
-            : 'bg-white/90 border-white/20'
-        }`}
+        className="w-full max-w-md"
       >
-        <div className="text-center">
-          <motion.h2
-            className={`text-3xl font-bold font-poppins ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            }`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            Welcome Back
-          </motion.h2>
-          <p className={`mt-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Access your learning journey
-          </p>
-        </div>
+        <Card className={isDarkMode ? 'bg-gray-800/90 border-gray-700' : 'bg-white/90'}>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+            <CardDescription className="text-center">
+              Access your learning journey
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AnimatePresence>
+              {formError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className={`p-3 text-sm rounded-md ${
+                    isDarkMode 
+                      ? 'bg-red-900/50 border border-red-800 text-red-200' 
+                      : 'bg-red-50 border border-red-200 text-red-600'
+                  }`}
+                >
+                  {formError}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        <AnimatePresence>
-          {formError && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md"
-            >
-              {formError}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <motion.div variants={inputVariants} initial="hidden" animate="visible">
-            <label htmlFor="email" className={`block text-sm font-medium ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}>
-              Email Address
-            </label>
-            <div className="relative mt-1">
-              <FiMail className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                isDarkMode ? 'text-gray-500' : 'text-gray-400'
-              }`} />
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-all duration-200 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:ring-primary-color/50 focus:border-primary-color' 
-                    : 'border-gray-300 focus:ring-primary-color focus:border-primary-color bg-white/50 text-gray-900'
-                }`}
-                placeholder="you@example.com"
-                disabled={loading}
-              />
-            </div>
-          </motion.div>
-
-          <motion.div variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
-            <label htmlFor="password" className={`block text-sm font-medium ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}>
-              Password
-            </label>
-            <div className="relative mt-1">
-              <FiLock className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                isDarkMode ? 'text-gray-500' : 'text-gray-400'
-              }`} />
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-10 pr-12 py-3 rounded-lg border transition-all duration-200 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:ring-primary-color/50 focus:border-primary-color' 
-                    : 'border-gray-300 focus:ring-primary-color focus:border-primary-color bg-white/50 text-gray-900'
-                }`}
-                placeholder="••••••••"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${
-                  isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-              </button>
-            </div>
-          </motion.div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className={`h-4 w-4 rounded focus:ring-offset-0 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-primary-color focus:ring-primary-color/50' 
-                    : 'text-primary-color focus:ring-primary-color border-gray-300'
-                }`}
-                disabled={loading}
-              />
-              <label htmlFor="remember-me" className={`ml-2 text-sm ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-600'
-              }`}>
-                Remember me
-              </label>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowSocial(!showSocial)}
-              className={`text-sm ${
-                isDarkMode 
-                  ? 'text-primary-color hover:text-primary-color/80' 
-                  : 'text-indigo-600 hover:text-indigo-500'
-              } transition-colors duration-200`}
-            >
-              {showSocial ? "Use Email" : "Social Login"}
-            </button>
-          </div>
-
-          <AnimatePresence>
-            {showSocial ? (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-4"
-              >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
                 <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-3 bg-white text-gray-500">Or sign in with</span>
-                  </div>
+                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    disabled={loading}
+                  />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin("google")}
-                    className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <FaGoogle className="w-5 h-5 text-red-500" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin("facebook")}
-                    className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <FaFacebook className="w-5 h-5 text-blue-600" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin("twitter")}
-                    className="flex items-center justify-center py-2 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <FaTwitter className="w-5 h-5 text-blue-400" />
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="text-center space-y-4">
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className={`text-sm ${
-                      isDarkMode 
-                        ? 'text-primary-color hover:text-primary-color/80' 
-                        : 'text-indigo-600 hover:text-indigo-500'
-                    } transition-colors duration-200`}
-                  >
-                    Forgot your password?
-                  </button>
-                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Don't have an account?{' '}
-                    <Link
-                      to="/register"
-                      className={`font-medium ${
-                        isDarkMode 
-                          ? 'text-primary-color hover:text-primary-color/80' 
-                          : 'text-indigo-600 hover:text-indigo-500'
-                      } transition-colors duration-200`}
-                    >
-                      Sign up
-                    </Link>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-200 ${
-              loading 
-                ? 'bg-primary-color/70 cursor-not-allowed' 
-                : 'bg-primary-color hover:bg-primary-color/90'
-            }`}
-          >
-            {loading ? (
-              <div className="flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               </div>
-            ) : (
-              'Sign in'
-            )}
-          </button>
-        </form>
 
-        <div className="text-center space-y-4">
-          <Link
-            to="/forgot-password"
-            className={`text-sm ${
-              isDarkMode 
-                ? 'text-primary-color hover:text-primary-color/80' 
-                : 'text-indigo-600 hover:text-indigo-500'
-            } transition-colors duration-200`}
-          >
-            Forgot your password?
-          </Link>
-          <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className={`font-medium ${
-                isDarkMode 
-                  ? 'text-primary-color hover:text-primary-color/80' 
-                  : 'text-indigo-600 hover:text-indigo-500'
-              } transition-colors duration-200`}
-            >
-              Sign up
-            </Link>
-          </div>
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={setRememberMe}
+                    disabled={loading}
+                  />
+                  <Label htmlFor="remember" className="text-sm cursor-pointer">
+                    Remember me
+                  </Label>
+                </div>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-0"
+                  onClick={() => setShowSocial(!showSocial)}
+                >
+                  {showSocial ? "Use Email" : "Social Login"}
+                </Button>
+              </div>
+
+              <AnimatePresence>
+                {showSocial ? (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4"
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className={`px-2 ${
+                          isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'
+                        }`}>
+                          Or continue with
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleSocialLogin("google")}
+                      >
+                        <FaGoogle className="w-5 h-5 text-red-500" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleSocialLogin("facebook")}
+                      >
+                        <FaFacebook className="w-5 h-5 text-blue-600" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleSocialLogin("twitter")}
+                      >
+                        <FaTwitter className="w-5 h-5 text-blue-400" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-4"
+                  >
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="w-full"
+                      onClick={handleForgotPassword}
+                    >
+                      Forgot your password?
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  'Sign in'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm">
+              Don't have an account?{' '}
+              <Link
+                to="/register"
+                className={`font-medium ${
+                  isDarkMode 
+                    ? 'text-primary-color hover:text-primary-color/80' 
+                    : 'text-primary-color hover:text-primary-color/90'
+                }`}
+              >
+                Sign up
+              </Link>
+            </div>
+          </CardFooter>
+        </Card>
       </motion.div>
     </div>
   );

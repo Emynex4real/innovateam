@@ -5,6 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'react-hot-toast';
 import { debounce } from 'lodash';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import Card, { CardHeader, CardTitle, CardContent, CardFooter } from "../../components/ui/card";
+import Button from "../../components/ui/button";
+import Input from "../../components/ui/input";
+import Label from "../../components/ui/label";
+import Textarea from "../../components/ui/textarea";
+import Separator from "../../components/ui/separator";
 
 const Profile = memo(() => {
   const { user, updateProfile, logout } = useAuth();
@@ -285,7 +291,7 @@ const Profile = memo(() => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-dark-surface">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
@@ -300,27 +306,20 @@ const Profile = memo(() => {
       isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-gray-50 text-gray-800'
     }`}>
       <Toaster position="top-right" />
-            <motion.div
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`max-w-2xl mx-auto rounded-xl shadow-lg ${
-          isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
-        }`}
+        className="max-w-2xl mx-auto"
       >
-        <div className={`p-6 border-b ${
-          isDarkMode ? 'border-dark-border' : 'border-gray-200'
-        }`}>
-          <div className="flex justify-between items-center">
-            <h1 className={`text-2xl font-bold ${
+        <Card className={isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : ''}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className={`text-2xl font-bold ${
               isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
-            }`}>Profile Settings</h1>
-            <button
+            }`}>Profile Settings</CardTitle>
+            <Button
               onClick={() => setIsEditing(!isEditing)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors duration-200 ${
-                isDarkMode 
-                  ? 'bg-dark-surface text-dark-text-primary hover:bg-dark-border' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              variant={isDarkMode ? "secondary" : "outline"}
+              className="flex items-center gap-2"
             >
               {isEditing ? (
                 <>
@@ -333,122 +332,200 @@ const Profile = memo(() => {
                   <span>Edit</span>
                 </>
               )}
-            </button>
-          </div>
-          </div>
-
-        <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label 
-                htmlFor="name" 
-                className={`block text-sm font-medium mb-2 ${
-                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                }`}
-              >
-                Full Name
-              </label>
-              <input
+            </Button>
+          </CardHeader>
+          <Separator className={isDarkMode ? 'bg-dark-border' : ''} />
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
                     type="text"
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                disabled={!isEditing}
-                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
-                  isDarkMode 
-                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
-                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
-                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
-              />
-            </div>
+                    disabled={!isEditing}
+                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                  />
+                </div>
 
-            <div>
-                  <label
-                htmlFor="email" 
-                className={`block text-sm font-medium mb-2 ${
-                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                }`}
-              >
-                Email Address
-                  </label>
-              <input
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
                     type="email"
                     id="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                disabled={!isEditing}
-                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
-                  isDarkMode 
-                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
-                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
-                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
-              />
-            </div>
+                    disabled={!isEditing}
+                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                  />
+                </div>
 
-            <div>
-                  <label
-                htmlFor="phone" 
-                className={`block text-sm font-medium mb-2 ${
-                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                }`}
-              >
-                Phone Number
-                  </label>
-              <input
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
                     type="tel"
                     id="phone"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                disabled={!isEditing}
-                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
-                  isDarkMode 
-                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
-                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
-                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
-              />
-            </div>
+                    disabled={!isEditing}
+                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                  />
+                </div>
 
-            <div>
-                  <label
-                htmlFor="address" 
-                className={`block text-sm font-medium mb-2 ${
-                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                }`}
-              >
-                Address
-                  </label>
-              <textarea
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
                     id="address"
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                disabled={!isEditing}
-                rows={3}
-                className={`w-full px-4 py-2 rounded-md border transition-colors duration-200 ${
-                  isDarkMode 
-                    ? 'bg-dark-surface border-dark-border text-dark-text-primary focus:border-primary-500' 
-                    : 'border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500'
-                } ${!isEditing && 'cursor-not-allowed opacity-75'}`}
-              />
-            </div>
+                    disabled={!isEditing}
+                    rows={3}
+                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                  />
+                </div>
 
-            {isEditing && (
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-colors duration-200"
-                >
-                  Save Changes
-                      </button>
+                {isEditing && (
+                  <div className="flex justify-end gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleReset}
+                    >
+                      Reset
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="default"
+                      className="bg-green-500 hover:bg-green-600"
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
+                )}
               </div>
+            </form>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
+            {showChangePassword ? (
+              <Button
+                variant="outline"
+                onClick={() => setShowChangePassword(false)}
+              >
+                Cancel Password Change
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowChangePassword(true)}
+              >
+                Change Password
+              </Button>
             )}
-          </form>
-        </div>
-        </motion.div>
-      </div>
+          </CardFooter>
+        </Card>
+
+        {showChangePassword && (
+          <Card className={`mt-6 ${isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : ''}`}>
+            <CardHeader>
+              <CardTitle className={isDarkMode ? 'text-dark-text-primary' : ''}>
+                Change Password
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    id="currentPassword"
+                    name="currentPassword"
+                    value={formData.currentPassword}
+                    onChange={handleChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    id="newPassword"
+                    name="newPassword"
+                    value={formData.newPassword}
+                    onChange={handleChange}
+                  />
+                  <div className="mt-2 flex gap-1">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full ${
+                          i < passwordStrength
+                            ? 'bg-green-500'
+                            : isDarkMode
+                            ? 'bg-dark-border'
+                            : 'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-end gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowChangePassword(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                className="bg-green-500 hover:bg-green-600"
+                onClick={handlePasswordChange}
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Update Password'}
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
+      </motion.div>
+    </div>
   );
 });
 

@@ -4,6 +4,9 @@ import { useTransactions } from '../../contexts/TransactionContext';
 import { FiCreditCard, FiDollarSign, FiClock, FiArrowUp, FiArrowDown, FiX, FiClipboard, FiCheck } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/card';
+import Button from '../../components/ui/button';
+import Input from '../../components/ui/input';
 
 const Wallet = () => {
   const [showInput, setShowInput] = useState(false);
@@ -79,9 +82,9 @@ const Wallet = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`px-6 py-4 rounded-xl mb-6 flex items-center justify-between shadow-lg ${
+              className={`px-6 py-4 rounded-xl mb-6 flex items-center justify-between ${
                 isDarkMode 
-                  ? 'bg-dark-surface-secondary border border-dark-border text-green-400' 
+                  ? 'bg-green-900/30 border border-green-800 text-green-400' 
                   : 'bg-green-50 border border-green-200/50 text-green-700'
               }`}
             >
@@ -89,28 +92,27 @@ const Wallet = () => {
                 <FiCheck className="w-5 h-5 mr-2" />
                 {successMessage}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSuccessMessage('')}
-                className={`text-${isDarkMode ? 'dark-text-secondary' : 'green-700'} hover:text-${isDarkMode ? 'primary-400' : 'green-900'}`}
+                className={isDarkMode ? 'hover:bg-green-800/30' : 'hover:bg-green-100'}
               >
                 <FiX className="w-5 h-5" />
-              </button>
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <motion.div variants={cardVariants} className={`p-6 rounded-xl shadow-md ${
-            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
-          }`}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`text-xl font-semibold flex items-center ${
-                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
-              }`}>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className={isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : ''}>
+            <CardHeader>
+              <CardTitle className="flex items-center">
                 <FiDollarSign className="w-6 h-6 mr-2 text-green-500" />
                 Wallet Details
-              </h2>
-            </div>
-            <div className="space-y-6">
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className={`relative overflow-hidden p-8 rounded-2xl text-white shadow-lg border ${
@@ -133,24 +135,23 @@ const Wallet = () => {
               </motion.div>
 
               <div className="space-y-4">
-                <motion.button
-                  whileHover={{ scale: 1.02, backgroundColor: '#16a34a' }}
-                  whileTap={{ scale: 0.98 }}
+                <Button
+                  variant={showInput ? "outline" : "success"}
+                  className="w-full"
                   onClick={() => setShowInput(!showInput)}
-                  className={`w-full py-3.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2.5 ${showInput ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/25'}`}
                 >
                   {showInput ? (
                     <>
-                      <FiX className="w-4 h-4" />
+                      <FiX className="w-4 h-4 mr-2" />
                       Cancel Payment
                     </>
                   ) : (
                     <>
-                      <FiCreditCard className="w-4 h-4" />
+                      <FiCreditCard className="w-4 h-4 mr-2" />
                       Add Money to Wallet
                     </>
                   )}
-                </motion.button>
+                </Button>
 
                 {showInput && (
                   <div className="space-y-3">
@@ -160,23 +161,19 @@ const Wallet = () => {
                           isDarkMode ? 'text-dark-text-secondary' : ''
                         }`}>₦</span>
                       </div>
-                      <input
+                      <Input
                         type="number"
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}
                         placeholder="0.00"
-                        className={`w-full pl-8 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all duration-200 text-lg font-medium ${
+                        className={`pl-8 text-lg font-medium ${
                           error 
                             ? isDarkMode
                               ? 'border-red-500 bg-red-900/20 text-red-400'
                               : 'border-red-500 bg-red-50 text-red-900'
                             : isDarkMode
                               ? 'border-gray-700 bg-gray-800 text-gray-100 placeholder-gray-500'
-                              : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400'
-                        } ${
-                          isDarkMode 
-                            ? 'focus:ring-green-500/30 focus:border-green-500'
-                            : 'focus:ring-green-500 focus:border-green-500'
+                              : ''
                         }`}
                         min="1"
                         disabled={isLoading}
@@ -187,11 +184,10 @@ const Wallet = () => {
                         isDarkMode ? 'text-red-400' : 'text-red-500'
                       }`}>{error}</p>
                     )}
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                    <Button
+                      variant="success"
+                      className="w-full"
                       onClick={handlePayment}
-                      className="w-full bg-green-500 text-white py-3 rounded-lg text-sm font-medium hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -201,44 +197,57 @@ const Wallet = () => {
                         </div>
                       ) : (
                         <>
-                          <FiCreditCard className="w-4 h-4" />
+                          <FiCreditCard className="w-4 h-4 mr-2" />
                           Submit Payment
                         </>
                       )}
-                    </motion.button>
+                    </Button>
                   </div>
                 )}
               </div>
 
-              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-100/50 rounded-xl p-4 backdrop-blur-sm">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <FiCreditCard className="w-4 h-4 text-yellow-700" />
+              <Card className={`${
+                isDarkMode 
+                  ? 'bg-yellow-900/30 border-yellow-800 text-yellow-400' 
+                  : 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-100/50'
+              }`}>
+                <CardContent className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    isDarkMode ? 'bg-yellow-800' : 'bg-yellow-100'
+                  }`}>
+                    <FiCreditCard className={`w-4 h-4 ${
+                      isDarkMode ? 'text-yellow-400' : 'text-yellow-700'
+                    }`} />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-yellow-800 font-medium mb-1">Transaction Fee Notice</p>
-                    <p className="text-sm text-yellow-700/90">
-                      A service charge of <strong className="text-yellow-900">₦{transactionCharge.toFixed(2)}</strong> will be applied to bank transfers.
+                  <div>
+                    <p className={`text-sm font-medium mb-1 ${
+                      isDarkMode ? 'text-yellow-400' : 'text-yellow-800'
+                    }`}>Transaction Fee Notice</p>
+                    <p className={`text-sm ${
+                      isDarkMode ? 'text-yellow-500' : 'text-yellow-700/90'
+                    }`}>
+                      A service charge of <strong className={
+                        isDarkMode ? 'text-yellow-400' : 'text-yellow-900'
+                      }>₦{transactionCharge.toFixed(2)}</strong> will be applied to bank transfers.
                     </p>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               <div className="space-y-4">
                 {[
                   { name: 'Mic', number: '7324484567', bank: 'Werna Bank' },
                   { name: 'Mic', number: '5025249620', bank: 'Sterling Bank' },
                 ].map((account, index) => (
-                  <motion.div
+                  <Card
                     key={index}
-                    whileHover={{ scale: 1.01 }}
-                    className={`p-5 rounded-xl relative group shadow-sm hover:shadow-md transition-all duration-200 ${
+                    className={`transition-all duration-200 ${
                       isDarkMode 
-                        ? 'bg-dark-surface border border-dark-border hover:bg-dark-surface-tertiary' 
-                        : 'bg-white border border-gray-200 hover:bg-gray-50'
+                        ? 'bg-dark-surface border-dark-border hover:bg-dark-surface-tertiary' 
+                        : 'hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex justify-between items-start">
+                    <CardContent className="flex justify-between items-start">
                       <div>
                         <p className={`font-medium ${
                           isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
@@ -250,13 +259,15 @@ const Wallet = () => {
                           isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
                         }`}><strong>Number:</strong> {account.number}</p>
                       </div>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => copyToClipboard(account.number, index)}
-                        className={`transition-colors ${
+                        className={
                           isDarkMode 
                             ? 'text-dark-text-secondary hover:text-primary-400' 
                             : 'text-green-500 hover:text-green-600'
-                        }`}
+                        }
                         title="Copy account number"
                       >
                         {copiedAccount === index ? (
@@ -264,101 +275,102 @@ const Wallet = () => {
                         ) : (
                           <FiClipboard className="w-5 h-5" />
                         )}
-                      </button>
-                    </div>
-                  </motion.div>
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            </div>
-          </motion.div>
+            </CardContent>
+          </Card>
 
-          <motion.div variants={cardVariants} className={`p-6 rounded-xl shadow-md ${
-            isDarkMode ? 'bg-dark-surface-secondary border border-dark-border' : 'bg-white'
-          }`}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`text-xl font-semibold flex items-center ${
-                isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
-              }`}>
+          <Card className={isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : ''}>
+            <CardHeader>
+              <CardTitle className="flex items-center">
                 <FiClock className="w-6 h-6 mr-2 text-green-500" />
                 Recent Transactions
-              </h2>
-            </div>
-            <div className="space-y-6">
-              <div className={`p-5 rounded-xl border ${
-                isDarkMode 
-                  ? 'bg-dark-surface border-dark-border' 
-                  : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200/50'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-sm font-medium">Last Transaction</p>
-                    <p className="text-3xl font-bold text-green-500 mt-1">
-                      ₦{transactions[0]?.amount.toFixed(2) || '0.00'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Card className={isDarkMode ? 'bg-dark-surface border-dark-border' : 'bg-gray-50'}>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`text-sm font-medium ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                      }`}>Last Transaction</p>
+                      <p className="text-3xl font-bold text-green-500 mt-1">
+                        ₦{transactions[0]?.amount.toFixed(2) || '0.00'}
+                      </p>
+                    </div>
+                    <div className={`p-3 rounded-xl ${
+                      transactions[0]?.type === 'credit' 
+                        ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100'
+                        : isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100'
+                    }`}>
+                      {transactions[0]?.type === 'credit' ? (
+                        <FiArrowDown className="w-6 h-6" />
+                      ) : (
+                        <FiArrowUp className="w-6 h-6" />
+                      )}
+                    </div>
+                  </div>
+                  {transactions[0] && (
+                    <p className={`text-xs mt-2 ${
+                      isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                    }`}>
+                      {new Date(transactions[0].date).toLocaleDateString('en-US', { 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </p>
-                  </div>
-                  <div className={`p-3 rounded-xl ${transactions[0]?.type === 'credit' ? 'bg-green-100' : 'bg-red-100'}`}>
-                    {transactions[0]?.type === 'credit' ? (
-                      <FiArrowDown className="w-6 h-6 text-green-600" />
-                    ) : (
-                      <FiArrowUp className="w-6 h-6 text-red-600" />
-                    )}
-                  </div>
-                </div>
-                {transactions[0] && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    {new Date(transactions[0].date).toLocaleDateString('en-US', { 
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
-                )}
-              </div>
+                  )}
+                </CardContent>
+              </Card>
 
               <div className="space-y-3">
                 {transactions.map((transaction) => (
-                  <motion.div
+                  <Card
                     key={transaction.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    whileHover={{ scale: 1.01 }}
-                    className={`flex justify-between items-center p-4 rounded-xl transition-all duration-200 border shadow-sm hover:shadow-md ${
+                    className={`transition-all duration-200 ${
                       isDarkMode 
                         ? 'bg-dark-surface border-dark-border hover:bg-dark-surface-tertiary' 
-                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                        : 'hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-center">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-4 ${
-                        transaction.type === 'credit' 
-                          ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-600'
-                          : isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-600'
+                    <CardContent className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-4 ${
+                          transaction.type === 'credit' 
+                            ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-600'
+                            : isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-600'
+                        }`}>
+                          {transaction.type === 'credit' ? (
+                            <FiArrowDown className="w-5 h-5" />
+                          ) : (
+                            <FiArrowUp className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div>
+                          <p className={`font-medium ${
+                            isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                          }`}>{transaction.label}</p>
+                          <p className={`text-xs ${
+                            isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                          }`}>{new Date(transaction.date).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <p className={`text-sm font-semibold ${
+                        transaction.type === 'credit'
+                          ? isDarkMode ? 'text-green-400' : 'text-green-600'
+                          : isDarkMode ? 'text-red-400' : 'text-red-600'
                       }`}>
-                        {transaction.type === 'credit' ? (
-                          <FiArrowDown className="w-5 h-5" />
-                        ) : (
-                          <FiArrowUp className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div>
-                        <p className={`font-medium ${
-                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                        }`}>{transaction.label}</p>
-                        <p className={`text-xs ${
-                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
-                        }`}>{new Date(transaction.date).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                    <p className={`text-sm font-semibold ${
-                      transaction.type === 'credit'
-                        ? isDarkMode ? 'text-green-400' : 'text-green-600'
-                        : isDarkMode ? 'text-red-400' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'credit' ? '+' : '-'} ₦{Math.abs(transaction.amount).toFixed(2)}
-                    </p>
-                  </motion.div>
+                        {transaction.type === 'credit' ? '+' : '-'} ₦{Math.abs(transaction.amount).toFixed(2)}
+                      </p>
+                    </CardContent>
+                  </Card>
                 ))}
                 {transactions.length === 0 && (
                   <p className={`text-center text-sm ${
@@ -367,18 +379,17 @@ const Wallet = () => {
                 )}
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02, backgroundColor: '#16a34a' }}
-                whileTap={{ scale: 0.98 }}
+              <Button
+                variant="success"
+                className="w-full"
                 onClick={() => setShowAllTransactions(!showAllTransactions)}
-                className="w-full bg-green-500 text-white py-3.5 rounded-xl text-sm font-medium hover:bg-green-600 transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-green-500/25"
               >
-                <FiClock className="w-4 h-4" />
+                <FiClock className="w-4 h-4 mr-2" />
                 {showAllTransactions ? 'Show Less' : 'View All Transactions'}
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
         <AnimatePresence>
           {showPaymentPreview && (
@@ -386,139 +397,116 @@ const Wallet = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50`}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+              onClick={() => setShowPaymentPreview(false)}
             >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className={`w-full max-w-md rounded-2xl p-8 shadow-2xl border ${
-                  isDarkMode 
-                    ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
-                    : 'bg-white border-gray-200/50'
+              <Card
+                className={`w-full max-w-md ${
+                  isDarkMode ? 'bg-dark-surface border-dark-border' : ''
                 }`}
+                onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className={`text-2xl font-bold mb-1 ${
-                      isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
-                    }`}>
-                      Payment Details
-                    </h2>
-                    <p className={`text-sm ${
-                      isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
-                    }`}>Review your transaction details</p>
-                  </div>
-                  <button
+                <CardHeader>
+                  <CardTitle>Payment Details</CardTitle>
+                  <CardDescription>Review your transaction details</CardDescription>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-4 right-4"
                     onClick={() => setShowPaymentPreview(false)}
-                    className={`p-2 rounded-full transition-colors ${
-                      isDarkMode 
-                        ? 'text-dark-text-secondary hover:bg-dark-border' 
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                    }`}
                   >
                     <FiX className="w-5 h-5" />
-                  </button>
-                </div>
+                  </Button>
+                </CardHeader>
 
-                <div className="space-y-6">
-                  <div className={`p-6 rounded-xl border ${
-                    isDarkMode 
-                      ? 'bg-dark-surface border-dark-border' 
-                      : 'bg-gradient-to-r from-green-50 to-green-100/50 border-green-100'
-                  }`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <p className={`text-sm font-medium ${
-                        isDarkMode ? 'text-dark-text-primary' : 'text-green-800'
-                      }`}>Amount to Deposit</p>
-                      <div className={`px-4 py-2 rounded-lg shadow-sm border ${
-                        isDarkMode 
-                          ? 'bg-dark-surface-secondary border-dark-border' 
-                          : 'bg-white border-green-200'
+                <CardContent className="space-y-6">
+                  <Card className={isDarkMode ? 'bg-dark-surface border-dark-border' : 'bg-gray-50'}>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className={`text-sm font-medium ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-green-800'
+                        }`}>Amount to Deposit</p>
+                        <div className={`px-4 py-2 rounded-lg ${
+                          isDarkMode 
+                            ? 'bg-dark-surface-secondary border border-dark-border' 
+                            : 'bg-white border border-green-200'
+                        }`}>
+                          <p className={`text-lg font-bold ${
+                            isDarkMode ? 'text-dark-text-primary' : 'text-green-600'
+                          }`}>₦{parseFloat(paymentAmount || 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className={`flex items-center justify-between text-sm ${
+                        isDarkMode ? 'text-dark-text-secondary' : 'text-green-700'
                       }`}>
+                        <p>Service Charge</p>
+                        <p className="font-medium">₦{transactionCharge.toFixed(2)}</p>
+                      </div>
+                      
+                      <div className={`h-px ${
+                        isDarkMode ? 'bg-dark-border' : 'bg-green-200'
+                      }`}></div>
+                      
+                      <div className="flex items-center justify-between">
+                        <p className={`text-sm font-medium ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-green-800'
+                        }`}>Total Amount to Pay</p>
                         <p className={`text-lg font-bold ${
                           isDarkMode ? 'text-dark-text-primary' : 'text-green-600'
-                        }`}>₦{parseFloat(paymentAmount || 0).toFixed(2)}</p>
+                        }`}>₦{(parseFloat(paymentAmount || 0) + transactionCharge).toFixed(2)}</p>
                       </div>
-                    </div>
-                    
-                    <div className={`flex items-center justify-between text-sm ${
-                      isDarkMode ? 'text-dark-text-secondary' : 'text-green-700'
-                    }`}>
-                      <p>Service Charge</p>
-                      <p className="font-medium">₦{transactionCharge.toFixed(2)}</p>
-                    </div>
-                    
-                    <div className={`h-px my-3 ${
-                      isDarkMode ? 'bg-dark-border' : 'bg-green-200'
-                    }`}></div>
-                    
-                    <div className="flex items-center justify-between">
-                      <p className={`text-sm font-medium ${
-                        isDarkMode ? 'text-dark-text-primary' : 'text-green-800'
-                      }`}>Total Amount to Pay</p>
-                      <p className={`text-lg font-bold ${
-                        isDarkMode ? 'text-dark-text-primary' : 'text-green-600'
-                      }`}>₦{(parseFloat(paymentAmount || 0) + transactionCharge).toFixed(2)}</p>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
-                  <div className={`p-4 rounded-xl space-y-3 border ${
-                    isDarkMode 
-                      ? 'bg-dark-surface border-dark-border' 
-                      : 'bg-gray-50 border-gray-100'
-                  }`}>
-                    <div className="flex justify-between">
-                      <p className={`text-sm ${
-                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
-                      }`}>Transaction ID</p>
-                      <p className={`text-sm font-medium ${
-                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
-                      }`}>AG-{Date.now()}-HAW1M</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p className={`text-sm ${
-                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
-                      }`}>Date</p>
-                      <p className={`text-sm font-medium ${
-                        isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
-                      }`}>{new Date().toLocaleString()}</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p className={`text-sm ${
-                        isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
-                      }`}>Payment Method</p>
-                      <div className="flex items-center gap-1.5">
-                        <FiCreditCard className={`w-4 h-4 ${
-                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
-                        }`} />
+                  <Card className={isDarkMode ? 'bg-dark-surface border-dark-border' : 'bg-gray-50'}>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between">
+                        <p className={`text-sm ${
+                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                        }`}>Transaction ID</p>
                         <p className={`text-sm font-medium ${
                           isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
-                        }`}>Card Payment</p>
+                        }`}>AG-{Date.now()}-HAW1M</p>
                       </div>
-                    </div>
-                  </div>
-                </div>
+                      <div className="flex justify-between">
+                        <p className={`text-sm ${
+                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                        }`}>Date</p>
+                        <p className={`text-sm font-medium ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+                        }`}>{new Date().toLocaleString()}</p>
+                      </div>
+                      <div className="flex justify-between">
+                        <p className={`text-sm ${
+                          isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+                        }`}>Payment Method</p>
+                        <div className="flex items-center gap-1.5">
+                          <FiCreditCard className={`w-4 h-4 ${
+                            isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                          }`} />
+                          <p className={`text-sm font-medium ${
+                            isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+                          }`}>Card Payment</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CardContent>
 
-                <div className="mt-8 flex gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                <CardFooter className="flex gap-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
                     onClick={() => setShowPaymentPreview(false)}
-                    className={`flex-1 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                      isDarkMode 
-                        ? 'bg-dark-surface text-dark-text-primary hover:bg-dark-border' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
                     disabled={isLoading}
                   >
                     Cancel
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                  </Button>
+                  <Button
+                    variant="success"
+                    className="flex-1"
                     onClick={confirmPayment}
-                    className={`flex-1 bg-green-500 text-white py-3.5 rounded-xl text-sm font-medium hover:bg-green-600 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-500/25`}
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -529,9 +517,9 @@ const Wallet = () => {
                     ) : (
                       'Confirm Payment'
                     )}
-                  </motion.button>
-                </div>
-              </motion.div>
+                  </Button>
+                </CardFooter>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>
