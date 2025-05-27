@@ -20,6 +20,7 @@ import {
   BiMenu,
 } from "react-icons/bi";
 import { AiOutlineRobot } from "react-icons/ai";
+import { toast } from "react-hot-toast";
 
 const NavandSideBar = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -66,8 +67,17 @@ const NavandSideBar = ({ children }) => {
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    try {
+      const result = await logout();
+      if (result.success) {
+        navigate("/login");
+      } else {
+        throw new Error(result.error || "Failed to logout");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error(error.message || "Failed to logout");
+    }
   };
 
   const sidebarItems = [
@@ -114,7 +124,7 @@ const NavandSideBar = ({ children }) => {
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -296,27 +306,15 @@ const NavandSideBar = ({ children }) => {
 
       <main
         className={`transition-all duration-300 ease-in-out pt-16 flex-grow
-          ${isSidebarOpen ? 'ml-0 lg:ml-64 blur-sm lg:blur-none' : 'ml-0 lg:ml-16'}
+          ${isSidebarOpen ? 'ml-0 lg:ml-64' : 'ml-0 lg:ml-16'}
           ${isCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
         `}
         onClick={() => isSidebarOpen && window.innerWidth < 1024 && setIsSidebarOpen(false)}
       >
-        <div 
-          className={`transition-opacity duration-300 
-            ${isSidebarOpen && window.innerWidth < 1024 ? 'opacity-50' : 'opacity-100'}
-          `}
-        >
+        <div className="transition-opacity duration-300">
           {children}
         </div>
       </main>
-
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
     </div>
   );
 };

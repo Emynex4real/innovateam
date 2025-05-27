@@ -12,8 +12,7 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN) || 
-                 sessionStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -40,18 +39,18 @@ api.interceptors.response.use(
       case 401:
         if (response.data?.message === 'Token expired') {
           localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-          sessionStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
           window.location.href = '/login';
           toast.error(ERROR_MESSAGES.SESSION_EXPIRED);
         } else {
-          toast.error(ERROR_MESSAGES.AUTH_REQUIRED);
+          toast.error(response.data?.message || ERROR_MESSAGES.AUTH_REQUIRED);
         }
         break;
       case 403:
-        toast.error('Access denied');
+        toast.error(response.data?.message || 'Access denied');
         break;
       case 404:
-        toast.error('Resource not found');
+        toast.error(response.data?.message || 'Resource not found');
         break;
       case 422:
         toast.error(response.data?.message || 'Validation error');
@@ -60,7 +59,7 @@ api.interceptors.response.use(
         toast.error('Too many requests. Please try again later.');
         break;
       default:
-        toast.error(ERROR_MESSAGES.GENERIC);
+        toast.error(response.data?.message || ERROR_MESSAGES.GENERIC);
     }
 
     return Promise.reject(error);

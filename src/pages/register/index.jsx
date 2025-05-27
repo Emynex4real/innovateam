@@ -109,17 +109,21 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      await authRegister(formData);
-      toast.success("Account created successfully!");
-      setFormData({
-        name: "",
-        email: "",
-        phoneNumber: "",
-        password: "",
-        confirmPassword: "",
-        agreeToTerms: false,
-      });
-      navigate("/login");
+      const result = await authRegister(formData);
+      if (result.success) {
+        toast.success("Account created successfully!");
+        setFormData({
+          name: "",
+          email: "",
+          phoneNumber: "",
+          password: "",
+          confirmPassword: "",
+          agreeToTerms: false,
+        });
+        navigate("/dashboard");
+      } else {
+        throw new Error(result.error || "Failed to create account.");
+      }
     } catch (error) {
       const errorMessage = error?.message || "Failed to create account.";
       setErrors({ submit: errorMessage });

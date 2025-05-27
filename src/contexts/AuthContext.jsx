@@ -48,15 +48,19 @@ const useAuthStore = create((set) => ({
         set({ 
           user: result.user, 
           isAuthenticated: true, 
-          loading: false 
+          loading: false,
+          error: null
         });
         toast.success(SUCCESS_MESSAGES.REGISTER_SUCCESS);
         return { success: true, user: result.user };
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || "Registration failed");
       }
     } catch (error) {
+      console.error('Registration error:', error);
       set({ 
+        user: null,
+        isAuthenticated: false,
         error: error.message, 
         loading: false 
       });
