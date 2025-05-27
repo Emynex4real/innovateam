@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useDarkMode } from "../../contexts/DarkModeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiHome, FiArrowLeft } from "react-icons/fi";
 import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast';
 const Login = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated, loading, forgotPassword } = useAuth();
+  const { isDarkMode } = useDarkMode();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,10 +88,16 @@ const Login = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-color/10 via-white to-gray-50 flex items-center justify-center p-4 relative">
+    <div className={`min-h-screen flex items-center justify-center p-4 relative ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100' 
+        : 'bg-gradient-to-br from-primary-color/10 via-white to-gray-50'
+    }`}>
       <Link 
         to="/" 
-        className="absolute top-4 left-4 flex items-center gap-2 text-gray-600 hover:text-primary-color transition-colors duration-200"
+        className={`absolute top-4 left-4 flex items-center gap-2 ${
+          isDarkMode ? 'text-gray-300 hover:text-primary-color' : 'text-gray-600 hover:text-primary-color'
+        } transition-colors duration-200`}
       >
         <FiArrowLeft className="w-5 h-5" />
         <span>Back to Home</span>
@@ -98,18 +106,26 @@ const Login = () => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6 font-inter backdrop-blur-sm bg-white/90 border border-white/20"
+        className={`max-w-md w-full rounded-2xl shadow-xl p-8 space-y-6 font-inter backdrop-blur-sm border ${
+          isDarkMode 
+            ? 'bg-gray-800/90 border-gray-700 text-gray-100' 
+            : 'bg-white/90 border-white/20'
+        }`}
       >
         <div className="text-center">
           <motion.h2
-            className="text-3xl font-bold text-gray-900 font-poppins"
+            className={`text-3xl font-bold font-poppins ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
             Welcome Back
           </motion.h2>
-          <p className="mt-2 text-gray-600 text-sm">Access your learning journey</p>
+          <p className={`mt-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Access your learning journey
+          </p>
         </div>
 
         <AnimatePresence>
@@ -127,11 +143,15 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <motion.div variants={inputVariants} initial="hidden" animate="visible">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className={`block text-sm font-medium ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               Email Address
             </label>
             <div className="relative mt-1">
-              <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FiMail className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+              }`} />
               <input
                 id="email"
                 name="email"
@@ -140,7 +160,11 @@ const Login = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-color focus:border-primary-color transition-all duration-200 placeholder-gray-400 text-gray-900 bg-white/50"
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:ring-primary-color/50 focus:border-primary-color' 
+                    : 'border-gray-300 focus:ring-primary-color focus:border-primary-color bg-white/50 text-gray-900'
+                }`}
                 placeholder="you@example.com"
                 disabled={loading}
               />
@@ -148,11 +172,15 @@ const Login = () => {
           </motion.div>
 
           <motion.div variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className={`block text-sm font-medium ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               Password
             </label>
             <div className="relative mt-1">
-              <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FiLock className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+              }`} />
               <input
                 id="password"
                 name="password"
@@ -161,14 +189,20 @@ const Login = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-color focus:border-primary-color transition-all duration-200 placeholder-gray-400 text-gray-900 bg-white/50"
+                className={`w-full pl-10 pr-12 py-3 rounded-lg border transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:ring-primary-color/50 focus:border-primary-color' 
+                    : 'border-gray-300 focus:ring-primary-color focus:border-primary-color bg-white/50 text-gray-900'
+                }`}
                 placeholder="••••••••"
                 disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${
+                  isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                }`}
               >
                 {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
               </button>
@@ -183,10 +217,16 @@ const Login = () => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-primary-color focus:ring-primary-color border-gray-300 rounded"
+                className={`h-4 w-4 rounded focus:ring-offset-0 ${
+                  isDarkMode 
+                    ? 'bg-gray-700 border-gray-600 text-primary-color focus:ring-primary-color/50' 
+                    : 'text-primary-color focus:ring-primary-color border-gray-300'
+                }`}
                 disabled={loading}
               />
-              <label htmlFor="remember-me" className="ml-2 text-sm text-gray-600">
+              <label htmlFor="remember-me" className={`ml-2 text-sm ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 Remember me
               </label>
             </div>
@@ -194,7 +234,11 @@ const Login = () => {
             <button
               type="button"
               onClick={() => setShowSocial(!showSocial)}
-              className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors duration-200"
+              className={`text-sm ${
+                isDarkMode 
+                  ? 'text-primary-color hover:text-primary-color/80' 
+                  : 'text-indigo-600 hover:text-indigo-500'
+              } transition-colors duration-200`}
             >
               {showSocial ? "Use Email" : "Social Login"}
             </button>
@@ -250,13 +294,24 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={handleForgotPassword}
-                    className="text-sm text-primary-color hover:text-green-600 transition-colors duration-200"
+                    className={`text-sm ${
+                      isDarkMode 
+                        ? 'text-primary-color hover:text-primary-color/80' 
+                        : 'text-indigo-600 hover:text-indigo-500'
+                    } transition-colors duration-200`}
                   >
                     Forgot your password?
                   </button>
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                    <span>Don't have an account?</span>
-                    <Link to="/register" className="text-primary-color hover:text-green-600 transition-colors duration-200 font-medium">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Don't have an account?{' '}
+                    <Link
+                      to="/register"
+                      className={`font-medium ${
+                        isDarkMode 
+                          ? 'text-primary-color hover:text-primary-color/80' 
+                          : 'text-indigo-600 hover:text-indigo-500'
+                      } transition-colors duration-200`}
+                    >
                       Sign up
                     </Link>
                   </div>
@@ -265,34 +320,49 @@ const Login = () => {
             )}
           </AnimatePresence>
 
-          <motion.button
+          <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-primary-color hover:bg-green-600 text-white font-medium rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 transform hover:scale-[1.02] active:scale-[0.98]"
+            className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-200 ${
+              loading 
+                ? 'bg-primary-color/70 cursor-not-allowed' 
+                : 'bg-primary-color hover:bg-primary-color/90'
+            }`}
           >
             {loading ? (
-              <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                />
-                <span>Signing in...</span>
-              </>
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
             ) : (
-              <span>Sign in</span>
+              'Sign in'
             )}
-          </motion.button>
+          </button>
         </form>
 
-        <div className="text-center text-sm text-gray-600">
-          Need an account?{" "}
+        <div className="text-center space-y-4">
           <Link
-            to="/register"
-            className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200"
+            to="/forgot-password"
+            className={`text-sm ${
+              isDarkMode 
+                ? 'text-primary-color hover:text-primary-color/80' 
+                : 'text-indigo-600 hover:text-indigo-500'
+            } transition-colors duration-200`}
           >
-            Sign Up
+            Forgot your password?
           </Link>
+          <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            Don't have an account?{' '}
+            <Link
+              to="/register"
+              className={`font-medium ${
+                isDarkMode 
+                  ? 'text-primary-color hover:text-primary-color/80' 
+                  : 'text-indigo-600 hover:text-indigo-500'
+              } transition-colors duration-200`}
+            >
+              Sign up
+            </Link>
+          </div>
         </div>
       </motion.div>
     </div>
