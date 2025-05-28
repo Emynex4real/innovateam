@@ -1,4 +1,5 @@
 import React from "react";
+import { useDarkMode } from "../../../contexts/DarkModeContext";
 import ServicesSection from './services/servicesSection';
 import waecResultChecker from '../../../images/waec-result-checker.jpg';
 import necoResultChecker from '../../../images/neco-result-checker.jpg';
@@ -10,7 +11,7 @@ import dataSubscription from '../../../images/data-subscription.jpg';
 import olevelUpload from '../../../images/olevel-upload.jpg';
 
 // Service data
-const servicesData = [
+export const servicesData = [
   {
     id: 1,
     title: "WAEC Result Checker",
@@ -70,9 +71,15 @@ const servicesData = [
 ];
 
 const Index = ({ isAuthenticated }) => {
+  const { isDarkMode } = useDarkMode();
+  
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <ServicesSection services={servicesData} isAuthenticated={isAuthenticated} />
+    <div className={`min-h-screen ${
+      isDarkMode 
+        ? 'bg-gradient-to-b from-dark-surface to-dark-bg' 
+        : 'bg-gradient-to-b from-white to-gray-50'
+    }`}>
+      <ServicesSection services={servicesData} isAuthenticated={isAuthenticated} isDarkMode={isDarkMode} />
     </div>
   );
 };

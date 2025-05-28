@@ -7,6 +7,8 @@ import whatsapp from "../../images/whatsapp-removebg-preview.png";
 import image from "../../images/pexels-cottonbro-6344238.jpg";
 import ShareButton from "../../layouts/sharebtn";
 import NavBar from "./navBar";
+import RecommendedServices from "../../components/RecommendedServices";
+import { servicesData } from "./our services";
 
 // Lazy loaded components
 const OurServices = React.lazy(() => import("./our services"));
@@ -180,17 +182,21 @@ const Home = () => {
         </section>
 
         {/* Statistics Section */}
-        <section className="py-12 sm:py-16 bg-gray-50">
+        <section className={`py-12 sm:py-16 ${isDarkMode ? 'bg-dark-bg' : 'bg-gray-50'}`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               {stats.map((stat) => (
                 <div
                   key={stat.text}
-                  className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105 text-center"
+                  className={`${
+                    isDarkMode 
+                      ? 'bg-dark-surface border border-dark-border' 
+                      : 'bg-white'
+                  } p-4 rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105 text-center`}
                 >
                   {stat.icon}
                   <h3 className="text-xl sm:text-2xl font-bold text-green-600 mt-2">{stat.num}</h3>
-                  <p className="text-sm text-gray-600">{stat.text}</p>
+                  <p className={`text-sm ${isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'}`}>{stat.text}</p>
                 </div>
               ))}
             </div>
@@ -198,40 +204,73 @@ const Home = () => {
         </section>
 
         {/* Our Services Section */}
-        <section className="py-12 sm:py-16 bg-white">
+        <section className={`py-12 sm:py-16 ${isDarkMode ? 'bg-dark-surface' : 'bg-white'}`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <Suspense fallback={<div className="h-96 flex items-center justify-center">Loading services...</div>}>
+            <Suspense fallback={
+              <div className={`h-96 flex items-center justify-center ${isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'}`}>
+                Loading services...
+              </div>
+            }>
               <OurServices isAuthenticated={isAuthenticated} />
             </Suspense>
           </div>
         </section>
 
+        {/* Recommended Services Section */}
+        {isAuthenticated && (
+          <section className={`py-12 sm:py-16 ${isDarkMode ? 'bg-dark-surface' : 'bg-white'}`}>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <RecommendedServices 
+                userId={isAuthenticated.id} 
+                services={servicesData.map(service => ({
+                  ...service,
+                  id: service.title.toLowerCase().replace(/\s+/g, '-')
+                }))} 
+              />
+            </div>
+          </section>
+        )}
+
         {/* Success Stories Section */}
-        <section className="py-12 sm:py-16 bg-gray-50">
+        <section className={`py-12 sm:py-16 ${isDarkMode ? 'bg-dark-bg' : 'bg-gray-50'}`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8">
+            <h2 className={`text-2xl sm:text-3xl font-bold text-center mb-8 ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+            }`}>
               Success Stories
             </h2>
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="flex flex-col items-center">
+              <div className={`flex flex-col items-center ${
+                isDarkMode ? 'bg-dark-surface' : 'bg-white'
+              } p-6 rounded-lg shadow-xl`}>
                 <img
                   src={image}
                   alt="Success Stories"
                   className="w-full max-w-xs sm:max-w-sm rounded-lg shadow-xl mb-4"
                 />
-                <p className="text-xl font-semibold text-gray-800">850+ Admissions Secured</p>
-                <p className="text-sm text-gray-600 text-center mt-2">
+                <p className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                }`}>850+ Admissions Secured</p>
+                <p className={`text-sm text-center mt-2 ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                }`}>
                   Our platform has helped students gain admission to top schools worldwide.
                 </p>
               </div>
-              <div className="flex flex-col items-center">
+              <div className={`flex flex-col items-center ${
+                isDarkMode ? 'bg-dark-surface' : 'bg-white'
+              } p-6 rounded-lg shadow-xl`}>
                 <img
                   src={image}
                   alt="Student Achievements"
                   className="w-full max-w-xs sm:max-w-sm rounded-lg shadow-xl mb-4"
                 />
-                <p className="text-xl font-semibold text-gray-800">95% Success Rate</p>
-                <p className="text-sm text-gray-600 text-center mt-2">
+                <p className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+                }`}>95% Success Rate</p>
+                <p className={`text-sm text-center mt-2 ${
+                  isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+                }`}>
                   Most of our students achieve their academic goals with our support.
                 </p>
               </div>
@@ -240,10 +279,14 @@ const Home = () => {
         </section>
 
         {/* Newsletter and Contact Section */}
-        <section className="py-12 sm:py-16 bg-gray-100">
+        <section className={`py-12 sm:py-16 ${isDarkMode ? 'bg-dark-surface' : 'bg-gray-100'}`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
-              <div className="bg-green-600 text-white p-6 sm:p-8 rounded-2xl shadow-xl">
+              <div className={`${
+                isDarkMode 
+                  ? 'bg-green-800 border border-green-700' 
+                  : 'bg-green-600'
+              } text-white p-6 sm:p-8 rounded-2xl shadow-xl`}>
                 <h2 className="text-xl sm:text-2xl font-bold mb-4">Subscribe to Our Newsletter</h2>
                 <p className="mb-4 text-white/90 text-sm sm:text-base">
                   Stay updated with the latest educational resources and updates.

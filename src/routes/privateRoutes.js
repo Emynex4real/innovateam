@@ -21,6 +21,7 @@ const OLevelEntry = lazy(() => import("../pages/jamb services/olevel upload/new 
 const Transactions = lazy(() => import("../pages/transactions"));
 const Support = lazy(() => import("../pages/support"));
 const AiExaminer = lazy(() => import("../pages/ai examiner"));
+const CourseAdvisor = lazy(() => import("../pages/dashboard/course-advisor"));
 
 // Define private routes
 const privateRoutes = [
@@ -123,6 +124,11 @@ const privateRoutes = [
     path: "/ai-examiner", 
     element: React.createElement(AiExaminer),
     title: "AI Examiner" 
+  },
+  { 
+    path: "/course-advisor", 
+    element: React.createElement(CourseAdvisor),
+    title: "Course Advisor AI" 
   },
 ];
 

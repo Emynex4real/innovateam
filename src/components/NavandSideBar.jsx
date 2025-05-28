@@ -18,6 +18,7 @@ import {
   BiChevronDown,
   BiChevronUp,
   BiMenu,
+  BiBrain,
 } from "react-icons/bi";
 import { AiOutlineRobot } from "react-icons/ai";
 import { toast } from "react-hot-toast";
@@ -104,14 +105,21 @@ const NavandSideBar = ({ children }) => {
       label: "JAMB Services",
       subItems: [
         { path: "/dashboard/buy-olevel-upload", label: "O-Level Upload" },
-        // { path: "/dashboard/olevel-entry", label: "O-Level Entry" },
         { path: "/dashboard/buy-admission-letter", label: "Admission Letter" },
         { path: "/dashboard/buy-original-result", label: "Original Result" },
         { path: "/dashboard/buy-pin-vending", label: "JAMB Pin Vending" },
         { path: "/dashboard/reprinting-jamb-caps", label: "CAPS Printing" },
       ],
     },
-    { path: "/dashboard/ai-examiner", icon: <AiOutlineRobot />, label: "AI Examiner" },
+    { 
+      path: "#",
+      icon: <BiBrain />,
+      label: "AI Services",
+      subItems: [
+        { path: "/dashboard/ai-examiner", icon: <AiOutlineRobot />, label: "AI Examiner" },
+        { path: "/dashboard/course-advisor", icon: <AiOutlineRobot />, label: "Course Advisor AI" },
+      ],
+    },
     { path: "/dashboard/transactions", icon: <BiListCheck />, label: "Transactions" },
     { path: "/dashboard/support", icon: <BiSupport />, label: "Support" },
     { path: "/login", icon: <BiLogOut />, label: "Logout", onClick: handleLogout },

@@ -5,7 +5,7 @@ import CategoryFilter from './categoryFilter';
 import SearchInput from './searchInput';
 import ServiceCard from './serviceCard';
 
-const ServicesSection = ({ services, isAuthenticated }) => {
+const ServicesSection = ({ services, isAuthenticated, isDarkMode }) => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,28 +47,37 @@ const ServicesSection = ({ services, isAuthenticated }) => {
   };
 
   return (
-    <section className="py-12 sm:py-16 bg-gray-50">
+    <section className={`py-12 sm:py-16 ${isDarkMode ? 'bg-dark-bg' : 'bg-gray-50'}`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center mb-10 sm:mb-14">
-          <span className="inline-block mb-3 px-3 py-1 bg-green-100 text-green-600 font-medium rounded-full">
+        <div className={`max-w-4xl mx-auto text-center mb-10 sm:mb-14`}>
+          <span className={`inline-block mb-3 px-3 py-1 ${
+            isDarkMode 
+              ? 'bg-green-900/30 text-green-400 border border-green-800' 
+              : 'bg-green-100 text-green-600'
+          } font-medium rounded-full`}>
             Our Services
           </span>
 
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-3">
+          <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 flex items-center justify-center gap-3 ${
+            isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
+          }`}>
             <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
             Educational Services Marketplace
           </h2>
 
-          <p className="text-gray-600 text-base sm:text-lg mb-6 sm:mb-8">
+          <p className={`text-base sm:text-lg mb-6 sm:mb-8 ${
+            isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
+          }`}>
             Access exam scratch cards, verification services, and educational resources all in one place
           </p>
 
           <div className="flex flex-col md:flex-row gap-4 sm:gap-6 justify-center items-center">
-            <SearchInput searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+            <SearchInput searchTerm={searchTerm} setSearchTerm={setSearchTerm} isDarkMode={isDarkMode} />
             <CategoryFilter
               categories={categories}
               activeFilter={filter}
               onFilterChange={setFilter}
+              isDarkMode={isDarkMode}
             />
           </div>
         </div>
@@ -84,14 +93,25 @@ const ServicesSection = ({ services, isAuthenticated }) => {
                 price={service.price}
                 category={service.category}
                 onProceed={handleProceed}
+                isDarkMode={isDarkMode}
               />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-white rounded-xl shadow-sm border border-gray-200">
-            <Info className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg sm:text-xl font-medium text-gray-800 mb-2">No services found</h3>
-            <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">
+          <div className={`flex flex-col items-center justify-center py-12 sm:py-16 ${
+            isDarkMode 
+              ? 'bg-dark-surface border border-dark-border' 
+              : 'bg-white border border-gray-200'
+          } rounded-xl shadow-sm`}>
+            <Info className={`h-10 w-10 sm:h-12 sm:w-12 ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-400'
+            } mb-4`} />
+            <h3 className={`text-lg sm:text-xl font-medium mb-2 ${
+              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
+            }`}>No services found</h3>
+            <p className={`text-sm sm:text-base mb-4 sm:mb-6 ${
+              isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'
+            }`}>
               We couldn't find any services matching your search criteria
             </p>
             <button
@@ -99,7 +119,11 @@ const ServicesSection = ({ services, isAuthenticated }) => {
                 setFilter("All");
                 setSearchTerm("");
               }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className={`px-4 py-2 ${
+                isDarkMode 
+                  ? 'bg-green-600 hover:bg-green-700' 
+                  : 'bg-green-600 hover:bg-green-700'
+              } text-white rounded-lg transition-colors`}
             >
               Clear filters
             </button>
