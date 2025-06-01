@@ -1,55 +1,123 @@
-# Innovateam
+# JAMB Course Advisor & Question Generator
 
-Welcome to the Innovateam project! This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based application that helps JAMB university aspirants get course recommendations based on their qualifications and generate practice questions from text documents.
 
-## Getting Started
+## Features
 
-To get started with the project, follow these steps:
+- Course Recommendation System
+  - Input WAEC grades for key subjects
+  - Enter JAMB score
+  - Specify interests and career goals
+  - Get personalized course recommendations
 
-1. Clone the repository to your local machine.
-2. Install the dependencies using `npm install`.
-3. Run the development server with `npm start`.
+- Question Generator
+  - Upload text documents (TXT format)
+  - Generate true/false questions
+  - Practice with generated questions
 
-## Available Scripts
+## Prerequisites
 
-In the project directory, you can run:
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- DeepSeek API key (free tier)
 
-### `npm start`
+## Setup Instructions
 
-Starts the development server.\
-Open [http://localhost:3000](http://localhost:3000) to view the app in your browser.
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd <repository-name>
+   ```
 
-### `npm test`
+2. Install dependencies:
+   ```bash
+   # Install backend dependencies
+   cd server
+   npm install
 
-Runs the test suite in watch mode.\
-Refer to the [running tests documentation](https://facebook.github.io/create-react-app/docs/running-tests) for more details.
+   # Install frontend dependencies
+   cd ../client
+   npm install
+   ```
 
-### `npm run build`
+3. Configure environment variables:
+   - Create a `server/.env` file:
+     ```
+     DEEPSEEK_API_KEY=your_deepseek_api_key
+     PORT=5000
+     ```
+   - Get your DeepSeek API key from [deepseek.com](https://deepseek.com)
 
-Builds the app for production in the `build` folder.\
-The build is optimized for best performance and ready for deployment.
+4. Start the application:
+   ```bash
+   # Start the backend server (from server directory)
+   npm start
 
-### `npm run eject`
+   # Start the frontend development server (from client directory)
+   npm start
+   ```
 
-**Warning: This is a one-way operation. Once you `eject`, you cannot revert.**\
-Use this command if you need full control over the build configuration.
+5. Access the application:
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:5000
 
-## Learn More
+## Testing the Application
 
-- [Create React App Documentation](https://facebook.github.io/create-react-app/docs/getting-started)
-- [React Documentation](https://reactjs.org/)
+1. Course Advisor:
+   - Fill in WAEC grades (e.g., A1 in English, B3 in Math)
+   - Enter JAMB score (e.g., 270)
+   - Describe your interests
+   - Click "Get Course Recommendations"
 
-## Additional Resources
+2. Question Generator:
+   - Create a sample TXT file with educational content
+   - Upload the file
+   - Click "Generate Questions"
+   - Review the generated true/false questions
 
-- [Code Splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-- [Analyzing the Bundle Size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-- [Making a Progressive Web App](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-- [Advanced Configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-- [Deployment](https://facebook.github.io/create-react-app/docs/deployment)
-- [Troubleshooting Build Issues](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Deployment
 
-## About Innovateam
+1. Frontend (Vercel):
+   - Connect your GitHub repository to Vercel
+   - Set the build command: `cd client && npm install && npm run build`
+   - Set the output directory: `client/build`
 
-Innovateam is a project aimed at fostering innovation and collaboration. Feel free to explore, contribute, and make it your own!
+2. Backend (Render):
+   - Create a new Web Service on Render
+   - Connect your GitHub repository
+   - Set the build command: `cd server && npm install`
+   - Set the start command: `cd server && npm start`
+   - Add environment variables (DEEPSEEK_API_KEY)
 
-Enjoy coding!
+## API Rate Limits
+
+- DeepSeek API free tier: 1 million tokens/month
+- Rate limit: 10 requests/minute
+- The application includes built-in rate limiting and debouncing
+
+## Future Backend Integration
+
+The current backend is designed to be modular and easily integrated into a future, more comprehensive backend:
+
+1. The endpoints (`/recommend` and `/generate-questions`) can be moved to a new backend
+2. Update the frontend API configuration in `src/utils/api.js`
+3. Ensure the new backend implements the same request/response format
+4. Add any additional authentication or security measures needed
+
+## Notes
+
+- Keep your DeepSeek API key secure and never commit it to version control
+- Monitor your API usage to stay within the free tier limits
+- Consider implementing caching for frequently requested course recommendations
+- Regular backups of any stored data are recommended
+
+## Support
+
+For issues or questions:
+1. Check the GitHub Issues page
+2. Create a new issue with detailed information
+3. Include any error messages and steps to reproduce
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

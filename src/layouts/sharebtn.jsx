@@ -38,7 +38,7 @@ const WhatsAppIcon = () => (
 const ShareButton = ({
   url = window.location.href,
   message = 'Check out this page!',
-  tooltipPosition = 'bottom',
+  tooltipPosition = 'bottom'
 }) => {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -218,11 +218,7 @@ const ShareButton = ({
 ShareButton.propTypes = {
   url: PropTypes.string,
   message: PropTypes.string,
-  tooltipPosition: PropTypes.oneOf(['top', 'bottom', 'left', 'right']),
-};
-
-ShareButton.defaultProps = {
-  tooltipPosition: 'bottom',
+  tooltipPosition: PropTypes.oneOf(['top', 'bottom', 'left', 'right'])
 };
 
 export default ShareButton;

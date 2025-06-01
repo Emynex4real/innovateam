@@ -2,24 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AiOutlineRobot, AiOutlineSend, AiOutlineUser } from 'react-icons/ai';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
-import courseAdvisorML from '../../../services/courseAdvisorML';
-import openAIService from '../../../services/openai.service';
+import { useAuth } from '../../../contexts/AuthContext';
+import deepseekService from '../../../services/deepseek.service';
+import toast from 'react-hot-toast';
 
 const CourseAdvisor = () => {
   const { isDarkMode } = useDarkMode();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [userInfo, setUserInfo] = useState({
-    jambScore: '',
-    stateOfOrigin: '',
-    subjects: {},
-    preferences: [],
-  });
-  const [chatHistory, setChatHistory] = useState([]);
-  const [aiEnabled, setAiEnabled] = useState(true);
-  const [currentStep, setCurrentStep] = useState('initial');
   const messagesEndRef = useRef(null);
+  const [conversationHistory, setConversationHistory] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,192 +23,104 @@ const CourseAdvisor = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Initial greeting
-    addBotMessage("👋 Hello! I'm your Course Advisor AI. I can help you find the best university courses in Nigeria based on your qualifications and preferences.");
-    addBotMessage("I'll need some information from you to make personalized recommendations. Let's start!");
-    addBotMessage("Please enter your JAMB UTME score (0-400):");
-    setCurrentStep('jamb');
-  }, []);
-
-  const addBotMessage = async (text, useAI = false) => {
-    setMessages(prev => [...prev, { type: 'bot', text }]);
-    
-    if (useAI && aiEnabled) {
+    const initializeChat = async () => {
       try {
         setIsTyping(true);
-        const aiResponse = await openAIService.generateResponse([
-          ...chatHistory,
-          { role: 'assistant', content: text },
-        ], userInfo);
+        const systemMessage = {
+          role: 'system',
+          content: 'You are a knowledgeable course advisor for Nigerian universities. You help students choose suitable courses based on their interests, qualifications, and career goals. Be friendly, professional, and provide detailed, accurate advice.'
+        };
         
-        setMessages(prev => [...prev, { type: 'bot', text: aiResponse }]);
-        setChatHistory(prev => [...prev, 
-          { role: 'assistant', content: text },
-          { role: 'assistant', content: aiResponse }
-        ]);
+        const userMessage = {
+          role: 'user',
+          content: 'Start a friendly conversation with a student seeking university course advice in Nigeria. Introduce yourself and ask about their interests and qualifications.'
+        };
+
+        const initialHistory = [systemMessage, userMessage];
+        const initialResponse = await deepseekService.generateResponse(initialHistory);
+        
+        setConversationHistory(initialHistory);
+        setMessages([{ type: 'bot', text: initialResponse }]);
       } catch (error) {
-        console.error('AI Response Error:', error);
-        setMessages(prev => [...prev, { type: 'bot', text: 'I apologize, but I encountered an error. Let\'s continue with your course advisory session.' }]);
+        console.error('Initialization Error:', error);
+        let fallbackMessage = "👋 Hello! I'm your Course Advisor AI. ";
+        
+        if (error.message.includes('API key')) {
+          fallbackMessage += "I'm currently experiencing some technical difficulties with my connection. Please try refreshing the page or come back in a few minutes.";
+        } else if (error.message.includes('too many requests')) {
+          fallbackMessage += "I'm handling a lot of requests right now. Please try again in a moment.";
+        } else if (error.message.includes('service is currently experiencing issues')) {
+          fallbackMessage += "I'm temporarily unavailable. Please try again later.";
+        } else {
+          fallbackMessage += "I'm here to help you find the perfect university course in Nigeria. Tell me about your interests and qualifications!";
+        }
+
+        setMessages([{ 
+          type: 'bot', 
+          text: fallbackMessage
+        }]);
       } finally {
         setIsTyping(false);
       }
-    }
-  };
-
-  const addUserMessage = async (text) => {
-    setMessages(prev => [...prev, { type: 'user', text }]);
-    setChatHistory(prev => [...prev, { role: 'user', content: text }]);
-  };
-
-  const handleJambScore = (score) => {
-    const numScore = parseInt(score);
-    if (courseAdvisorML.validateJambScore(numScore)) {
-      setUserInfo(prev => ({ ...prev, jambScore: numScore }));
-      addBotMessage("Great! Now, please enter your state of origin (e.g., Lagos, Kano, Enugu):");
-      setCurrentStep('state');
-    } else {
-      addBotMessage("Please enter a valid JAMB score between 0 and 400.");
-    }
-  };
-
-  const handleStateOfOrigin = (state) => {
-    const formattedState = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
-    if (courseAdvisorML.validateStateOfOrigin(formattedState)) {
-      setUserInfo(prev => ({ ...prev, stateOfOrigin: formattedState }));
-      addBotMessage("Now, I'll need your WAEC/NECO grades for core subjects (A1-F9).");
-      addBotMessage("Let's start with English Language:");
-      setCurrentStep('english');
-    } else {
-      addBotMessage("Please enter a valid Nigerian state.");
-    }
-  };
-
-  const handleSubjectGrade = (subject, grade) => {
-    if (!courseAdvisorML.validateSubjectGrade(grade.toUpperCase())) {
-      addBotMessage("Please enter a valid grade (A1-F9).");
-      return;
-    }
-
-    setUserInfo(prev => ({
-      ...prev,
-      subjects: { ...prev.subjects, [subject]: grade.toUpperCase() }
-    }));
-
-    const subjects = {
-      english: 'English Language',
-      mathematics: 'Mathematics',
-      physics: 'Physics',
-      chemistry: 'Chemistry',
-      biology: 'Biology'
     };
 
-    const nextSubject = Object.entries(subjects).find(([key]) => !userInfo.subjects[key])?.[0];
-
-    if (nextSubject) {
-      addBotMessage(`Great! Now enter your grade for ${subjects[nextSubject]}:`);
-      setCurrentStep(nextSubject);
-    } else {
-      addBotMessage("Excellent! Finally, what courses are you interested in? Please list them separated by commas (e.g., Medicine, Engineering, Law):");
-      setCurrentStep('preferences');
-    }
-  };
-
-  const handlePreferences = (prefs) => {
-    const preferences = prefs.split(',').map(p => p.trim());
-    setUserInfo(prev => ({ ...prev, preferences }));
-    generateRecommendations();
-    setCurrentStep('complete');
-  };
-
-  const generateRecommendations = async () => {
-    setIsTyping(true);
-    
-    try {
-      // Get initial recommendations from our ML service
-      const recommendations = courseAdvisorML.getRecommendations(userInfo);
-      
-      if (recommendations.length === 0) {
-        await addBotMessage("Based on your qualifications, I couldn't find any direct course matches. Let me analyze your profile to suggest alternatives.", true);
-      } else {
-        await addBotMessage("Based on your qualifications and preferences, here are my top recommendations:");
-        
-        for (const rec of recommendations) {
-          await addBotMessage(`${rec.course} at ${rec.university}
-          - JAMB Cut-off: ${rec.cutoff}
-          - Your Merit Score: ${rec.meritScore}
-          - Compatibility: ${rec.compatibility}%
-          ${rec.catchmentBonus > 0 ? `- Catchment Area Bonus: +${rec.catchmentBonus} points` : ''}
-          - Requirements: ${rec.requirements}`);
-        }
-      }
-
-      // Get AI analysis
-      const aiAnalysis = await openAIService.analyzeUserProfile(userInfo);
-      await addBotMessage("\n\nHere's my detailed analysis of your profile and additional recommendations:", true);
-      await addBotMessage(aiAnalysis);
-      
-      await addBotMessage("\nFeel free to ask me any specific questions about:", true);
-      await addBotMessage("1. These course recommendations\n2. Career prospects\n3. Admission processes\n4. University life\n5. Scholarship opportunities\n6. Or any other concerns you have!");
-    } catch (error) {
-      console.error('Recommendation Error:', error);
-      await addBotMessage("I apologize, but I encountered an error generating detailed recommendations. However, you can still ask me any questions about your university and course choices!");
-    } finally {
-      setIsTyping(false);
-    }
-  };
+    initializeChat();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    addUserMessage(inputMessage);
+    const userMessage = {
+      role: 'user',
+      content: inputMessage
+    };
 
-    switch (currentStep) {
-      case 'jamb':
-        handleJambScore(inputMessage);
-        break;
-      case 'state':
-        handleStateOfOrigin(inputMessage);
-        break;
-      case 'english':
-        handleSubjectGrade('english', inputMessage);
-        break;
-      case 'mathematics':
-        handleSubjectGrade('mathematics', inputMessage);
-        break;
-      case 'physics':
-        handleSubjectGrade('physics', inputMessage);
-        break;
-      case 'chemistry':
-        handleSubjectGrade('chemistry', inputMessage);
-        break;
-      case 'biology':
-        handleSubjectGrade('biology', inputMessage);
-        break;
-      case 'preferences':
-        handlePreferences(inputMessage);
-        break;
-      case 'complete':
-        // Handle follow-up questions using AI
-        try {
-          setIsTyping(true);
-          const aiResponse = await openAIService.generateResponse([
-            ...chatHistory,
-            { role: 'user', content: inputMessage }
-          ], userInfo);
-          await addBotMessage(aiResponse);
-        } catch (error) {
-          console.error('AI Response Error:', error);
-          await addBotMessage("I apologize, but I encountered an error. Please try asking your question again.");
-        } finally {
-          setIsTyping(false);
-        }
-        break;
-      default:
-        break;
-    }
-
+    // Add user message to UI
+    setMessages(prev => [...prev, { type: 'user', text: inputMessage }]);
     setInputMessage('');
+    
+    try {
+      setIsTyping(true);
+
+      // Update conversation history
+      const newHistory = [...conversationHistory, userMessage];
+      
+      // Get AI response
+      const response = await deepseekService.generateResponse(newHistory);
+      
+      // Add AI response to conversation history
+      const assistantMessage = {
+        role: 'assistant',
+        content: response
+      };
+      
+      setConversationHistory([...newHistory, assistantMessage]);
+      
+      // Add AI response to UI messages
+      setMessages(prev => [...prev, { type: 'bot', text: response }]);
+
+    } catch (error) {
+      console.error('Chat Error:', error);
+      let errorMessage = "I apologize, but I encountered an error. ";
+      
+      if (error.message.includes('API key')) {
+        errorMessage += "There seems to be an issue with the API configuration. Please try again later.";
+      } else if (error.message.includes('too many requests')) {
+        errorMessage += "We're experiencing high traffic. Please try again in a moment.";
+      } else if (error.message.includes('service is currently experiencing issues')) {
+        errorMessage += "The service is temporarily unavailable. Please try again later.";
+      } else {
+        errorMessage += "Could you please rephrase your message or try again?";
+      }
+
+      setMessages(prev => [...prev, { 
+        type: 'bot', 
+        text: errorMessage
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -304,7 +209,7 @@ const CourseAdvisor = () => {
                 placeholder="Type your message..."
                 className={`flex-1 p-2 rounded-lg border ${
                   isDarkMode 
-                    ? 'bg-dark-surface-secondary border-dark-border text-dark-text-primary placeholder:text-dark-text-secondary' 
+                    ? 'bg-dark-surface-secondary border-dark-border text-dark-text-primary placeholder:text-dark-text-secondary'
                     : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'
                 } focus:outline-none focus:ring-2 focus:ring-green-500`}
               />
@@ -326,4 +231,4 @@ const CourseAdvisor = () => {
   );
 };
 
-export default CourseAdvisor; 
+export default CourseAdvisor;
