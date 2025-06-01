@@ -12,6 +12,7 @@ const CourseAdvisor = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const [conversationHistory, setConversationHistory] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,12 +26,20 @@ const CourseAdvisor = () => {
     const initializeChat = async () => {
       try {
         setIsTyping(true);
-        const initialResponse = await deepseekService.generateResponse([
-          { 
-            role: 'user', 
-            content: 'Start a friendly conversation with a student seeking university course advice in Nigeria. Introduce yourself and ask about their interests and qualifications.' 
-          }
-        ]);
+        const systemMessage = {
+          role: 'system',
+          content: 'You are a knowledgeable course advisor for Nigerian universities. You help students choose suitable courses based on their interests, qualifications, and career goals. Be friendly, professional, and provide detailed, accurate advice.'
+        };
+        
+        const userMessage = {
+          role: 'user',
+          content: 'Start a friendly conversation with a student seeking university course advice in Nigeria. Introduce yourself and ask about their interests and qualifications.'
+        };
+
+        const initialHistory = [systemMessage, userMessage];
+        const initialResponse = await deepseekService.generateResponse(initialHistory);
+        
+        setConversationHistory(initialHistory);
         setMessages([{ type: 'bot', text: initialResponse }]);
       } catch (error) {
         console.error('Initialization Error:', error);
@@ -62,20 +71,33 @@ const CourseAdvisor = () => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    // Add user message
+    const userMessage = {
+      role: 'user',
+      content: inputMessage
+    };
+
+    // Add user message to UI
     setMessages(prev => [...prev, { type: 'user', text: inputMessage }]);
-    const userMessage = inputMessage;
     setInputMessage('');
     
     try {
       setIsTyping(true);
 
-      // Get AI response
-      const response = await deepseekService.generateResponse([
-        { role: 'user', content: userMessage }
-      ]);
+      // Update conversation history
+      const newHistory = [...conversationHistory, userMessage];
       
-      // Add AI response to messages
+      // Get AI response
+      const response = await deepseekService.generateResponse(newHistory);
+      
+      // Add AI response to conversation history
+      const assistantMessage = {
+        role: 'assistant',
+        content: response
+      };
+      
+      setConversationHistory([...newHistory, assistantMessage]);
+      
+      // Add AI response to UI messages
       setMessages(prev => [...prev, { type: 'bot', text: response }]);
 
     } catch (error) {
@@ -187,7 +209,7 @@ const CourseAdvisor = () => {
                 placeholder="Type your message..."
                 className={`flex-1 p-2 rounded-lg border ${
                   isDarkMode 
-                    ? 'bg-dark-surface-secondary border-dark-border text-dark-text-primary placeholder:text-dark-text-secondary' 
+                    ? 'bg-dark-surface-secondary border-dark-border text-dark-text-primary placeholder:text-dark-text-secondary'
                     : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'
                 } focus:outline-none focus:ring-2 focus:ring-green-500`}
               />
@@ -209,4 +231,4 @@ const CourseAdvisor = () => {
   );
 };
 
-export default CourseAdvisor; 
+export default CourseAdvisor;
