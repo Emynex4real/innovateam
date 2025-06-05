@@ -39,6 +39,7 @@ const OLevelEntry = () => {
       subject: '',
       grade: '',
       regNo: '',
+      examNo: '',
       year: '',
       examType: '',
     })),
@@ -75,6 +76,7 @@ const OLevelEntry = () => {
         if (course.subject) filledFields++;
         if (course.grade) filledFields++;
         if (course.regNo) filledFields++;
+        if (course.examNo) filledFields++;
         if (course.year) filledFields++;
         if (course.examType) filledFields++;
       });
@@ -86,20 +88,23 @@ const OLevelEntry = () => {
   // Validation rules
   const validateJambRegNo = (regNo) => /^[0-9]{12}[A-Z]{2}$/.test(regNo);
   const validateYear = (year) => year >= 1980 && year <= new Date().getFullYear();
+  const validateExamNo = (examNo) => /^[A-Z0-9]{8,12}$/.test(examNo);
   const validateSubjects = (courses) => {
     const filledCourses = courses.filter(
-      (course) => course.subject && course.grade && course.regNo && course.year && course.examType
+      (course) => course.subject && course.grade && course.regNo && course.examNo && course.year && course.examType
     );
     const uniqueSubjects = new Set(filledCourses.map((course) => course.subject));
     return {
       isValid:
         filledCourses.length === 9 &&
         uniqueSubjects.size === filledCourses.length &&
-        filledCourses.every((course) => validateYear(course.year)),
+        filledCourses.every((course) => validateYear(course.year)) &&
+        filledCourses.every((course) => validateExamNo(course.examNo)),
       errors: [
         filledCourses.length !== 9 ? 'All 9 subjects must be fully completed.' : '',
         uniqueSubjects.size !== filledCourses.length ? 'Duplicate subjects detected.' : '',
         filledCourses.some((course) => !validateYear(course.year)) ? 'Invalid year in subjects.' : '',
+        filledCourses.some((course) => !validateExamNo(course.examNo)) ? 'Invalid examination number format.' : '',
       ].filter(Boolean),
     };
   };
@@ -361,7 +366,7 @@ const OLevelEntry = () => {
                   <div key={index} className={`p-4 rounded-xl border ${
                     isDarkMode ? 'border-dark-border bg-dark-surface' : 'border-gray-200 bg-gray-50'
                   }`}>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                       <div className="md:col-span-2">
                         <label className={`block text-sm font-medium mb-2 ${
                           isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
@@ -407,6 +412,24 @@ const OLevelEntry = () => {
                             }>{grade}</option>
                           ))}
                         </select>
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-2 ${
+                          isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                        }`}>
+                          Exam Number
+                        </label>
+                        <input
+                          type="text"
+                          value={course.examNo}
+                          onChange={(e) => handleCourseChange(index, 'examNo', e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                            isDarkMode 
+                              ? 'bg-dark-surface border-dark-border text-dark-text-primary' 
+                              : 'border-gray-200'
+                          }`}
+                          placeholder="Enter exam number"
+                        />
                       </div>
                       <div>
                         <label className={`block text-sm font-medium mb-2 ${
