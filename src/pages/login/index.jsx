@@ -8,7 +8,7 @@ import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 import toast from 'react-hot-toast';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
 import Button from "../../components/ui/button";
-import Input from "../../components/ui/input";
+import { Input } from "../../components/ui/input";
 import Label from "../../components/ui/label";
 import { Checkbox } from "../../components/ui/checkbox";
 
@@ -192,98 +192,94 @@ const Login = () => {
                 <Button
                   type="button"
                   variant="link"
-                  className="px-0"
-                  onClick={() => setShowSocial(!showSocial)}
+                  className="text-primary-color hover:text-primary-color/80"
+                  onClick={handleForgotPassword}
+                  disabled={isLoading}
                 >
-                  {showSocial ? "Use Email" : "Social Login"}
+                  Forgot password?
                 </Button>
               </div>
 
-              <AnimatePresence>
-                {showSocial ? (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-4"
-                  >
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
-                      </div>
-                      <div className="relative flex justify-center text-sm">
-                        <span className={`px-2 ${
-                          isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'
-                        }`}>
-                          Or continue with
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleSocialLogin("google")}
-                      >
-                        <FaGoogle className="w-5 h-5 text-red-500" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleSocialLogin("facebook")}
-                      >
-                        <FaFacebook className="w-5 h-5 text-blue-600" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleSocialLogin("twitter")}
-                      >
-                        <FaTwitter className="w-5 h-5 text-blue-400" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-4"
-                  >
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="w-full"
-                      onClick={handleForgotPassword}
-                    >
-                      Forgot your password?
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
               <Button
                 type="submit"
-                className="w-full"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'bg-primary-color hover:bg-primary-color/90 text-white' 
+                    : 'bg-primary-color hover:bg-primary-color/90 text-white'
+                } font-semibold py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-color/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Signing in...
                   </div>
                 ) : (
-                  'Sign in'
+                  "Sign In"
                 )}
               </Button>
             </form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className={`px-2 ${isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                } transition-colors duration-200`}
+                onClick={() => handleSocialLogin("google")}
+                disabled={isLoading}
+              >
+                <FaGoogle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                } transition-colors duration-200`}
+                onClick={() => handleSocialLogin("facebook")}
+                disabled={isLoading}
+              >
+                <FaFacebook className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                } transition-colors duration-200`}
+                onClick={() => handleSocialLogin("twitter")}
+                disabled={isLoading}
+              >
+                <FaTwitter className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+              </Button>
+            </div>
           </CardContent>
+
           <CardFooter className="flex flex-col space-y-4">
-            <div className="text-center text-sm">
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                className={`font-medium ${
+            <p className={`text-center text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Don't have an account?{" "}
+              <Link 
+                to="/register" 
+                className={`font-medium hover:underline ${
                   isDarkMode 
                     ? 'text-primary-color hover:text-primary-color/80' 
                     : 'text-primary-color hover:text-primary-color/90'
@@ -291,7 +287,7 @@ const Login = () => {
               >
                 Sign up
               </Link>
-            </div>
+            </p>
           </CardFooter>
         </Card>
       </motion.div>

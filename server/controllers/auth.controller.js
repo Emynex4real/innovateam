@@ -1,36 +1,45 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
-const User = require('../models/User');
 
-// In-memory users array for testing (remove when using MongoDB)
+// In-memory users array for testing
 const users = [];
 
 const generateTokens = (user) => {
   const token = jwt.sign(
     { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'your-secret-key',
     { expiresIn: '1h' }
   );
 
   const refreshToken = jwt.sign(
     { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'your-secret-key',
     { expiresIn: '7d' }
   );
 
   return { token, refreshToken };
 };
 
-exports.register = async (req, res, next) => {
+exports.register = async (req, res) => {
   try {
     const { name, email, phoneNumber, password } = req.body;
+
+    // Validate input
+    if (!name || !email || !phoneNumber || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
 
     // Check if user exists (in-memory)
     const existingUser = users.find(u => u.email === email);
     if (existingUser) {
-      throw new AppError('User already exists', 400);
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists'
+      });
     }
 
     // Hash password
@@ -42,7 +51,8 @@ exports.register = async (req, res, next) => {
       name,
       email,
       phoneNumber,
-      password: hashedPassword
+      password: hashedPassword,
+      createdAt: new Date()
     };
     users.push(user);
 
@@ -54,32 +64,40 @@ exports.register = async (req, res, next) => {
     delete userResponse.password;
 
     res.status(201).json({
-      status: 'success',
-      data: {
-        user: userResponse,
-        token,
-        refreshToken
-      }
+      success: true,
+      user: userResponse,
+      token,
+      refreshToken
     });
   } catch (error) {
-    next(error);
+    logger.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating user'
+    });
   }
 };
 
-exports.login = async (req, res, next) => {
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     // Find user (in-memory)
     const user = users.find(u => u.email === email);
     if (!user) {
-      throw new AppError('Invalid credentials', 401);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new AppError('Invalid credentials', 401);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
     // Generate tokens
@@ -90,61 +108,72 @@ exports.login = async (req, res, next) => {
     delete userResponse.password;
 
     res.json({
-      status: 'success',
-      data: {
-        user: userResponse,
-        token,
-        refreshToken
-      }
+      success: true,
+      user: userResponse,
+      token,
+      refreshToken
     });
   } catch (error) {
-    next(error);
+    logger.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging in'
+    });
   }
 };
 
-exports.logout = async (req, res, next) => {
+exports.logout = async (req, res) => {
   try {
-    // In a real application, you would:
-    // 1. Add the token to a blacklist
-    // 2. Clear any server-side session data
     res.json({
-      status: 'success',
+      success: true,
       message: 'Logged out successfully'
     });
   } catch (error) {
-    next(error);
+    logger.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging out'
+    });
   }
 };
 
-exports.validateToken = async (req, res, next) => {
+exports.validateToken = async (req, res) => {
   try {
     res.json({
-      status: 'success',
-      data: {
-        valid: true,
-        user: req.user
-      }
+      success: true,
+      valid: true,
+      user: req.user
     });
   } catch (error) {
-    next(error);
+    logger.error('Token validation error:', error);
+    res.status(500).json({
+      success: false,
+      valid: false
+    });
   }
 };
 
-exports.refreshToken = async (req, res, next) => {
+exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      throw new AppError('Refresh token is required', 400);
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
     }
 
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'your-secret-key');
 
     // Find user (in-memory)
     const user = users.find(u => u.email === decoded.email);
     if (!user) {
-      throw new AppError('User not found', 404);
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
 
     // Generate new tokens
@@ -155,17 +184,22 @@ exports.refreshToken = async (req, res, next) => {
     delete userResponse.password;
 
     res.json({
-      status: 'success',
-      data: {
-        user: userResponse,
-        ...tokens
-      }
+      success: true,
+      user: userResponse,
+      ...tokens
     });
   } catch (error) {
+    logger.error('Token refresh error:', error);
     if (error.name === 'JsonWebTokenError') {
-      next(new AppError('Invalid refresh token', 401));
+      res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
     } else {
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: 'Error refreshing token'
+      });
     }
   }
 }; 

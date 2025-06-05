@@ -10,6 +10,7 @@ class AuthService {
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true
     });
 
     // Add request interceptor to add auth token
@@ -87,7 +88,7 @@ class AuthService {
 
   async register(userData) {
     try {
-      const response = await this.api.post('/auth/register', userData);
+      await this.api.post('/auth/register', userData);
       return { success: true };
     } catch (error) {
       console.error('Registration error:', error);

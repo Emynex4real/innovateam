@@ -3,8 +3,16 @@ const { body } = require('express-validator');
 const { validateRequest } = require('../middleware/validateRequest');
 const { register, login, logout, validateToken, refreshToken } = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/authenticate');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
+
+// In-memory users array (shared with server.js)
+const users = [];
+
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Validation middleware
 const registerValidation = [
@@ -26,10 +34,10 @@ const loginValidation = [
 ];
 
 // Routes
-router.post('/register', registerValidation, register);
-router.post('/login', loginValidation, login);
-router.post('/logout', authenticate, logout);
-router.get('/validate', authenticate, validateToken);
+router.post('/register', register);
+router.post('/login', login);
+router.post('/logout', logout);
+router.get('/validate', validateToken);
 router.post('/refresh-token', refreshToken);
 
 module.exports = router; 

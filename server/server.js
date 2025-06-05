@@ -9,8 +9,6 @@ const morgan = require('morgan');
 const compression = require('compression');
 const { errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-const { connectDB } = require('./config/db');
 const { logger } = require('./utils/logger');
 
 // In-memory users array for testing
@@ -19,15 +17,19 @@ const users = [];
 // Load environment variables
 dotenv.config();
 
-// Connect to database
-connectDB();
-
 // Initialize express app
 const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuration
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:5001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Request parsing
 app.use(express.json());
@@ -72,21 +74,36 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user (in-memory)
-    const user = { name, email, phoneNumber, password: hashedPassword };
+    const user = { 
+      id: users.length + 1,
+      name, 
+      email, 
+      phoneNumber, 
+      password: hashedPassword,
+      createdAt: new Date()
+    };
     users.push(user);
 
     // Generate tokens
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '1h' });
     const refreshToken = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
+    // Remove password from response
+    const userResponse = { ...user };
+    delete userResponse.password;
+
     res.status(201).json({
-      user,
+      success: true,
+      user: userResponse,
       token,
       refreshToken
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Error creating user' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error creating user' 
+    });
   }
 });
 
@@ -215,9 +232,8 @@ app.post('/api/auth/refresh-token', async (req, res) => {
   }
 });
 
-// Routes
+// Use auth routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

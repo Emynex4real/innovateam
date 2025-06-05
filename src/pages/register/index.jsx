@@ -8,7 +8,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
 import Button from "../../components/ui/button";
-import Input from "../../components/ui/input";
+import { Input } from "../../components/ui/input";
 import Label from "../../components/ui/label";
 import { Checkbox } from "../../components/ui/checkbox";
 
@@ -209,19 +209,17 @@ const Register = () => {
                     placeholder="John Doe"
                     value={formData.name}
                     onChange={handleChange}
-                    className="pl-10"
+                    className={`pl-10 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                 </div>
                 {errors.name && (
-                  <p className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-                    {errors.name}
-                  </p>
+                  <p className="text-sm text-red-500 mt-1">{errors.name}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                   <Input
@@ -231,14 +229,12 @@ const Register = () => {
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={handleChange}
-                    className="pl-10"
+                    className={`pl-10 ${errors.email ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                 </div>
                 {errors.email && (
-                  <p className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-                    {errors.email}
-                  </p>
+                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
                 )}
               </div>
 
@@ -250,17 +246,15 @@ const Register = () => {
                     id="phoneNumber"
                     name="phoneNumber"
                     type="tel"
-                    placeholder="1234567890"
+                    placeholder="08012345678"
                     value={formData.phoneNumber}
                     onChange={handleChange}
-                    className="pl-10"
+                    className={`pl-10 ${errors.phoneNumber ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                 </div>
                 {errors.phoneNumber && (
-                  <p className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-                    {errors.phoneNumber}
-                  </p>
+                  <p className="text-sm text-red-500 mt-1">{errors.phoneNumber}</p>
                 )}
               </div>
 
@@ -274,7 +268,7 @@ const Register = () => {
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleChange}
-                    className="pl-10 pr-10"
+                    className={`pl-10 pr-10 ${errors.password ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                   <button
@@ -286,10 +280,25 @@ const Register = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-                    {errors.password}
-                  </p>
+                  <p className="text-sm text-red-500 mt-1">{errors.password}</p>
                 )}
+                <div className="mt-2">
+                  <div className="flex gap-1 h-1">
+                    {[0, 1, 2, 3].map((index) => (
+                      <div
+                        key={index}
+                        className={`flex-1 rounded-full transition-colors duration-200 ${getStrengthColor(index, passwordStrength)}`}
+                      />
+                    ))}
+                  </div>
+                  <p className={`text-xs mt-1 ${getStrengthTextColor(passwordStrength)}`}>
+                    {passwordStrength === 0 && "Very weak"}
+                    {passwordStrength === 1 && "Weak"}
+                    {passwordStrength === 2 && "Medium"}
+                    {passwordStrength === 3 && "Strong"}
+                    {passwordStrength === 4 && "Very strong"}
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -302,7 +311,7 @@ const Register = () => {
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="pl-10 pr-10"
+                    className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                   <button
@@ -314,146 +323,113 @@ const Register = () => {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-                    {errors.confirmPassword}
-                  </p>
+                  <p className="text-sm text-red-500 mt-1">{errors.confirmPassword}</p>
                 )}
               </div>
 
-              {formData.password && (
-                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50'}>
-                  <CardContent className="space-y-2">
-                    <div className="flex gap-1">
-                      {[...Array(4)].map((_, index) => (
-                        <div 
-                          key={index}
-                          className={`h-2 flex-1 rounded-full transition-all duration-300 ${getStrengthColor(index, passwordStrength)}`}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <p className={`text-sm font-medium ${getStrengthTextColor(passwordStrength)}`}>
-                        {passwordStrength === 0 && 'Very Weak'}
-                        {passwordStrength === 1 && 'Weak'}
-                        {passwordStrength === 2 && 'Medium'}
-                        {passwordStrength === 3 && 'Strong'}
-                        {passwordStrength === 4 && 'Very Strong'}
-                      </p>
-                      {passwordStrength < 4 && (
-                        <ul className={`text-xs space-y-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {!/.{8,}/.test(formData.password) && <li>• At least 8 characters</li>}
-                          {!/[A-Z]/.test(formData.password) && <li>• One uppercase letter</li>}
-                          {!/[0-9]/.test(formData.password) && <li>• One number</li>}
-                          {!/[^A-Za-z0-9]/.test(formData.password) && <li>• One special character</li>}
-                        </ul>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="agreeToTerms"
+                  name="agreeToTerms"
+                  checked={formData.agreeToTerms}
+                  onCheckedChange={(checked) => handleChange({ target: { name: 'agreeToTerms', type: 'checkbox', checked } })}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="agreeToTerms" className="text-sm cursor-pointer">
+                  I agree to the{" "}
+                  <Link to="/terms" className="text-primary-color hover:underline">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/privacy" className="text-primary-color hover:underline">
+                    Privacy Policy
+                  </Link>
+                </Label>
+              </div>
+              {errors.agreeToTerms && (
+                <p className="text-sm text-red-500 mt-1">{errors.agreeToTerms}</p>
               )}
-
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="agreeToTerms"
-                    name="agreeToTerms"
-                    checked={formData.agreeToTerms}
-                    onCheckedChange={(checked) => 
-                      handleChange({ target: { name: 'agreeToTerms', type: 'checkbox', checked } })
-                    }
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="agreeToTerms" className="text-sm">
-                    I agree to the{" "}
-                    <Link
-                      to="/terms"
-                      className={`font-medium ${
-                        isDarkMode 
-                          ? 'text-primary-color hover:text-primary-color/80' 
-                          : 'text-primary-color hover:text-primary-color/90'
-                      }`}
-                    >
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link
-                      to="/privacy"
-                      className={`font-medium ${
-                        isDarkMode 
-                          ? 'text-primary-color hover:text-primary-color/80' 
-                          : 'text-primary-color hover:text-primary-color/90'
-                      }`}
-                    >
-                      Privacy Policy
-                    </Link>
-                  </Label>
-                </div>
-                {errors.agreeToTerms && (
-                  <p className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-                    {errors.agreeToTerms}
-                  </p>
-                )}
-              </div>
 
               <Button
                 type="submit"
-                className="w-full"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'bg-primary-color hover:bg-primary-color/90 text-white' 
+                    : 'bg-primary-color hover:bg-primary-color/90 text-white'
+                } font-semibold py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-color/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Creating Account...
                   </div>
                 ) : (
-                  'Create Account'
+                  "Create Account"
                 )}
               </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className={`px-2 ${
-                    isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'
-                  }`}>
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => toast.error('Google sign up coming soon!')}
-                >
-                  <FaGoogle className="w-5 h-5 text-red-500" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => toast.error('Facebook sign up coming soon!')}
-                >
-                  <FaFacebook className="w-5 h-5 text-blue-600" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => toast.error('Twitter sign up coming soon!')}
-                >
-                  <FaTwitter className="w-5 h-5 text-blue-400" />
-                </Button>
-              </div>
             </form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className={`px-2 ${isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                } transition-colors duration-200`}
+                onClick={() => toast.error('Google sign up coming soon!')}
+                disabled={isLoading}
+              >
+                <FaGoogle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                } transition-colors duration-200`}
+                onClick={() => toast.error('Facebook sign up coming soon!')}
+                disabled={isLoading}
+              >
+                <FaFacebook className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                } transition-colors duration-200`}
+                onClick={() => toast.error('Twitter sign up coming soon!')}
+                disabled={isLoading}
+              >
+                <FaTwitter className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+              </Button>
+            </div>
           </CardContent>
 
-          <CardFooter>
-            <div className="w-full text-center text-sm">
-              Already have an account?{' '}
-              <Link
-                to="/login"
-                className={`font-medium ${
+          <CardFooter className="flex flex-col space-y-4">
+            <p className={`text-center text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Already have an account?{" "}
+              <Link 
+                to="/login" 
+                className={`font-medium hover:underline ${
                   isDarkMode 
                     ? 'text-primary-color hover:text-primary-color/80' 
                     : 'text-primary-color hover:text-primary-color/90'
@@ -461,7 +437,7 @@ const Register = () => {
               >
                 Sign in
               </Link>
-            </div>
+            </p>
           </CardFooter>
         </Card>
       </motion.div>
