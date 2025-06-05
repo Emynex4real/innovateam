@@ -79,7 +79,10 @@ class AuthService {
 
   async register(userData) {
     try {
+      console.log('Sending registration request to:', `${this.api.defaults.baseURL}/auth/register`);
       const response = await this.api.post('/auth/register', userData);
+      console.log('Registration response:', response.data);
+      
       const { token, refreshToken, user } = response.data;
 
       this.setToken(token);
@@ -88,10 +91,33 @@ class AuthService {
 
       return { success: true, user };
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Registration error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers,
+        }
+      });
+      
+      // Handle connection refused error
+      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+        return {
+          success: false,
+          error: 'Unable to connect to the server. Please make sure the server is running.'
+        };
+      }
+      
+      // Handle other types of errors
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Registration failed. Please try again.';
+      
       return {
         success: false,
-        error: error.response?.data?.message || 'Registration failed',
+        error: errorMessage
       };
     }
   }
@@ -100,10 +126,10 @@ class AuthService {
     try {
       const refreshToken = this.getRefreshToken();
       await this.api.post('/auth/logout', { refreshToken });
+      return { success: true };
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      this.clearStorage();
+      return { success: false, error: error.message };
     }
   }
 

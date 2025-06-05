@@ -117,7 +117,10 @@ const Register = () => {
 
     setIsLoading(true);
     try {
+      console.log('Attempting registration with:', { ...formData, password: '[REDACTED]' });
       const result = await authRegister(formData);
+      console.log('Registration result:', result);
+      
       if (result.success) {
         toast.success("Account created successfully!");
         setFormData({
@@ -130,10 +133,16 @@ const Register = () => {
         });
         navigate("/login");
       } else {
-        throw new Error(result.error || "Failed to create account");
+        const errorMessage = typeof result.error === 'string' ? result.error : 'Failed to create account';
+        console.error('Registration failed:', errorMessage);
+        setErrors({ submit: errorMessage });
+        toast.error(errorMessage);
       }
     } catch (error) {
-      const errorMessage = error?.message || "Failed to create account. Please try again.";
+      console.error('Registration error:', error);
+      const errorMessage = error?.response?.data?.message || 
+                          (typeof error === 'string' ? error : error?.message) || 
+                          "Failed to create account. Please try again.";
       setErrors({ submit: errorMessage });
       toast.error(errorMessage);
     } finally {

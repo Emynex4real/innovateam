@@ -1,188 +1,75 @@
 // src/contexts/AuthContext.js
-import { createContext, useContext, useEffect } from "react";
-import { create } from "zustand";
-import { toast } from 'react-hot-toast';
+import React, { createContext, useState, useContext } from 'react';
 import authService from '../services/auth.service';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../config/constants';
 
 const AuthContext = createContext(null);
 
-const useAuthStore = create((set) => ({
-  user: null,
-  isAuthenticated: false,
-  loading: true,
-  error: null,
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  login: async (credentials) => {
+  const login = async (credentials) => {
     try {
-      set({ loading: true, error: null });
-      const result = await authService.login(credentials);
-      
-      if (result.success) {
-        set({ 
-          user: result.user, 
-          isAuthenticated: true, 
-          loading: false 
-        });
-        toast.success(SUCCESS_MESSAGES.LOGIN_SUCCESS);
-        return { success: true, user: result.user };
-      } else {
-        throw new Error(result.error);
+      const response = await authService.login(credentials);
+      if (response.success) {
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return { success: true, message: SUCCESS_MESSAGES.LOGIN_SUCCESS };
       }
+      return { success: false, error: response.error || ERROR_MESSAGES.LOGIN_FAILED };
     } catch (error) {
-      set({ 
-        error: error.message, 
-        loading: false 
-      });
-      toast.error(error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
-      return { success: false, error };
+      console.error('Login error:', error);
+      return { success: false, error: error.message || ERROR_MESSAGES.LOGIN_FAILED };
     }
-  },
+  };
 
-  register: async (userData) => {
+  const register = async (userData) => {
     try {
-      set({ loading: true, error: null });
-      const result = await authService.register(userData);
-      
-      if (result.success) {
-        set({ 
-          user: result.user, 
-          isAuthenticated: true, 
-          loading: false,
-          error: null
-        });
-        toast.success(SUCCESS_MESSAGES.REGISTER_SUCCESS);
-        return { success: true, user: result.user };
-      } else {
-        throw new Error(result.error || "Registration failed");
+      const response = await authService.register(userData);
+      if (response.success) {
+        return { success: true, message: SUCCESS_MESSAGES.REGISTER_SUCCESS };
       }
+      return { success: false, error: response.error || ERROR_MESSAGES.REGISTER_FAILED };
     } catch (error) {
       console.error('Registration error:', error);
-      set({ 
-        user: null,
-        isAuthenticated: false,
-        error: error.message, 
-        loading: false 
-      });
-      toast.error(error.message || ERROR_MESSAGES.GENERIC);
-      return { success: false, error };
+      return { success: false, error: error.message || ERROR_MESSAGES.REGISTER_FAILED };
     }
-  },
+  };
 
-  logout: async () => {
+  const logout = async () => {
     try {
-      set({ loading: true });
-      const result = await authService.logout();
-      
-      if (result.success) {
-        set({ 
-          user: null, 
-          isAuthenticated: false, 
-          error: null, 
-          loading: false 
-        });
-        toast.success(SUCCESS_MESSAGES.LOGOUT_SUCCESS);
-        return { success: true };
-      } else {
-        throw new Error(result.error);
+      const response = await authService.logout();
+      if (response.success) {
+        authService.clearStorage();
+        setUser(null);
+        setIsAuthenticated(false);
+        return { success: true, message: 'Logged out successfully' };
       }
+      return { success: false, error: response.error || 'Failed to logout' };
     } catch (error) {
-      set({ loading: false });
-      toast.error(error.message || ERROR_MESSAGES.GENERIC);
-      return { success: false, error };
+      console.error('Logout error:', error);
+      return { success: false, error: error.message || 'Failed to logout' };
     }
-  },
+  };
 
-  forgotPassword: async (email) => {
-    try {
-      set({ loading: true, error: null });
-      const result = await authService.forgotPassword(email);
-      
-      if (result.success) {
-        set({ loading: false });
-        toast.success('Password reset instructions sent to your email');
-        return { success: true };
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      set({ 
-        error: error.message, 
-        loading: false 
-      });
-      toast.error(error.message || ERROR_MESSAGES.GENERIC);
-      return { success: false, error };
-    }
-  },
-
-  resetPassword: async (token, newPassword) => {
-    try {
-      set({ loading: true, error: null });
-      const result = await authService.resetPassword(token, newPassword);
-      
-      if (result.success) {
-        set({ loading: false });
-        toast.success(SUCCESS_MESSAGES.PASSWORD_RESET);
-        return { success: true };
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      set({ 
-        error: error.message, 
-        loading: false 
-      });
-      toast.error(error.message || ERROR_MESSAGES.GENERIC);
-      return { success: false, error };
-    }
-  },
-
-  checkAuth: async () => {
-    try {
-      set({ loading: true, error: null });
-      const isAuthenticated = authService.isAuthenticated();
-      const user = authService.getCurrentUser();
-      
-      if (isAuthenticated && user) {
-        set({ 
+  const value = {
           user, 
-          isAuthenticated: true, 
-          loading: false 
-        });
-      } else {
-        set({ 
-          user: null, 
-          isAuthenticated: false, 
-          loading: false 
-        });
-      }
-    } catch (error) {
-      set({ 
-        user: null, 
-        isAuthenticated: false, 
-        loading: false, 
-        error: error.message 
-      });
-    }
-  },
-}));
+    isAuthenticated,
+    login,
+    register,
+    logout
+  };
 
-export function AuthProvider({ children }) {
-  useEffect(() => {
-    useAuthStore.getState().checkAuth();
-  }, []);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
 
-  return (
-    <AuthContext.Provider value={useAuthStore()}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
+
+export default AuthContext;
