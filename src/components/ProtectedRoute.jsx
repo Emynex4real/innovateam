@@ -1,15 +1,13 @@
-// src/components/PrivateRoute.jsx
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Loading from './Loading';
 
-const PrivateRoute = ({ children }) => {
+const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
-    return <Loading />;
+    return <div>Loading...</div>; // Or your loading component
   }
 
   if (!isAuthenticated) {
@@ -20,4 +18,4 @@ const PrivateRoute = ({ children }) => {
   return children;
 };
 
-export default PrivateRoute;
+export default ProtectedRoute; 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +14,8 @@ import { Checkbox } from "../../components/ui/checkbox";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated, loading, forgotPassword } = useAuth();
+  const location = useLocation();
+  const { login, isAuthenticated, isLoading, forgotPassword } = useAuth();
   const { isDarkMode } = useDarkMode();
 
   const [email, setEmail] = useState("");
@@ -44,7 +45,9 @@ const Login = () => {
         setEmail("");
         setPassword("");
         setRememberMe(false);
-        navigate("/dashboard");
+        // Redirect to the page they tried to visit or dashboard
+        const from = location.state?.from?.pathname || "/dashboard";
+        navigate(from, { replace: true });
       } else {
         toast.error(result.error?.response?.data?.message || "Invalid credentials");
         setFormError(result.error?.response?.data?.message || "Invalid credentials");
@@ -82,9 +85,10 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
-    }
+    // Remove the automatic redirect since we handle it in handleSubmit
+    // if (isAuthenticated) {
+    //   navigate("/dashboard");
+    // }
   }, [isAuthenticated, navigate]);
 
   return (
@@ -146,7 +150,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
-                    disabled={loading}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -161,7 +165,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
-                    disabled={loading}
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
@@ -179,7 +183,7 @@ const Login = () => {
                     id="remember"
                     checked={rememberMe}
                     onCheckedChange={setRememberMe}
-                    disabled={loading}
+                    disabled={isLoading}
                   />
                   <Label htmlFor="remember" className="text-sm cursor-pointer">
                     Remember me
@@ -262,9 +266,9 @@ const Login = () => {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading}
+                disabled={isLoading}
               >
-                {loading ? (
+                {isLoading ? (
                   <div className="flex items-center justify-center">
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   </div>

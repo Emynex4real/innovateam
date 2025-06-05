@@ -1,18 +1,18 @@
 import axios from 'axios';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 class AuthService {
   constructor() {
     this.api = axios.create({
-      baseURL: process.env.NODE_ENV === 'production' 
-        ? 'https://your-project-name.vercel.app/api'
-        : 'http://localhost:5000/api',
+      baseURL: API_URL,
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    // Add a request interceptor
+    // Add request interceptor to add auth token
     this.api.interceptors.request.use(
       (config) => {
         const token = this.getToken();
@@ -26,36 +26,37 @@ class AuthService {
       }
     );
 
-    // Add a response interceptor
+    // Add response interceptor to handle token refresh
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
-        // Handle network errors
-        if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-          return Promise.reject(error);
-        }
-
         const originalRequest = error.config;
 
-        // If the error is due to an expired token
+        // If error is 401 and we haven't tried to refresh token yet
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
           try {
             const refreshToken = this.getRefreshToken();
+            if (!refreshToken) {
+              throw new Error('No refresh token available');
+            }
+
             const response = await this.api.post('/auth/refresh-token', {
               refreshToken,
             });
 
-            const { token } = response.data;
+            const { token, refreshToken: newRefreshToken, user } = response.data;
             this.setToken(token);
+            this.setRefreshToken(newRefreshToken);
+            this.setUser(user);
 
-            // Retry the original request
+            // Retry the original request with new token
             originalRequest.headers.Authorization = `Bearer ${token}`;
             return this.api(originalRequest);
           } catch (refreshError) {
-            // If refresh token is invalid, logout the user
-            this.logout();
+            // If refresh fails, clear storage
+            this.clearStorage();
             return Promise.reject(refreshError);
           }
         }
@@ -86,54 +87,42 @@ class AuthService {
 
   async register(userData) {
     try {
-      console.log('Sending registration request to:', `${this.api.defaults.baseURL}/auth/register`);
       const response = await this.api.post('/auth/register', userData);
-      console.log('Registration response:', response.data);
-      
-      const { token, refreshToken, user } = response.data;
-
-      this.setToken(token);
-      this.setRefreshToken(refreshToken);
-      this.setUser(user);
-
-      return { success: true, user };
+      return { success: true };
     } catch (error) {
-      // Handle network errors
-      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        return {
-          success: false,
-          error: 'Unable to connect to the server. Please make sure the server is running.'
-        };
-      }
-
-      // Handle other errors
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Registration failed. Please try again.';
-      
+      console.error('Registration error:', error);
       return {
         success: false,
-        error: errorMessage
+        error: error.response?.data?.message || 'Registration failed',
       };
     }
   }
 
   async logout() {
     try {
-      const refreshToken = this.getRefreshToken();
-      await this.api.post('/auth/logout', { refreshToken });
+      await this.api.post('/auth/logout');
+      this.clearStorage();
       return { success: true };
     } catch (error) {
       console.error('Logout error:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Logout failed',
+      };
     }
   }
 
   async validateToken() {
     try {
+      const token = this.getToken();
+      if (!token) {
+        return false;
+      }
+
       const response = await this.api.get('/auth/validate');
       return response.data.valid;
     } catch (error) {
+      console.error('Token validation error:', error);
       return false;
     }
   }
@@ -172,6 +161,79 @@ class AuthService {
 
   isAuthenticated() {
     return !!this.getToken();
+  }
+
+  setRememberMe(value) {
+    localStorage.setItem('rememberMe', value);
+  }
+
+  getRememberMe() {
+    return localStorage.getItem('rememberMe') === 'true';
+  }
+
+  async refreshToken() {
+    try {
+      const refreshToken = this.getRefreshToken();
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await this.api.post('/auth/refresh-token', {
+        refreshToken,
+      });
+
+      const { token, refreshToken: newRefreshToken, user } = response.data;
+      this.setToken(token);
+      this.setRefreshToken(newRefreshToken);
+      this.setUser(user);
+
+      return { success: true, user };
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      this.clearStorage();
+      return { success: false, error };
+    }
+  }
+
+  async forgotPassword(email) {
+    try {
+      await this.api.post('/auth/forgot-password', { email });
+      return { success: true };
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to send reset email',
+      };
+    }
+  }
+
+  async resetPassword(token, newPassword) {
+    try {
+      await this.api.post('/auth/reset-password', { token, newPassword });
+      return { success: true };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to reset password',
+      };
+    }
+  }
+
+  async updateProfile(userData) {
+    try {
+      const response = await this.api.put('/auth/profile', userData);
+      const { user } = response.data;
+      this.setUser(user);
+      return { success: true, user };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to update profile',
+      };
+    }
   }
 }
 
