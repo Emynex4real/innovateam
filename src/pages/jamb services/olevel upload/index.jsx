@@ -31,17 +31,18 @@ const OLevelUpload = () => {
 
   // Update history from child component
   useEffect(() => {
-    const { updatedEntry } = location.state || {};
-    if (updatedEntry) {
+    const { status, entryId, profileCode, jambRegNo, fullname } = location.state || {};
+    if (status === 'processing') {
       setHistory((prevHistory) =>
         prevHistory.map((item) =>
-          item.id === updatedEntry.id
+          item.id === entryId
             ? {
                 ...item,
-                type: updatedEntry.type,
-                fullname: updatedEntry.fullname,
-                profileCode: updatedEntry.profileCode,
-                status: updatedEntry.status,
+                type: 'UTME',
+                fullname: fullname,
+                profileCode: profileCode,
+                jambRegNo: jambRegNo,
+                status: 'Processing',
                 submittedOn: new Date().toLocaleString(),
               }
             : item
@@ -161,6 +162,19 @@ const OLevelUpload = () => {
           }`}>O-Level Upload</h1>
         </div>
 
+        {/* Status Message */}
+        {message.text && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            message.type === 'error' 
+              ? 'bg-red-100 text-red-700' 
+              : message.type === 'success'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-blue-100 text-blue-700'
+          }`}>
+            {message.text}
+          </div>
+        )}
+
         {/* Search Input */}
         <div className="mb-6">
           <div className="relative max-w-md">
@@ -277,26 +291,6 @@ const OLevelUpload = () => {
                   }`}>₦{walletBalance.toLocaleString()}</span>
                 </p>
               </div>
-
-              {message.text && (
-                <div
-                  className={`p-2 rounded-lg text-sm font-medium ${
-                    message.type === 'success'
-                      ? isDarkMode 
-                        ? 'bg-green-900/30 text-green-400 border border-green-800'
-                        : 'bg-green-100 text-green-700'
-                      : message.type === 'info'
-                        ? isDarkMode
-                          ? 'bg-blue-900/30 text-blue-400 border border-blue-800'
-                          : 'bg-blue-100 text-blue-700'
-                        : isDarkMode
-                          ? 'bg-red-900/30 text-red-400 border border-red-800'
-                          : 'bg-red-100 text-red-700'
-                  }`}
-                >
-                  {message.text}
-                </div>
-              )}
 
               <button
                 type="submit"

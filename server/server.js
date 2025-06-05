@@ -17,8 +17,35 @@ const port = process.env.PORT || 5000;
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// In-memory user storage (replace with database in production)
-const users = [];
+// User storage file path
+const USERS_FILE = path.join(__dirname, 'data', 'users.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(path.join(__dirname, 'data'))) {
+  fs.mkdirSync(path.join(__dirname, 'data'));
+}
+
+// Initialize users array from file or create empty array
+let users = [];
+try {
+  if (fs.existsSync(USERS_FILE)) {
+    users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+  } else {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users));
+  }
+} catch (error) {
+  console.error('Error reading users file:', error);
+  users = [];
+}
+
+// Save users to file
+const saveUsers = () => {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  } catch (error) {
+    console.error('Error saving users:', error);
+  }
+};
 
 // Configure DeepSeek API client
 const deepseekApi = axios.create({
@@ -83,10 +110,12 @@ app.post('/api/auth/register', async (req, res) => {
       name,
       email,
       phoneNumber,
-      password: hashedPassword
+      password: hashedPassword,
+      createdAt: new Date().toISOString()
     };
 
     users.push(user);
+    saveUsers(); // Save to file
 
     // Generate tokens
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });

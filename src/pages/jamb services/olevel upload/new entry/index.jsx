@@ -33,8 +33,8 @@ const OLevelEntry = () => {
   // Initial form state with exactly 9 subjects
   const initialFormState = {
     fullname: initialFullname || '',
-    profileCode: '',
     jambRegNo: '',
+    profileCode: '',
     registrationNumber: '',
     courses: Array.from({ length: 9 }, () => ({
       subject: '',
@@ -88,28 +88,29 @@ const OLevelEntry = () => {
 
   // Validation rules
   const validateJambRegNo = (regNo) => /^[0-9]{12}[A-Z]{2}$/.test(regNo);
+  const validateProfileCode = (code) => /^[A-Z0-9]{8,12}$/.test(code);
   const validateYear = (year) => year >= 1980 && year <= new Date().getFullYear();
   const validateExamNo = (examNo) => /^[A-Z0-9]{8,12}$/.test(examNo);
+
   const validateSubjects = (courses) => {
-    console.log('Validating courses:', courses); // Debug log
+    console.log('Validating courses:', courses);
 
     const filledCourses = courses.filter(
       (course) => {
         const isFilled = course.subject && 
                         course.grade && 
-                        course.regNo && 
                         course.examNo && 
                         course.year && 
                         course.examType;
         
         if (!isFilled) {
-          console.log('Unfilled course:', course); // Debug log for unfilled courses
+          console.log('Unfilled course:', course);
         }
         return isFilled;
       }
     );
 
-    console.log('Filled courses count:', filledCourses.length); // Debug log
+    console.log('Filled courses count:', filledCourses.length);
 
     const uniqueSubjects = new Set(filledCourses.map((course) => course.subject));
     const validationResult = {
@@ -126,7 +127,7 @@ const OLevelEntry = () => {
       ].filter(Boolean),
     };
 
-    console.log('Validation result:', validationResult); // Debug log
+    console.log('Validation result:', validationResult);
     return validationResult;
   };
 
@@ -195,20 +196,29 @@ const OLevelEntry = () => {
 
     console.log('Form data before validation:', formData);
 
-    // Update all courses with the registration number
-    const updatedCourses = formData.courses.map(course => ({
-      ...course,
-      regNo: formData.registrationNumber // Use the registration number from form data
-    }));
-
-    const { isValid, errors } = validateSubjects(updatedCourses);
-    if (!formData.fullname.trim()) {
-      toast.error('Please enter a full name.');
+    // Validate JAMB registration number
+    if (!formData.jambRegNo.trim()) {
+      toast.error('Please enter your JAMB registration number.');
       setIsSubmitting(false);
       return;
     }
-    if (!formData.registrationNumber.trim()) {
-      toast.error('Please enter your registration number.');
+
+    if (!validateJambRegNo(formData.jambRegNo)) {
+      toast.error('Invalid JAMB registration number format. It should be 12 digits followed by 2 letters (e.g., 123456789012AB).');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate profile code if provided
+    if (formData.profileCode.trim() && !validateProfileCode(formData.profileCode)) {
+      toast.error('Invalid profile code format.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { isValid, errors } = validateSubjects(formData.courses);
+    if (!formData.fullname.trim()) {
+      toast.error('Please enter a full name.');
       setIsSubmitting(false);
       return;
     }
@@ -229,9 +239,16 @@ const OLevelEntry = () => {
       formDataToSend.append('fullname', formData.fullname);
       formDataToSend.append('jambRegNo', formData.jambRegNo);
       formDataToSend.append('profileCode', formData.profileCode);
-      formDataToSend.append('registrationNumber', formData.registrationNumber);
-      formDataToSend.append('courses', JSON.stringify(updatedCourses));
+      formDataToSend.append('courses', JSON.stringify(formData.courses));
       formDataToSend.append('oLevelFile', formData.oLevelFile);
+
+      console.log('Sending form data:', {
+        fullname: formData.fullname,
+        jambRegNo: formData.jambRegNo,
+        profileCode: formData.profileCode,
+        courses: formData.courses,
+        file: formData.oLevelFile
+      });
 
       const response = await axios.post(
         'http://localhost:5000/api/olevel/upload',
@@ -245,11 +262,20 @@ const OLevelEntry = () => {
 
       if (response.data.success) {
         toast.success('O-Level entry submitted successfully!');
-        navigate('/jamb-services/olevel-upload/completion', {
+        // Generate a unique ID for the entry
+        const entryId = `entry_${Date.now()}`;
+        // Navigate back to the dashboard/buy-olevel-upload page with processing state
+        navigate('/dashboard/buy-olevel-upload', {
           state: {
-            entryId: response.data.entryId,
-            profileCode: response.data.profileCode,
-          },
+            status: 'processing',
+            entryId: entryId,
+            profileCode: response.data.profileCode || formData.profileCode,
+            jambRegNo: formData.jambRegNo,
+            fullname: formData.fullname,
+            type: 'UTME',
+            quantity: 1,
+            amount: '₦400'
+          }
         });
       }
     } catch (error) {
@@ -365,25 +391,7 @@ const OLevelEntry = () => {
                   <label className={`block text-sm font-medium mb-2 ${
                     isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
                   }`}>
-                    Registration Number
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.registrationNumber}
-                    onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                      isDarkMode 
-                        ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
-                        : 'border-gray-200 placeholder-gray-400'
-                    }`}
-                    placeholder="Enter your registration number"
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${
-                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
-                  }`}>
-                    JAMB Registration Number (Optional)
+                    JAMB Registration Number
                   </label>
                   <input
                     type="text"
@@ -395,6 +403,24 @@ const OLevelEntry = () => {
                         : 'border-gray-200 placeholder-gray-400'
                     }`}
                     placeholder="Enter JAMB registration number"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>
+                    Profile Code (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.profileCode}
+                    onChange={(e) => handleInputChange('profileCode', e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                        : 'border-gray-200 placeholder-gray-400'
+                    }`}
+                    placeholder="Enter profile code (optional)"
                   />
                 </div>
               </div>

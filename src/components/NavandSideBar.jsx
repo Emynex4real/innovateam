@@ -68,10 +68,10 @@ const NavandSideBar = ({ children }) => {
   };
 
   const handleLogout = async () => {
-    const result = await logout();
-    if (result.success) {
+      const result = await logout();
+      if (result.success) {
       navigate('/login');
-    } else {
+      } else {
       console.error('Logout error:', result.error);
     }
   };
