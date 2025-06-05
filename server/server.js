@@ -3,82 +3,22 @@ const cors = require('cors');
 const multer = require('multer');
 const axios = require('axios');
 const dotenv = require('dotenv');
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const connectDB = require('./config/db');
+const User = require('./models/User');
 
 // Load environment variables
 dotenv.config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-// User storage file path - using /tmp for Vercel
-const USERS_FILE = process.env.NODE_ENV === 'production' 
-  ? '/tmp/users.json'
-  : path.join(__dirname, 'data', 'users.json');
-
-// Initialize users array
-let users = [];
-
-// Load users from file if it exists
-try {
-  if (fs.existsSync(USERS_FILE)) {
-    users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-  } else {
-    // Create directory if it doesn't exist (only in development)
-    if (process.env.NODE_ENV !== 'production') {
-      const dir = path.dirname(USERS_FILE);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-    }
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users));
-  }
-} catch (error) {
-  console.error('Error reading users file:', error);
-  users = [];
-}
-
-// Save users to file
-const saveUsers = () => {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-  } catch (error) {
-    console.error('Error saving users:', error);
-  }
-};
-
-// Configure DeepSeek API client
-const deepseekApi = axios.create({
-  baseURL: 'https://api.deepseek.com/v1',
-  headers: {
-    'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-    'Content-Type': 'application/json'
-  }
-});
-
-// Configure multer for file uploads
-const upload = multer({
-  dest: 'uploads/',
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    // Allow PDF, JPEG, and PNG files
-    if (file.mimetype === 'application/pdf' || 
-        file.mimetype === 'image/jpeg' || 
-        file.mimetype === 'image/png') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF, JPEG, and PNG files are allowed'));
-    }
-  }
-});
 
 // Middleware
 app.use(cors());
@@ -103,7 +43,8 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Check if user already exists
-    if (users.find(user => user.email === email)) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -111,26 +52,19 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = {
-      id: users.length + 1,
+    const user = await User.create({
       name,
       email,
       phoneNumber,
-      password: hashedPassword,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(user);
-    saveUsers(); // Save to file
+      password: hashedPassword
+    });
 
     // Generate tokens
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
-    const refreshToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
 
-    // Return user data (excluding password)
-    const { password: _, ...userWithoutPassword } = user;
     res.status(201).json({
-      user: userWithoutPassword,
+      user,
       token,
       refreshToken
     });
@@ -145,7 +79,7 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Find user
-    const user = users.find(u => u.email === email);
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -157,13 +91,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Generate tokens
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
-    const refreshToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
 
-    // Return user data (excluding password)
-    const { password: _, ...userWithoutPassword } = user;
     res.json({
-      user: userWithoutPassword,
+      user,
       token,
       refreshToken
     });
