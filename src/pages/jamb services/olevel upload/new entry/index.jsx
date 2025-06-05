@@ -35,6 +35,7 @@ const OLevelEntry = () => {
     fullname: initialFullname || '',
     profileCode: '',
     jambRegNo: '',
+    registrationNumber: '',
     courses: Array.from({ length: 9 }, () => ({
       subject: '',
       grade: '',
@@ -90,11 +91,28 @@ const OLevelEntry = () => {
   const validateYear = (year) => year >= 1980 && year <= new Date().getFullYear();
   const validateExamNo = (examNo) => /^[A-Z0-9]{8,12}$/.test(examNo);
   const validateSubjects = (courses) => {
+    console.log('Validating courses:', courses); // Debug log
+
     const filledCourses = courses.filter(
-      (course) => course.subject && course.grade && course.regNo && course.examNo && course.year && course.examType
+      (course) => {
+        const isFilled = course.subject && 
+                        course.grade && 
+                        course.regNo && 
+                        course.examNo && 
+                        course.year && 
+                        course.examType;
+        
+        if (!isFilled) {
+          console.log('Unfilled course:', course); // Debug log for unfilled courses
+        }
+        return isFilled;
+      }
     );
+
+    console.log('Filled courses count:', filledCourses.length); // Debug log
+
     const uniqueSubjects = new Set(filledCourses.map((course) => course.subject));
-    return {
+    const validationResult = {
       isValid:
         filledCourses.length === 9 &&
         uniqueSubjects.size === filledCourses.length &&
@@ -107,6 +125,9 @@ const OLevelEntry = () => {
         filledCourses.some((course) => !validateExamNo(course.examNo)) ? 'Invalid examination number format.' : '',
       ].filter(Boolean),
     };
+
+    console.log('Validation result:', validationResult); // Debug log
+    return validationResult;
   };
 
   // Autosave to localStorage
@@ -172,9 +193,22 @@ const OLevelEntry = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const { isValid, errors } = validateSubjects(formData.courses);
+    console.log('Form data before validation:', formData);
+
+    // Update all courses with the registration number
+    const updatedCourses = formData.courses.map(course => ({
+      ...course,
+      regNo: formData.registrationNumber // Use the registration number from form data
+    }));
+
+    const { isValid, errors } = validateSubjects(updatedCourses);
     if (!formData.fullname.trim()) {
       toast.error('Please enter a full name.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.registrationNumber.trim()) {
+      toast.error('Please enter your registration number.');
       setIsSubmitting(false);
       return;
     }
@@ -184,51 +218,43 @@ const OLevelEntry = () => {
       return;
     }
     if (!isValid) {
+      console.log('Validation errors:', errors);
       errors.forEach((error) => toast.error(error));
-      setIsSubmitting(false);
-      return;
-    }
-    if (formData.jambRegNo && !validateJambRegNo(formData.jambRegNo)) {
-      toast.error('Invalid JAMB registration number format.');
       setIsSubmitting(false);
       return;
     }
 
     try {
       const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'courses') {
-          formDataToSend.append(key, JSON.stringify(value));
-        } else if (key === 'oLevelFile' || key === 'secondSittingFile') {
-          if (value) formDataToSend.append(key, value);
-        } else {
-          formDataToSend.append(key, value);
+      formDataToSend.append('fullname', formData.fullname);
+      formDataToSend.append('jambRegNo', formData.jambRegNo);
+      formDataToSend.append('profileCode', formData.profileCode);
+      formDataToSend.append('registrationNumber', formData.registrationNumber);
+      formDataToSend.append('courses', JSON.stringify(updatedCourses));
+      formDataToSend.append('oLevelFile', formData.oLevelFile);
+
+      const response = await axios.post(
+        'http://localhost:5000/api/olevel/upload',
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         }
-      });
+      );
 
-      // Replace with your actual API endpoint
-      await axios.post('https://api.example.com/jamb', formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      toast.success('O-Level entry submitted successfully!');
-      localStorage.removeItem('oLevelFormData');
-      setTimeout(() => {
-        navigate('/completed', {
+      if (response.data.success) {
+        toast.success('O-Level entry submitted successfully!');
+        navigate('/jamb-services/olevel-upload/completion', {
           state: {
-            updatedEntry: {
-              id,
-              type,
-              fullname: formData.fullname,
-              profileCode: formData.profileCode || `PROFESS-${Math.floor(Math.random() * 90000)}`,
-              status: 'Pending',
-            },
+            entryId: response.data.entryId,
+            profileCode: response.data.profileCode,
           },
         });
-      }, 2000);
+      }
     } catch (error) {
-      toast.error('Submission failed. Please try again.');
-      console.error('Submission error:', error);
+      console.error('Error submitting form:', error);
+      toast.error(error.response?.data?.message || 'Error submitting form. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -333,6 +359,24 @@ const OLevelEntry = () => {
                         : 'border-gray-200 placeholder-gray-400'
                     }`}
                     placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-dark-text-primary' : 'text-gray-700'
+                  }`}>
+                    Registration Number
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.registrationNumber}
+                    onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary' 
+                        : 'border-gray-200 placeholder-gray-400'
+                    }`}
+                    placeholder="Enter your registration number"
                   />
                 </div>
                 <div>

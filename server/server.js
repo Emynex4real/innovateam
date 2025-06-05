@@ -36,10 +36,13 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'text/plain') {
+    // Allow PDF, JPEG, and PNG files
+    if (file.mimetype === 'application/pdf' || 
+        file.mimetype === 'image/jpeg' || 
+        file.mimetype === 'image/png') {
       cb(null, true);
     } else {
-      cb(new Error('Only .txt files are allowed'));
+      cb(new Error('Only PDF, JPEG, and PNG files are allowed'));
     }
   }
 });
@@ -244,6 +247,67 @@ ${fileContent}`
     }
     res.status(error.response?.status || 500).json({
       error: error.response?.data?.error?.message || error.message || 'Error generating questions'
+    });
+  }
+});
+
+// O-Level upload endpoint
+app.post('/api/olevel/upload', upload.fields([
+  { name: 'oLevelFile', maxCount: 1 },
+  { name: 'secondSittingFile', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const { fullname, jambRegNo, profileCode, courses, additionalInfo } = req.body;
+    const files = req.files;
+
+    // Validate required fields
+    if (!fullname || !courses) {
+      return res.status(400).json({
+        success: false,
+        message: 'Full name and courses are required'
+      });
+    }
+
+    // Parse courses from JSON string
+    const parsedCourses = JSON.parse(courses);
+
+    // Validate courses data
+    if (!Array.isArray(parsedCourses) || parsedCourses.length !== 9) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid courses data'
+      });
+    }
+
+    // Create entry object
+    const entry = {
+      id: Date.now().toString(),
+      fullname,
+      jambRegNo: jambRegNo || null,
+      profileCode: profileCode || `PROFESS-${Math.floor(Math.random() * 90000)}`,
+      courses: parsedCourses,
+      additionalInfo: additionalInfo || '',
+      files: {
+        oLevelFile: files?.oLevelFile?.[0]?.filename || null,
+        secondSittingFile: files?.secondSittingFile?.[0]?.filename || null
+      },
+      status: 'Pending',
+      submissionDate: new Date().toISOString()
+    };
+
+    // In a real application, you would save this to a database
+    // For now, we'll just return success
+    res.json({
+      success: true,
+      message: 'O-Level entry submitted successfully',
+      entryId: entry.id,
+      profileCode: entry.profileCode
+    });
+  } catch (error) {
+    console.error('O-Level upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error processing O-Level entry'
     });
   }
 });
