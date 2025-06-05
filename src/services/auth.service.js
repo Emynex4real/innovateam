@@ -4,7 +4,9 @@ import { LOCAL_STORAGE_KEYS } from '../config/constants';
 class AuthService {
   constructor() {
     this.api = axios.create({
-      baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+      baseURL: process.env.NODE_ENV === 'production' 
+        ? 'https://personal-project-backend.onrender.com/api'
+        : 'http://localhost:5000/api',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -28,10 +30,15 @@ class AuthService {
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
+        // Handle network errors
+        if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+          return Promise.reject(error);
+        }
+
         const originalRequest = error.config;
 
         // If the error is due to an expired token
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
           try {
@@ -91,26 +98,15 @@ class AuthService {
 
       return { success: true, user };
     } catch (error) {
-      console.error('Registration error details:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          headers: error.config?.headers,
-        }
-      });
-      
-      // Handle connection refused error
+      // Handle network errors
       if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
         return {
           success: false,
           error: 'Unable to connect to the server. Please make sure the server is running.'
         };
       }
-      
-      // Handle other types of errors
+
+      // Handle other errors
       const errorMessage = error.response?.data?.message || 
                           error.message || 
                           'Registration failed. Please try again.';

@@ -30,10 +30,16 @@ export const AuthProvider = ({ children }) => {
       if (response.success) {
         return { success: true, message: SUCCESS_MESSAGES.REGISTER_SUCCESS };
       }
-      return { success: false, error: response.error || ERROR_MESSAGES.REGISTER_FAILED };
+      return { 
+        success: false, 
+        error: response.error || ERROR_MESSAGES.REGISTER_FAILED 
+      };
     } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: error.message || ERROR_MESSAGES.REGISTER_FAILED };
+      console.error('Registration error in AuthContext:', error);
+      return { 
+        success: false, 
+        error: error.message || ERROR_MESSAGES.REGISTER_FAILED 
+      };
     }
   };
 
