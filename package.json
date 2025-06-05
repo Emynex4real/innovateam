@@ -36,8 +36,8 @@
     "zustand": "^4.4.7"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
+    "start": "node deploy.js && craco start",
+    "build": "node deploy.js --deploy && craco build",
     "test": "craco test --coverage --watchAll=false",
     "test:watch": "craco test --coverage --watchAll",
     "eject": "react-scripts eject",
