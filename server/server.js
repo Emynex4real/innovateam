@@ -17,20 +17,26 @@ const port = process.env.PORT || 5000;
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// User storage file path
-const USERS_FILE = path.join(__dirname, 'data', 'users.json');
+// User storage file path - using /tmp for Vercel
+const USERS_FILE = process.env.NODE_ENV === 'production' 
+  ? '/tmp/users.json'
+  : path.join(__dirname, 'data', 'users.json');
 
-// Ensure data directory exists
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-  fs.mkdirSync(path.join(__dirname, 'data'));
-}
-
-// Initialize users array from file or create empty array
+// Initialize users array
 let users = [];
+
+// Load users from file if it exists
 try {
   if (fs.existsSync(USERS_FILE)) {
     users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
   } else {
+    // Create directory if it doesn't exist (only in development)
+    if (process.env.NODE_ENV !== 'production') {
+      const dir = path.dirname(USERS_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    }
     fs.writeFileSync(USERS_FILE, JSON.stringify(users));
   }
 } catch (error) {
@@ -346,6 +352,12 @@ if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
 }
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-}); 
+// For Vercel serverless deployment
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
+
+// Export the Express API
+module.exports = app; 
