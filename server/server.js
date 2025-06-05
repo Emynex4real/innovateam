@@ -3,8 +3,15 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-// const connectDB = require('./config/db');
-// const User = require('./models/User');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const compression = require('compression');
+const { errorHandler } = require('./middleware/errorHandler');
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
+const { connectDB } = require('./config/db');
+const { logger } = require('./utils/logger');
 
 // In-memory users array for testing
 const users = [];
@@ -12,26 +19,38 @@ const users = [];
 // Load environment variables
 dotenv.config();
 
-// Comment out MongoDB connection
-// connectDB();
+// Connect to database
+connectDB();
 
+// Initialize express app
 const app = express();
-const port = process.env.PORT || 5000;
+
+// Security middleware
+app.use(helmet());
+app.use(cors());
+
+// Request parsing
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Compression
+app.use(compression());
+
+// Logging
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later'
+});
+app.use('/api/', limiter);
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Rate limiting middleware
-const rateLimit = require('express-rate-limit');
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10 // 10 requests per minute
-});
-app.use(limiter);
 
 // Authentication endpoints
 app.post('/api/auth/register', async (req, res) => {
@@ -196,10 +215,28 @@ app.post('/api/auth/refresh-token', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
-// Export the Express API
+// Error handling
+app.use(errorHandler);
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  logger.info(`Server is running on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  logger.error('Unhandled Rejection:', err);
+  process.exit(1);
+});
+
 module.exports = app; 

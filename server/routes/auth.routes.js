@@ -1,0 +1,35 @@
+const express = require('express');
+const { body } = require('express-validator');
+const { validateRequest } = require('../middleware/validateRequest');
+const { register, login, logout, validateToken, refreshToken } = require('../controllers/auth.controller');
+const { authenticate } = require('../middleware/authenticate');
+
+const router = express.Router();
+
+// Validation middleware
+const registerValidation = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Please enter a valid email'),
+  body('phoneNumber').trim().notEmpty().withMessage('Phone number is required'),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number and one special character'),
+  validateRequest
+];
+
+const loginValidation = [
+  body('email').isEmail().withMessage('Please enter a valid email'),
+  body('password').notEmpty().withMessage('Password is required'),
+  validateRequest
+];
+
+// Routes
+router.post('/register', registerValidation, register);
+router.post('/login', loginValidation, login);
+router.post('/logout', authenticate, logout);
+router.get('/validate', authenticate, validateToken);
+router.post('/refresh-token', refreshToken);
+
+module.exports = router; 
