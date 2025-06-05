@@ -10,12 +10,13 @@ import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import Button from "../../components/ui/button";
 import Separator from "../../components/ui/separator";
 
-// Service images
-const waecResultChecker = '/images/services/waec-result-checker.jpg';
-const necoResultChecker = '/images/services/neco-result-checker.jpg';
-const nabtebResultChecker = '/images/services/nabteb-result-checker.jpg';
-const nbaisResultChecker = '/images/services/nbais-result-checker.jpg';
-const waecGce = '/images/services/waec-gce.jpg';
+// Import images directly
+import waecResultCheckerImg from '../../assets/images/services/waec-result-checker.jpg';
+import necoResultCheckerImg from '../../assets/images/services/neco-result-checker.jpg';
+import nabtebResultCheckerImg from '../../assets/images/services/nabteb-result-checker.jpg';
+import nbaisResultCheckerImg from '../../assets/images/services/nbais-result-checker.jpg';
+import waecGceImg from '../../assets/images/services/waec-gce.jpg';
+import placeholderImg from '../../assets/images/services/placeholder.svg';
 
 const Dashboard = () => {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
@@ -51,7 +52,7 @@ const Dashboard = () => {
     {
       title: 'WAEC Result Checker',
       price: '₦3,400.00',
-      image: waecResultChecker,
+      image: waecResultCheckerImg,
       link: '/dashboard/scratch-card/waec-checker',
       category: 'education',
       popularity: 'high',
@@ -60,7 +61,7 @@ const Dashboard = () => {
     {
       title: 'NECO Result Checker',
       price: '₦1,300.00',
-      image: necoResultChecker,
+      image: necoResultCheckerImg,
       link: '/dashboard/scratch-card/neco-checker',
       category: 'education',
       popularity: 'medium',
@@ -69,7 +70,7 @@ const Dashboard = () => {
     {
       title: 'NABTEB Result Checker',
       price: '₦900.00',
-      image: nabtebResultChecker,
+      image: nabtebResultCheckerImg,
       link: '/dashboard/scratch-card/nabteb-checker',
       category: 'education',
       popularity: 'low',
@@ -78,14 +79,14 @@ const Dashboard = () => {
     {
       title: 'NBAIS Result Checker',
       price: '₦1,100.00',
-      image: nbaisResultChecker,
+      image: nbaisResultCheckerImg,
       link: '/dashboard/scratch-card/nbais-checker',
       category: 'education',
     },
     {
       title: 'WAEC GCE',
       price: '₦28,000.00',
-      image: waecGce,
+      image: waecGceImg,
       link: '/dashboard/scratch-card/waec-gce',
       category: 'education',
     },
@@ -267,34 +268,38 @@ const Dashboard = () => {
         }`}>
           Available Services
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {services.map((service, index) => (
             <motion.div key={index} variants={cardVariants}>
-              <Card className={isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : ''}>
+              <Card className={`${isDarkMode ? 'bg-dark-surface-secondary border-dark-border' : ''} h-full`}>
                 <CardContent className="p-0">
                   <img
                     src={service.image}
                     alt={service.title}
-                    className="w-full h-48 object-cover rounded-t-lg"
+                    className="w-full h-32 object-cover rounded-t-lg"
+                    onError={(e) => {
+                      console.error(`Failed to load image: ${service.title}`);
+                      e.target.src = placeholderImg;
+                    }}
                   />
-                  <div className="p-6">
-                    <h3 className={`text-lg font-semibold mb-2 ${
+                  <div className="p-4">
+                    <h3 className={`text-base font-semibold mb-1 ${
                       isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
                     }`}>
                       {service.title}
                     </h3>
-                    <p className={`text-2xl font-bold mb-4 ${
+                    <p className={`text-lg font-bold mb-2 ${
                       isDarkMode ? 'text-dark-text-primary' : 'text-gray-900'
                     }`}>
                       {service.price}
                     </p>
                     {service.features && (
-                      <ul className={`mb-4 text-sm space-y-2 ${
+                      <ul className={`mb-3 text-xs space-y-1 ${
                         isDarkMode ? 'text-dark-text-secondary' : 'text-gray-600'
                       }`}>
                         {service.features.map((feature, idx) => (
                           <li key={idx} className="flex items-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
+                            <span className="w-1 h-1 rounded-full bg-green-500 mr-1.5"></span>
                             {feature}
                           </li>
                         ))}
@@ -303,14 +308,14 @@ const Dashboard = () => {
                     <div className="flex gap-2">
                       <Button
                         variant="success"
-                        className="flex-1"
+                        className="flex-1 text-sm py-1"
                         onClick={() => handlePurchaseService(service)}
                       >
                         Purchase
                       </Button>
                       <Button
                         variant="outline"
-                        className="flex-1"
+                        className="flex-1 text-sm py-1"
                         asChild
                       >
                         <Link to={service.link}>Learn More</Link>

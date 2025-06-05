@@ -2,6 +2,7 @@
   "name": "personal-project",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://emynex4real.github.io/innovateam",
   "dependencies": {
     "@craco/craco": "^7.1.0",
     "@headlessui/react": "^1.7.17",
@@ -42,7 +43,9 @@
     "eject": "react-scripts eject",
     "lint": "eslint src/**/*.{js,jsx}",
     "lint:fix": "eslint src/**/*.{js,jsx} --fix",
-    "format": "prettier --write 'src/**/*.{js,jsx,css,md,json}' --config ./.prettierrc"
+    "format": "prettier --write 'src/**/*.{js,jsx,css,md,json}' --config ./.prettierrc",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [
