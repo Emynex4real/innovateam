@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/innovateam/static/css/main.76711882.css",
-    "main.js": "/innovateam/static/js/main.a4c3cf94.js",
+    "main.css": "/innovateam/static/css/main.e970b69f.css",
+    "main.js": "/innovateam/static/js/main.4103f4a1.js",
     "static/js/629.d79e64c0.chunk.js": "/innovateam/static/js/629.d79e64c0.chunk.js",
     "static/js/466.a1547de3.chunk.js": "/innovateam/static/js/466.a1547de3.chunk.js",
     "static/js/171.f67ee6f0.chunk.js": "/innovateam/static/js/171.f67ee6f0.chunk.js",
     "static/js/419.c6ff7a32.chunk.js": "/innovateam/static/js/419.c6ff7a32.chunk.js",
     "static/js/343.263ab513.chunk.js": "/innovateam/static/js/343.263ab513.chunk.js",
     "static/js/875.82910d32.chunk.js": "/innovateam/static/js/875.82910d32.chunk.js",
-    "static/js/960.e4d02ab9.chunk.js": "/innovateam/static/js/960.e4d02ab9.chunk.js",
+    "static/js/425.3732e679.chunk.js": "/innovateam/static/js/425.3732e679.chunk.js",
     "static/js/451.b5d28272.chunk.js": "/innovateam/static/js/451.b5d28272.chunk.js",
     "static/js/203.cca5248d.chunk.js": "/innovateam/static/js/203.cca5248d.chunk.js",
     "static/js/145.e61c5638.chunk.js": "/innovateam/static/js/145.e61c5638.chunk.js",
@@ -49,16 +49,18 @@
     "static/media/nabteb-result-checker.jpg": "/innovateam/static/media/nabteb-result-checker.4f91e8c5be917b3ea7e0.jpg",
     "static/media/waec-gce.jpg": "/innovateam/static/media/waec-gce.16e3a408143590025f27.jpg",
     "static/media/neco-result-checker.jpg": "/innovateam/static/media/neco-result-checker.9d32a9d3cee83af196c4.jpg",
+    "static/media/nbais-result-checker.jpg": "/innovateam/static/media/nbais-result-checker.22a3d1d6c519974a60f8.jpg",
     "index.html": "/innovateam/index.html",
-    "main.76711882.css.map": "/innovateam/static/css/main.76711882.css.map",
-    "main.a4c3cf94.js.map": "/innovateam/static/js/main.a4c3cf94.js.map",
+    "static/media/placeholder.svg": "/innovateam/static/media/placeholder.3c1b2e284f573618393492aad963e3d5.svg",
+    "main.e970b69f.css.map": "/innovateam/static/css/main.e970b69f.css.map",
+    "main.4103f4a1.js.map": "/innovateam/static/js/main.4103f4a1.js.map",
     "629.d79e64c0.chunk.js.map": "/innovateam/static/js/629.d79e64c0.chunk.js.map",
     "466.a1547de3.chunk.js.map": "/innovateam/static/js/466.a1547de3.chunk.js.map",
     "171.f67ee6f0.chunk.js.map": "/innovateam/static/js/171.f67ee6f0.chunk.js.map",
     "419.c6ff7a32.chunk.js.map": "/innovateam/static/js/419.c6ff7a32.chunk.js.map",
     "343.263ab513.chunk.js.map": "/innovateam/static/js/343.263ab513.chunk.js.map",
     "875.82910d32.chunk.js.map": "/innovateam/static/js/875.82910d32.chunk.js.map",
-    "960.e4d02ab9.chunk.js.map": "/innovateam/static/js/960.e4d02ab9.chunk.js.map",
+    "425.3732e679.chunk.js.map": "/innovateam/static/js/425.3732e679.chunk.js.map",
     "451.b5d28272.chunk.js.map": "/innovateam/static/js/451.b5d28272.chunk.js.map",
     "203.cca5248d.chunk.js.map": "/innovateam/static/js/203.cca5248d.chunk.js.map",
     "145.e61c5638.chunk.js.map": "/innovateam/static/js/145.e61c5638.chunk.js.map",
@@ -89,7 +91,7 @@
     "135.b388ef2f.chunk.js.map": "/innovateam/static/js/135.b388ef2f.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.76711882.css",
-    "static/js/main.a4c3cf94.js"
+    "static/css/main.e970b69f.css",
+    "static/js/main.4103f4a1.js"
   ]
 }
