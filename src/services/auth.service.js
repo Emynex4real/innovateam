@@ -1,118 +1,155 @@
-import api from './api';
+import axios from 'axios';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 
 class AuthService {
+  constructor() {
+    this.api = axios.create({
+      baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Add a request interceptor
+    this.api.interceptors.request.use(
+      (config) => {
+        const token = this.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Add a response interceptor
+    this.api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        // If the error is due to an expired token
+        if (error.response.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+
+          try {
+            const refreshToken = this.getRefreshToken();
+            const response = await this.api.post('/auth/refresh-token', {
+              refreshToken,
+            });
+
+            const { token } = response.data;
+            this.setToken(token);
+
+            // Retry the original request
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return this.api(originalRequest);
+          } catch (refreshError) {
+            // If refresh token is invalid, logout the user
+            this.logout();
+            return Promise.reject(refreshError);
+          }
+        }
+
+        return Promise.reject(error);
+      }
+    );
+  }
+
   async login(credentials) {
     try {
-      // Get stored user data
-      const storedUserStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-      if (!storedUserStr) {
-        throw new Error('Invalid credentials');
-      }
+      const response = await this.api.post('/auth/login', credentials);
+      const { token, refreshToken, user } = response.data;
 
-      const storedUser = JSON.parse(storedUserStr);
-      if (storedUser.email !== credentials.email) {
-        throw new Error('Invalid credentials');
-      }
+      this.setToken(token);
+      this.setRefreshToken(refreshToken);
+      this.setUser(user);
 
-      // Create a new token on login
-      const token = 'mock_token_' + Date.now();
-      localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
-      
-      return { success: true, user: storedUser };
+      return { success: true, user };
     } catch (error) {
       console.error('Login error:', error);
-      return { 
-        success: false, 
-        error: error.message 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Login failed',
       };
     }
   }
 
   async register(userData) {
     try {
-      // Create a mock token and store user data
-      const token = 'mock_token_' + Date.now();
-      const user = {
-        id: Date.now(),
-        name: userData.name,
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Store token and user data in localStorage
-      localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
-      localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
-      
+      const response = await this.api.post('/auth/register', userData);
+      const { token, refreshToken, user } = response.data;
+
+      this.setToken(token);
+      this.setRefreshToken(refreshToken);
+      this.setUser(user);
+
       return { success: true, user };
     } catch (error) {
       console.error('Registration error:', error);
-      return { 
-        success: false, 
-        error: error.message 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Registration failed',
       };
     }
   }
 
   async logout() {
     try {
-      // Remove auth data from localStorage
-      localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
-      return { success: true };
+      const refreshToken = this.getRefreshToken();
+      await this.api.post('/auth/logout', { refreshToken });
     } catch (error) {
       console.error('Logout error:', error);
-      return { 
-        success: false, 
-        error: error.message 
-      };
+    } finally {
+      this.clearStorage();
     }
   }
 
-  async forgotPassword(email) {
+  async validateToken() {
     try {
-      await api.post('/auth/forgot-password', { email });
-      return { success: true };
+      const response = await this.api.get('/auth/validate');
+      return response.data.valid;
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || error.message 
-      };
+      return false;
     }
   }
 
-  async resetPassword(token, newPassword) {
-    try {
-      await api.post('/auth/reset-password', { token, newPassword });
-      return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || error.message 
-      };
-    }
+  // Token management
+  getToken() {
+    return localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
   }
 
-  async verifyEmail(token) {
-    try {
-      await api.post('/auth/verify-email', { token });
-      return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || error.message 
-      };
-    }
+  setToken(token) {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
   }
 
-  getCurrentUser() {
+  getRefreshToken() {
+    return localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
+  }
+
+  setRefreshToken(token) {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, token);
+  }
+
+  getUser() {
     const userStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
     return userStr ? JSON.parse(userStr) : null;
   }
 
+  setUser(user) {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
+  }
+
+  clearStorage() {
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+  }
+
   isAuthenticated() {
-    return !!localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    return !!this.getToken();
   }
 }
 

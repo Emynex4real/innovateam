@@ -4,29 +4,34 @@ const DarkModeContext = createContext();
 
 export const DarkModeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check local storage first
+    // Check if running in a browser environment
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    // Check for saved preference
     const savedMode = localStorage.getItem('darkMode');
     if (savedMode !== null) {
-      return JSON.parse(savedMode);
+      return savedMode === 'true';
     }
-    // If no saved preference, check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    // If no saved preference and running in a browser, check system preference
+    if (window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    return false;
   });
 
   useEffect(() => {
-    // Update local storage when dark mode changes
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-    
-    // Update document class
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', isDarkMode);
+      document.documentElement.classList.toggle('dark', isDarkMode);
     }
   }, [isDarkMode]);
 
   const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode(!isDarkMode);
   };
 
   return (
