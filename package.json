@@ -35,16 +35,13 @@
     "zustand": "^4.4.7"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
-    "test": "craco test --coverage --watchAll=false",
-    "test:watch": "craco test --coverage --watchAll",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/**/*.{js,jsx}",
     "lint:fix": "eslint src/**/*.{js,jsx} --fix",
-    "format": "prettier --write 'src/**/*.{js,jsx,css,md,json}' --config ./.prettierrc",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "format": "prettier --write 'src/**/*.{js,jsx,css,md,json}' --config ./.prettierrc"
   },
   "eslintConfig": {
     "extends": [
