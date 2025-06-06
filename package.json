@@ -2,6 +2,7 @@
   "name": "innovateam",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://emynex4real.github.io/innovateam",
   "dependencies": {
     "@craco/craco": "^7.1.0",
     "@headlessui/react": "^1.7.17",
@@ -35,8 +36,10 @@
     "zustand": "^4.4.7"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
-    "build": "CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "build": "set \"CI=false\" && set \"DISABLE_ESLINT_PLUGIN=true\" && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/**/*.{js,jsx}",
