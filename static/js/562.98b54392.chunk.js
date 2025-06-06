@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkinnovateam=self.webpackChunkinnovateam||[]).push([[562],{9562:(e,s,a)=>{a.r(s),a.d(s,{default:()=>n});var t=a(6723);const n=function(){return(0,t.jsxs)("div",{className:"min-h-screen bg-gray-100 p-6",children:[(0,t.jsx)("h1",{className:"text-3xl font-bold text-gray-900",children:"WAEC GCE"}),(0,t.jsx)("p",{className:"mt-4 text-gray-600",children:"This is a placeholder for the WAEC GCE service."})]})}}}]);
+//# sourceMappingURL=562.98b54392.chunk.js.map

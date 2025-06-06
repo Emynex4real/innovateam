@@ -2,7 +2,7 @@
   "name": "innovateam",
   "version": "0.1.0",
   "private": true,
-  "homepage": ".",
+  "homepage": "https://emynex4real.github.io/innovateam",
   "dependencies": {
     "@craco/craco": "^7.1.0",
     "@headlessui/react": "^1.7.17",
