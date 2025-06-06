@@ -4,10 +4,13 @@
     <meta charset="utf-8">
     <title>Redirecting...</title>
     <script>
-      window.location.href = "https://emynex4real.github.io/innovateam/";
+      // Only redirect if we're at the root URL
+      if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+        window.location.href = "/innovateam/";
+      }
     </script>
   </head>
   <body>
-    <p>If you are not redirected automatically, <a href="https://emynex4real.github.io/innovateam/">click here</a>.</p>
+    <p>If you are not redirected automatically, <a href="/innovateam/">click here</a>.</p>
   </body>
 </html> 
