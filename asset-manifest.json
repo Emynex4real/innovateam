@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/innovateam/static/css/main.09c2d76f.css",
-    "main.js": "/innovateam/static/js/main.a4102fa7.js",
+    "main.css": "/innovateam/static/css/main.719d8378.css",
+    "main.js": "/innovateam/static/js/main.e1f724c2.js",
     "index.html": "/innovateam/index.html",
-    "main.09c2d76f.css.map": "/innovateam/static/css/main.09c2d76f.css.map",
-    "main.a4102fa7.js.map": "/innovateam/static/js/main.a4102fa7.js.map"
+    "main.719d8378.css.map": "/innovateam/static/css/main.719d8378.css.map",
+    "main.e1f724c2.js.map": "/innovateam/static/js/main.e1f724c2.js.map"
   },
   "entrypoints": [
-    "static/css/main.09c2d76f.css",
-    "static/js/main.a4102fa7.js"
+    "static/css/main.719d8378.css",
+    "static/js/main.e1f724c2.js"
   ]
 }
