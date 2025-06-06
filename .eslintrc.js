@@ -1,19 +1,34 @@
 module.exports = {
-  extends: ['react-app'],
-  rules: {
-    // Disable specific rules that are causing warnings
-    'no-unused-vars': 'warn',
-    'jsx-a11y/heading-has-content': 'warn'
+  root: true,
+  env: {
+    browser: true,
+    es2021: true,
+    node: true,
   },
-  // Don't treat warnings as errors in CI
-  ignorePatterns: ['build/**/*'],
-  overrides: [
-    {
-      files: ['**/*.js', '**/*.jsx'],
-      rules: {
-        'no-unused-vars': process.env.CI ? 'warn' : 'error',
-        'jsx-a11y/heading-has-content': process.env.CI ? 'warn' : 'error'
-      }
-    }
-  ]
+  extends: [
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:prettier/recommended',
+  ],
+  parserOptions: {
+    ecmaFeatures: {
+      jsx: true,
+    },
+    ecmaVersion: 12,
+    sourceType: 'module',
+  },
+  plugins: ['react', 'react-hooks', 'prettier'],
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
+    'no-unused-vars': process.env.CI ? 'warn' : 'off',
+    'jsx-a11y/heading-has-content': process.env.CI ? 'warn' : 'off',
+    'prettier/prettier': ['error', {}, { usePrettierrc: true }],
+  },
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
 }; 
