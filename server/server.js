@@ -53,10 +53,15 @@ if (process.env.NODE_ENV === 'development') {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later'
+  max: 1000, // Increased from 100 to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false
 });
-app.use('/api/', limiter);
+
+// Apply rate limiting only to specific routes
+app.use('/api/auth/', limiter);  // Only apply to auth routes
+app.use('/api/', limiter);       // Apply to all other API routes
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -247,13 +252,18 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// Add root route
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to the API' });
+});
+
 // Error handling
 app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`, {});
 });
 
 // Handle unhandled promise rejections
