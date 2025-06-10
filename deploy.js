@@ -7,7 +7,7 @@ const packageJson = require('./package.json');
 // Function to update homepage based on environment
 function updateHomepage(isProduction) {
   packageJson.homepage = isProduction 
-    ? '/innovateam'
+    ? 'https://emynex4real.github.io/innovateam'
     : '.';
 
   // Write back to package.json
