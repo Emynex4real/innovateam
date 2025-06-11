@@ -27,107 +27,107 @@ const CourseAdvisor = lazy(() => import("../pages/dashboard/course-advisor"));
 const privateRoutes = [
   { 
     path: "/", 
-    element: React.createElement(Dashboard),
+    element: <Dashboard />,
     title: "Dashboard" 
   },
   { 
     path: "/dashboard", 
-    element: React.createElement(Dashboard),
+    element: <Dashboard />,
     title: "Dashboard" 
   },
   { 
     path: "/profile", 
-    element: React.createElement(Profiles),
+    element: <Profiles />,
     title: "Profile" 
   },
   { 
     path: "/wallet", 
-    element: React.createElement(Wallet),
+    element: <Wallet />,
     title: "Wallet" 
   },
   { 
     path: "/buy-data", 
-    element: React.createElement(DataSubscription),
+    element: <DataSubscription />,
     title: "Data Subscription" 
   },
   { 
     path: "/scratch-card/waec-checker", 
-    element: React.createElement(WaecResultChecker),
+    element: <WaecResultChecker />,
     title: "WAEC Result Checker" 
   },
   { 
     path: "/scratch-card/neco-checker", 
-    element: React.createElement(NecoResultChecker),
+    element: <NecoResultChecker />,
     title: "NECO Result Checker" 
   },
   { 
     path: "/scratch-card/nbais-checker", 
-    element: React.createElement(NbaisResultChecker),
+    element: <NbaisResultChecker />,
     title: "NBAIS Result Checker" 
   },
   { 
     path: "/scratch-card/nabteb-checker", 
-    element: React.createElement(NabtebResultChecker),
+    element: <NabtebResultChecker />,
     title: "NABTEB Result Checker" 
   },
   { 
     path: "/scratch-card/waec-gce", 
-    element: React.createElement(WaecGce),
+    element: <WaecGce />,
     title: "WAEC GCE" 
   },
   { 
     path: "/buy-airtime", 
-    element: React.createElement(AirtimeSubscription),
+    element: <AirtimeSubscription />,
     title: "Airtime Subscription" 
   },
   { 
     path: "/buy-admission-letter", 
-    element: React.createElement(AdmissionLetter),
+    element: <AdmissionLetter />,
     title: "Admission Letter" 
   },
   { 
     path: "/buy-olevel-upload", 
-    element: React.createElement(OLevelUpload),
+    element: <OLevelUpload />,
     title: "O-Level Upload" 
   },
   { 
     path: "/buy-pin-vending", 
-    element: React.createElement(JambPinVending),
+    element: <JambPinVending />,
     title: "JAMB Pin Vending" 
   },
   { 
     path: "/buy-original-result", 
-    element: React.createElement(OriginalResult),
+    element: <OriginalResult />,
     title: "Original Result" 
   },
   { 
     path: "/reprinting-jamb-caps", 
-    element: React.createElement(CapsPrinting),
+    element: <CapsPrinting />,
     title: "CAPS Printing" 
   },
   { 
     path: "/olevel-entry", 
-    element: React.createElement(OLevelEntry),
+    element: <OLevelEntry />,
     title: "O-Level Entry" 
   },
   { 
     path: "/transactions", 
-    element: React.createElement(Transactions),
+    element: <Transactions />,
     title: "Transactions" 
   },
   { 
     path: "/support", 
-    element: React.createElement(Support),
+    element: <Support />,
     title: "Support" 
   },
   { 
     path: "/ai-examiner", 
-    element: React.createElement(AiExaminer),
+    element: <AiExaminer />,
     title: "AI Examiner" 
   },
   { 
     path: "/course-advisor", 
-    element: React.createElement(CourseAdvisor),
+    element: <CourseAdvisor />,
     title: "Course Advisor AI" 
   },
 ];

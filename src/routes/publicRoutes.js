@@ -13,32 +13,32 @@ const NotFound = lazy(() => import("../pages/NotFound"));
 const publicRoutes = [
   { 
     path: "/", 
-    element: React.createElement(Home),
+    element: <Home />,
     title: "Home" 
   },
   { 
     path: "/about", 
-    element: React.createElement(About),
+    element: <About />,
     title: "About" 
   },
   { 
     path: "/blogs", 
-    element: React.createElement(Blogs),
+    element: <Blogs />,
     title: "Blogs" 
   },
   { 
     path: "/login", 
-    element: React.createElement(Login),
+    element: <Login />,
     title: "Login" 
   },
   { 
     path: "/register", 
-    element: React.createElement(Register),
+    element: <Register />,
     title: "Register" 
   },
   { 
     path: "*", 
-    element: React.createElement(NotFound),
+    element: <NotFound />,
     title: "Not Found" 
   },
 ];
