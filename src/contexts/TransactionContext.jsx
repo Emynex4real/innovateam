@@ -5,8 +5,14 @@ import { v4 as uuidv4 } from 'uuid';
 const TransactionContext = createContext();
 
 export const TransactionProvider = ({ children }) => {
-  const [transactions, setTransactions] = useState([]);
-  const [walletBalance, setWalletBalance] = useState(0);
+  const [transactions, setTransactions] = useState(() => {
+    const savedTransactions = localStorage.getItem('transactions');
+    return savedTransactions ? JSON.parse(savedTransactions) : [];
+  });
+  const [walletBalance, setWalletBalance] = useState(() => {
+    const savedBalance = localStorage.getItem('walletBalance');
+    return savedBalance ? parseFloat(savedBalance) : 0;
+  });
 
   const fundWallet = (amount, paymentMethod) => {
     const charge = 50.0;
@@ -32,8 +38,13 @@ export const TransactionProvider = ({ children }) => {
       status: 'Successful',
     };
 
-    setTransactions((prev) => [depositTransaction, chargeTransaction, ...prev]);
-    setWalletBalance((prev) => prev + amount);
+    const newTransactions = [depositTransaction, chargeTransaction, ...transactions];
+    setTransactions(newTransactions);
+    localStorage.setItem('transactions', JSON.stringify(newTransactions));
+
+    const newBalance = walletBalance + amount;
+    setWalletBalance(newBalance);
+    localStorage.setItem('walletBalance', newBalance.toString());
   };
 
   const addTransaction = (transaction) => {
@@ -49,12 +60,18 @@ export const TransactionProvider = ({ children }) => {
       paymentMethod: transaction.paymentMethod,
     };
 
-    setTransactions((prev) => [newTransaction, ...prev]);
+    const newTransactions = [newTransaction, ...transactions];
+    setTransactions(newTransactions);
+    localStorage.setItem('transactions', JSON.stringify(newTransactions));
+
+    let newBalance = walletBalance;
     if (transaction.type === 'credit') {
-      setWalletBalance((prev) => prev + transaction.amount);
+      newBalance += transaction.amount;
     } else if (transaction.type === 'debit') {
-      setWalletBalance((prev) => prev - transaction.amount);
+      newBalance -= transaction.amount;
     }
+    setWalletBalance(newBalance);
+    localStorage.setItem('walletBalance', newBalance.toString());
   };
 
   const getRecentTransactions = (count) => {

@@ -236,8 +236,8 @@ const Dashboard = () => {
                             isDarkMode ? 'text-dark-text-tertiary' : 'text-gray-400'
                           }`}>
                             {transaction.date.split('T')[0]} •{' '}
-                            {transaction.type.replace('_', ' ').charAt(0).toUpperCase() +
-                              transaction.type.replace('_', ' ').slice(1)}
+                            {(transaction.type || 'unknown').replace('_', ' ').charAt(0).toUpperCase() +
+                              (transaction.type || 'unknown').replace('_', ' ').slice(1)}
                           </span>
                         </div>
                         <span
@@ -245,7 +245,7 @@ const Dashboard = () => {
                             transaction.type === 'credit' ? 'text-green-500' : 'text-red-500'
                           }`}
                         >
-                          {transaction.type === 'credit' ? '+' : '-'} ₦{transaction.amount.toFixed(2)}
+                          {transaction.type === 'credit' ? '+' : '-'} ₦{Number(transaction.amount || 0).toFixed(2)}
                         </span>
                       </motion.li>
                     )
