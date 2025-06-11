@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'react-hot-toast';
 import { debounce } from 'lodash';
 import { useDarkMode } from '../../contexts/DarkModeContext';
-import Card, { CardHeader, CardTitle, CardContent, CardFooter } from "../../components/ui/card";
+import { cn } from '../../lib/utils';
+import Card from "../../components/ui/card";
+import { CardHeader, CardTitle, CardContent, CardFooter } from "../../components/ui/card";
 import Button from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import Label from "../../components/ui/label";
@@ -347,7 +349,7 @@ const Profile = memo(() => {
                     value={formData.name}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                    className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${!isEditing ? 'cursor-not-allowed opacity-75' : ''}`}
                   />
                 </div>
 
@@ -360,7 +362,7 @@ const Profile = memo(() => {
                     value={formData.email}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                    className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${!isEditing ? 'cursor-not-allowed opacity-75' : ''}`}
                   />
                 </div>
 
@@ -373,7 +375,7 @@ const Profile = memo(() => {
                     value={formData.phone}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                    className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${!isEditing ? 'cursor-not-allowed opacity-75' : ''}`}
                   />
                 </div>
 
@@ -386,7 +388,7 @@ const Profile = memo(() => {
                     onChange={handleChange}
                     disabled={!isEditing}
                     rows={3}
-                    className={!isEditing ? 'cursor-not-allowed opacity-75' : ''}
+                    className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${!isEditing ? 'cursor-not-allowed opacity-75' : ''}`}
                   />
                 </div>
 
@@ -453,6 +455,7 @@ const Profile = memo(() => {
                     name="currentPassword"
                     value={formData.currentPassword}
                     onChange={handleChange}
+                    className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500`}
                   />
                   <Button
                     type="button"
@@ -475,6 +478,7 @@ const Profile = memo(() => {
                     name="newPassword"
                     value={formData.newPassword}
                     onChange={handleChange}
+                    className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500`}
                   />
                   <div className="mt-2 flex gap-1">
                     {[...Array(4)].map((_, i) => (
@@ -501,6 +505,7 @@ const Profile = memo(() => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500`}
                 />
               </div>
             </CardContent>
@@ -528,5 +533,7 @@ const Profile = memo(() => {
     </div>
   );
 });
+
+Profile.displayName = 'Profile';
 
 export default Profile; 

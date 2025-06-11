@@ -3,7 +3,7 @@ import React, { lazy } from "react";
 
 // Lazy load components
 const Dashboard = lazy(() => import("../pages/dashboard"));
-const Profiles = lazy(() => import("../pages/profile"));
+const Profile = lazy(() => import("../pages/profile"));
 const Wallet = lazy(() => import("../pages/wallet"));
 const WaecResultChecker = lazy(() => import("../pages/result checker/waec result checker"));
 const NecoResultChecker = lazy(() => import("../pages/result checker/neco result checker"));
@@ -37,7 +37,7 @@ const privateRoutes = [
   },
   { 
     path: "/profile", 
-    element: <Profiles />,
+    element: <Profile />,
     title: "Profile" 
   },
   { 

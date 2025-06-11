@@ -209,7 +209,7 @@ const Register = () => {
                     placeholder="John Doe"
                     value={formData.name}
                     onChange={handleChange}
-                    className={`pl-10 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    className={`pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                 </div>
@@ -229,7 +229,7 @@ const Register = () => {
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`pl-10 ${errors.email ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    className={`pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${errors.email ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                 </div>
@@ -249,7 +249,7 @@ const Register = () => {
                     placeholder="08012345678"
                     value={formData.phoneNumber}
                     onChange={handleChange}
-                    className={`pl-10 ${errors.phoneNumber ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    className={`pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${errors.phoneNumber ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                 </div>
@@ -268,7 +268,7 @@ const Register = () => {
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleChange}
-                    className={`pl-10 pr-10 ${errors.password ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    className={`pl-10 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${errors.password ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                   <button
@@ -311,7 +311,7 @@ const Register = () => {
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    className={`pl-10 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 ${errors.confirmPassword ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     disabled={isLoading}
                   />
                   <button
