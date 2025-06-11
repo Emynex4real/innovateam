@@ -207,7 +207,7 @@ const Transactions = () => {
                           ? 'text-green-500' 
                           : isDarkMode ? 'text-red-400' : 'text-red-500'
                       }`}>
-                        {transaction.type === 'credit' ? '+' : '-'} ₦{transaction.amount.toFixed(2)}
+                        {transaction.type === 'credit' ? '+' : '-'} ₦{Number(transaction.amount).toFixed(2)}
                       </p>
                       <p className={`text-xs mt-1 ${
                         transaction.status === 'Successful'

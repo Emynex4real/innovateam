@@ -52,7 +52,7 @@ export const TransactionProvider = ({ children }) => {
       id: uuidv4(),
       label: transaction.label || 'Transaction',
       description: transaction.description || '',
-      amount: transaction.amount,
+      amount: Number(transaction.amount),
       type: transaction.type || 'debit',
       category: transaction.category || 'general',
       date: new Date().toISOString(),
