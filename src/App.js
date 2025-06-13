@@ -10,6 +10,12 @@ import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TransactionProvider } from "./contexts/TransactionContext";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
+import AdminLayout from "./components/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminTransactions from "./pages/AdminTransactions";
+import AdminServices from "./pages/AdminServices";
+import { AdminProvider } from "./contexts/AdminContext";
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null, errorInfo: null };
@@ -93,6 +99,24 @@ function App() {
                           ))}
                         </Routes>
                       </PrivateLayout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/admin/*"
+                  element={
+                    <PrivateRoute>
+                      <AdminProvider>
+                        <AdminLayout>
+                          <Routes>
+                            <Route index element={<AdminDashboard />} />
+                            <Route path="dashboard" element={<AdminDashboard />} />
+                            <Route path="users" element={<AdminUsers />} />
+                            <Route path="transactions" element={<AdminTransactions />} />
+                            <Route path="services" element={<AdminServices />} />
+                          </Routes>
+                        </AdminLayout>
+                      </AdminProvider>
                     </PrivateRoute>
                   }
                 />

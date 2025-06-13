@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { API_URL } from '../config/constants';
+import { API_BASE_URL } from '../config/constants';
 
 class AdminService {
   constructor() {
     this.api = axios.create({
-      baseURL: `${API_URL}/admin`,
+      baseURL: `${API_BASE_URL}/admin`,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -27,12 +27,22 @@ class AdminService {
   }
 
   // Users
-  async getUsers() {
+  async getUsers(params = {}) {
     try {
-      const response = await this.api.get('/users');
+      const response = await this.api.get('/users', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching users:', error);
+      throw error;
+    }
+  }
+
+  async getUser(id) {
+    try {
+      const response = await this.api.get(`/users/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user:', error);
       throw error;
     }
   }
@@ -49,7 +59,7 @@ class AdminService {
 
   async updateUser(id, userData) {
     try {
-      const response = await this.api.patch(`/users/${id}`, userData);
+      const response = await this.api.put(`/users/${id}`, userData);
       return response.data;
     } catch (error) {
       console.error('Error updating user:', error);
@@ -68,9 +78,9 @@ class AdminService {
   }
 
   // Transactions
-  async getTransactions() {
+  async getTransactions(params = {}) {
     try {
-      const response = await this.api.get('/transactions');
+      const response = await this.api.get('/transactions', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -88,23 +98,43 @@ class AdminService {
     }
   }
 
-  async cancelTransaction(id) {
+  async updateTransaction(id, data) {
     try {
-      const response = await this.api.patch(`/transactions/${id}/cancel`);
+      const response = await this.api.put(`/transactions/${id}`, data);
       return response.data;
     } catch (error) {
-      console.error('Error canceling transaction:', error);
+      console.error('Error updating transaction:', error);
+      throw error;
+    }
+  }
+
+  async deleteTransaction(id) {
+    try {
+      const response = await this.api.delete(`/transactions/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
       throw error;
     }
   }
 
   // Services
-  async getServices() {
+  async getServices(params = {}) {
     try {
-      const response = await this.api.get('/services');
+      const response = await this.api.get('/services', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching services:', error);
+      throw error;
+    }
+  }
+
+  async getService(id) {
+    try {
+      const response = await this.api.get(`/services/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching service:', error);
       throw error;
     }
   }
@@ -121,7 +151,7 @@ class AdminService {
 
   async updateService(id, serviceData) {
     try {
-      const response = await this.api.patch(`/services/${id}`, serviceData);
+      const response = await this.api.put(`/services/${id}`, serviceData);
       return response.data;
     } catch (error) {
       console.error('Error updating service:', error);

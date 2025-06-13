@@ -24,12 +24,14 @@ export const AuthProvider = ({ children }) => {
           // Validate token with backend
           const isValid = await authService.validateToken();
           if (isValid && isMounted) {
+            // Ensure we're using the stored user data which includes isAdmin
             setUser(storedUser);
             setIsAuthenticated(true);
           } else {
             // If token is invalid, try to refresh it
             const refreshResult = await authService.refreshToken();
             if (refreshResult.success && isMounted) {
+              // Ensure we're using the refreshed user data which includes isAdmin
               setUser(refreshResult.user);
               setIsAuthenticated(true);
             } else if (isMounted) {
@@ -59,8 +61,18 @@ export const AuthProvider = ({ children }) => {
 
     checkAuth();
 
+    // Add event listener for storage changes
+    const handleStorageChange = (e) => {
+      if (e.key === 'token' || e.key === 'user') {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -68,6 +80,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.login(credentials);
       if (response.success) {
+        // Ensure we're setting the complete user object including isAdmin
         setUser(response.user);
         setIsAuthenticated(true);
         if (rememberMe) {
@@ -132,6 +145,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.updateProfile(userData);
       if (response.success) {
+        // Ensure we're updating the complete user object including isAdmin
         setUser(response.user);
         return { success: true };
       }

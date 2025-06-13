@@ -59,78 +59,7 @@ const AdminRoute = ({ children }) => {
 };
 
 const App = () => {
-  return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <DarkModeProvider>
-          <Routes>
-            {publicRoutes.map(({ path, element, title }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  <PublicRoute>
-                    <PublicLayout>
-                      <Suspense fallback={<Loading />}>
-                        {element}
-                      </Suspense>
-                    </PublicLayout>
-                  </PublicRoute>
-                }
-              />
-            ))}
-            {privateRoutes.map(({ path, element, title }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  <PrivateRoute>
-                    <AuthenticatedLayout>
-                      <Suspense fallback={<Loading />}>
-                        {element}
-                      </Suspense>
-                    </AuthenticatedLayout>
-                  </PrivateRoute>
-                }
-              />
-            ))}
-            {/* Nested Admin routes */}
-            <Route
-              path="/admin/*"
-              element={
-                <AdminProvider>
-                  <AdminRoute>
-                    <AdminLayout />
-                  </AdminRoute>
-                </AdminProvider>
-              }
-            >
-              <Route index element={<AdminDashboard />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="transactions" element={<AdminTransactions />} />
-              <Route path="services" element={<AdminServices />} />
-            </Route>
-            {/* Global catch-all 404 route */}
-            <Route path="*" element={<NotFound />} />
-            <Route path="/test" element={<div>Test Route Works</div>} />
-          </Routes>
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-          />
-        </DarkModeProvider>
-      </AuthProvider>
-    </ErrorBoundary>
-  );
+  return <div style={{ color: "red", fontSize: 32 }}>HELLO WORLD</div>;
 };
 
 export default App;

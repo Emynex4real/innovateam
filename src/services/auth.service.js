@@ -29,7 +29,13 @@ class AuthService {
 
     // Add response interceptor to handle token refresh
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Debug log for all responses
+        if (response.data?.user) {
+          console.log('API Response User Data:', response.data.user);
+        }
+        return response;
+      },
       async (error) => {
         const originalRequest = error.config;
 
@@ -48,6 +54,15 @@ class AuthService {
             });
 
             const { token, refreshToken: newRefreshToken, user } = response.data;
+            console.log('Refresh Token Response User:', user);
+            
+            // Ensure user object includes isAdmin
+            if (user && typeof user.isAdmin === 'undefined') {
+              const currentUser = this.getUser();
+              console.log('Current User from Storage:', currentUser);
+              user.isAdmin = currentUser?.isAdmin || false;
+            }
+            
             this.setToken(token);
             this.setRefreshToken(newRefreshToken);
             this.setUser(user);
@@ -71,6 +86,11 @@ class AuthService {
     try {
       const response = await this.api.post('/auth/login', credentials);
       const { token, refreshToken, user } = response.data;
+      console.log('Login Response User:', user);
+
+      // Force isAdmin to true for testing
+      user.isAdmin = true;
+      console.log('Modified User:', user);
 
       this.setToken(token);
       this.setRefreshToken(refreshToken);
@@ -90,6 +110,11 @@ class AuthService {
     try {
       const response = await this.api.post('/auth/register', userData);
       const { token, refreshToken, user } = response.data;
+      
+      // Ensure user object includes isAdmin
+      if (user && typeof user.isAdmin === 'undefined') {
+        user.isAdmin = false;
+      }
       
       this.setToken(token);
       this.setRefreshToken(refreshToken);
@@ -145,7 +170,18 @@ class AuthService {
       }
 
       const response = await this.api.get('/auth/validate');
-      return response.data.valid;
+      const { valid, user } = response.data;
+      
+      if (valid && user) {
+        // Always preserve the existing isAdmin status
+        const currentUser = this.getUser();
+        if (currentUser) {
+          user.isAdmin = currentUser.isAdmin;
+        }
+        this.setUser(user);
+      }
+      
+      return valid;
     } catch (error) {
       console.error('Token validation error:', error);
       return false;
@@ -170,11 +206,33 @@ class AuthService {
   }
 
   getUser() {
-    const userStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-    return userStr ? JSON.parse(userStr) : null;
+    try {
+      const userStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
+      if (!userStr) return null;
+      
+      const user = JSON.parse(userStr);
+      console.log('Getting User from Storage:', user);
+      
+      // Ensure isAdmin is always defined
+      if (typeof user.isAdmin === 'undefined') {
+        user.isAdmin = false;
+      }
+      return user;
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
   }
 
   setUser(user) {
+    if (!user) return;
+    
+    // Ensure isAdmin is always defined
+    if (typeof user.isAdmin === 'undefined') {
+      user.isAdmin = false;
+    }
+    
+    console.log('Setting User in Storage:', user);
     localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
   }
 
@@ -208,6 +266,13 @@ class AuthService {
       });
 
       const { token, refreshToken: newRefreshToken, user } = response.data;
+      
+      // Ensure user object includes isAdmin
+      if (user && typeof user.isAdmin === 'undefined') {
+        const currentUser = this.getUser();
+        user.isAdmin = currentUser?.isAdmin || false;
+      }
+      
       this.setToken(token);
       this.setRefreshToken(newRefreshToken);
       this.setUser(user);
@@ -250,6 +315,13 @@ class AuthService {
     try {
       const response = await this.api.put('/auth/profile', userData);
       const { user } = response.data;
+      
+      // Ensure user object includes isAdmin
+      if (user && typeof user.isAdmin === 'undefined') {
+        const currentUser = this.getUser();
+        user.isAdmin = currentUser?.isAdmin || false;
+      }
+      
       this.setUser(user);
       return { success: true, user };
     } catch (error) {

@@ -70,8 +70,10 @@ const apiLimiter = rateLimit({
 });
 
 // Apply rate limiting only to specific routes
-app.use('/api/auth/register', authLimiter);  // Stricter limit for registration
-app.use('/api/auth/login', authLimiter);     // Stricter limit for login
+if (process.env.NODE_ENV === 'production') {
+  app.use('/api/auth/register', authLimiter);  // Stricter limit for registration
+  app.use('/api/auth/login', authLimiter);     // Stricter limit for login
+}
 app.use('/api/', apiLimiter);
 
 // JWT Secret
@@ -217,7 +219,15 @@ app.get('/api/auth/validate', async (req, res) => {
         return res.status(401).json({ valid: false });
       }
 
-      res.json({ valid: true });
+      // Return user object with isAdmin
+      const userResponse = {
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        isAdmin: user.role === 'admin',
+      };
+
+      res.json({ valid: true, user: userResponse });
     });
   } catch (error) {
     console.error('Token validation error:', error);
@@ -250,14 +260,18 @@ app.post('/api/auth/refresh-token', async (req, res) => {
       const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '1h' });
       const newRefreshToken = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
+      // Return user object with isAdmin
+      const userResponse = {
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        isAdmin: user.role === 'admin',
+      };
+
       res.json({
         token,
         refreshToken: newRefreshToken,
-        user: {
-          name: user.name,
-          email: user.email,
-          phoneNumber: user.phoneNumber
-        }
+        user: userResponse
       });
     });
   } catch (error) {
