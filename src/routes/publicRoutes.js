@@ -7,7 +7,6 @@ const About = lazy(() => import("../pages/About"));
 const Blogs = lazy(() => import("../pages/Blogs"));
 const Login = lazy(() => import("../pages/login"));
 const Register = lazy(() => import("../pages/register"));
-const NotFound = lazy(() => import("../pages/NotFound"));
 
 // Define public routes
 const publicRoutes = [
@@ -35,11 +34,6 @@ const publicRoutes = [
     path: "/register", 
     element: <Register />,
     title: "Register" 
-  },
-  { 
-    path: "*", 
-    element: <NotFound />,
-    title: "Not Found" 
   },
 ];
 

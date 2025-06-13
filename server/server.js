@@ -10,6 +10,7 @@ const compression = require('compression');
 const { errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth.routes');
 const { logger } = require('./utils/logger');
+const adminRoutes = require('./routes/admin.routes');
 
 // In-memory users array for testing
 const users = [];
@@ -29,6 +30,7 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
+    'http://localhost:3003',
     'http://localhost:5001',
     'https://emynex4real.github.io',
     'https://emynex4real.github.io/innovateam'
@@ -51,17 +53,26 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Rate limiting
-const limiter = rateLimit({
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Increased from 100 to 1000 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // More lenient in development
+  message: 'Too many registration attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'development' ? 5000 : 1000, // More lenient in development
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false
 });
 
 // Apply rate limiting only to specific routes
-app.use('/api/auth/', limiter);  // Only apply to auth routes
-app.use('/api/', limiter);       // Apply to all other API routes
+app.use('/api/auth/register', authLimiter);  // Stricter limit for registration
+app.use('/api/auth/login', authLimiter);     // Stricter limit for login
+app.use('/api/', apiLimiter);
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -92,8 +103,14 @@ app.post('/api/auth/register', async (req, res) => {
       email, 
       phoneNumber, 
       password: hashedPassword,
+      role: 'user', // Default role is user
       createdAt: new Date()
     };
+
+    // If this is the first user, make them an admin
+    if (users.length === 0) {
+      user.role = 'admin';
+    }
     users.push(user);
 
     // Generate tokens
@@ -139,8 +156,13 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '1h' });
     const refreshToken = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
+    // Remove password from response
+    const userResponse = { ...user };
+    delete userResponse.password;
+
     res.json({
-      user,
+      success: true,
+      user: userResponse,
       token,
       refreshToken
     });
@@ -247,6 +269,9 @@ app.post('/api/auth/refresh-token', async (req, res) => {
 // Use auth routes
 app.use('/api/auth', authRoutes);
 
+// Use admin routes
+app.use('/api/admin', adminRoutes);
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
@@ -263,7 +288,11 @@ app.use(errorHandler);
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`, {});
+  logger.info(`Server is running on port ${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+}).on('error', (error) => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 // Handle unhandled promise rejections

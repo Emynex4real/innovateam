@@ -4,8 +4,9 @@
   "description": "JAMB Advisor API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node --max-old-space-size=4096 server.js",
+    "dev": "nodemon --max-old-space-size=4096 server.js",
+    "prod": "pm2 start server.js --name jamb-advisor-api --max-memory-restart 1G",
     "test": "jest",
     "lint": "eslint ."
   },

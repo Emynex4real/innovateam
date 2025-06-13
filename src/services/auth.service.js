@@ -88,13 +88,37 @@ class AuthService {
 
   async register(userData) {
     try {
-      await this.api.post('/auth/register', userData);
-      return { success: true };
+      const response = await this.api.post('/auth/register', userData);
+      const { token, refreshToken, user } = response.data;
+      
+      this.setToken(token);
+      this.setRefreshToken(refreshToken);
+      this.setUser(user);
+      
+      return { success: true, user };
     } catch (error) {
       console.error('Registration error:', error);
+      let errorMessage = 'Registration failed';
+      
+      if (error.response) {
+        switch (error.response.status) {
+          case 429:
+            errorMessage = 'Too many registration attempts. Please try again later.';
+            break;
+          case 400:
+            errorMessage = error.response.data.message || 'Invalid registration data';
+            break;
+          case 409:
+            errorMessage = 'User already exists';
+            break;
+          default:
+            errorMessage = error.response.data.message || 'Registration failed';
+        }
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.message || 'Registration failed',
+        error: errorMessage
       };
     }
   }

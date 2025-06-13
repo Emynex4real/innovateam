@@ -36,7 +36,7 @@
     "zustand": "^4.4.7"
   },
   "scripts": {
-    "start": "node deploy.js && craco start",
+    "start": "node --max-old-space-size=4096 deploy.js && craco start",
     "build": "node deploy.js --deploy && craco build",
     "test": "craco test --coverage --watchAll=false",
     "test:watch": "craco test --coverage --watchAll",

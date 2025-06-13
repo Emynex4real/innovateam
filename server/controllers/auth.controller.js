@@ -52,8 +52,14 @@ exports.register = async (req, res) => {
       email,
       phoneNumber,
       password: hashedPassword,
+      role: 'user', // Default role is user
       createdAt: new Date()
     };
+
+    // If this is the first user, make them an admin
+    if (users.length === 0) {
+      user.role = 'admin';
+    }
     users.push(user);
 
     // Generate tokens
@@ -109,7 +115,10 @@ exports.login = async (req, res) => {
 
     res.json({
       success: true,
-      user: userResponse,
+      user: {
+        ...userResponse,
+        role: user.role
+      },
       token,
       refreshToken
     });

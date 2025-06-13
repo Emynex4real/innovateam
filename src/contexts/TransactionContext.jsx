@@ -48,11 +48,17 @@ export const TransactionProvider = ({ children }) => {
   };
 
   const addTransaction = (transaction) => {
+    // Ensure amount is a number
+    const amount = Number(transaction.amount);
+    if (isNaN(amount)) {
+      throw new Error('Invalid transaction amount');
+    }
+
     const newTransaction = {
       id: uuidv4(),
       label: transaction.label || 'Transaction',
       description: transaction.description || '',
-      amount: Number(transaction.amount),
+      amount: amount,
       type: transaction.type || 'debit',
       category: transaction.category || 'general',
       date: new Date().toISOString(),
