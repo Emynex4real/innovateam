@@ -54,16 +54,16 @@ if (process.env.NODE_ENV === 'development') {
 
 // Rate limiting
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // More lenient in development
+  windowMs: 5 * 60 * 1000, // 5 minutes (reduced from 15)
+  max: process.env.NODE_ENV === 'development' ? 5000 : 500, // Increased limits
   message: 'Too many registration attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false
 });
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 5000 : 1000, // More lenient in development
+  windowMs: 5 * 60 * 1000, // 5 minutes (reduced from 15)
+  max: process.env.NODE_ENV === 'development' ? 10000 : 2000, // Increased limits
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false
