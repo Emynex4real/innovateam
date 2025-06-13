@@ -113,6 +113,7 @@ const App = () => {
             </Route>
             {/* Global catch-all 404 route */}
             <Route path="*" element={<NotFound />} />
+            <Route path="/test" element={<div>Test Route Works</div>} />
           </Routes>
           <ToastContainer
             position="top-right"
