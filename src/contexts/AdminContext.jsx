@@ -45,6 +45,7 @@ export const AdminProvider = ({ children }) => {
   };
 
   const fetchTransactions = async (params) => {
+    console.log('[ADMIN CONTEXT] fetchTransactions called');
     setIsLoading(true);
     setError(null);
     try {
@@ -74,7 +75,9 @@ export const AdminProvider = ({ children }) => {
     setIsSidebarCollapsed(prev => !prev);
   };
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.isAdmin === true || user?.role === 'admin';
+  console.log('[AdminContext] user:', user);
+  console.log('[AdminContext] isAdmin:', isAdmin);
 
   const value = {
     isSidebarCollapsed,

@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Spinner from '../components/Spinner';
 
 const AdminServices = () => {
+  console.log('AdminServices FUNCTION BODY running');
   const {
     services,
     fetchServices,
@@ -122,6 +123,7 @@ const AdminServices = () => {
     }
   };
 
+  console.log('AdminServices RETURN about to render');
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Services</h2>

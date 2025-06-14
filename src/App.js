@@ -17,6 +17,8 @@ import AdminTransactions from "./pages/AdminTransactions";
 import AdminServices from "./pages/AdminServices";
 import { AdminProvider } from "./contexts/AdminContext";
 
+console.log('!!! USING App.jsx !!!');
+
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null, errorInfo: null };
 

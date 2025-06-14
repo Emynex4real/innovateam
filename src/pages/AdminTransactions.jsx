@@ -4,7 +4,10 @@ import adminService from '../services/admin.service';
 import { toast } from 'react-toastify';
 import Spinner from '../components/Spinner';
 
+console.log('AdminTransactions loaded, adminService:', adminService);
+
 const AdminTransactions = () => {
+  console.log('AdminTransactions FUNCTION BODY running');
   const {
     transactions,
     fetchTransactions,
@@ -21,6 +24,7 @@ const AdminTransactions = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
+    console.log('[AdminTransactions] useEffect running, calling fetchTransactions');
     fetchTransactions();
     // eslint-disable-next-line
   }, []);
@@ -97,6 +101,7 @@ const AdminTransactions = () => {
     URL.revokeObjectURL(url);
   };
 
+  console.log('AdminTransactions RETURN about to render');
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Transactions</h2>

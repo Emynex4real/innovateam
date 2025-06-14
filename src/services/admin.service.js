@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../config/constants';
+import { API_BASE_URL, LOCAL_STORAGE_KEYS } from '../config/constants';
+
+console.log('!!! ADMIN SERVICE FILE LOADED !!!');
 
 class AdminService {
   constructor() {
@@ -14,7 +16,8 @@ class AdminService {
     // Add request interceptor to add auth token
     this.api.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+        console.log('[ADMIN SERVICE] Sending token:', token);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -79,6 +82,9 @@ class AdminService {
 
   // Transactions
   async getTransactions(params = {}) {
+    console.log('[ADMIN SERVICE] getTransactions called');
+    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    console.log('[ADMIN SERVICE] Sending token:', token);
     try {
       const response = await this.api.get('/transactions', { params });
       return response.data;

@@ -4,6 +4,7 @@ import adminService from '../services/admin.service';
 import { toast } from 'react-toastify';
 
 const AdminUsers = () => {
+  console.log('AdminUsers FUNCTION BODY running');
   const {
     users,
     fetchUsers,
@@ -123,6 +124,7 @@ const AdminUsers = () => {
     URL.revokeObjectURL(url);
   };
 
+  console.log('AdminUsers RETURN about to render');
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Users</h2>

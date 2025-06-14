@@ -37,6 +37,7 @@ const QuickAction = ({ label, onClick, icon }) => (
 );
 
 const AdminDashboard = () => {
+  console.log('AdminDashboard FUNCTION BODY running');
   const {
     dashboardMetrics,
     fetchDashboardMetrics,
@@ -49,6 +50,7 @@ const AdminDashboard = () => {
     // eslint-disable-next-line
   }, []);
 
+  console.log('AdminDashboard RETURN about to render');
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h2>
