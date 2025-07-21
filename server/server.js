@@ -301,12 +301,36 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
+const PORT = process.env.PORT || 5001; // Changed from 5000 to 5001 to avoid System process conflict
+const HOST = '0.0.0.0'; // Bind to all network interfaces
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  logger.info(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+const server = app.listen(PORT, HOST, () => {
+  logger.info(`Server is running on http://${HOST}:${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info('Available endpoints:');
+  logger.info(`- GET  http://${HOST}:${PORT}/health`);
+  logger.info(`- GET  http://${HOST}:${PORT}/`);
+  logger.info(`- POST http://${HOST}:${PORT}/api/auth/register`);
+  logger.info(`- POST http://${HOST}:${PORT}/api/auth/login`);
 }).on('error', (error) => {
   logger.error('Failed to start server:', error);
+  process.exit(1);
+});
+
+// Log server close events
+server.on('close', () => {
+  logger.info('Server is shutting down');
+});
+
+// Log uncaught exceptions
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
   process.exit(1);
 });
 

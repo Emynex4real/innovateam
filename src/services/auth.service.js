@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 class AuthService {
   constructor() {
@@ -107,8 +107,10 @@ class AuthService {
   }
 
   async register(userData) {
+    console.log('Attempting to register with data:', JSON.stringify(userData, null, 2));
     try {
       const response = await this.api.post('/auth/register', userData);
+      console.log('Registration response:', response);
       const { token, refreshToken, user } = response.data;
       
       // Ensure user object includes isAdmin
@@ -120,30 +122,49 @@ class AuthService {
       this.setRefreshToken(refreshToken);
       this.setUser(user);
       
+      console.log('Registration successful for user:', user.email);
       return { success: true, user };
     } catch (error) {
-      console.error('Registration error:', error);
-      let errorMessage = 'Registration failed';
+      console.error('Registration error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data
+        }
+      });
+      
+      let errorMessage = 'Registration failed. Please try again.';
       
       if (error.response) {
+        // Handle specific error status codes
         switch (error.response.status) {
+          case 400:
+            errorMessage = error.response.data?.message || 'Invalid registration data';
+            break;
+          case 409:
+            errorMessage = 'An account with this email already exists';
+            break;
           case 429:
             errorMessage = 'Too many registration attempts. Please try again later.';
             break;
-          case 400:
-            errorMessage = error.response.data.message || 'Invalid registration data';
-            break;
-          case 409:
-            errorMessage = 'User already exists';
+          case 500:
+            errorMessage = 'Server error. Please try again later.';
             break;
           default:
-            errorMessage = error.response.data.message || 'Registration failed';
+            errorMessage = error.response.data?.message || 'Registration failed';
         }
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
       }
       
       return {
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        details: error.response?.data
       };
     }
   }
