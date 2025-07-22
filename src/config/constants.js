@@ -1,6 +1,6 @@
 export const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://your-backend-url.com/api'  // Replace with your actual backend URL
-  : 'http://localhost:5000/api';
+  : 'http://localhost:5001/api';
 
 export const APP_ROUTES = {
   HOME: '/',
@@ -11,12 +11,20 @@ export const APP_ROUTES = {
   WALLET: '/wallet',
 };
 
+// Storage keys for authentication and user data
 export const LOCAL_STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  REFRESH_TOKEN: 'refresh_token',
+  // Authentication
+  AUTH_TOKEN: 'token',
+  REFRESH_TOKEN: 'refreshToken',
   USER: 'user',
+  
+  // App settings
   THEME: 'theme',
   LANGUAGE: 'language',
+  
+  // For debugging
+  LAST_AUTH_ACTION: 'last_auth_action',
+  LAST_ERROR: 'last_auth_error'
 };
 
 export const API_ENDPOINTS = {

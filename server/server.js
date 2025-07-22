@@ -45,6 +45,53 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Enhanced request logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  // Log the incoming request
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
+    headers: req.headers,
+    query: req.query,
+    body: req.body,
+    ip: req.ip
+  });
+
+  // Store the original end function
+  const originalEnd = res.end;
+  
+  // Create a buffer to store the response body
+  const chunks = [];
+  
+  // Override the end function to capture the response
+  res.end = function (chunk, ...args) {
+    if (chunk) chunks.push(Buffer.from(chunk));
+    
+    // Log the response
+    const responseTime = Date.now() - start;
+    let responseBody = '';
+    
+    try {
+      responseBody = Buffer.concat(chunks).toString('utf8');
+      if (responseBody) JSON.parse(responseBody); // Check if it's valid JSON
+    } catch (e) {
+      // If not JSON, use as is
+      responseBody = chunks.length ? chunks[0].toString('utf8') : '';
+    }
+    
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} - ${responseTime}ms`, {
+      status: res.statusCode,
+      responseTime: `${responseTime}ms`,
+      response: responseBody.length > 500 ? `${responseBody.substring(0, 500)}...` : responseBody
+    });
+    
+    // Call the original end function
+    return originalEnd.apply(res, [chunk, ...args]);
+  };
+  
+  next();
+});
+
 // Compression
 app.use(compression());
 
