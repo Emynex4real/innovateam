@@ -1,19 +1,68 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
+import { useAuth } from '../contexts/AuthContext';
 import adminService from '../services/admin.service';
 import { toast } from 'react-toastify';
 import Spinner from '../components/Spinner';
 
-console.log('AdminTransactions loaded, adminService:', adminService);
+// Debug logging with more context
+const debugLog = (message, data = {}) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[AdminTransactions] ${message}`, {
+      timestamp: new Date().toISOString(),
+      ...data
+    });
+  }
+};
+
+// Initial debug info
+debugLog('Module loaded', {
+  env: process.env.NODE_ENV,
+  isDev: process.env.NODE_ENV === 'development'
+});
 
 const AdminTransactions = () => {
-  console.log('AdminTransactions FUNCTION BODY running');
+  console.log('[AdminTransactions] Component rendering');
+  const { user, isAuthenticated } = useAuth();
+  console.log('[AdminTransactions] Auth state:', { user, isAuthenticated });
+  
   const {
-    transactions,
+    transactions = [],
     fetchTransactions,
     isLoading,
-    error
+    error: contextError
   } = useAdmin();
+  
+  console.log('[AdminTransactions] Admin context:', { 
+    transactionCount: transactions.length,
+    isLoading,
+    contextError 
+  });
+  
+  // Fetch transactions on component mount
+  useEffect(() => {
+    console.log('[AdminTransactions] Component mounted, fetching transactions...');
+    const loadData = async () => {
+      try {
+        await fetchTransactions();
+        console.log('[AdminTransactions] Transactions loaded successfully');
+      } catch (error) {
+        console.error('[AdminTransactions] Error loading transactions:', error);
+      }
+    };
+    
+    loadData();
+  }, [fetchTransactions]);
+  
+  // Log when transactions change
+  useEffect(() => {
+    console.log('[AdminTransactions] Transactions updated:', {
+      count: transactions.length,
+      sample: transactions[0] || 'No transactions'
+    });
+  }, [transactions]);
+  
+  // State management
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -22,20 +71,122 @@ const AdminTransactions = () => {
   const [editMode, setEditMode] = useState(false);
   const [editTx, setEditTx] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [localError, setLocalError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Memoized filtered transactions
+  const filtered = useMemo(() => {
+    debugLog('Filtering transactions', {
+      total: transactions.length,
+      search,
+      statusFilter,
+      typeFilter
+    });
+    
+    return transactions.filter(tx => {
+      const matchesSearch = !search || 
+        tx.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        tx.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
+        tx.type?.toLowerCase().includes(search.toLowerCase());
+        
+      const matchesStatus = !statusFilter || tx.status === statusFilter;
+      const matchesType = !typeFilter || tx.type === typeFilter;
+      
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [transactions, search, statusFilter, typeFilter]);
 
+  // Calculate total amount for filtered transactions
+  const totalAmount = useMemo(() => {
+    return filtered.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0).toFixed(2);
+  }, [filtered]);
+
+  // Debug logging - only in development
   useEffect(() => {
-    console.log('[AdminTransactions] useEffect running, calling fetchTransactions');
-    fetchTransactions();
-    // eslint-disable-next-line
-  }, []);
+    if (process.env.NODE_ENV === 'development') {
+      debugLog('Component rendered', {
+        isLoading,
+        transactionsCount: transactions?.length,
+        filteredCount: filtered?.length,
+        contextError: Boolean(contextError)
+      });
+    }
+  }, [isLoading, transactions, filtered, contextError]);
+  
+  // Handle refresh
+  const handleRefresh = useCallback(async () => {
+    debugLog('Manual refresh triggered');
+    setIsRefreshing(true);
+    setLocalError(null);
+    
+    try {
+      await fetchTransactions();
+      toast.success('Transactions refreshed successfully');
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to refresh transactions';
+      setLocalError(errorMessage);
+      toast.error(errorMessage);
+      debugLog('Refresh error', { error });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [fetchTransactions]);
 
-  const filtered = transactions.filter(t =>
-    (t.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      t.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
-      t.type?.toLowerCase().includes(search.toLowerCase())) &&
-    (statusFilter ? t.status === statusFilter : true) &&
-    (typeFilter ? t.type === typeFilter : true)
-  );
+  // Initial data load
+  useEffect(() => {
+    const componentName = 'AdminTransactions';
+    debugLog('Component mounted', { isAuthenticated, userId: user?.id });
+    
+    const loadData = async () => {
+      if (!isAuthenticated) {
+        debugLog('User not authenticated, skipping data load');
+        return;
+      }
+      
+      try {
+        debugLog('Fetching transactions...');
+        await fetchTransactions();
+        debugLog('Transactions loaded successfully');
+      } catch (error) {
+        const errorMessage = error.message || 'Failed to load transactions';
+        setLocalError(errorMessage);
+        debugLog('Data load error', { 
+          error: errorMessage,
+          stack: error.stack 
+        });
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      debugLog('Component unmounting');
+    };
+  }, [isAuthenticated, fetchTransactions, user?.id]);
+  
+  // Log state changes
+  useEffect(() => {
+    if (transactions.length > 0) {
+      debugLog('Transactions updated', { 
+        count: transactions.length,
+        firstId: transactions[0]?.id,
+        lastId: transactions[transactions.length - 1]?.id
+      });
+    } else if (transactions.length === 0 && !isLoading) {
+      debugLog('No transactions available', { 
+        hasError: Boolean(localError || contextError),
+        error: localError || contextError
+      });
+    }
+  }, [transactions, isLoading, localError, contextError]);
+  
+  // Error handling effect
+  useEffect(() => {
+    if (contextError) {
+      debugLog('Context error detected', { error: contextError });
+      toast.error(`Error: ${contextError}`);
+    }
+  }, [contextError]);
 
   const openModal = (tx) => {
     setModalTx(tx);
@@ -76,35 +227,209 @@ const AdminTransactions = () => {
   };
 
   // Summary stats
-  const totalAmount = filtered.reduce((sum, t) => sum + Number(t.amount), 0);
+  const transactionCount = filtered.length;
+  const successTransactions = filtered.filter(t => t.status === 'completed').length;
+  const successRate = transactionCount > 0 ? Math.round((successTransactions / transactionCount) * 100) : 0;
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  };
+
+  // Get status badge class
+  const getStatusBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   // Export to CSV
   const exportToCSV = () => {
-    const csvRows = [
-      ['User', 'Email', 'Amount', 'Type', 'Status', 'Date'],
-      ...filtered.map(t => [
-        t.user?.name,
-        t.user?.email,
-        t.amount,
-        t.type,
-        t.status,
-        t.createdAt ? new Date(t.createdAt).toLocaleString() : ''
-      ])
-    ];
-    const csvContent = csvRows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'transactions.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const csvRows = [
+        ['ID', 'User', 'Email', 'Amount', 'Type', 'Status', 'Date', 'Description'],
+        ...filtered.map(t => [
+          t.id || '',
+          t.user?.name || 'N/A',
+          t.user?.email || 'N/A',
+          t.amount ? formatCurrency(t.amount) : '0.00',
+          t.type || 'N/A',
+          t.status || 'N/A',
+          formatDate(t.createdAt),
+          t.description || ''
+        ])
+      ];
+      
+      const csvContent = csvRows
+        .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+        
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `transactions_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Export completed successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export transactions');
+    }
   };
+  // Render loading state
+  if (isLoading && !isRefreshing && transactions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+          </div>
+          <div className="bg-white shadow rounded-lg p-6 flex items-center justify-center h-64">
+            <div className="text-center">
+              <Spinner className="w-12 h-12 mx-auto text-indigo-600" />
+              <p className="mt-4 text-gray-600">Loading transactions...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  console.log('AdminTransactions RETURN about to render');
+  // Render error state
+  if ((localError || contextError) && transactions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="text-center py-12">
+              <div className="text-red-500 mb-4">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading transactions</h3>
+              <p className="text-gray-500 mb-6">
+                {localError || contextError || 'An unknown error occurred'}
+              </p>
+              <button
+                onClick={handleRefresh}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+
+  // Debug render log
+  console.log('[AdminTransactions] Rendering component with state:', {
+    transactionsCount: transactions.length,
+    isLoading,
+    contextError,
+    search,
+    statusFilter,
+    typeFilter
+  });
+
+  // Loading state
+  if (isLoading) {
+    console.log('[AdminTransactions] Rendering loading state');
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (contextError) {
+    console.error('[AdminTransactions] Rendering error state:', contextError);
+    return (
+      <div className="p-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{contextError}</span>
+          <button 
+            onClick={handleRefresh}
+            className="ml-4 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No transactions state
+  if (transactions.length === 0) {
+    console.log('[AdminTransactions] No transactions to display');
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <div className="text-5xl mb-4">📭</div>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">No transactions found</h3>
+          <p className="text-gray-500 mb-6">There are no transactions to display at this time.</p>
+          <button
+            onClick={handleRefresh}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Transactions</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Transactions</h2>
+        <div className="text-sm text-gray-500">
+          Showing <span className="font-medium">{filtered.length}</span> of {transactions.length} transactions
+        </div>
+      </div>
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           type="text"
@@ -127,7 +452,7 @@ const AdminTransactions = () => {
         <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={exportToCSV}>Export</button>
       </div>
       <div className="mb-2 text-sm text-gray-600">Total: <b>{filtered.length}</b> | Volume: <b>₦{totalAmount}</b></div>
-      {error && <div className="bg-red-100 text-red-700 p-2 rounded mb-2">{error}</div>}
+      {contextError && <div className="bg-red-100 text-red-700 p-2 rounded mb-2">{contextError}</div>}
       {isLoading ? (
         <Spinner size={40} className="my-8" />
       ) : (

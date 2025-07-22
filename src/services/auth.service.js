@@ -278,17 +278,26 @@ class AuthService {
       debugAuthService('Token validation response', { 
         valid, 
         userId: user?.id,
-        userEmail: user?.email 
+        userEmail: user?.email,
+        userRole: user?.role
       });
       
       if (valid && user) {
-        // Always preserve the existing isAdmin status
-        const currentUser = this.getUser();
-        if (currentUser) {
-          user.isAdmin = currentUser.isAdmin;
-          debugAuthService('Preserved isAdmin status', { isAdmin: user.isAdmin });
-        }
-        this.setUser(user);
+        // Ensure user object has a role, default to 'user' if not provided
+        const userWithRole = {
+          ...user,
+          role: user.role || 'user',
+          isAdmin: (user.role === 'admin') // Set isAdmin based on role
+        };
+        
+        debugAuthService('Setting user with role', { 
+          id: userWithRole.id,
+          email: userWithRole.email,
+          role: userWithRole.role,
+          isAdmin: userWithRole.isAdmin
+        });
+        
+        this.setUser(userWithRole);
       }
       
       return valid;

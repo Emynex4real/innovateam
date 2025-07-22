@@ -122,12 +122,53 @@ export const AuthProvider = ({ children }) => {
         }
 
         // If we get here, we couldn't validate the session
-        debugAuth('Could not validate session, checking for partial auth state...');
+        debugAuth('Could not validate session, checking for partial auth state...', {
+          hasToken: !!token,
+          hasUser: !!storedUser,
+          hasRefreshToken: !!refreshToken,
+          storedUserId: storedUser?.id,
+          storedUserEmail: storedUser?.email
+        });
         
-        // If we have some but not all auth data, clear it to prevent inconsistent state
-        if (token || storedUser || refreshToken) {
-          debugAuth('Partial auth state detected, clearing...');
+        // Only clear auth if we have a clear inconsistency
+        const hasPartialAuth = (token || storedUser || refreshToken) && 
+                             !(token && storedUser && refreshToken);
+        
+        // Check if we have a valid user object but missing userId
+        const hasUserWithoutId = storedUser && !storedUser.id && storedUser.email;
+        
+        if (hasPartialAuth || hasUserWithoutId) {
+          debugAuth('Partial or invalid auth state detected, attempting recovery...', {
+            hasPartialAuth,
+            hasUserWithoutId
+          });
+          
+          // If we have a refresh token, try to refresh first
+          if (refreshToken && (!token || hasUserWithoutId)) {
+            try {
+              debugAuth('Attempting token refresh due to partial auth state...');
+              const refreshResult = await authService.refreshToken();
+              
+              if (refreshResult?.success && isMounted) {
+                debugAuth('Token refresh successful after partial auth state');
+                setUser(refreshResult.user);
+                setIsAuthenticated(true);
+                setIsLoading(false);
+                return;
+              }
+            } catch (refreshError) {
+              console.error('Refresh token error during recovery:', refreshError);
+            }
+          }
+          
+          // If refresh failed or not possible, clear auth
+          debugAuth('Recovery failed, clearing auth state...');
           authService.clearStorage();
+        } else if (token && storedUser) {
+          // If we have both token and user but validation failed, keep the current state
+          // but mark as not authenticated to force re-authentication on next navigation
+          debugAuth('Keeping auth state but marking as unauthenticated for re-validation');
+          setIsAuthenticated(false);
         }
         
         if (isMounted) {

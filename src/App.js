@@ -1,6 +1,6 @@
 // src/App.js
 import React, { Suspense, useEffect, useMemo } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation, Navigate } from "react-router-dom";
 import "./App.css";
 import PublicLayout from "./layouts/PublicLayout";
 import PrivateLayout from "./layouts/PrivateLayout";
@@ -105,23 +105,21 @@ function App() {
                   }
                 />
                 <Route
-                  path="/admin/*"
+                  path="/admin"
                   element={
                     <PrivateRoute>
                       <AdminProvider>
-                        <AdminLayout>
-                          <Routes>
-                            <Route index element={<AdminDashboard />} />
-                            <Route path="dashboard" element={<AdminDashboard />} />
-                            <Route path="users" element={<AdminUsers />} />
-                            <Route path="transactions" element={<AdminTransactions />} />
-                            <Route path="services" element={<AdminServices />} />
-                          </Routes>
-                        </AdminLayout>
+                        <AdminLayout />
                       </AdminProvider>
                     </PrivateRoute>
                   }
-                />
+                >
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="transactions" element={<AdminTransactions />} />
+                  <Route path="services" element={<AdminServices />} />
+                </Route>
               </Routes>
             </Suspense>
           </ErrorBoundary>

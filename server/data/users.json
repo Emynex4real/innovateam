@@ -1,11 +1,12 @@
 [
   {
-    "id": 1,
-    "name": "Michael Balogun Temidayo",
-    "email": "emynex4real@gmail.com",
-    "phoneNumber": "08033772750",
-    "password": "$2a$10$jhhCQVbE1BTKcLfOnNsCt.8pjSSdOhrXZ./lECIcZ3QW807N9v3LC",
-    "createdAt": "2025-06-05T18:32:10.707Z",
-    "role": "admin"
+    "id": "admin_1753206264151",
+    "name": "Admin User",
+    "email": "admin@example.com",
+    "phoneNumber": "1234567890",
+    "password": "$2a$10$rcTtNaa.p6OK.VN7Y7AXROhecTJDJK0axyepspw7oTSYvTgTyR1Ia",
+    "role": "admin",
+    "isAdmin": true,
+    "createdAt": "2025-07-22T17:44:24.151Z"
   }
 ]
