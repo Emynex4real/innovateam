@@ -15,22 +15,22 @@ const Sidebar = () => {
 
   const navItems = [
     {
-      path: '/admin/dashboard',
+      path: 'dashboard',
       icon: BarChart2,
       label: 'Dashboard'
     },
     {
-      path: '/admin/users',
+      path: 'users',
       icon: Users,
       label: 'Users'
     },
     {
-      path: '/admin/transactions',
+      path: 'transactions',
       icon: ShoppingCart,
       label: 'Transactions'
     },
     {
-      path: '/admin/services',
+      path: 'services',
       icon: Settings,
       label: 'Services'
     }
@@ -78,4 +78,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

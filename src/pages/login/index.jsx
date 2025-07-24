@@ -45,9 +45,14 @@ const Login = () => {
         setEmail("");
         setPassword("");
         setRememberMe(false);
-        // Redirect to the page they tried to visit or dashboard
-        const from = location.state?.from?.pathname || "/dashboard";
-        navigate(from, { replace: true });
+        // Always redirect admin to /admin/dashboard after login
+        if (result.user && (result.user.role === 'admin' || result.user.isAdmin)) {
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          // Redirect to the page they tried to visit or dashboard
+          const from = location.state?.from?.pathname || "/dashboard";
+          navigate(from, { replace: true });
+        }
       } else {
         toast.error(result.error?.response?.data?.message || "Invalid credentials");
         setFormError(result.error?.response?.data?.message || "Invalid credentials");

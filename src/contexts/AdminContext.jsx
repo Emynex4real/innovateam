@@ -222,17 +222,17 @@ export const AdminProvider = ({ children }) => {
     isAdmin
   });
 
-  // Derived state: true only when admin context is fully resolved
-  const isAdminResolved = !isLoading && isAdmin !== undefined && isAuthenticated !== undefined && user !== null;
+  // Derived state: true only when admin status is determined
+  const isAdminResolved = user !== null && typeof adminStatus === 'boolean';
 
   const contextValue = {
     isAdmin: adminStatus,
+    isAdminResolved, // <-- add this
     isSidebarCollapsed,
     toggleSidebar: () => setIsSidebarCollapsed(!isSidebarCollapsed),
     activePage,
     setActivePage,
     isLoading,
-    isAdminResolved, // <-- add this
     error,
     dashboardMetrics,
     fetchDashboardMetrics,

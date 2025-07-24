@@ -22,45 +22,18 @@ debugLog('Module loaded', {
 });
 
 const AdminTransactions = () => {
+  // Always call hooks at the top level
+  const { isAuthResolved } = useAuth();
+  const { isAdminResolved, transactions = [], fetchTransactions, error: contextError } = useAdmin();
+  
   console.log('[AdminTransactions] Component rendering');
   const { user, isAuthenticated } = useAuth();
   console.log('[AdminTransactions] Auth state:', { user, isAuthenticated });
   
-  const {
-    transactions = [],
-    fetchTransactions,
-    isLoading,
-    error: contextError
-  } = useAdmin();
-  
   console.log('[AdminTransactions] Admin context:', { 
     transactionCount: transactions.length,
-    isLoading,
     contextError 
   });
-  
-  // Fetch transactions on component mount
-  useEffect(() => {
-    console.log('[AdminTransactions] Component mounted, fetching transactions...');
-    const loadData = async () => {
-      try {
-        await fetchTransactions();
-        console.log('[AdminTransactions] Transactions loaded successfully');
-      } catch (error) {
-        console.error('[AdminTransactions] Error loading transactions:', error);
-      }
-    };
-    
-    loadData();
-  }, [fetchTransactions]);
-  
-  // Log when transactions change
-  useEffect(() => {
-    console.log('[AdminTransactions] Transactions updated:', {
-      count: transactions.length,
-      sample: transactions[0] || 'No transactions'
-    });
-  }, [transactions]);
   
   // State management
   const [search, setSearch] = useState('');
@@ -73,6 +46,7 @@ const AdminTransactions = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   
   // Memoized filtered transactions
   const filtered = useMemo(() => {
@@ -105,13 +79,12 @@ const AdminTransactions = () => {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       debugLog('Component rendered', {
-        isLoading,
         transactionsCount: transactions?.length,
         filteredCount: filtered?.length,
         contextError: Boolean(contextError)
       });
     }
-  }, [isLoading, transactions, filtered, contextError]);
+  }, [transactions, filtered, contextError]);
   
   // Handle refresh
   const handleRefresh = useCallback(async () => {
@@ -132,37 +105,37 @@ const AdminTransactions = () => {
     }
   }, [fetchTransactions]);
 
-  // Initial data load
+  // Fetch transactions on component mount
   useEffect(() => {
-    const componentName = 'AdminTransactions';
-    debugLog('Component mounted', { isAuthenticated, userId: user?.id });
-    
+    if (!isAuthResolved || !isAdminResolved) return;
+    // Only show spinner if no transactions yet
+    if (transactions.length === 0) {
+      setIsLoadingTransactions(true);
+    }
     const loadData = async () => {
-      if (!isAuthenticated) {
-        debugLog('User not authenticated, skipping data load');
-        return;
-      }
-      
       try {
-        debugLog('Fetching transactions...');
         await fetchTransactions();
-        debugLog('Transactions loaded successfully');
       } catch (error) {
-        const errorMessage = error.message || 'Failed to load transactions';
-        setLocalError(errorMessage);
-        debugLog('Data load error', { 
-          error: errorMessage,
-          stack: error.stack 
-        });
+        setLocalError(error.message || 'Failed to load transactions');
+      } finally {
+        setIsLoadingTransactions(false);
       }
     };
-    
     loadData();
-    
-    return () => {
-      debugLog('Component unmounting');
-    };
-  }, [isAuthenticated, fetchTransactions, user?.id]);
+    // If transactions already exist, don't block render
+    // Optionally, you could trigger a subtle refresh indicator here
+    // but do not set isLoadingTransactions to true if data is present
+    // This prevents flicker
+    // eslint-disable-next-line
+  }, [isAuthResolved, isAdminResolved, fetchTransactions]);
+
+  // Log when transactions change
+  useEffect(() => {
+    console.log('[AdminTransactions] Transactions updated:', {
+      count: transactions.length,
+      sample: transactions[0] || 'No transactions'
+    });
+  }, [transactions]);
   
   // Log state changes
   useEffect(() => {
@@ -172,13 +145,13 @@ const AdminTransactions = () => {
         firstId: transactions[0]?.id,
         lastId: transactions[transactions.length - 1]?.id
       });
-    } else if (transactions.length === 0 && !isLoading) {
+    } else if (transactions.length === 0 && !isLoadingTransactions) {
       debugLog('No transactions available', { 
         hasError: Boolean(localError || contextError),
         error: localError || contextError
       });
     }
-  }, [transactions, isLoading, localError, contextError]);
+  }, [transactions, isLoadingTransactions, localError, contextError]);
   
   // Error handling effect
   useEffect(() => {
@@ -301,8 +274,20 @@ const AdminTransactions = () => {
       toast.error('Failed to export transactions');
     }
   };
-  // Render loading state
-  if (isLoading && !isRefreshing && transactions.length === 0) {
+  
+  // Now, in the render, do the loading check
+  if (!isAuthResolved || !isAdminResolved) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-700">Loading admin transactions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingTransactions && transactions.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -364,7 +349,7 @@ const AdminTransactions = () => {
   // Debug render log
   console.log('[AdminTransactions] Rendering component with state:', {
     transactionsCount: transactions.length,
-    isLoading,
+    isLoadingTransactions,
     contextError,
     search,
     statusFilter,
@@ -372,7 +357,7 @@ const AdminTransactions = () => {
   });
 
   // Loading state
-  if (isLoading) {
+  if (isLoadingTransactions && transactions.length === 0) {
     console.log('[AdminTransactions] Rendering loading state');
     return (
       <div className="p-6">
@@ -453,7 +438,7 @@ const AdminTransactions = () => {
       </div>
       <div className="mb-2 text-sm text-gray-600">Total: <b>{filtered.length}</b> | Volume: <b>₦{totalAmount}</b></div>
       {contextError && <div className="bg-red-100 text-red-700 p-2 rounded mb-2">{contextError}</div>}
-      {isLoading ? (
+      {isLoadingTransactions ? (
         <Spinner size={40} className="my-8" />
       ) : (
         <div className="overflow-x-auto">
@@ -539,4 +524,4 @@ const AdminTransactions = () => {
   );
 };
 
-export default AdminTransactions; 
+export default AdminTransactions;
