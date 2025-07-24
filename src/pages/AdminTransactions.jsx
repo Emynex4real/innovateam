@@ -48,6 +48,35 @@ const AdminTransactions = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   
+  // Approve/Reject logic for pending transactions
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const handleApprove = async () => {
+    setIsStatusUpdating(true);
+    try {
+      await adminService.updateTransaction(modalTx.id, { ...modalTx, status: 'completed' });
+      toast.success('Transaction approved');
+      fetchTransactions();
+      setModalTx({ ...modalTx, status: 'completed' });
+    } catch (err) {
+      toast.error('Failed to approve transaction');
+    } finally {
+      setIsStatusUpdating(false);
+    }
+  };
+  const handleReject = async () => {
+    setIsStatusUpdating(true);
+    try {
+      await adminService.updateTransaction(modalTx.id, { ...modalTx, status: 'failed' });
+      toast.success('Transaction rejected');
+      fetchTransactions();
+      setModalTx({ ...modalTx, status: 'failed' });
+    } catch (err) {
+      toast.error('Failed to reject transaction');
+    } finally {
+      setIsStatusUpdating(false);
+    }
+  };
+
   // Memoized filtered transactions
   const filtered = useMemo(() => {
     debugLog('Filtering transactions', {
@@ -505,9 +534,21 @@ const AdminTransactions = () => {
                 <div className="mb-2"><b>Type:</b> {modalTx.type}</div>
                 <div className="mb-2"><b>Status:</b> {modalTx.status}</div>
                 <div className="mb-2"><b>Date:</b> {new Date(modalTx.createdAt).toLocaleString()}</div>
-                <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded mr-2" onClick={handleEdit}>Edit</button>
-                <button className="mt-4 bg-red-600 text-white px-4 py-2 rounded mr-2" onClick={() => setConfirmDelete(true)}>Delete</button>
-                <button className="mt-4 bg-gray-400 text-white px-4 py-2 rounded" onClick={closeModal}>Close</button>
+                {modalTx.status === 'pending' && (
+                  <div className="flex gap-2 mt-4">
+                    <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={handleApprove} disabled={isStatusUpdating}>
+                      {isStatusUpdating ? 'Approving...' : 'Approve'}
+                    </button>
+                    <button className="bg-red-600 text-white px-4 py-2 rounded" onClick={handleReject} disabled={isStatusUpdating}>
+                      {isStatusUpdating ? 'Rejecting...' : 'Reject'}
+                    </button>
+                  </div>
+                )}
+                <div className="flex gap-2 mt-4">
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={handleEdit}>Edit</button>
+                  <button className="bg-red-600 text-white px-4 py-2 rounded" onClick={() => setConfirmDelete(true)}>Delete</button>
+                  <button className="bg-gray-400 text-white px-4 py-2 rounded" onClick={closeModal}>Close</button>
+                </div>
                 {confirmDelete && (
                   <div className="mt-4 p-2 bg-red-100 text-red-700 rounded">
                     Are you sure you want to delete this transaction?

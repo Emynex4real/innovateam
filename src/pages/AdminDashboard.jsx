@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,19 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const MetricCard = ({ 
   title, 
@@ -86,6 +99,10 @@ const AdminDashboard = () => {
     isLoading: isMetricsLoading,
     error: metricsError
   } = useAdmin();
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
 
   // Default empty metrics to prevent null reference errors
   const safeMetrics = useMemo(() => ({
@@ -124,6 +141,43 @@ const AdminDashboard = () => {
   const handleRefresh = () => {
     console.log('Refreshing dashboard data...');
     fetchDashboardMetrics();
+  };
+
+  // Notification send handler (stub)
+  const handleSendNotification = async () => {
+    setIsSendingNotification(true);
+    setTimeout(() => {
+      setIsSendingNotification(false);
+      setShowNotificationModal(false);
+      setNotificationMessage('');
+      alert('Notification sent to all users (stub).');
+    }, 1200);
+  };
+
+  // Export all transactions as CSV (reuse logic from AdminTransactions)
+  const handleDownloadReport = () => {
+    const allTx = (dashboardMetrics?.allTransactions || []).length > 0
+      ? dashboardMetrics.allTransactions
+      : (dashboardMetrics?.recentTransactions || []);
+    const csvRows = [
+      ['ID', 'User', 'Amount', 'Type', 'Status', 'Date'],
+      ...allTx.map(t => [
+        t.id || '',
+        t.user?.name || t.user || 'N/A',
+        t.amount || 0,
+        t.type || '',
+        t.status || '',
+        t.date || t.createdAt || ''
+      ])
+    ];
+    const csvContent = csvRows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transactions_report.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -277,9 +331,9 @@ const AdminDashboard = () => {
           </div>
 
           <div className="flex flex-wrap gap-4 mb-8">
-            <QuickAction label="Add Service" onClick={() => alert('Add Service')} icon={<BarChart2 />} />
-            <QuickAction label="Send Notification" onClick={() => alert('Send Notification')} icon={<Users />} />
-            <QuickAction label="View Reports" onClick={() => alert('View Reports')} icon={<DollarSign />} />
+            <QuickAction label="Add Service" onClick={() => window.location.href='/admin/services'} icon={<BarChart2 />} />
+            <QuickAction label="Send Notification" onClick={() => setShowNotificationModal(true)} icon={<Users />} />
+            <QuickAction label="View Reports" onClick={() => setShowReportsModal(true)} icon={<DollarSign />} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -400,7 +454,79 @@ const AdminDashboard = () => {
 
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Activity Chart</h3>
-            <p className="text-gray-500">(Chart coming soon...)</p>
+            {/* Chart.js Line Chart for Transactions/Revenue */}
+            <div className="w-full h-72">
+              <Line
+                data={{
+                  labels: (metricsToUse.recentTransactions || []).map(t => {
+                    // Use date or fallback
+                    return t.date ? format(new Date(t.date), 'MMM d') : 'N/A';
+                  }),
+                  datasets: [
+                    {
+                      label: 'Revenue (₦)',
+                      data: (metricsToUse.recentTransactions || []).map(t => Number(t.amount) || 0),
+                      fill: false,
+                      borderColor: 'rgb(99, 102, 241)',
+                      backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                      tension: 0.3,
+                      pointRadius: 4,
+                      pointHoverRadius: 6
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: true, position: 'top' },
+                    title: { display: true, text: 'Recent Revenue Trend' }
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: { callback: value => `₦${value}` }
+                    }
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      {showNotificationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-800" onClick={()=>setShowNotificationModal(false)}>&times;</button>
+            <h3 className="text-lg font-semibold mb-2">Send Notification</h3>
+            <textarea
+              className="border p-2 rounded w-full mb-4"
+              rows={4}
+              placeholder="Enter your message to all users..."
+              value={notificationMessage}
+              onChange={e => setNotificationMessage(e.target.value)}
+            />
+            <button
+              className="bg-indigo-600 text-white px-4 py-2 rounded mr-2"
+              onClick={handleSendNotification}
+              disabled={isSendingNotification || !notificationMessage.trim()}
+            >
+              {isSendingNotification ? 'Sending...' : 'Send'}
+            </button>
+            <button className="bg-gray-400 text-white px-4 py-2 rounded" onClick={()=>setShowNotificationModal(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+      {/* Reports Modal */}
+      {showReportsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-800" onClick={()=>setShowReportsModal(false)}>&times;</button>
+            <h3 className="text-lg font-semibold mb-2">Download Transactions Report</h3>
+            <p className="mb-4 text-gray-600">Download a CSV report of all transactions for analytics or record-keeping.</p>
+            <button className="bg-green-600 text-white px-4 py-2 rounded mr-2" onClick={handleDownloadReport}>Download CSV</button>
+            <button className="bg-gray-400 text-white px-4 py-2 rounded" onClick={()=>setShowReportsModal(false)}>Cancel</button>
           </div>
         </div>
       )}

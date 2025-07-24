@@ -30,6 +30,7 @@ app.use(cors({
     'http://localhost:3004',
     'http://localhost:5001',
     'http://localhost:5002', // <-- add this line
+    'http://localhost:5003', // <-- allow frontend on 5003
     'https://emynex4real.github.io',
     'https://emynex4real.github.io/innovateam'
   ],

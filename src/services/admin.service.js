@@ -111,11 +111,49 @@ class AdminService {
   }
 
   async getUser(id) {
+    const method = 'getUser';
     try {
       const response = await this.api.get(`/users/${id}`);
-      return response.data;
+      logger.info(method, 'Fetched user details', { id, data: response.data });
+      return response.data.data;
     } catch (error) {
-      logger.error('getUser', error);
+      logger.error(method, error, { id });
+      throw error;
+    }
+  }
+
+  async activateUser(id) {
+    const method = 'activateUser';
+    try {
+      const response = await this.api.patch(`/users/${id}/activate`);
+      logger.info(method, 'Activated user', { id, data: response.data });
+      return response.data.data;
+    } catch (error) {
+      logger.error(method, error, { id });
+      throw error;
+    }
+  }
+
+  async deactivateUser(id) {
+    const method = 'deactivateUser';
+    try {
+      const response = await this.api.patch(`/users/${id}/deactivate`);
+      logger.info(method, 'Deactivated user', { id, data: response.data });
+      return response.data.data;
+    } catch (error) {
+      logger.error(method, error, { id });
+      throw error;
+    }
+  }
+
+  async getUserTransactions(id) {
+    const method = 'getUserTransactions';
+    try {
+      const response = await this.api.get(`/users/${id}/transactions`);
+      logger.info(method, 'Fetched user transactions', { id, count: response.data.data?.length });
+      return response.data.data;
+    } catch (error) {
+      logger.error(method, error, { id });
       throw error;
     }
   }
@@ -128,76 +166,31 @@ class AdminService {
   async getTransactions(params = {}) {
     const method = 'getTransactions';
     console.group(`[AdminService.${method}]`);
-    
     try {
       console.log('Fetching transactions with params:', params);
       const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      
       if (!token) {
         const error = new Error('No authentication token found');
         error.code = 'MISSING_AUTH_TOKEN';
         throw error;
       }
-      
-      const response = await this.api.get('/transactions', { 
+      const response = await this.api.get('/transactions', {
         params,
-        timeout: 10000, // 10 second timeout
+        timeout: 10000,
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
       });
-      
-      console.log('Transactions response:', {
-        status: response.status,
-        count: response.data?.transactions?.length || 0
-      });
-      
-      // Ensure we always return an array, even if the response is malformed
+      // Always return the real data from the backend
       return response.data?.transactions || [];
-      
     } catch (error) {
       const errorInfo = logger.error(method, error);
-      
-      // In development, return mock data if the API fails
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Using mock transactions data due to API error');
-        return [
-          {
-            id: 'tx_mock_1',
-            user: { 
-              id: 'user_1',
-              name: 'John Doe', 
-              email: 'john@example.com' 
-            },
-            amount: 5000,
-            type: 'purchase',
-            status: 'completed',
-            createdAt: new Date().toISOString(),
-            description: 'Mock transaction 1'
-          },
-          {
-            id: 'tx_mock_2',
-            user: { 
-              id: 'user_2',
-              name: 'Jane Smith', 
-              email: 'jane@example.com' 
-            },
-            amount: 7500,
-            type: 'refund',
-            status: 'pending',
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            description: 'Mock transaction 2'
-          }
-        ];
-      }
-      
-      // Re-throw with more context
+      // Do not return mock data. Always throw the error so the UI shows a real error state.
       const enhancedError = new Error(`Failed to fetch transactions: ${error.message}`);
       enhancedError.code = error.code || 'TRANSACTIONS_FETCH_ERROR';
       enhancedError.details = errorInfo;
       throw enhancedError;
-      
     } finally {
       console.groupEnd();
     }
@@ -261,31 +254,6 @@ class AdminService {
       console.error('Error in getTransactions:', errorDetails);
       
       // Return mock data in development if the API fails
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Using mock transactions data due to API error');
-        return {
-          transactions: [
-            {
-              id: 'tx_mock_1',
-              user: { name: 'John Doe', email: 'john@example.com' },
-              amount: 5000,
-              type: 'purchase',
-              status: 'completed',
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: 'tx_mock_2',
-              user: { name: 'Jane Smith', email: 'jane@example.com' },
-              amount: 7500,
-              type: 'refund',
-              status: 'pending',
-              createdAt: new Date(Date.now() - 86400000).toISOString() // Yesterday
-            }
-          ]
-        };
-      }
-      
-      // Re-throw the error for the caller to handle
       throw error;
       
     } finally {
@@ -378,26 +346,16 @@ class AdminService {
   async getDashboardMetrics() {
     try {
       console.log('Fetching dashboard metrics...');
-      const response = await this.api.get('/metrics');
+      const response = await this.api.get('/stats');
       console.log('Dashboard metrics response:', response.data);
-      return response.data;
+      // The real data is in response.data.data
+      return response.data.data || {};
     } catch (error) {
-      console.warn('Error fetching dashboard metrics, using mock data instead:', error.message);
-      // Return mock data for development
-      return {
-        totalUsers: 42,
-        totalTransactions: 128,
-        revenue: 125000,
-        totalServices: 8,
-        recentTransactions: [
-          { id: 1, user: 'user1@example.com', service: 'WAEC', amount: 5000, status: 'completed', date: new Date().toISOString() },
-          { id: 2, user: 'user2@example.com', service: 'NECO', amount: 4500, status: 'pending', date: new Date().toISOString() },
-          { id: 3, user: 'user3@example.com', service: 'JAMB', amount: 3500, status: 'completed', date: new Date().toISOString() }
-        ]
-      };
+      // Do not return mock data. Always throw the error so the UI shows a real error state.
+      throw new Error('Failed to fetch dashboard metrics: ' + error.message);
     }
   }
 }
 
 const adminService = new AdminService();
-export default adminService; 
+export default adminService;
