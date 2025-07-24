@@ -16,8 +16,8 @@ const debugLayout = (message, data = {}) => {
 };
 
 const AdminLayout = () => {
-  const { isAdmin, isLoading } = useAdmin();
-  const { user, isAuthenticated } = useAuth();
+  const { isAdmin, isLoading, isAdminResolved } = useAdmin();
+  const { user, isAuthenticated, isAuthResolved } = useAuth();
   const location = useLocation();
 
   // Log initial render and auth state changes
@@ -27,12 +27,14 @@ const AdminLayout = () => {
       isAuthenticated,
       user: user ? { id: user.id, email: user.email, role: user.role } : null,
       isAdmin,
-      isLoading
+      isLoading,
+      isAuthResolved,
+      isAdminResolved
     });
-  }, [isAuthenticated, user, isAdmin, isLoading, location.pathname]);
+  }, [isAuthenticated, user, isAdmin, isLoading, isAuthResolved, isAdminResolved, location.pathname]);
 
-  // Show loading state while checking auth
-  if (isLoading) {
+  // Show loading state while checking auth or admin context
+  if (!isAuthResolved || !isAdminResolved) {
     debugLayout('Rendering loading state');
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">

@@ -20,7 +20,15 @@ export const AdminProvider = ({ children }) => {
   const [activePage, setActivePage] = useState('dashboard');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [dashboardMetrics, setDashboardMetrics] = useState(null);
+  const [dashboardMetrics, setDashboardMetrics] = useState({
+    totalUsers: 0,
+    totalTransactions: 0,
+    revenue: 0,
+    totalServices: 0,
+    recentTransactions: [],
+    recentUsers: [],
+    recentServices: []
+  });
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -61,13 +69,15 @@ export const AdminProvider = ({ children }) => {
       
       // Ensure the data has the expected structure
       const metrics = {
-        totalUsers: data.totalUsers || 0,
-        totalTransactions: data.totalTransactions || 0,
-        revenue: data.revenue || 0,
-        totalServices: data.totalServices || 0,
-        recentTransactions: data.recentTransactions || []
+        totalUsers: 0,
+        totalTransactions: 0,
+        revenue: 0,
+        totalServices: 0,
+        recentTransactions: [],
+        recentUsers: [],
+        recentServices: [],
+        ...data
       };
-      
       setDashboardMetrics(metrics);
       return metrics;
     } catch (err) {
@@ -78,7 +88,9 @@ export const AdminProvider = ({ children }) => {
         totalTransactions: 0,
         revenue: 0,
         totalServices: 0,
-        recentTransactions: []
+        recentTransactions: [],
+        recentUsers: [],
+        recentServices: []
       };
       setDashboardMetrics(fallbackMetrics);
       return fallbackMetrics;
@@ -210,6 +222,9 @@ export const AdminProvider = ({ children }) => {
     isAdmin
   });
 
+  // Derived state: true only when admin context is fully resolved
+  const isAdminResolved = !isLoading && isAdmin !== undefined && isAuthenticated !== undefined && user !== null;
+
   const contextValue = {
     isAdmin: adminStatus,
     isSidebarCollapsed,
@@ -217,6 +232,7 @@ export const AdminProvider = ({ children }) => {
     activePage,
     setActivePage,
     isLoading,
+    isAdminResolved, // <-- add this
     error,
     dashboardMetrics,
     fetchDashboardMetrics,
@@ -259,4 +275,4 @@ export const useAdmin = () => {
     throw new Error('useAdmin must be used within an AdminProvider');
   }
   return context;
-}; 
+};

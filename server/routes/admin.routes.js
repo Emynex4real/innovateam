@@ -39,7 +39,15 @@ router.get('/metrics', (req, res) => {
       totalUsers: 100,
       totalTransactions: 200,
       totalServices: 10,
-      revenue: 5000
+      revenue: 5000,
+      recentUsers: [
+        { id: 1, name: 'John Doe', email: 'john@example.com' },
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com' }
+      ],
+      recentTransactions: [
+        { id: 1, user: 'John Doe', service: 'WAEC', amount: 5000, status: 'completed', date: new Date().toISOString() },
+        { id: 2, user: 'Jane Smith', service: 'NECO', amount: 4500, status: 'pending', date: new Date().toISOString() }
+      ]
     }
   });
 });
@@ -68,4 +76,4 @@ router.get('/services', (req, res) => {
   });
 });
 
-module.exports = router; 
+module.exports = router;

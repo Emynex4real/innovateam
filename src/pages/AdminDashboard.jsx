@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAdmin } from '../contexts/AdminContext';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Users,
   ShoppingCart,
@@ -77,8 +78,9 @@ const QuickAction = ({ label, onClick, icon }) => (
 );
 
 const AdminDashboard = () => {
-  console.log('AdminDashboard FUNCTION BODY running');
+  const { isAuthResolved } = useAuth();
   const {
+    isAdminResolved,
     dashboardMetrics,
     fetchDashboardMetrics,
     isLoading: isMetricsLoading,
@@ -92,8 +94,20 @@ const AdminDashboard = () => {
     revenue: 0,
     totalServices: 0,
     recentTransactions: [],
+    recentUsers: [],
     ...dashboardMetrics
   }), [dashboardMetrics]);
+
+  // Defensive fallback: if dashboardMetrics is null, use safeMetrics everywhere
+  const metricsToUse = dashboardMetrics && typeof dashboardMetrics === 'object' ? safeMetrics : {
+    totalUsers: 0,
+    totalTransactions: 0,
+    revenue: 0,
+    totalServices: 0,
+    recentTransactions: [],
+    recentUsers: [],
+    recentServices: []
+  };
 
   // Format the revenue for display
   const formattedRevenue = useMemo(() => {
@@ -123,6 +137,27 @@ const AdminDashboard = () => {
       });
     // eslint-disable-next-line
   }, []);
+
+  // Only fetch metrics after auth and admin are resolved
+  useEffect(() => {
+    if (isAuthResolved && isAdminResolved) {
+      fetchDashboardMetrics();
+    }
+    // eslint-disable-next-line
+  }, [isAuthResolved, isAdminResolved]);
+
+  // Show loading state until both contexts are resolved
+  if (!isAuthResolved || !isAdminResolved || isMetricsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+          <p className="text-lg text-gray-700">Loading dashboard data...</p>
+          <p className="text-sm text-gray-500 mt-2">Please wait while we load your dashboard</p>
+        </div>
+      </div>
+    );
+  }
 
   console.log('AdminDashboard render with state:', { 
     isMetricsLoading, 
@@ -251,7 +286,7 @@ const AdminDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Users</h3>
               <ul>
-                {dashboardMetrics.recentUsers?.map(u => (
+                {(metricsToUse.recentUsers || []).map(u => (
                   <li key={u.id} className="mb-2 flex justify-between items-center">
                     <span>{u.name}</span>
                     <span className="text-xs text-gray-500">{u.email}</span>
@@ -262,9 +297,9 @@ const AdminDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Transactions</h3>
               <ul>
-                {dashboardMetrics.recentTransactions?.map(t => (
+                {(metricsToUse.recentTransactions || []).map(t => (
                   <li key={t.id} className="mb-2 flex justify-between items-center">
-                    <span>{t.user.name}</span>
+                    <span>{t.user?.name || t.user || 'Unknown'}</span>
                     <span className="text-xs text-gray-500">₦{t.amount}</span>
                   </li>
                 ))}
@@ -273,7 +308,7 @@ const AdminDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Services</h3>
               <ul>
-                {dashboardMetrics.recentServices?.map(s => (
+                {(metricsToUse.recentServices || []).map(s => (
                   <li key={s.id} className="mb-2 flex justify-between items-center">
                     <span>{s.name}</span>
                     <span className="text-xs text-gray-500">₦{s.price}</span>
@@ -309,8 +344,8 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {dashboardMetrics.recentTransactions?.length > 0 ? (
-                    dashboardMetrics.recentTransactions.map((transaction) => (
+                  {(metricsToUse.recentTransactions || []).length > 0 ? (
+                    metricsToUse.recentTransactions.map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {transaction.user}
@@ -347,12 +382,12 @@ const AdminDashboard = () => {
                 </tbody>
               </table>
             </div>
-            {dashboardMetrics.recentTransactions?.length > 0 && (
+            {(metricsToUse.recentTransactions || []).length > 0 && (
               <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
                 <div className="text-sm text-gray-500">
                   Showing <span className="font-medium">1</span> to <span className="font-medium">
-                    {Math.min(3, dashboardMetrics.recentTransactions?.length || 0)}
-                  </span> of <span className="font-medium">{dashboardMetrics.recentTransactions?.length || 0}</span> results
+                    {Math.min(3, metricsToUse.recentTransactions.length)}
+                  </span> of <span className="font-medium">{metricsToUse.recentTransactions.length}</span> results
                 </div>
                 <div className="flex-1 flex justify-end">
                   <button className="text-sm font-medium text-blue-600 hover:text-blue-500">
@@ -373,4 +408,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

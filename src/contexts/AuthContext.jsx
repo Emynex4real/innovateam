@@ -32,169 +32,76 @@ export const AuthProvider = ({ children }) => {
     let retryCount = 0;
     const MAX_RETRIES = 2;
 
+    // --- Robust Auth Rehydration ---
     const checkAuth = async (isRetry = false) => {
       if (!isMounted) return;
-      
-      debugAuth('Starting auth check', { 
-        isRetry,
-        retryCount,
-        timestamp: new Date().toISOString() 
-      });
-
+      debugAuth('Starting auth check', { isRetry, retryCount, timestamp: new Date().toISOString() });
       try {
-        // Get current state directly from localStorage to avoid caching issues
+        // Always get latest from localStorage
         const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
         const userStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
         const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-        
         const storedUser = userStr ? JSON.parse(userStr) : null;
+        debugAuth('Current auth state', { hasToken: !!token, hasUser: !!storedUser, hasRefreshToken: !!refreshToken, userId: storedUser?.id, timestamp: new Date().toISOString() });
 
-        debugAuth('Current auth state', {
-          hasToken: !!token,
-          hasUser: !!storedUser,
-          hasRefreshToken: !!refreshToken,
-          userId: storedUser?.id,
-          timestamp: new Date().toISOString()
-        });
-
-        // If we have a refresh token but no auth token, try to refresh
-        if ((!token || isRetry) && refreshToken && storedUser) {
-          debugAuth('Attempting token refresh...');
-          try {
-            const refreshResult = await authService.refreshToken();
-            debugAuth('Token refresh result', { 
-              success: refreshResult?.success,
-              hasUser: !!refreshResult?.user
-            });
-
-            if (refreshResult?.success && isMounted) {
-              debugAuth('Token refresh successful, updating state');
-              setUser(refreshResult.user);
-              setIsAuthenticated(true);
-              setIsLoading(false);
-              return;
-            }
-          } catch (refreshError) {
-            console.error('Refresh token error:', refreshError);
-            debugAuth('Refresh failed', { 
-              error: refreshError.message,
-              willRetry: retryCount < MAX_RETRIES
-            });
-            
-            if (retryCount < MAX_RETRIES) {
-              retryCount++;
-              debugAuth(`Retrying auth check (${retryCount}/${MAX_RETRIES})...`);
-              setTimeout(() => checkAuth(true), 500);
-              return;
-            }
-          }
-        }
-
-        // If we have both token and user, validate the token
-        if (token && storedUser) {
-          debugAuth('Validating token...');
+        // If all are present, validate token
+        if (token && storedUser && refreshToken) {
+          debugAuth('All auth data present, validating token...');
           try {
             const isValid = await authService.validateToken();
             debugAuth('Token validation result', { isValid });
-
             if (isValid && isMounted) {
-              const freshUser = authService.getUser();
-              debugAuth('Token valid, updating user state');
-              setUser(freshUser);
+              setUser(authService.getUser());
               setIsAuthenticated(true);
               setIsLoading(false);
               return;
             }
           } catch (validationError) {
-            console.error('Token validation error:', validationError);
-            debugAuth('Token validation failed', { 
-              error: validationError.message,
-              willRetry: retryCount < MAX_RETRIES
-            });
-            
-            if (retryCount < MAX_RETRIES) {
+            debugAuth('Token validation failed', { error: validationError.message });
+            // Try refresh if not already retried
+            if (refreshToken && retryCount < MAX_RETRIES) {
               retryCount++;
-              debugAuth(`Retrying auth check (${retryCount}/${MAX_RETRIES})...`);
-              setTimeout(() => checkAuth(true), 500);
-              return;
-            }
-          }
-        }
-
-        // If we get here, we couldn't validate the session
-        debugAuth('Could not validate session, checking for partial auth state...', {
-          hasToken: !!token,
-          hasUser: !!storedUser,
-          hasRefreshToken: !!refreshToken,
-          storedUserId: storedUser?.id,
-          storedUserEmail: storedUser?.email
-        });
-        
-        // Only clear auth if we have a clear inconsistency
-        const hasPartialAuth = (token || storedUser || refreshToken) && 
-                             !(token && storedUser && refreshToken);
-        
-        // Check if we have a valid user object but missing userId
-        const hasUserWithoutId = storedUser && !storedUser.id && storedUser.email;
-        
-        if (hasPartialAuth || hasUserWithoutId) {
-          debugAuth('Partial or invalid auth state detected, attempting recovery...', {
-            hasPartialAuth,
-            hasUserWithoutId
-          });
-          
-          // If we have a refresh token, try to refresh first
-          if (refreshToken && (!token || hasUserWithoutId)) {
-            try {
-              debugAuth('Attempting token refresh due to partial auth state...');
+              debugAuth('Attempting token refresh after failed validation...');
               const refreshResult = await authService.refreshToken();
-              
               if (refreshResult?.success && isMounted) {
-                debugAuth('Token refresh successful after partial auth state');
                 setUser(refreshResult.user);
                 setIsAuthenticated(true);
                 setIsLoading(false);
                 return;
               }
-            } catch (refreshError) {
-              console.error('Refresh token error during recovery:', refreshError);
             }
           }
-          
-          // If refresh failed or not possible, clear auth
-          debugAuth('Recovery failed, clearing auth state...');
-          authService.clearStorage();
-        } else if (token && storedUser) {
-          // If we have both token and user but validation failed, keep the current state
-          // but mark as not authenticated to force re-authentication on next navigation
-          debugAuth('Keeping auth state but marking as unauthenticated for re-validation');
-          setIsAuthenticated(false);
-        }
-        
-        if (isMounted) {
-          setUser(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
         }
 
-      } catch (error) {
-        console.error('Auth check error:', error);
-        debugAuth('Fatal error during auth check', { 
-          error: error.message,
-          stack: error.stack 
-        });
-        
-        if (isMounted) {
-          authService.clearStorage();
-          setUser(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
+        // If we have a refresh token but no auth token, try to refresh
+        if ((!token || !storedUser) && refreshToken) {
+          debugAuth('Missing token or user, attempting refresh...');
+          const refreshResult = await authService.refreshToken();
+          if (refreshResult?.success && isMounted) {
+            setUser(refreshResult.user);
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return;
+          }
         }
+
+        // If we get here, clear everything
+        debugAuth('Auth state invalid or expired, clearing...');
+        authService.clearStorage();
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoading(false);
+      } catch (error) {
+        debugAuth('Fatal error during auth check', { error: error.message, stack: error.stack });
+        authService.clearStorage();
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoading(false);
       }
     };
-  
+
     checkAuth();
-  
+
     // Add event listener for storage changes
     const handleStorageChange = (e) => {
       // Skip if this is not a localStorage event or not an auth-related key
@@ -359,10 +266,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Derived state: true only when auth is fully resolved
+  const isAuthResolved = !isLoading && user !== null && isAuthenticated !== undefined;
+
   const value = {
     user,
     isAuthenticated,
     isLoading,
+    isAuthResolved, // <-- add this
     login,
     logout,
     register,
