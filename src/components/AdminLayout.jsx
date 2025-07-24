@@ -25,11 +25,12 @@ const AdminLayout = () => {
     debugLayout('Mounted/Updated', {
       path: location.pathname,
       isAuthenticated,
-      user: user ? { id: user.id, email: user.email, role: user.role } : null,
+      user: user ? { id: user.id, email: user.email, role: user.role, isAdmin: user.isAdmin } : null,
       isAdmin,
       isLoading,
       isAuthResolved,
-      isAdminResolved
+      isAdminResolved,
+      timestamp: new Date().toISOString()
     });
   }, [isAuthenticated, user, isAdmin, isLoading, isAuthResolved, isAdminResolved, location.pathname]);
 
@@ -46,8 +47,8 @@ const AdminLayout = () => {
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  // Only redirect to login if auth is fully resolved and user is NOT authenticated
+  if (isAuthResolved && !isAuthenticated) {
     debugLayout('Redirecting to login', { from: location.pathname });
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

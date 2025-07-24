@@ -37,7 +37,7 @@ const loginValidation = [
 router.post('/register', register);
 router.post('/login', login);
 router.post('/logout', logout);
-router.get('/validate', validateToken);
+router.get('/validate', authenticate, validateToken);
 router.post('/refresh-token', refreshToken);
 
-module.exports = router; 
+module.exports = router;

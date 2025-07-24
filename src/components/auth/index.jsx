@@ -21,3 +21,6 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+// DEPRECATED: Do not use this AuthProvider. Use AuthContext from src/contexts/AuthContext.jsx instead.
+// This file is only kept for legacy reference and should not be imported anywhere in the app.

@@ -39,6 +39,7 @@ api.interceptors.response.use(
       case 401:
         if (response.data?.message === 'Token expired') {
           localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
           localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
           window.location.href = '/login';
           toast.error(ERROR_MESSAGES.SESSION_EXPIRED);
@@ -66,4 +67,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+export default api;

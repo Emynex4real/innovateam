@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
         const userStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
         const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
         const storedUser = userStr ? JSON.parse(userStr) : null;
-        debugAuth('Current auth state', { hasToken: !!token, hasUser: !!storedUser, hasRefreshToken: !!refreshToken, userId: storedUser?.id, timestamp: new Date().toISOString() });
+        debugAuth('Current auth state', { hasToken: !!token, hasUser: !!storedUser, hasRefreshToken: !!refreshToken, userId: storedUser?.id, userRole: storedUser?.role, isAdmin: storedUser?.isAdmin, timestamp: new Date().toISOString() });
 
         // If all are present, validate token
         if (token && storedUser && refreshToken) {
@@ -51,23 +51,45 @@ export const AuthProvider = ({ children }) => {
             const isValid = await authService.validateToken();
             debugAuth('Token validation result', { isValid });
             if (isValid && isMounted) {
-              setUser(authService.getUser());
+              // Ensure user object has role and isAdmin
+              let validatedUser = authService.getUser();
+              if (validatedUser && (!validatedUser.role || typeof validatedUser.isAdmin === 'undefined')) {
+                validatedUser.role = validatedUser.role || 'user';
+                validatedUser.isAdmin = validatedUser.role === 'admin';
+                authService.setUser(validatedUser);
+              }
+              setUser(validatedUser);
               setIsAuthenticated(true);
               setIsLoading(false);
+              debugAuth('Auth state after validation', { user: validatedUser });
               return;
+            } else {
+              debugAuth('validateToken returned false, will try refresh if possible');
             }
           } catch (validationError) {
-            debugAuth('Token validation failed', { error: validationError.message });
+            debugAuth('Token validation threw error', { error: validationError.message, stack: validationError.stack });
             // Try refresh if not already retried
             if (refreshToken && retryCount < MAX_RETRIES) {
               retryCount++;
               debugAuth('Attempting token refresh after failed validation...');
               const refreshResult = await authService.refreshToken();
+              debugAuth('refreshToken result after failed validation', refreshResult);
               if (refreshResult?.success && isMounted) {
-                setUser(refreshResult.user);
+                // Ensure user object has role and isAdmin
+                let refreshedUser = refreshResult.user;
+                if (refreshedUser && (!refreshedUser.role || typeof refreshedUser.isAdmin === 'undefined')) {
+                  refreshedUser.role = refreshedUser.role || 'user';
+                  refreshedUser.isAdmin = refreshedUser.role === 'admin';
+                  authService.setUser(refreshedUser);
+                }
+                setUser(refreshedUser);
                 setIsAuthenticated(true);
                 setIsLoading(false);
+                authService.logAuthStorageState('after AuthContext refresh');
+                debugAuth('Auth state after refresh', { user: refreshedUser });
                 return;
+              } else {
+                debugAuth('refreshToken failed after failed validation', refreshResult);
               }
             }
           }
@@ -77,11 +99,21 @@ export const AuthProvider = ({ children }) => {
         if ((!token || !storedUser) && refreshToken) {
           debugAuth('Missing token or user, attempting refresh...');
           const refreshResult = await authService.refreshToken();
+          debugAuth('refreshToken result (no token/user)', refreshResult);
           if (refreshResult?.success && isMounted) {
-            setUser(refreshResult.user);
+            let refreshedUser = refreshResult.user;
+            if (refreshedUser && (!refreshedUser.role || typeof refreshedUser.isAdmin === 'undefined')) {
+              refreshedUser.role = refreshedUser.role || 'user';
+              refreshedUser.isAdmin = refreshedUser.role === 'admin';
+              authService.setUser(refreshedUser);
+            }
+            setUser(refreshedUser);
             setIsAuthenticated(true);
             setIsLoading(false);
+            debugAuth('Auth state after refresh (no token)', { user: refreshedUser });
             return;
+          } else {
+            debugAuth('refreshToken failed (no token/user)', refreshResult);
           }
         }
 
@@ -172,25 +204,27 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.login(credentials);
       debugAuth('Login API response', { success: response.success, user: response.user });
-      
+      authService.logAuthStorageState('after AuthContext login');
       if (response.success) {
-        // Ensure we're setting the complete user object including isAdmin
-        debugAuth('Login successful, updating auth state', { userId: response.user?.id });
-        setUser(response.user);
+        // Ensure user object has role and isAdmin
+        let loginUser = response.user;
+        if (loginUser && (!loginUser.role || typeof loginUser.isAdmin === 'undefined')) {
+          loginUser.role = loginUser.role || 'user';
+          loginUser.isAdmin = loginUser.role === 'admin';
+          authService.setUser(loginUser);
+        }
+        debugAuth('Login successful, updating auth state', { userId: loginUser?.id, userRole: loginUser?.role, isAdmin: loginUser?.isAdmin });
+        setUser(loginUser);
         setIsAuthenticated(true);
-        
         if (rememberMe) {
           debugAuth('Setting remember me');
           authService.setRememberMe(true);
         }
-        
         // Verify the token was actually set
         const tokenAfterLogin = authService.getToken();
         debugAuth('After login state', { tokenSet: !!tokenAfterLogin });
-        
         return { success: true };
       }
-      
       debugAuth('Login failed', { error: response.error });
       return { success: false, error: response.error };
     } catch (error) {

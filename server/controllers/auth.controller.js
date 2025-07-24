@@ -154,6 +154,9 @@ exports.register = async (req, res) => {
     }
     users.push(user);
 
+    // Persist users to disk after registration
+    saveUsers();
+
     // Generate tokens
     const { token, refreshToken } = generateTokens(user);
 
@@ -297,8 +300,14 @@ exports.logout = async (req, res) => {
 
 exports.validateToken = async (req, res) => {
   try {
+    // Log incoming headers for debugging
+    console.log('[validateToken] Incoming headers:', req.headers);
+    // Disable caching and ETag for this endpoint
+    res.set('Cache-Control', 'no-store');
+    res.set('ETag', '');
     // Ensure we have a user object with role
     if (!req.user) {
+      console.log('[validateToken] No user found in request');
       return res.status(401).json({
         success: false,
         valid: false,
@@ -306,10 +315,14 @@ exports.validateToken = async (req, res) => {
       });
     }
 
+    // Debug: log req.user and all users
+    console.log('[validateToken] req.user', req.user);
+    console.log('[validateToken] all users', users.map(u => ({ id: u.id, email: u.email, role: u.role })));
+
     // Get the user from the database (in-memory array in this case)
     const user = users.find(u => u.id === req.user.id || u.email === req.user.email);
-    
     if (!user) {
+      console.log('[validateToken] User not found for', req.user);
       return res.status(401).json({
         success: false,
         valid: false,
@@ -338,6 +351,7 @@ exports.validateToken = async (req, res) => {
       user: userWithRole
     });
   } catch (error) {
+    console.error('[validateToken] Token validation error:', error);
     logger.error('Token validation error:', error);
     res.status(500).json({
       success: false,
@@ -395,4 +409,16 @@ exports.refreshToken = async (req, res) => {
       });
     }
   }
-}; 
+};
+
+// Export a getter for the current users array
+const getUsers = () => users;
+
+module.exports = {
+  register: exports.register,
+  login: exports.login,
+  logout: exports.logout,
+  validateToken: exports.validateToken,
+  refreshToken: exports.refreshToken,
+  getUsers
+};
