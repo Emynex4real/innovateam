@@ -35,6 +35,14 @@ const AdminUsers = () => {
     // eslint-disable-next-line
   }, []);
 
+  // Periodic auto-refresh (every 30 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchUsers]);
+
   const filtered = users.filter(u =>
     (u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase())) &&

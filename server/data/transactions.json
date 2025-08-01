@@ -1,10 +1,10 @@
 [
   {
     "id": "tx_1",
-    "user": { 
-      "id": "admin_1753206264151", 
-      "name": "Admin User", 
-      "email": "admin@example.com" 
+    "user": {
+      "id": "admin_1753206264151",
+      "name": "Admin User",
+      "email": "admin@example.com"
     },
     "amount": 5000,
     "type": "purchase",
@@ -14,15 +14,28 @@
   },
   {
     "id": "tx_2",
-    "user": { 
-      "id": "admin_1753206264151", 
-      "name": "Admin User", 
-      "email": "admin@example.com" 
+    "user": {
+      "id": "admin_1753206264151",
+      "name": "Admin User",
+      "email": "admin@example.com"
     },
     "amount": 7500,
     "type": "refund",
     "status": "pending",
     "createdAt": "2025-07-21T17:44:24.151Z",
     "description": "Test refund"
+  },
+  {
+    "id": "tx_1753972542306",
+    "user": {
+      "id": "1753972273056",
+      "name": "Opadiya Iyanuoluwa",
+      "email": "michaelbalogun34@gmail.com"
+    },
+    "amount": 2500,
+    "type": "purchase",
+    "status": "completed",
+    "createdAt": "2025-07-31T14:35:42.306Z",
+    "description": "Sample transaction for new user"
   }
 ]

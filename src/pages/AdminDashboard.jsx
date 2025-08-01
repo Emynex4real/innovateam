@@ -143,6 +143,14 @@ const AdminDashboard = () => {
     fetchDashboardMetrics();
   };
 
+  // Periodic auto-refresh (every 30 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchDashboardMetrics();
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchDashboardMetrics]);
+
   // Notification send handler (stub)
   const handleSendNotification = async () => {
     setIsSendingNotification(true);

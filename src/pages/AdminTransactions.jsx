@@ -158,6 +158,15 @@ const AdminTransactions = () => {
     // eslint-disable-next-line
   }, [isAuthResolved, isAdminResolved, fetchTransactions]);
 
+  // Periodic auto-refresh (every 30 seconds)
+  useEffect(() => {
+    if (!isAuthResolved || !isAdminResolved) return;
+    const interval = setInterval(() => {
+      fetchTransactions();
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }, [isAuthResolved, isAdminResolved, fetchTransactions]);
+
   // Log when transactions change
   useEffect(() => {
     console.log('[AdminTransactions] Transactions updated:', {
