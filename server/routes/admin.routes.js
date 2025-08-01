@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middleware/authenticate');
-const transactionsController = require('../controllers/transactions.controller');
+const { requireAdmin } = require('../middleware/supabaseAuth');
+const adminController = require('../controllers/admin.controller');
 const { logger } = require('../utils/logger');
-const fs = require('fs');
-const path = require('path');
 
 // Middleware to check if user is admin
 const isAdmin = (req, res, next) => {
@@ -29,58 +27,50 @@ const isAdmin = (req, res, next) => {
   }
 };
 
-// Apply authentication and admin check to all admin routes
-router.use(authenticate);
-router.use(isAdmin);
+// Apply Supabase Auth and admin role check to all admin routes
+router.use(requireAdmin);
 
-// Helper to load users and transactions from disk
-function loadUsers() {
-  const usersFile = path.join(__dirname, '../data/users.json');
-  if (fs.existsSync(usersFile)) {
-    return JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-  }
-  return [];
-}
-function loadTransactions() {
-  const txFile = path.join(__dirname, '../data/transactions.json');
-  if (fs.existsSync(txFile)) {
-    return JSON.parse(fs.readFileSync(txFile, 'utf8'));
-  }
-  return [];
-}
 
-// GET /api/admin/stats (dashboard metrics)
-router.get('/stats', (req, res) => {
-  const users = loadUsers();
-  const transactions = loadTransactions();
-  const totalUsers = users.length;
-  const totalTransactions = transactions.length;
-  const revenue = transactions.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  const recentUsers = users.slice(-5).reverse();
-  const recentTransactions = transactions.slice(-5).reverse();
-  res.json({
-    success: true,
-    data: {
-      totalUsers,
-      totalTransactions,
-      revenue,
-      recentUsers,
-      recentTransactions
-    }
-  });
+// GET /api/admin/stats (dashboard metrics, Supabase only)
+router.get('/stats', async (req, res) => {
+  try {
+    // Fetch users and transactions from Supabase
+    const { data: users, error: usersError } = await require('../supabaseClient')
+      .from('users')
+      .select('*')
+      .is('deleted_at', null);
+    const { data: transactions, error: txError } = await require('../supabaseClient')
+      .from('transactions')
+      .select('*')
+      .is('deleted_at', null);
+    if (usersError) throw usersError;
+    if (txError) throw txError;
+
+    const totalUsers = users.length;
+    const totalTransactions = transactions.length;
+    const revenue = transactions.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const recentUsers = [...users].slice(-5).reverse();
+    const recentTransactions = [...transactions].slice(-5).reverse();
+    res.json({
+      success: true,
+      data: {
+        totalUsers,
+        totalTransactions,
+        revenue,
+        recentUsers,
+        recentTransactions
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
-// GET /api/admin/users (real user list)
-router.get('/users', (req, res) => {
-  const users = loadUsers();
-  res.json({
-    success: true,
-    data: users
-  });
-});
+// GET /api/admin/users (MongoDB)
+router.get('/users', adminController.getUsers);
 
-// GET /api/admin/transactions
-router.get('/transactions', transactionsController.getTransactions);
+// GET /api/admin/transactions (MongoDB)
+router.get('/transactions', adminController.getTransactions);
 
 // GET /api/services
 router.get('/services', (req, res) => {
@@ -92,45 +82,19 @@ router.get('/services', (req, res) => {
   });
 });
 
-// GET /api/admin/users/:id - get user details
-router.get('/users/:id', (req, res) => {
-  const users = loadUsers();
-  const user = users.find(u => u.id === req.params.id);
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'User not found' });
-  }
-  res.json({ success: true, data: user });
-});
+// GET /api/admin/users/:id - get user details (Supabase)
+router.get('/users/:id', require('../controllers/admin.controller').getUserById);
 
-// PATCH /api/admin/users/:id/activate - activate user
-router.patch('/users/:id/activate', (req, res) => {
-  const users = loadUsers();
-  const idx = users.findIndex(u => u.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ success: false, message: 'User not found' });
-  }
-  users[idx].status = 'active';
-  fs.writeFileSync(path.join(__dirname, '../data/users.json'), JSON.stringify(users, null, 2));
-  res.json({ success: true, data: users[idx] });
-});
+// DELETE /api/admin/users/:id (MongoDB)
+router.delete('/users/:id', adminController.deleteUser);
 
-// PATCH /api/admin/users/:id/deactivate - deactivate user
-router.patch('/users/:id/deactivate', (req, res) => {
-  const users = loadUsers();
-  const idx = users.findIndex(u => u.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ success: false, message: 'User not found' });
-  }
-  users[idx].status = 'inactive';
-  fs.writeFileSync(path.join(__dirname, '../data/users.json'), JSON.stringify(users, null, 2));
-  res.json({ success: true, data: users[idx] });
-});
+// PATCH /api/admin/users/:id/activate - activate user (MongoDB)
+router.patch('/users/:id/activate', adminController.activateUser);
 
-// GET /api/admin/users/:id/transactions - get all transactions for a user
-router.get('/users/:id/transactions', (req, res) => {
-  const transactions = loadTransactions();
-  const userTx = transactions.filter(t => t.user && (t.user.id === req.params.id || t.user.userId === req.params.id));
-  res.json({ success: true, data: userTx });
-});
+// PATCH /api/admin/users/:id/deactivate - deactivate user (MongoDB)
+router.patch('/users/:id/deactivate', adminController.deactivateUser);
+
+// GET /api/admin/users/:id/transactions - get all transactions for a user (Supabase)
+router.get('/users/:id/transactions', require('../controllers/admin.controller').getUserTransactions);
 
 module.exports = router;

@@ -17,5 +17,14 @@
     "password": "$2a$12$MwF6GZAdWbT/EILRGCqYreE7Wm8xYQX9lEJtlvmH0bqZEPiMWFmf6",
     "role": "user",
     "createdAt": "2025-07-24T14:09:42.551Z"
+  },
+  {
+    "id": "1753972273056",
+    "name": "Opadiya Iyanuoluwa",
+    "email": "michaelbalogun34@gmail.com",
+    "phoneNumber": "08033772750",
+    "password": "$2a$12$7BBkdP6DxBExjxo92HvAC.yCW0ySJ/7Wqr3XRrtkb2Yr24LaQsLqq",
+    "role": "user",
+    "createdAt": "2025-07-31T14:31:13.056Z"
   }
 ]

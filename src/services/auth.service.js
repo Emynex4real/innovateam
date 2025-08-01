@@ -4,17 +4,10 @@ import {
   API_BASE_URL,
   API_ENDPOINTS 
 } from '../config/constants';
+import logger from '../utils/logger';
 
 // Fallback API URL if not defined in constants
 const API_URL = API_BASE_URL || 'http://localhost:5001/api';
-
-// Debug logging function for auth service
-const debugAuthService = (message, data = {}) => {
-  if (process.env.NODE_ENV !== 'production') {
-    const timestamp = new Date().toISOString();
-    console.log(`[AuthService:${timestamp}] ${message}`, data);
-  }
-};
 
 class AuthService {
   constructor() {
@@ -25,7 +18,7 @@ class AuthService {
   initialize() {
     if (this.initialized) return;
     
-    debugAuthService('Initializing AuthService');
+    logger.service('Initializing AuthService');
     
     this.api = axios.create({
       baseURL: API_BASE_URL,
@@ -41,16 +34,10 @@ class AuthService {
         const token = this.getToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
-          debugAuthService('Added auth token to request', { 
-            url: config.url,
-            method: config.method,
-            hasToken: !!token
-          });
         }
         return config;
       },
       (error) => {
-        debugAuthService('Request interceptor error', { error: error.message });
         return Promise.reject(error);
       }
     );
@@ -58,24 +45,15 @@ class AuthService {
     // Add response interceptor to handle token refresh
     this.api.interceptors.response.use(
       (response) => {
-        debugAuthService('API response', {
-          url: response.config.url,
-          status: response.status,
-          method: response.config.method
-        });
         return response;
       },
       async (error) => {
         const originalRequest = error.config;
         const status = error.response?.status;
         
-        debugAuthService('API error', {
-          url: originalRequest?.url,
-          method: originalRequest?.method,
-          status,
-          message: error.message,
-          isRetry: originalRequest?._retry || false
-        });
+        if (status !== 431) {
+          logger.service('API error', { status, error: error.message });
+        }
 
         // If the error is 401 and we haven't already tried to refresh
         if (status === 401 && !originalRequest?._retry) {
@@ -84,12 +62,12 @@ class AuthService {
           try {
             const refreshToken = this.getRefreshToken();
             if (!refreshToken) {
-              debugAuthService('No refresh token available, cannot refresh');
+              logger.service('No refresh token available');
               this.clearStorage();
               return Promise.reject(error);
             }
 
-            debugAuthService('Attempting to refresh token...');
+            logger.service('Attempting to refresh token');
             const response = await axios.post(
               `${API_BASE_URL}${API_ENDPOINTS.AUTH.REFRESH_TOKEN}`,
               { refreshToken },
@@ -103,27 +81,19 @@ class AuthService {
 
             const { token, user } = response.data;
             if (token && user) {
-              debugAuthService('Token refresh successful');
+              logger.service('Token refresh successful');
               this.setToken(token);
               this.setUser(user);
               
               // Update the original request with the new token
               originalRequest.headers.Authorization = `Bearer ${token}`;
               
-              // Log the retry
-              debugAuthService('Retrying original request with new token', {
-                url: originalRequest.url,
-                method: originalRequest.method
-              });
+              logger.service('Retrying original request');
               
               return this.api(originalRequest);
             }
           } catch (refreshError) {
-            debugAuthService('Token refresh failed', { 
-              error: refreshError.message,
-              status: refreshError.response?.status,
-              data: refreshError.response?.data
-            });
+            logger.service('Token refresh failed');
             
             // Only clear storage if it's an auth-related error
             if (refreshError.response?.status === 401) {
@@ -142,16 +112,12 @@ class AuthService {
   }
 
   async login(credentials) {
-    debugAuthService('Login attempt started', { email: credentials.email });
+    logger.auth('Login attempt started');
     try {
       const response = await this.api.post('/auth/login', credentials);
       const { token, refreshToken, user } = response.data;
       
-      debugAuthService('Login API response received', { 
-        hasToken: !!token, 
-        hasRefreshToken: !!refreshToken,
-        user: { id: user?.id, email: user?.email }
-      });
+      logger.auth('Login response received');
 
       // Ensure user object includes isAdmin
       if (user && typeof user.isAdmin === 'undefined') {
@@ -168,19 +134,11 @@ class AuthService {
       const storedToken = this.getToken();
       const storedUser = this.getUser();
       
-      debugAuthService('After storage verification', {
-        tokenStored: !!storedToken,
-        userStored: !!storedUser,
-        storedUserMatch: storedUser?.id === user?.id
-      });
+      logger.auth('Storage verified');
 
       return { success: true, user };
     } catch (error) {
-      debugAuthService('Login error', {
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      logger.auth('Login error', { error: error.message });
       return {
         success: false,
         error: error.response?.data?.message || 'Login failed',
@@ -269,28 +227,14 @@ class AuthService {
     try {
       const token = this.getToken();
       if (!token) {
-        debugAuthService('No token found for validation');
+        logger.auth('No token found');
         return false;
       }
 
-      debugAuthService('Validating token with server', {
-        url: '/auth/validate',
-        method: 'GET',
-        tokenPrefix: token.substring(0, 10) + '...',
-        hasToken: !!token
-      });
+      logger.auth('Validating token');
       const response = await this.api.get('/auth/validate');
-      debugAuthService('Token validation API response', {
-        status: response.status,
-        data: response.data
-      });
       const { valid, user } = response.data;
-      debugAuthService('Token validation response', { 
-        valid, 
-        userId: user?.id,
-        userEmail: user?.email,
-        userRole: user?.role
-      });
+      logger.auth('Token validation response');
       if (valid && user) {
         // Ensure user object has a role, default to 'user' if not provided
         const userWithRole = {
@@ -298,23 +242,12 @@ class AuthService {
           role: user.role || 'user',
           isAdmin: (user.role === 'admin') // Set isAdmin based on role
         };
-        debugAuthService('Setting user with role', { 
-          id: userWithRole.id,
-          email: userWithRole.email,
-          role: userWithRole.role,
-          isAdmin: userWithRole.isAdmin
-        });
+        logger.auth('Setting user with role');
         this.setUser(userWithRole);
       }
       return valid;
     } catch (error) {
-      debugAuthService('Token validation error', {
-        error: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        url: '/auth/validate',
-        method: 'GET'
-      });
+      logger.auth('Token validation error');
       console.error('Token validation error:', error.response?.data || error.message);
       return false;
     }
@@ -322,20 +255,7 @@ class AuthService {
 
   // Utility: log all auth storage state
   logAuthStorageState(context = '') {
-    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-    const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-    const userString = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-    let user = null;
-    try { user = userString ? JSON.parse(userString) : null; } catch {}
-    debugAuthService(`[${context}] Auth storage state`, {
-      hasToken: !!token,
-      hasRefreshToken: !!refreshToken,
-      hasUser: !!user,
-      tokenPrefix: token ? token.substring(0, 10) + '...' : undefined,
-      refreshTokenPrefix: refreshToken ? refreshToken.substring(0, 10) + '...' : undefined,
-      userId: user?.id,
-      userEmail: user?.email
-    });
+    logger.auth(`Storage state: ${context}`);
   }
 
   // Defensive: only set user if both tokens are present
@@ -344,14 +264,14 @@ class AuthService {
       const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
       const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
       if (!user) {
-        debugAuthService('No user data provided to setUser');
+        logger.auth('No user data provided');
         return;
       }
       if (!token || !refreshToken) {
-        debugAuthService('Refusing to set user: missing token or refreshToken', { hasToken: !!token, hasRefreshToken: !!refreshToken });
+        logger.auth('Missing tokens, refusing to set user');
         return;
       }
-      debugAuthService('Setting user data', { userId: user.id, email: user.email });
+      logger.auth('Setting user data');
       const userString = JSON.stringify(user);
       localStorage.setItem(LOCAL_STORAGE_KEYS.USER, userString);
       // Verify the user was set correctly
@@ -359,12 +279,11 @@ class AuthService {
       if (!storedUser) {
         throw new Error('User verification failed after storage');
       }
-      debugAuthService('User data set and verified');
-      this.logAuthStorageState('setUser');
+      logger.auth('User data set');
     } catch (error) {
       const errorMsg = `Error setting user data: ${error.message}`;
       console.error(errorMsg, error);
-      debugAuthService(errorMsg, { error });
+      logger.auth('Error setting user', { error: error.message });
       throw new Error('Failed to set user data');
     }
   }
@@ -372,24 +291,23 @@ class AuthService {
   setToken(token) {
     try {
       if (!token) {
-        debugAuthService('No token provided to setToken');
+        logger.auth('No token provided');
         return;
       }
-      debugAuthService('Setting auth token', { tokenPrefix: token.substring(0, 10) + '...', length: token.length });
+      logger.auth('Setting auth token');
       localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
       // Verify the token was set correctly
       const storedToken = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
       if (storedToken !== token) {
         throw new Error('Token verification failed after storage');
       }
-      debugAuthService('Auth token set and verified');
-      this.logAuthStorageState('setToken');
+      logger.auth('Auth token set');
       // Update last action timestamp
       localStorage.setItem(LOCAL_STORAGE_KEYS.LAST_AUTH_ACTION, new Date().toISOString());
     } catch (error) {
       const errorMsg = `Error setting auth token: ${error.message}`;
       console.error(errorMsg, error);
-      debugAuthService(errorMsg, { error });
+      logger.auth('Error setting token', { error: error.message });
       throw new Error('Failed to set auth token');
     }
   }
@@ -397,22 +315,21 @@ class AuthService {
   setRefreshToken(token) {
     try {
       if (!token) {
-        debugAuthService('No refresh token provided to setRefreshToken');
+        logger.auth('No refresh token provided');
         return;
       }
-      debugAuthService('Setting refresh token', { tokenPrefix: token.substring(0, 10) + '...', length: token.length });
+      logger.auth('Setting refresh token');
       localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, token);
       // Verify the refresh token was set correctly
       const storedToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
       if (storedToken !== token) {
         throw new Error('Refresh token verification failed after storage');
       }
-      debugAuthService('Refresh token set and verified');
-      this.logAuthStorageState('setRefreshToken');
+      logger.auth('Refresh token set');
     } catch (error) {
       const errorMsg = `Error setting refresh token: ${error.message}`;
       console.error(errorMsg, error);
-      debugAuthService(errorMsg, { error });
+      logger.auth('Error setting refresh token', { error: error.message });
       throw new Error('Failed to set refresh token');
     }
   }
@@ -423,85 +340,27 @@ class AuthService {
     const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
     const user = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
     if (!token || !refreshToken || !user) {
-      debugAuthService(`[${context}] Incomplete auth storage detected, clearing all`, { hasToken: !!token, hasRefreshToken: !!refreshToken, hasUser: !!user });
+      logger.auth('Incomplete auth storage, clearing');
       this.clearStorage();
       return false;
     }
-    debugAuthService(`[${context}] Auth storage is complete`, { hasToken: !!token, hasRefreshToken: !!refreshToken, hasUser: !!user });
+    logger.auth('Auth storage complete');
     return true;
   }
 
   // Token management
-  setToken(token) {
-    try {
-      if (!token) {
-        debugAuthService('No token provided to setToken');
-        return;
-      }
-      debugAuthService('Setting auth token', { tokenPrefix: token.substring(0, 10) + '...', length: token.length });
-      localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
-      // Verify the token was set correctly
-      const storedToken = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      if (storedToken !== token) {
-        throw new Error('Token verification failed after storage');
-      }
-      debugAuthService('Auth token set and verified');
-      this.logAuthStorageState('setToken');
-      // Update last action timestamp
-      localStorage.setItem(LOCAL_STORAGE_KEYS.LAST_AUTH_ACTION, new Date().toISOString());
-    } catch (error) {
-      const errorMsg = `Error setting auth token: ${error.message}`;
-      console.error(errorMsg, error);
-      debugAuthService(errorMsg, { error });
-      throw new Error('Failed to set auth token');
-    }
-  }
-
   getToken() {
     try {
-      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      debugAuthService('Retrieved auth token', { 
-        exists: !!token,
-        length: token?.length || 0
-      });
-      return token;
+      return localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
     } catch (error) {
       console.error('Error getting auth token:', error);
       return null;
     }
   }
 
-  setRefreshToken(token) {
-    try {
-      if (!token) {
-        debugAuthService('No refresh token provided to setRefreshToken');
-        return;
-      }
-      debugAuthService('Setting refresh token', { tokenPrefix: token.substring(0, 10) + '...', length: token.length });
-      localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, token);
-      // Verify the refresh token was set correctly
-      const storedToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-      if (storedToken !== token) {
-        throw new Error('Refresh token verification failed after storage');
-      }
-      debugAuthService('Refresh token set and verified');
-      this.logAuthStorageState('setRefreshToken');
-    } catch (error) {
-      const errorMsg = `Error setting refresh token: ${error.message}`;
-      console.error(errorMsg, error);
-      debugAuthService(errorMsg, { error });
-      throw new Error('Failed to set refresh token');
-    }
-  }
-
   getRefreshToken() {
     try {
-      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-      debugAuthService('Retrieved refresh token', { 
-        exists: !!token,
-        length: token?.length || 0
-      });
-      return token;
+      return localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
     } catch (error) {
       console.error('Error getting refresh token:', error);
       return null;
@@ -509,69 +368,25 @@ class AuthService {
   }
 
   // User management
-  setUser(user) {
-    try {
-      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-      if (!user) {
-        debugAuthService('No user data provided to setUser');
-        return;
-      }
-      if (!token || !refreshToken) {
-        debugAuthService('Refusing to set user: missing token or refreshToken', { hasToken: !!token, hasRefreshToken: !!refreshToken });
-        return;
-      }
-      debugAuthService('Setting user data', { userId: user.id, email: user.email });
-      const userString = JSON.stringify(user);
-      localStorage.setItem(LOCAL_STORAGE_KEYS.USER, userString);
-      // Verify the user was set correctly
-      const storedUser = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-      if (!storedUser) {
-        throw new Error('User verification failed after storage');
-      }
-      debugAuthService('User data set and verified');
-      this.logAuthStorageState('setUser');
-    } catch (error) {
-      const errorMsg = `Error setting user data: ${error.message}`;
-      console.error(errorMsg, error);
-      debugAuthService(errorMsg, { error });
-      throw new Error('Failed to set user data');
-    }
-  }
-
   getUser() {
     try {
       const userString = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-      const user = userString ? JSON.parse(userString) : null;
-      
-      debugAuthService('Retrieved user data', { 
-        exists: !!user,
-        userId: user?.id,
-        email: user?.email
-      });
-      
-      return user;
+      return userString ? JSON.parse(userString) : null;
     } catch (error) {
-      const errorMsg = `Error parsing user data: ${error.message}`;
-      console.error(errorMsg, error);
-      debugAuthService(errorMsg, { error });
+      console.error('Error parsing user data:', error);
       return null;
     }
   }
 
   // Clear all auth data
   clearStorage() {
-    debugAuthService('Clearing auth storage');
+    logger.auth('Clearing auth storage');
     try {
       const hadToken = !!this.getToken();
       const hadUser = !!this.getUser();
       const hadRefreshToken = !!this.getRefreshToken();
       
-      debugAuthService('Current storage state before clear', {
-        hasToken: hadToken,
-        hasUser: hadUser,
-        hasRefreshToken: hadRefreshToken
-      });
+      logger.auth('Storage state before clear');
       
       localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
@@ -582,27 +397,13 @@ class AuthService {
       const currentUser = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
       const currentRefreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
       
-      debugAuthService('Auth storage cleared', { 
-        hadToken, 
-        hadUser, 
-        hadRefreshToken,
-        currentToken: !!currentToken,
-        currentUser: !!currentUser,
-        currentRefreshToken: !!currentRefreshToken
-      });
+      logger.auth('Auth storage cleared');
       
       if (currentToken || currentUser || currentRefreshToken) {
-        debugAuthService('WARNING: Failed to clear all auth data', {
-          tokenCleared: !currentToken,
-          userCleared: !currentUser,
-          refreshTokenCleared: !currentRefreshToken
-        });
+        logger.auth('WARNING: Failed to clear all auth data');
       }
     } catch (error) {
-      debugAuthService('Error clearing storage', { 
-        error: error.message,
-        stack: error.stack 
-      });
+      logger.auth('Error clearing storage');
       throw error;
     }
   }
@@ -623,22 +424,14 @@ class AuthService {
     try {
       const refreshToken = this.getRefreshToken();
       if (!refreshToken) {
-        debugAuthService('No refresh token available for refreshToken call');
+        logger.auth('No refresh token available');
         throw new Error('No refresh token available');
       }
-      debugAuthService('Calling refresh token endpoint', {
-        url: '/auth/refresh-token',
-        method: 'POST',
-        refreshTokenPrefix: refreshToken.substring(0, 10) + '...',
-        hasRefreshToken: !!refreshToken
-      });
+      logger.auth('Calling refresh token endpoint');
       const response = await this.api.post('/auth/refresh-token', {
         refreshToken,
       });
-      debugAuthService('Refresh token API response', {
-        status: response.status,
-        data: response.data
-      });
+      logger.auth('Refresh token response received');
       const { token, refreshToken: newRefreshToken, user } = response.data;
       // Ensure user object includes isAdmin
       if (user && typeof user.isAdmin === 'undefined') {
@@ -652,13 +445,7 @@ class AuthService {
       this.verifyAuthStorageOrClear('after refreshToken');
       return { success: true, user };
     } catch (error) {
-      debugAuthService('Refresh token error', {
-        error: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        url: '/auth/refresh-token',
-        method: 'POST'
-      });
+      logger.auth('Refresh token error', { error: error.message });
       console.error('Token refresh error:', error);
       this.clearStorage();
       return { success: false, error };

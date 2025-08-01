@@ -102,8 +102,8 @@ class AdminService {
     
     try {
       const response = await this.api.get('/users', { params });
-      logger.info(method, 'Successfully fetched users', { count: response.data?.length });
-      return response.data;
+      logger.info(method, 'Successfully fetched users', { count: response.data?.users?.length });
+      return response.data; // Response already has { success: true, users: [...] }
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
@@ -158,41 +158,14 @@ class AdminService {
     }
   }
 
-  /**
-   * Fetches transactions with optional filtering
-   * @param {Object} params - Query parameters for filtering
-   * @returns {Promise<Array>} Array of transactions
-   */
   async getTransactions(params = {}) {
     const method = 'getTransactions';
-    console.group(`[AdminService.${method}]`);
     try {
-      console.log('Fetching transactions with params:', params);
-      const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      if (!token) {
-        const error = new Error('No authentication token found');
-        error.code = 'MISSING_AUTH_TOKEN';
-        throw error;
-      }
-      const response = await this.api.get('/transactions', {
-        params,
-        timeout: 10000,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      // Always return the real data from the backend
-      return response.data?.transactions || [];
+      const response = await this.api.get('/transactions', { params });
+      return response.data; // Response has { success: true, transactions: [...] }
     } catch (error) {
-      const errorInfo = logger.error(method, error);
-      // Do not return mock data. Always throw the error so the UI shows a real error state.
-      const enhancedError = new Error(`Failed to fetch transactions: ${error.message}`);
-      enhancedError.code = error.code || 'TRANSACTIONS_FETCH_ERROR';
-      enhancedError.details = errorInfo;
-      throw enhancedError;
-    } finally {
-      console.groupEnd();
+      logger.error(method, error);
+      throw error;
     }
   }
 
@@ -227,39 +200,6 @@ class AdminService {
   }
 
   // Transactions
-  async getTransactions(params = {}) {
-    console.log('[ADMIN SERVICE] getTransactions called');
-    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-    console.log('[ADMIN SERVICE] Sending token:', token);
-    try {
-      const response = await this.api.get('/transactions', { params });
-      return response.data;
-      
-    } catch (error) {
-      // Enhanced error logging
-      const errorDetails = {
-        message: error.message,
-        response: error.response ? {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data
-        } : 'No response',
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          params: error.config?.params
-        }
-      };
-      
-      console.error('Error in getTransactions:', errorDetails);
-      
-      // Return mock data in development if the API fails
-      throw error;
-      
-    } finally {
-      console.groupEnd();
-    }
-  }
 
   async getTransaction(id) {
     try {

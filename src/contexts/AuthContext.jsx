@@ -7,17 +7,10 @@ import {
 } from '../config/constants';
 import authService from '../services/auth.service';
 import Loading from '../components/Loading';
+import logger from '../utils/logger';
 
-// Debug function to log authentication state changes
-const debugAuth = (message, data = {}) => {
-  console.log(`[Auth Debug] ${message}`, {
-    timestamp: new Date().toISOString(),
-    ...data,
-    hasToken: !!authService.getToken(),
-    hasUser: !!authService.getUser(),
-    hasRefreshToken: !!authService.getRefreshToken()
-  });
-};
+import { createClient } from '@supabase/supabase-js';
+const supabase = createClient(process.env.REACT_APP_SUPABASE_URL, process.env.REACT_APP_SUPABASE_KEY);
 
 const AuthContext = createContext(null);
 
@@ -35,21 +28,21 @@ export const AuthProvider = ({ children }) => {
     // --- Robust Auth Rehydration ---
     const checkAuth = async (isRetry = false) => {
       if (!isMounted) return;
-      debugAuth('Starting auth check', { isRetry, retryCount, timestamp: new Date().toISOString() });
+      logger.auth('Starting auth check');
       try {
         // Always get latest from localStorage
         const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
         const userStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
         const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
         const storedUser = userStr ? JSON.parse(userStr) : null;
-        debugAuth('Current auth state', { hasToken: !!token, hasUser: !!storedUser, hasRefreshToken: !!refreshToken, userId: storedUser?.id, userRole: storedUser?.role, isAdmin: storedUser?.isAdmin, timestamp: new Date().toISOString() });
+        logger.auth('Current auth state');
 
         // If all are present, validate token
         if (token && storedUser && refreshToken) {
-          debugAuth('All auth data present, validating token...');
+          logger.auth('Validating token');
           try {
             const isValid = await authService.validateToken();
-            debugAuth('Token validation result', { isValid });
+            logger.auth('Token validation result');
             if (isValid && isMounted) {
               // Ensure user object has role and isAdmin
               let validatedUser = authService.getUser();
@@ -61,19 +54,19 @@ export const AuthProvider = ({ children }) => {
               setUser(validatedUser);
               setIsAuthenticated(true);
               setIsLoading(false);
-              debugAuth('Auth state after validation', { user: validatedUser });
+              logger.auth('Auth state after validation');
               return;
             } else {
-              debugAuth('validateToken returned false, will try refresh if possible');
+              logger.auth('Token invalid, trying refresh');
             }
           } catch (validationError) {
-            debugAuth('Token validation threw error', { error: validationError.message, stack: validationError.stack });
+            logger.auth('Token validation error');
             // Try refresh if not already retried
             if (refreshToken && retryCount < MAX_RETRIES) {
               retryCount++;
-              debugAuth('Attempting token refresh after failed validation...');
+              logger.auth('Attempting token refresh');
               const refreshResult = await authService.refreshToken();
-              debugAuth('refreshToken result after failed validation', refreshResult);
+              logger.auth('Refresh result');
               if (refreshResult?.success && isMounted) {
                 // Ensure user object has role and isAdmin
                 let refreshedUser = refreshResult.user;
@@ -86,10 +79,10 @@ export const AuthProvider = ({ children }) => {
                 setIsAuthenticated(true);
                 setIsLoading(false);
                 authService.logAuthStorageState('after AuthContext refresh');
-                debugAuth('Auth state after refresh', { user: refreshedUser });
+                logger.auth('Auth state after refresh');
                 return;
               } else {
-                debugAuth('refreshToken failed after failed validation', refreshResult);
+                logger.auth('Refresh failed');
               }
             }
           }
@@ -97,9 +90,9 @@ export const AuthProvider = ({ children }) => {
 
         // If we have a refresh token but no auth token, try to refresh
         if ((!token || !storedUser) && refreshToken) {
-          debugAuth('Missing token or user, attempting refresh...');
+          logger.auth('Missing token/user, attempting refresh');
           const refreshResult = await authService.refreshToken();
-          debugAuth('refreshToken result (no token/user)', refreshResult);
+          logger.auth('Refresh result (no token/user)');
           if (refreshResult?.success && isMounted) {
             let refreshedUser = refreshResult.user;
             if (refreshedUser && (!refreshedUser.role || typeof refreshedUser.isAdmin === 'undefined')) {
@@ -110,21 +103,21 @@ export const AuthProvider = ({ children }) => {
             setUser(refreshedUser);
             setIsAuthenticated(true);
             setIsLoading(false);
-            debugAuth('Auth state after refresh (no token)', { user: refreshedUser });
+            logger.auth('Auth state after refresh');
             return;
           } else {
-            debugAuth('refreshToken failed (no token/user)', refreshResult);
+            logger.auth('Refresh failed (no token/user)');
           }
         }
 
         // If we get here, clear everything
-        debugAuth('Auth state invalid or expired, clearing...');
+        logger.auth('Auth state invalid, clearing');
         authService.clearStorage();
         setUser(null);
         setIsAuthenticated(false);
         setIsLoading(false);
       } catch (error) {
-        debugAuth('Fatal error during auth check', { error: error.message, stack: error.stack });
+        logger.auth('Fatal error during auth check');
         authService.clearStorage();
         setUser(null);
         setIsAuthenticated(false);
@@ -148,12 +141,7 @@ export const AuthProvider = ({ children }) => {
       if (!isAuthKey) return;
       
       // Log the storage change for debugging
-      debugAuth('Storage change detected', { 
-        key: e.key, 
-        newValue: e.newValue ? '***' : null,
-        oldValue: e.oldValue ? '***' : null,
-        timestamp: new Date().toISOString()
-      });
+      logger.auth('Storage change detected');
       
       // Get current state directly from localStorage
       const currentToken = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
@@ -161,16 +149,11 @@ export const AuthProvider = ({ children }) => {
       const currentRefreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
       
       // Log current auth state
-      debugAuth('Current auth state', {
-        hasToken: !!currentToken,
-        hasUser: !!currentUser,
-        hasRefreshToken: !!currentRefreshToken,
-        timestamp: new Date().toISOString()
-      });
+      logger.auth('Current auth state');
       
       // If we have a refresh token but no auth token, try to refresh
       if (!currentToken && currentRefreshToken && currentUser) {
-        debugAuth('Auth token missing but refresh token exists, attempting refresh...');
+        logger.auth('Auth token missing, attempting refresh');
         checkAuth();
         return;
       }
@@ -179,14 +162,14 @@ export const AuthProvider = ({ children }) => {
       const allAuthDataMissing = !currentToken && !currentUser && !currentRefreshToken;
       
       if (allAuthDataMissing) {
-        debugAuth('All auth data missing, logging out');
+        logger.auth('All auth data missing, logging out');
         authService.clearStorage();
         setUser(null);
         setIsAuthenticated(false);
         setIsLoading(false);
       } else {
         // If we still have some auth data, revalidate the session
-        debugAuth('Partial auth data exists, revalidating...');
+        logger.auth('Partial auth data exists, revalidating');
         checkAuth();
       }
     };
@@ -200,90 +183,140 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials, rememberMe = false) => {
-    debugAuth('Login attempt started', { email: credentials.email });
-    try {
-      const response = await authService.login(credentials);
-      debugAuth('Login API response', { success: response.success, user: response.user });
-      authService.logAuthStorageState('after AuthContext login');
-      if (response.success) {
-        // Ensure user object has role and isAdmin
-        let loginUser = response.user;
-        if (loginUser && (!loginUser.role || typeof loginUser.isAdmin === 'undefined')) {
-          loginUser.role = loginUser.role || 'user';
-          loginUser.isAdmin = loginUser.role === 'admin';
-          authService.setUser(loginUser);
-        }
-        debugAuth('Login successful, updating auth state', { userId: loginUser?.id, userRole: loginUser?.role, isAdmin: loginUser?.isAdmin });
-        setUser(loginUser);
-        setIsAuthenticated(true);
-        if (rememberMe) {
-          debugAuth('Setting remember me');
-          authService.setRememberMe(true);
-        }
-        // Verify the token was actually set
-        const tokenAfterLogin = authService.getToken();
-        debugAuth('After login state', { tokenSet: !!tokenAfterLogin });
-        return { success: true };
+  logger.auth('Login attempt started');
+  try {
+    // Step 1: Supabase Auth login (directly get session/token)
+    const { email, password } = credentials;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      logger.auth('Supabase Auth login failed', error);
+      return { success: false, error: error?.message || 'Invalid credentials' };
+    }
+    const accessToken = data.session?.access_token;
+    if (!accessToken) {
+      logger.auth('No access token after Supabase login');
+      return { success: false, error: 'No access token after login' };
+    }
+    // Step 2: Check if user profile exists
+    let profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile/me`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    if (profileRes.status === 404) {
+      // Step 3: If not, create it
+      logger.auth('Profile not found, creating profile');
+      profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ name: data.user.user_metadata?.name || '', phone_number: data.user.user_metadata?.phone_number || '' })
+      });
+      const profileData = await profileRes.json();
+      if (!profileData.success) {
+        logger.auth('Failed to create profile', profileData.error);
+        return { success: false, error: profileData.message || 'Failed to create user profile' };
       }
-      debugAuth('Login failed', { error: response.error });
-      return { success: false, error: response.error };
-    } catch (error) {
-      console.error('Login error:', error);
-      debugAuth('Login error', { error: error.message });
-      return { success: false, error };
+      logger.auth('Profile created successfully');
     }
-  };
-
-  const logout = async () => {
-    debugAuth('Logout started');
-    try {
-      await authService.logout();
-      debugAuth('Logout API call successful');
-      authService.clearStorage();
-      debugAuth('Storage cleared');
-      setUser(null);
-      setIsAuthenticated(false);
-      debugAuth('Auth state reset');
+    // Step 4: Call backend login endpoint to get app tokens and user info
+    const backendLoginRes = await authService.login({ email, password });
+    logger.auth('Backend login response', backendLoginRes);
+    if (backendLoginRes.success) {
+      let loginUser = backendLoginRes.user;
+      if (loginUser && (!loginUser.role || typeof loginUser.isAdmin === 'undefined')) {
+        loginUser.role = loginUser.role || 'user';
+        loginUser.isAdmin = loginUser.role === 'admin';
+        authService.setUser(loginUser);
+      }
+      setUser(loginUser);
+      setIsAuthenticated(true);
+      if (rememberMe) {
+        logger.auth('Setting remember me');
+        authService.setRememberMe(true);
+      }
+      logger.auth('Login successful, updating auth state');
       return { success: true };
-    } catch (error) {
-      console.error('Logout error:', error);
-      debugAuth('Logout error', { error: error.message });
-      return { success: false, error };
+    } else {
+      logger.auth('Backend login failed', backendLoginRes.error);
+      return { success: false, error: backendLoginRes.error };
     }
-  };
+  } catch (error) {
+    console.error('Login error:', error);
+    logger.auth('Auth state invalid, clearing');
+    authService.clearStorage();
+    setUser(null);
+    setIsAuthenticated(false);
+    logger.auth('Auth state reset');
+    return { success: false, error: error?.message || 'Login error' };
+  }
+};
 
   const register = async (userData) => {
-    try {
-      const response = await authService.register(userData);
-      if (response.success) {
-        return { success: true };
+  try {
+    // Step 1: Register with Supabase Auth
+    const { email, password, name, phoneNumber } = userData;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    // If email confirmation is required, data.session may be null
+    const accessToken = data.session?.access_token;
+    if (!accessToken) {
+      // Email confirmation required, cannot create profile yet
+      return { success: true, info: 'Please check your email to confirm your account. After confirming, please log in.' };
+    }
+    // Step 2: Call backend to store extra user info
+    const profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ name, phone_number: phoneNumber })
+    });
+    const profileData = await profileRes.json();
+    if (!profileData.success) {
+      return { success: false, error: profileData.message || 'Failed to create user profile' };
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Registration error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// --- Helper: Check if user profile exists ---
+const checkOrCreateUserProfile = async (user, accessToken, { name, phoneNumber }) => {
+  try {
+    // 1. Check if profile exists in users table
+    const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile/me`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
       }
-      return { success: false, error: response.error };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error };
+    });
+    const data = await res.json();
+    if (data.success && data.profile) {
+      return { success: true, user: data.profile };
     }
-  };
-
-  const forgotPassword = async (email) => {
-    try {
-      const response = await authService.forgotPassword(email);
-      return { success: true };
-    } catch (error) {
-      console.error('Forgot password error:', error);
-      return { success: false, error };
+    // 2. If not, create it
+    const profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ name: name || user?.user_metadata?.name, phone_number: phoneNumber || user?.user_metadata?.phone_number })
+    });
+    const profileData = await profileRes.json();
+    if (!profileData.success) {
+      return { success: false, error: profileData.message || 'Failed to create user profile' };
     }
-  };
-
-  const resetPassword = async (token, newPassword) => {
-    try {
-      const response = await authService.resetPassword(token, newPassword);
-      return { success: true };
-    } catch (error) {
-      console.error('Reset password error:', error);
-      return { success: false, error };
-    }
-  };
+    return { success: true, user: profileData.profile };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
 
   const updateProfile = async (userData) => {
     try {
@@ -303,11 +336,45 @@ export const AuthProvider = ({ children }) => {
   // Derived state: true only when auth is fully resolved
   const isAuthResolved = !isLoading && user !== null && isAuthenticated !== undefined;
 
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setIsAuthenticated(false);
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      return { success: false, error };
+    }
+  };
+
+  const forgotPassword = async (email) => {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return { success: false, error };
+    }
+  };
+
+  const resetPassword = async (accessToken, newPassword) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return { success: false, error };
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
     isLoading,
-    isAuthResolved, // <-- add this
+    isAuthResolved,
     login,
     logout,
     register,

@@ -1,4 +1,5 @@
 const express = require('express');
+
 const cors = require('cors');
 const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
@@ -9,10 +10,12 @@ const { errorHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth.routes');
 const { logger } = require('./utils/logger');
 const adminRoutes = require('./routes/admin.routes');
+const profileRoutes = require('./routes/profile.routes');
 const path = require('path');
 
 // Load environment variables
 dotenv.config();
+
 
 // Initialize express app
 const app = express();
@@ -39,9 +42,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Request parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Request parsing with increased limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Increase header size limits
+app.use((req, res, next) => {
+  // Set custom header size limits
+  req.setTimeout(30000); // 30 seconds timeout
+  res.setTimeout(30000);
+  next();
+});
 
 // Enhanced request logging (DISABLED to fix 431 error)
 // app.use((req, res, next) => {
@@ -127,6 +138,7 @@ app.use('/api/auth', authRoutes);
 
 // Use admin routes
 app.use('/api/admin', adminRoutes);
+app.use('/api/profile', profileRoutes);
 
 // === AUTOMATED FRONTEND BUILD SERVE LOGIC ===
 // If the build folder does not exist, automatically build the frontend

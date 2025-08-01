@@ -1,81 +1,9 @@
-const bcrypt = require('bcryptjs');
+const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
-const fs = require('fs');
-const path = require('path');
 const { logger } = require('../utils/logger');
+const supabase = require('../supabaseClient');
 
-// Path to users data file
-const usersFilePath = path.join(__dirname, '../data/users.json');
-
-// Ensure data directory exists
-if (!fs.existsSync(path.dirname(usersFilePath))) {
-  fs.mkdirSync(path.dirname(usersFilePath), { recursive: true });
-}
-
-// Load users from file or initialize empty array
-let users = [];
-
-// Load users from file if it exists
-const loadUsers = () => {
-  if (fs.existsSync(usersFilePath)) {
-    try {
-      const data = fs.readFileSync(usersFilePath, 'utf8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        users = parsed;
-        logger.info(`Loaded ${users.length} users from file`);
-      } else {
-        logger.warn('Users file does not contain an array, initializing with empty array');
-        users = [];
-      }
-    } catch (error) {
-      logger.error('Error reading users file:', error);
-      users = [];
-    }
-  } else {
-    logger.info('No users file found, starting with empty users array');
-    users = [];
-  }
-};
-
-// Initial load
-loadUsers();
-
-// Function to save users to file
-const saveUsers = () => {
-  try {
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
-  } catch (error) {
-    logger.error('Error saving users file:', error);
-  }
-};
-
-// Ensure there's at least one admin user
-const ensureAdminUser = async () => {
-  const adminEmail = 'admin@example.com';
-  const adminExists = users.some(u => u.role === 'admin');
-  
-  if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    users.push({
-      id: Date.now().toString(),
-      name: 'Admin User',
-      email: adminEmail,
-      phoneNumber: '1234567890',
-      password: hashedPassword,
-      role: 'admin',
-      createdAt: new Date().toISOString()
-    });
-    saveUsers();
-    logger.info('Created default admin user');
-  }
-};
-
-// Initialize admin user when the server starts
-ensureAdminUser().catch(error => {
-  logger.error('Error ensuring admin user exists:', error);
-});
-
+// Function to generate tokens
 const generateTokens = (user) => {
   // Ensure we have a complete user object
   const userWithDefaults = {
@@ -125,48 +53,42 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Check if user exists (in-memory)
-    const existingUser = users.find(u => u.email === email);
-    if (existingUser) {
-      return res.status(400).json({
+    // Create user in Supabase Auth
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      logger.error('Error creating user:', error);
+      return res.status(500).json({
         success: false,
-        message: 'User already exists'
+        message: 'Error creating user'
       });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user (in-memory)
-    const user = {
-      id: Date.now().toString(),
-      name,
-      email,
-      phoneNumber,
-      password: hashedPassword,
-      role: 'user', // Default role is user
-      createdAt: new Date()
-    };
-
-    // If this is the first user, make them an admin
-    if (users.length === 0) {
-      user.role = 'admin';
+    // Create user profile in users table
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: data.user.id,
+          name,
+          email,
+          phoneNumber,
+        },
+      ])
+      .single();
+    if (profileError) {
+      logger.error('Error creating user profile:', profileError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error creating user profile'
+      });
     }
-    users.push(user);
-
-    // Persist users to disk after registration
-    saveUsers();
 
     // Generate tokens
-    const { token, refreshToken } = generateTokens(user);
-
-    // Remove password from response
-    const userResponse = { ...user };
-    delete userResponse.password;
+    const { token, refreshToken } = generateTokens(profile);
 
     res.status(201).json({
       success: true,
-      user: userResponse,
+      user: profile,
       token,
       refreshToken
     });
@@ -182,97 +104,41 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
-    // Log the login attempt with basic info
-    logger.info('🔐 Login attempt', { 
-      email, 
-      hasPassword: !!password,
-      requestBody: { email, password: password ? '***' : undefined }
-    });
-    
-    // Log all users (safely, without passwords)
-    const safeUsers = users.map(u => ({
-      id: u.id,
-      email: u.email,
-      role: u.role,
-      hasPassword: !!u.password,
-      passwordLength: u.password ? u.password.length : 0
-    }));
-    logger.debug('📋 Current users in memory:', safeUsers);
+    logger.info('🔐 Login attempt (Supabase)', { email });
 
-    // Find user (in-memory)
-    const user = users.find(u => u.email === email);
-    if (!user) {
-      logger.warn('❌ Login failed: User not found', { email });
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+    // Authenticate with Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      logger.warn('❌ Login failed: Invalid credentials', { email });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    logger.debug('👤 User found in database', { 
-      userId: user.id, 
-      email: user.email,
-      role: user.role,
-      hasPassword: !!user.password,
-      passwordLength: user.password ? user.password.length : 0
-    });
-    
-    // Check if user has a password
-    if (!user.password) {
-      logger.error('❌ Login failed: User has no password hash', { email });
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-    
-    // Log the password verification attempt
-    logger.debug('🔑 Verifying password...', {
-      providedPassword: password,
-      storedHash: user.password.substring(0, 10) + '...',
-      storedHashLength: user.password.length,
-      isBcryptHash: user.password.startsWith('$2a$') || user.password.startsWith('$2b$')
-    });
-    
-    // Check password
-    logger.debug('🔑 Verifying password...');
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    logger.debug('🔑 Password check result', { 
-      isPasswordValid,
-      providedPassword: password,
-      storedHash: user.password.substring(0, 10) + '...' // Show first 10 chars of hash for debugging
-    });
-    
-    if (!isPasswordValid) {
-      logger.warn('❌ Login failed: Invalid password', { email });
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+    // Fetch user profile from users table
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+    if (profileError || !profile) {
+      logger.warn('❌ Login failed: User profile not found', { email });
+      return res.status(401).json({ success: false, message: 'User profile not found' });
     }
 
-    // Save users to file
-    saveUsers();
-
-    // Generate tokens - this now includes the user data
-    const { token, refreshToken, user: userData } = generateTokens(user);
-
-    // Remove password from response
-    const userResponse = { ...user };
-    delete userResponse.password;
+    // Optionally, generate a JWT for session (or use Supabase session token)
+    // const token = data.session?.access_token;
+    // const refreshToken = data.session?.refresh_token;
 
     res.json({
       success: true,
       user: {
-        ...userResponse,
-        id: user.id,  // Ensure id is included
-        userId: user.id,  // Add userId for consistency
-        role: user.role || 'user',
-        isAdmin: user.role === 'admin'
+        ...profile,
+        id: profile.id,
+        email: profile.email,
+        role: profile.role,
+        isAdmin: profile.role === 'admin',
       },
-      token,
-      refreshToken
+      token: data.session?.access_token,
+      refreshToken: data.session?.refresh_token,
     });
   } catch (error) {
     logger.error('Login error:', error);
@@ -302,56 +168,54 @@ exports.validateToken = async (req, res) => {
   try {
     // Log incoming headers for debugging
     console.log('[validateToken] Incoming headers:', req.headers);
-    // Disable caching and ETag for this endpoint
     res.set('Cache-Control', 'no-store');
     res.set('ETag', '');
-    // Ensure we have a user object with role
-    if (!req.user) {
-      console.log('[validateToken] No user found in request');
+
+    // Get token from Authorization header
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) {
       return res.status(401).json({
         success: false,
         valid: false,
-        message: 'No user found in request'
+        message: 'No token provided'
       });
     }
+    const token = authHeader.replace('Bearer ', '');
 
-    // Debug: log req.user and all users
-    console.log('[validateToken] req.user', req.user);
-    console.log('[validateToken] all users', users.map(u => ({ id: u.id, email: u.email, role: u.role })));
-
-    // Get the user from the database (in-memory array in this case)
-    const user = users.find(u => u.id === req.user.id || u.email === req.user.email);
-    if (!user) {
-      console.log('[validateToken] User not found for', req.user);
+    // Verify token with Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
       return res.status(401).json({
         success: false,
         valid: false,
-        message: 'User not found'
+        message: 'Invalid or expired token'
       });
     }
 
-    // Create a complete user object with all necessary fields
-    const userWithRole = {
-      id: user.id,
-      userId: user.id,  // For consistency
-      email: user.email,
-      name: user.name,
-      phoneNumber: user.phoneNumber,
-      role: user.role || 'user',
-      isAdmin: user.role === 'admin'
-    };
+    // Fetch user profile from users table
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    if (profileError || !profile) {
+      return res.status(404).json({
+        success: false,
+        valid: false,
+        message: 'User profile not found'
+      });
+    }
 
     res.json({
       success: true,
       valid: true,
       userId: user.id,
       userEmail: user.email,
-      userRole: user.role,
-      isAdmin: user.role === 'admin',
-      user: userWithRole
+      userRole: profile.role,
+      isAdmin: profile.role === 'admin',
+      user: profile
     });
   } catch (error) {
-    console.error('[validateToken] Token validation error:', error);
     logger.error('Token validation error:', error);
     res.status(500).json({
       success: false,
@@ -363,62 +227,31 @@ exports.validateToken = async (req, res) => {
 exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
-
     if (!refreshToken) {
       return res.status(400).json({
         success: false,
         message: 'Refresh token is required'
       });
     }
-
-    // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'your-secret-key');
-
-    // Find user (in-memory)
-    const user = users.find(u => u.email === decoded.email);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Generate new tokens
-    const tokens = generateTokens(user);
-
-    // Remove password from response
-    const userResponse = { ...user };
-    delete userResponse.password;
-
-    res.json({
-      success: true,
-      user: userResponse,
-      ...tokens
+    // Supabase does not support refresh via backend SDK, must be handled client-side.
+    // Optionally return error or instructions.
+    return res.status(400).json({
+      success: false,
+      message: 'Token refresh must be handled via Supabase client SDK on the frontend.'
     });
   } catch (error) {
     logger.error('Token refresh error:', error);
-    if (error.name === 'JsonWebTokenError') {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token'
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Error refreshing token'
-      });
-    }
+    res.status(500).json({
+      success: false,
+      message: 'Error refreshing token'
+    });
   }
 };
-
-// Export a getter for the current users array
-const getUsers = () => users;
 
 module.exports = {
   register: exports.register,
   login: exports.login,
   logout: exports.logout,
   validateToken: exports.validateToken,
-  refreshToken: exports.refreshToken,
-  getUsers
+  refreshToken: exports.refreshToken
 };
