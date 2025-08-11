@@ -1,16 +1,8 @@
-// src/contexts/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { 
-  LOCAL_STORAGE_KEYS,
-  SUCCESS_MESSAGES, 
-  ERROR_MESSAGES 
-} from '../config/constants';
+import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import authService from '../services/auth.service';
 import Loading from '../components/Loading';
 import logger from '../utils/logger';
-
-import { createClient } from '@supabase/supabase-js';
-const supabase = createClient(process.env.REACT_APP_SUPABASE_URL, process.env.REACT_APP_SUPABASE_KEY);
 
 const AuthContext = createContext(null);
 
@@ -19,106 +11,42 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check authentication status on mount and token change
   useEffect(() => {
     let isMounted = true;
-    let retryCount = 0;
-    const MAX_RETRIES = 2;
 
-    // --- Robust Auth Rehydration ---
-    const checkAuth = async (isRetry = false) => {
+    const checkAuth = async () => {
       if (!isMounted) return;
-      logger.auth('Starting auth check');
       try {
-        // Always get latest from localStorage
         const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
         const userStr = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
         const refreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
         const storedUser = userStr ? JSON.parse(userStr) : null;
-        logger.auth('Current auth state');
 
-        // If all are present, validate token
         if (token && storedUser && refreshToken) {
-          logger.auth('Validating token');
-          try {
-            const isValid = await authService.validateToken();
-            logger.auth('Token validation result');
-            if (isValid && isMounted) {
-              // Ensure user object has role and isAdmin
-              let validatedUser = authService.getUser();
-              if (validatedUser && (!validatedUser.role || typeof validatedUser.isAdmin === 'undefined')) {
-                validatedUser.role = validatedUser.role || 'user';
-                validatedUser.isAdmin = validatedUser.role === 'admin';
-                authService.setUser(validatedUser);
-              }
-              setUser(validatedUser);
-              setIsAuthenticated(true);
-              setIsLoading(false);
-              logger.auth('Auth state after validation');
-              return;
-            } else {
-              logger.auth('Token invalid, trying refresh');
-            }
-          } catch (validationError) {
-            logger.auth('Token validation error');
-            // Try refresh if not already retried
-            if (refreshToken && retryCount < MAX_RETRIES) {
-              retryCount++;
-              logger.auth('Attempting token refresh');
-              const refreshResult = await authService.refreshToken();
-              logger.auth('Refresh result');
-              if (refreshResult?.success && isMounted) {
-                // Ensure user object has role and isAdmin
-                let refreshedUser = refreshResult.user;
-                if (refreshedUser && (!refreshedUser.role || typeof refreshedUser.isAdmin === 'undefined')) {
-                  refreshedUser.role = refreshedUser.role || 'user';
-                  refreshedUser.isAdmin = refreshedUser.role === 'admin';
-                  authService.setUser(refreshedUser);
-                }
-                setUser(refreshedUser);
-                setIsAuthenticated(true);
-                setIsLoading(false);
-                authService.logAuthStorageState('after AuthContext refresh');
-                logger.auth('Auth state after refresh');
-                return;
-              } else {
-                logger.auth('Refresh failed');
-              }
-            }
-          }
-        }
-
-        // If we have a refresh token but no auth token, try to refresh
-        if ((!token || !storedUser) && refreshToken) {
-          logger.auth('Missing token/user, attempting refresh');
-          const refreshResult = await authService.refreshToken();
-          logger.auth('Refresh result (no token/user)');
-          if (refreshResult?.success && isMounted) {
-            let refreshedUser = refreshResult.user;
-            if (refreshedUser && (!refreshedUser.role || typeof refreshedUser.isAdmin === 'undefined')) {
-              refreshedUser.role = refreshedUser.role || 'user';
-              refreshedUser.isAdmin = refreshedUser.role === 'admin';
-              authService.setUser(refreshedUser);
-            }
-            setUser(refreshedUser);
+          const isValid = await authService.validateToken();
+          if (isValid && isMounted) {
+            setUser(storedUser);
             setIsAuthenticated(true);
             setIsLoading(false);
-            logger.auth('Auth state after refresh');
             return;
-          } else {
-            logger.auth('Refresh failed (no token/user)');
           }
         }
 
-        // If we get here, clear everything
-        logger.auth('Auth state invalid, clearing');
-        authService.clearStorage();
+        if (refreshToken) {
+          const { success, user } = await authService.refreshToken();
+          if (success && isMounted) {
+            setUser(user);
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         setUser(null);
         setIsAuthenticated(false);
         setIsLoading(false);
       } catch (error) {
-        logger.auth('Fatal error during auth check');
-        authService.clearStorage();
+        logger.auth('Auth check error', { error: error.message });
         setUser(null);
         setIsAuthenticated(false);
         setIsLoading(false);
@@ -127,55 +55,18 @@ export const AuthProvider = ({ children }) => {
 
     checkAuth();
 
-    // Add event listener for storage changes
     const handleStorageChange = (e) => {
-      // Skip if this is not a localStorage event or not an auth-related key
       if (e.storageArea !== localStorage) return;
-      
-      const isAuthKey = [
+      if ([
         LOCAL_STORAGE_KEYS.AUTH_TOKEN,
         LOCAL_STORAGE_KEYS.USER,
         LOCAL_STORAGE_KEYS.REFRESH_TOKEN
-      ].includes(e.key);
-      
-      if (!isAuthKey) return;
-      
-      // Log the storage change for debugging
-      logger.auth('Storage change detected');
-      
-      // Get current state directly from localStorage
-      const currentToken = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-      const currentUser = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-      const currentRefreshToken = localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-      
-      // Log current auth state
-      logger.auth('Current auth state');
-      
-      // If we have a refresh token but no auth token, try to refresh
-      if (!currentToken && currentRefreshToken && currentUser) {
-        logger.auth('Auth token missing, attempting refresh');
-        checkAuth();
-        return;
-      }
-      
-      // Only proceed with logout if all auth data is missing
-      const allAuthDataMissing = !currentToken && !currentUser && !currentRefreshToken;
-      
-      if (allAuthDataMissing) {
-        logger.auth('All auth data missing, logging out');
-        authService.clearStorage();
-        setUser(null);
-        setIsAuthenticated(false);
-        setIsLoading(false);
-      } else {
-        // If we still have some auth data, revalidate the session
-        logger.auth('Partial auth data exists, revalidating');
+      ].includes(e.key)) {
         checkAuth();
       }
     };
-  
+
     window.addEventListener('storage', handleStorageChange);
-  
     return () => {
       isMounted = false;
       window.removeEventListener('storage', handleStorageChange);
@@ -183,190 +74,81 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials, rememberMe = false) => {
-  logger.auth('Login attempt started');
-  try {
-    // Step 1: Supabase Auth login (directly get session/token)
-    const { email, password } = credentials;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) {
-      logger.auth('Supabase Auth login failed', error);
-      return { success: false, error: error?.message || 'Invalid credentials' };
-    }
-    const accessToken = data.session?.access_token;
-    if (!accessToken) {
-      logger.auth('No access token after Supabase login');
-      return { success: false, error: 'No access token after login' };
-    }
-    // Step 2: Check if user profile exists
-    let profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile/me`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    if (profileRes.status === 404) {
-      // Step 3: If not, create it
-      logger.auth('Profile not found, creating profile');
-      profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ name: data.user.user_metadata?.name || '', phone_number: data.user.user_metadata?.phone_number || '' })
-      });
-      const profileData = await profileRes.json();
-      if (!profileData.success) {
-        logger.auth('Failed to create profile', profileData.error);
-        return { success: false, error: profileData.message || 'Failed to create user profile' };
-      }
-      logger.auth('Profile created successfully');
-    }
-    // Step 4: Call backend login endpoint to get app tokens and user info
-    const backendLoginRes = await authService.login({ email, password });
-    logger.auth('Backend login response', backendLoginRes);
-    if (backendLoginRes.success) {
-      let loginUser = backendLoginRes.user;
-      if (loginUser && (!loginUser.role || typeof loginUser.isAdmin === 'undefined')) {
-        loginUser.role = loginUser.role || 'user';
-        loginUser.isAdmin = loginUser.role === 'admin';
-        authService.setUser(loginUser);
-      }
-      setUser(loginUser);
-      setIsAuthenticated(true);
-      if (rememberMe) {
-        logger.auth('Setting remember me');
-        authService.setRememberMe(true);
-      }
-      logger.auth('Login successful, updating auth state');
-      return { success: true };
-    } else {
-      logger.auth('Backend login failed', backendLoginRes.error);
-      return { success: false, error: backendLoginRes.error };
-    }
-  } catch (error) {
-    console.error('Login error:', error);
-    logger.auth('Auth state invalid, clearing');
-    authService.clearStorage();
-    setUser(null);
-    setIsAuthenticated(false);
-    logger.auth('Auth state reset');
-    return { success: false, error: error?.message || 'Login error' };
-  }
-};
-
-  const register = async (userData) => {
-  try {
-    // Step 1: Register with Supabase Auth
-    const { email, password, name, phoneNumber } = userData;
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      return { success: false, error: error.message };
-    }
-    // If email confirmation is required, data.session may be null
-    const accessToken = data.session?.access_token;
-    if (!accessToken) {
-      // Email confirmation required, cannot create profile yet
-      return { success: true, info: 'Please check your email to confirm your account. After confirming, please log in.' };
-    }
-    // Step 2: Call backend to store extra user info
-    const profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({ name, phone_number: phoneNumber })
-    });
-    const profileData = await profileRes.json();
-    if (!profileData.success) {
-      return { success: false, error: profileData.message || 'Failed to create user profile' };
-    }
-    return { success: true };
-  } catch (error) {
-    console.error('Registration error:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// --- Helper: Check if user profile exists ---
-const checkOrCreateUserProfile = async (user, accessToken, { name, phoneNumber }) => {
-  try {
-    // 1. Check if profile exists in users table
-    const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile/me`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    const data = await res.json();
-    if (data.success && data.profile) {
-      return { success: true, user: data.profile };
-    }
-    // 2. If not, create it
-    const profileRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/profile`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({ name: name || user?.user_metadata?.name, phone_number: phoneNumber || user?.user_metadata?.phone_number })
-    });
-    const profileData = await profileRes.json();
-    if (!profileData.success) {
-      return { success: false, error: profileData.message || 'Failed to create user profile' };
-    }
-    return { success: true, user: profileData.profile };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
-
-  const updateProfile = async (userData) => {
     try {
-      const response = await authService.updateProfile(userData);
-      if (response.success) {
-        // Ensure we're updating the complete user object including isAdmin
-        setUser(response.user);
+      const { success, user, error } = await authService.login(credentials);
+      if (success) {
+        setUser(user);
+        setIsAuthenticated(true);
+        if (rememberMe) authService.setRememberMe(true);
         return { success: true };
       }
-      return { success: false, error: response.error };
-    } catch (error) {
-      console.error('Update profile error:', error);
       return { success: false, error };
+    } catch (error) {
+      logger.auth('Login error', { error: error.message });
+      return { success: false, error: error.message || 'Login error' };
     }
   };
 
-  // Derived state: true only when auth is fully resolved
-  const isAuthResolved = !isLoading && user !== null && isAuthenticated !== undefined;
+  const register = async (userData) => {
+    try {
+      const { success, user, info, error } = await authService.register(userData);
+      if (success) {
+        if (user) {
+          setUser(user);
+          setIsAuthenticated(true);
+        }
+        return { success: true, info };
+      }
+      return { success: false, error };
+    } catch (error) {
+      logger.auth('Registration error', { error: error.message });
+      return { success: false, error: error.message || 'Registration error' };
+    }
+  };
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
       return { success: true };
     } catch (error) {
-      console.error('Logout error:', error);
-      return { success: false, error };
+      logger.auth('Logout error', { error: error.message });
+      return { success: false, error: error.message || 'Logout error' };
     }
   };
 
   const forgotPassword = async (email) => {
     try {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) return { success: false, error: error.message };
-      return { success: true };
+      const { success, error } = await authService.forgotPassword(email);
+      return { success, error };
     } catch (error) {
-      console.error('Forgot password error:', error);
-      return { success: false, error };
+      logger.auth('Forgot password error', { error: error.message });
+      return { success: false, error: error.message || 'Failed to send reset email' };
     }
   };
 
-  const resetPassword = async (accessToken, newPassword) => {
+  const resetPassword = async (token, newPassword) => {
     try {
-      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) return { success: false, error: error.message };
-      return { success: true };
+      const { success, error } = await authService.resetPassword(token, newPassword);
+      return { success, error };
     } catch (error) {
-      console.error('Reset password error:', error);
+      logger.auth('Reset password error', { error: error.message });
+      return { success: false, error: error.message || 'Failed to reset password' };
+    }
+  };
+
+  const updateProfile = async (userData) => {
+    try {
+      const { success, user, error } = await authService.updateProfile(userData);
+      if (success) {
+        setUser(user);
+        return { success: true };
+      }
       return { success: false, error };
+    } catch (error) {
+      logger.auth('Update profile error', { error: error.message });
+      return { success: false, error: error.message || 'Failed to update profile' };
     }
   };
 
@@ -374,19 +156,16 @@ const checkOrCreateUserProfile = async (user, accessToken, { name, phoneNumber }
     user,
     isAuthenticated,
     isLoading,
-    isAuthResolved,
+    isAuthResolved: !isLoading && user !== null && isAuthenticated !== undefined,
     login,
     logout,
     register,
     forgotPassword,
     resetPassword,
-    updateProfile
+    updateProfile,
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
+  if (isLoading) return <Loading />;
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
