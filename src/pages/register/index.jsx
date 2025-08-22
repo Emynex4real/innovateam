@@ -111,17 +111,20 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    try {
-      console.log('Attempting registration with:', { ...formData, password: '[REDACTED]' });
-      const result = await authRegister(formData);
-      console.log('Registration result:', result);
-      
-      if (result.success) {
+  setIsLoading(true);
+  try {
+    console.log('Attempting registration with:', { ...formData, password: '[REDACTED]' });
+    const result = await authRegister(formData);
+    console.log('Registration result:', result);
+    
+    if (result.success) {
+      if (result.info && result.info.includes('email')) {
+        toast.success(result.info); // e.g., "Registration successful! Please check your email..."
+      } else {
         toast.success("Account created successfully!");
         setFormData({
           name: "",
@@ -132,24 +135,24 @@ const Register = () => {
           agreeToTerms: false,
         });
         navigate("/login");
-      } else {
-        const errorMessage = typeof result.error === 'string' ? result.error : 'Failed to create account';
-        console.error('Registration failed:', errorMessage);
-        setErrors({ submit: errorMessage });
-        toast.error(errorMessage);
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      const errorMessage = error?.response?.data?.message || 
-                          (typeof error === 'string' ? error : error?.message) || 
-                          "Failed to create account. Please try again.";
+    } else {
+      const errorMessage = typeof result.error === 'string' ? result.error : 'Failed to create account';
+      console.error('Registration failed:', errorMessage);
       setErrors({ submit: errorMessage });
       toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
-  };
-
+  } catch (error) {
+    console.error('Registration error:', error);
+    const errorMessage = error?.response?.data?.message || 
+                        (typeof error === 'string' ? error : error?.message) || 
+                        "Failed to create account. Please try again.";
+    setErrors({ submit: errorMessage });
+    toast.error(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 relative ${
       isDarkMode 

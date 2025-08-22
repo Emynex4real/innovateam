@@ -92,32 +92,32 @@ class AuthService {
     }
   }
 
-  async register(userData) {
-    // checking logs
-    console.log('Registering user:', userData);
-
-    try {
-      const response = await this.api.post('/auth/register', userData);
-      console.log(response)
-      const { token, refreshToken, user, info } = response.data;
-      if (info) {
-        return { success: true, info };
-      }
-      if (!token || !refreshToken || !user) {
-        return { success: false, error: 'Invalid registration response' };
-      }
-      this.setToken(token);
-      this.setRefreshToken(refreshToken);
-      this.setUser(user);
-      return { success: true, user };
-    } catch (error) {
-      console.error('Registration error:', error.response?.data || error.message);
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Registration failed',
-      };
+async register(userData) {
+  console.log('Registering user:', userData);
+  try {
+    const response = await this.api.post('/auth/register', userData, {
+      withCredentials: false // Prevent sending cookies
+    });
+    console.log(response);
+    const { token, refreshToken, user, info, requiresConfirmation } = response.data;
+    if (info && requiresConfirmation) {
+      return { success: true, info }; // Handle email confirmation
     }
+    if (!token || !refreshToken || !user) {
+      return { success: false, error: 'Invalid registration response' };
+    }
+    this.setToken(token);
+    this.setRefreshToken(refreshToken);
+    this.setUser(user);
+    return { success: true, user };
+  } catch (error) {
+    console.error('Registration error:', error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Registration failed',
+    };
   }
+}
 
   async logout() {
     try {
