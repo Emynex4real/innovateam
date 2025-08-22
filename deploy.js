@@ -4,11 +4,15 @@ const path = require('path');
 // Read package.json
 const packageJson = require('./package.json');
 
-// Function to update homepage based on environment
-function updateHomepage(isProduction) {
-  packageJson.homepage = isProduction 
-    ? '/innovateam'
-    : '.';
+// Function to update homepage and port based on environment
+function updateConfig(isProduction) {
+  // Update homepage
+  packageJson.homepage = isProduction ? '/innovateam' : '.';
+
+  // Set PORT from environment or default
+  const port = process.env.PORT || (isProduction ? 80 : 3000); // Default 3000 for dev, 80 for prod
+  process.env.PORT = port; // Set for Craco to use
+  console.log(`Setting PORT to ${port} for ${isProduction ? 'production' : 'local development'}`);
 
   // Write back to package.json
   fs.writeFileSync(
@@ -19,9 +23,9 @@ function updateHomepage(isProduction) {
 
 // Check if we're deploying
 if (process.argv.includes('--deploy')) {
-  updateHomepage(true);
+  updateConfig(true);
   console.log('Updated homepage for production deployment');
 } else {
-  updateHomepage(false);
+  updateConfig(false);
   console.log('Updated homepage for local development');
-} 
+}
