@@ -1,68 +1,170 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { logger } = require('../utils/logger');
+const Transaction = require('../models/Transaction');
+const supabase = require('../supabaseClient');
 
-const transactionsFile = path.join(__dirname, '../data/transactions.json');
-
-/**
- * Get all transactions (admin only)
- * @route GET /api/admin/transactions
- * @access Private/Admin
- */
-exports.getTransactions = async (req, res) => {
+// GET /api/transactions - Get user's transactions
+exports.getUserTransactions = async (req, res) => {
   try {
-    // Verify user is authenticated and is admin
-    if (!req.user || req.user.role !== 'admin') {
-      logger.warn('Unauthorized access to transactions', { 
-        userId: req.user?.id,
-        role: req.user?.role,
-        path: req.path 
-      });
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Access denied. Admin privileges required.' 
-      });
-    }
-
-    logger.info('Fetching transactions', { 
-      userId: req.user.id,
-      email: req.user.email 
+    const userId = req.user.id;
+    const transactions = await Transaction.findByUserId(userId);
+    
+    res.json({
+      success: true,
+      data: transactions,
+      count: transactions.length
     });
-
-    // Read transactions from file
-    const data = await fs.readFile(transactionsFile, 'utf8');
-    const transactions = JSON.parse(data);
-
-    // Log success (without exposing sensitive data)
-    logger.info('Successfully retrieved transactions', { 
-      count: transactions.length,
-      userId: req.user.id
-    });
-
-    // Return transactions
-    res.json({ 
-      success: true, 
-      transactions 
-    });
-
   } catch (error) {
-    logger.error('Error fetching transactions:', {
-      error: error.message,
-      stack: error.stack,
-      userId: req.user?.id
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
-    
-    // If file doesn't exist, return empty array instead of error
-    if (error.code === 'ENOENT') {
-      logger.warn('Transactions file not found, returning empty array');
-      return res.json({ success: true, transactions: [] });
+  }
+};
+
+// POST /api/transactions - Create new transaction
+exports.createTransaction = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount, type, description, metadata } = req.body;
+
+    if (!amount || !type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount and type are required'
+      });
     }
+
+    const transaction = await Transaction.create({
+      amount,
+      type,
+      description,
+      metadata,
+      status: 'pending'
+    }, userId);
+
+    res.status(201).json({
+      success: true,
+      data: transaction
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// GET /api/transactions/:id - Get specific transaction
+exports.getTransaction = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
     
-    // For other errors, return 500
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to retrieve transactions',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    const transaction = await Transaction.findById(id);
+    
+    if (!transaction || transaction.userId !== userId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: transaction
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// PUT /api/transactions/:id - Update transaction
+exports.updateTransaction = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const transaction = await Transaction.update(id, updateData, userId);
+    
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: transaction
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// DELETE /api/transactions/:id - Delete transaction
+exports.deleteTransaction = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const deleted = await Transaction.delete(id, userId);
+    
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Transaction deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// GET /api/transactions/stats - Get user's transaction stats
+exports.getTransactionStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const transactions = await Transaction.findByUserId(userId);
+    
+    const stats = {
+      total: transactions.length,
+      completed: transactions.filter(t => t.status === 'completed').length,
+      pending: transactions.filter(t => t.status === 'pending').length,
+      failed: transactions.filter(t => t.status === 'failed').length,
+      totalAmount: transactions
+        .filter(t => t.status === 'completed')
+        .reduce((sum, t) => sum + t.amount, 0),
+      thisMonth: transactions.filter(t => {
+        const transactionDate = new Date(t.createdAt);
+        const now = new Date();
+        return transactionDate.getMonth() === now.getMonth() && 
+               transactionDate.getFullYear() === now.getFullYear();
+      }).length
+    };
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };

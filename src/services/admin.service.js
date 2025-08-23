@@ -1,298 +1,179 @@
 import axios from 'axios';
-import { API_BASE_URL, LOCAL_STORAGE_KEYS } from '../config/constants';
+import { LOCAL_STORAGE_KEYS } from '../config/constants';
+import API_BASE_URL from '../config/api';
 
-// Enhanced logging function
-const logger = {
-  info: (method, message, data = {}) => {
-    const logData = {
-      timestamp: new Date().toISOString(),
-      method,
-      ...data
-    };
-    console.log(`[AdminService:${method}] ${message}`, logData);
-  },
-  error: (method, error, context = {}) => {
-    const errorInfo = {
-      timestamp: new Date().toISOString(),
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: error.config?.url,
-      method: error.config?.method,
-      hasToken: !!localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN),
-      ...context
-    };
-    console.error(`[AdminService:${method}] Error:`, errorInfo);
-    return errorInfo;
-  }
-};
+const API_URL = API_BASE_URL || 'http://localhost:5000/api';
 
 class AdminService {
   constructor() {
-    logger.info('constructor', 'Initializing AdminService');
-    
     this.api = axios.create({
-      baseURL: `${API_BASE_URL}/admin`,
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      withCredentials: true
+      baseURL: API_URL,
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 15000,
     });
 
-    // Request interceptor for logging and auth
     this.api.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        logger.info('request', `Sending ${config.method?.toUpperCase()} to ${config.url}`, {
-          url: config.url,
-          method: config.method,
-          hasToken: !!token
-        });
         return config;
       },
-      (error) => {
-        logger.error('request', error, { stage: 'request-interceptor' });
-        return Promise.reject(error);
-      }
-    );
-
-    // Response interceptor for error handling
-    this.api.interceptors.response.use(
-      (response) => {
-        logger.info('response', `Received ${response.status} from ${response.config.url}`, {
-          status: response.status,
-          url: response.config.url,
-          data: response.data
-        });
-        return response;
-      },
-      (error) => {
-        const errorInfo = logger.error('response', error, { 
-          stage: 'response-interceptor',
-          url: error.config?.url,
-          method: error.config?.method
-        });
-        
-        // Handle specific error statuses
-        if (error.response) {
-          if (error.response.status === 401) {
-            // Handle unauthorized (e.g., token expired)
-            logger.info('response', 'Authentication required, redirecting to login');
-            // You might want to trigger a logout or token refresh here
-          } else if (error.response.status === 403) {
-            logger.info('response', 'Insufficient permissions');
-          }
-        }
-        
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
   }
 
-  // Users
-  async getUsers(params = {}) {
-    const method = 'getUsers';
-    logger.info(method, 'Fetching users', { params });
-    
+  async getStats() {
     try {
-      const response = await this.api.get('/users', { params });
-      logger.info(method, 'Successfully fetched users', { count: response.data?.users?.length });
-      return response.data; // Response already has { success: true, users: [...] }
+      const response = await this.api.get('/admin/stats');
+      return response.data.stats || response.data.data || response.data;
     } catch (error) {
-      console.error('Error fetching users:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to fetch stats');
     }
   }
 
-  async getUser(id) {
-    const method = 'getUser';
+  async getDashboardMetrics() {
+    return this.getStats();
+  }
+
+  async getUsers(page = 1, limit = 20, search = '', role = '') {
     try {
-      const response = await this.api.get(`/users/${id}`);
-      logger.info(method, 'Fetched user details', { id, data: response.data });
-      return response.data.data;
+      const params = new URLSearchParams({ page, limit });
+      if (search) params.append('search', search);
+      if (role) params.append('role', role);
+      
+      const response = await this.api.get(`/admin/users?${params}`);
+      return response.data.data; // Return the users array directly
     } catch (error) {
-      logger.error(method, error, { id });
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to fetch users');
     }
   }
 
-  async activateUser(id) {
-    const method = 'activateUser';
+  async getUserDetails(userId) {
     try {
-      const response = await this.api.patch(`/users/${id}/activate`);
-      logger.info(method, 'Activated user', { id, data: response.data });
-      return response.data.data;
+      const response = await this.api.get(`/admin/users/${userId}`);
+      return { success: true, data: response.data.data };
     } catch (error) {
-      logger.error(method, error, { id });
-      throw error;
+      return { success: false, error: error.response?.data?.message || 'Failed to fetch user details' };
     }
   }
 
-  async deactivateUser(id) {
-    const method = 'deactivateUser';
+  async updateUserRole(userId, role) {
     try {
-      const response = await this.api.patch(`/users/${id}/deactivate`);
-      logger.info(method, 'Deactivated user', { id, data: response.data });
-      return response.data.data;
+      const response = await this.api.post(`/admin/users/${userId}/role`, { role });
+      return response.data;
     } catch (error) {
-      logger.error(method, error, { id });
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to update user role');
     }
   }
 
-  async getUserTransactions(id) {
-    const method = 'getUserTransactions';
+  async updateUser(userId, userData) {
     try {
-      const response = await this.api.get(`/users/${id}/transactions`);
-      logger.info(method, 'Fetched user transactions', { id, count: response.data.data?.length });
-      return response.data.data;
+      const response = await this.api.put(`/admin/users/${userId}`, userData);
+      return response.data;
     } catch (error) {
-      logger.error(method, error, { id });
-      throw error;
-    }
-  }
-
-  async getTransactions(params = {}) {
-    const method = 'getTransactions';
-    try {
-      const response = await this.api.get('/transactions', { params });
-      return response.data; // Response has { success: true, transactions: [...] }
-    } catch (error) {
-      logger.error(method, error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to update user');
     }
   }
 
   async addUser(userData) {
     try {
-      const response = await this.api.post('/users', userData);
+      const response = await this.api.post('/admin/users', userData);
       return response.data;
     } catch (error) {
-      console.error('Error adding user:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to add user');
     }
   }
 
-  async updateUser(id, userData) {
+  async activateUser(userId) {
     try {
-      const response = await this.api.put(`/users/${id}`, userData);
+      const response = await this.api.post(`/admin/users/${userId}/activate`);
       return response.data;
     } catch (error) {
-      console.error('Error updating user:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to activate user');
     }
   }
 
-  async deleteUser(id) {
+  async deactivateUser(userId) {
     try {
-      const response = await this.api.delete(`/users/${id}`);
+      const response = await this.api.post(`/admin/users/${userId}/deactivate`);
       return response.data;
     } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to deactivate user');
     }
   }
 
-  // Transactions
-
-  async getTransaction(id) {
+  async deleteUser(userId) {
     try {
-      const response = await this.api.get(`/transactions/${id}`);
+      const response = await this.api.delete(`/admin/users/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching transaction:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to delete user');
     }
   }
 
-  async updateTransaction(id, data) {
+  async getSystemInfo() {
     try {
-      const response = await this.api.put(`/transactions/${id}`, data);
-      return response.data;
+      const response = await this.api.get('/admin/system-info');
+      return { success: true, data: response.data.data };
     } catch (error) {
-      console.error('Error updating transaction:', error);
-      throw error;
+      return { success: false, error: error.response?.data?.message || 'Failed to fetch system info' };
     }
   }
 
-  async deleteTransaction(id) {
+  async getTransactions(page = 1, limit = 100) {
     try {
-      const response = await this.api.delete(`/transactions/${id}`);
-      return response.data;
+      const response = await this.api.get(`/admin/transactions?page=${page}&limit=${limit}`);
+      return response.data.data || response.data.transactions || [];
     } catch (error) {
-      console.error('Error deleting transaction:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to fetch transactions');
     }
   }
 
-  // Services
-  async getServices(params = {}) {
+  async updateTransaction(transactionId, updateData) {
     try {
-      const response = await this.api.get('/services', { params });
+      const response = await this.api.put(`/admin/transactions/${transactionId}`, updateData);
       return response.data;
     } catch (error) {
-      console.error('Error fetching services:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to update transaction');
     }
   }
 
-  async getService(id) {
+  async deleteTransaction(transactionId) {
     try {
-      const response = await this.api.get(`/services/${id}`);
+      const response = await this.api.delete(`/admin/transactions/${transactionId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching service:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to delete transaction');
     }
   }
 
-  async addService(serviceData) {
+  async getUserTransactions(userId, page = 1, limit = 10) {
     try {
-      const response = await this.api.post('/services', serviceData);
-      return response.data;
+      const response = await this.api.get(`/admin/users/${userId}/transactions?page=${page}&limit=${limit}`);
+      return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error adding service:', error);
-      throw error;
+      return { success: false, error: error.response?.data?.message || 'Failed to fetch user transactions' };
     }
   }
 
-  async updateService(id, serviceData) {
-    try {
-      const response = await this.api.put(`/services/${id}`, serviceData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating service:', error);
-      throw error;
-    }
+  // Real-time data polling
+  startRealTimeUpdates(callback, interval = 30000) {
+    const updateData = async () => {
+      const stats = await this.getStats();
+      if (stats.success) {
+        callback(stats.data);
+      }
+    };
+    
+    updateData(); // Initial load
+    return setInterval(updateData, interval);
   }
 
-  async deleteService(id) {
-    try {
-      const response = await this.api.delete(`/services/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting service:', error);
-      throw error;
-    }
-  }
-
-  // Dashboard Metrics
-  async getDashboardMetrics() {
-    try {
-      console.log('Fetching dashboard metrics...');
-      const response = await this.api.get('/stats');
-      console.log('Dashboard metrics response:', response.data);
-      // The real data is in response.data.data
-      return response.data.data || {};
-    } catch (error) {
-      // Do not return mock data. Always throw the error so the UI shows a real error state.
-      throw new Error('Failed to fetch dashboard metrics: ' + error.message);
+  stopRealTimeUpdates(intervalId) {
+    if (intervalId) {
+      clearInterval(intervalId);
     }
   }
 }

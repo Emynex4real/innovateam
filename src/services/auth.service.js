@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { LOCAL_STORAGE_KEYS, API_BASE_URL } from '../config/constants';
+import { LOCAL_STORAGE_KEYS } from '../config/constants';
+import API_BASE_URL from '../config/api';
 import logger from '../utils/logger';
 
-const API_URL = API_BASE_URL || 'http://localhost:5001/api';
+const API_URL = API_BASE_URL || 'http://localhost:5000/api';
 
 class AuthService {
   constructor() {
@@ -72,16 +73,26 @@ class AuthService {
     logger.auth('Login attempt started');
     try {
       const response = await this.api.post('/auth/login', credentials);
+      console.log('Login response:', response.data); // Debug log
       const { token, refreshToken, user } = response.data;
       if (!token || !refreshToken || !user) {
         logger.auth('Incomplete login response');
         return { success: false, error: 'Invalid login response' };
       }
+      
+      // Ensure isAdmin is set correctly - check user_metadata.role
+      const userWithAdmin = {
+        ...user,
+        role: user.user_metadata?.role || 'user',
+        isAdmin: user.user_metadata?.role === 'admin'
+      };
+      
       this.setToken(token);
       this.setRefreshToken(refreshToken);
-      this.setUser(user);
+      this.setUser(userWithAdmin);
+      console.log('User stored:', userWithAdmin); // Debug log
       logger.auth('Login successful');
-      return { success: true, user };
+      return { success: true, user: userWithAdmin };
     } catch (error) {
       console.log(error)
       logger.auth('Login error', { error: error.message });
@@ -100,16 +111,26 @@ async register(userData) {
     });
     console.log(response);
     const { token, refreshToken, user, info, requiresConfirmation } = response.data;
+    
+    // If user was created successfully with tokens, store them
+    if (token && refreshToken && user) {
+      this.setToken(token);
+      this.setRefreshToken(refreshToken);
+      this.setUser(user);
+      return { success: true, user };
+    }
+    
+    // If registration succeeded but requires confirmation
     if (info && requiresConfirmation) {
-      return { success: true, info }; // Handle email confirmation
+      return { success: true, info, requiresConfirmation: true };
     }
-    if (!token || !refreshToken || !user) {
-      return { success: false, error: 'Invalid registration response' };
+    
+    // If registration succeeded but no tokens (user created but not confirmed)
+    if (response.data.success) {
+      return { success: true, info: info || 'Registration successful! You can now log in.' };
     }
-    this.setToken(token);
-    this.setRefreshToken(refreshToken);
-    this.setUser(user);
-    return { success: true, user };
+    
+    return { success: false, error: 'Invalid registration response' };
   } catch (error) {
     console.error('Registration error:', error.response?.data || error.message);
     return {
@@ -134,7 +155,13 @@ async register(userData) {
       const response = await this.api.get('/auth/validate');
       const { valid, user } = response.data;
       if (valid && user) {
-        this.setUser({ ...user, role: user.role || 'user', isAdmin: user.role === 'admin' });
+        // Preserve admin role from user_metadata
+        const userWithAdmin = {
+          ...user,
+          role: user.user_metadata?.role || user.role || 'user',
+          isAdmin: user.user_metadata?.role === 'admin' || user.role === 'admin'
+        };
+        this.setUser(userWithAdmin);
       }
       return valid;
     } catch (error) {
