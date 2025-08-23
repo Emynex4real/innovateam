@@ -216,6 +216,19 @@ const NavandSideBar = ({ children }) => {
                 >
                   Profile
                 </Link>
+                {user?.isAdmin && (
+                  <Link
+                    to="/admin/dashboard"
+                    className={`block px-4 py-2 text-sm font-medium ${
+                      isDarkMode 
+                        ? 'text-primary-400 hover:bg-dark-border hover:text-primary-300' 
+                        : 'text-green-600 hover:bg-green-50 hover:text-green-700'
+                    }`}
+                    onClick={() => setIsUserDropdownOpen(false)}
+                  >
+                    🛡️ Admin Panel
+                  </Link>
+                )}
                 <button
                   onClick={() => {
                     handleLogout();

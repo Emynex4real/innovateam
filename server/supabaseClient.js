@@ -141,26 +141,13 @@ const initializeSupabase = () => {
       }
     );
     
-    // Create a proxy that uses the appropriate client based on the operation
-    supabase = new Proxy(anonClient, {
-      get(target, prop, receiver) {
-        // Route admin operations to the admin client
-        if (prop === 'admin') {
-          return new Proxy({}, {
-            get(_, adminProp) {
-              if (adminProp === 'auth') {
-                return adminClient.auth;
-              }
-              return adminClient[adminProp] || anonClient[prop];
-            }
-          });
-        }
-        
-        // Route all other operations to the anon client
-        const value = target[prop];
-        return typeof value === 'function' ? value.bind(target) : value;
-      }
-    });
+    // Use the admin client as the main client since we need admin operations
+    supabase = adminClient;
+    
+    // Add admin methods
+    supabase.admin = {
+      auth: adminClient.auth.admin
+    };
     
     console.log('✅ Supabase client initialized with admin capabilities');
     return true;
@@ -233,34 +220,11 @@ const initialize = async () => {
 // Run the initialization
 initialize();
 
-// Add request/response logging
+// Simple logging for database operations
 const originalFrom = supabase.from;
 supabase.from = function(table) {
-  const query = originalFrom.apply(this, [table]);
-  
-  // Add logging to all query methods
-  const methods = ['select', 'insert', 'update', 'delete', 'upsert'];
-  methods.forEach(method => {
-    const originalMethod = query[method];
-    if (originalMethod) {
-      query[method] = async function() {
-        try {
-          console.log(`🔍 Executing ${method.toUpperCase()} on ${table}`, 
-            arguments[0] ? 'with data' : 'without data');
-          const result = await originalMethod.apply(this, arguments);
-          if (result.error) {
-            console.error(`❌ Error in ${method} on ${table}:`, result.error);
-          }
-          return result;
-        } catch (error) {
-          console.error(`❌ Unhandled error in ${method} on ${table}:`, error);
-          throw error;
-        }
-      };
-    }
-  });
-  
-  return query;
+  console.log(`🔍 Executing query on ${table}`);
+  return originalFrom.apply(this, [table]);
 };
 
 module.exports = supabase;

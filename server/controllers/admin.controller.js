@@ -125,13 +125,36 @@ exports.getUserTransactions = async (req, res) => {
 // GET /api/admin/transactions
 exports.getTransactions = async (req, res) => {
   try {
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*, user:users(*)')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json({ success: true, transactions });
+    const Transaction = require('../models/Transaction');
+    const transactions = await Transaction.getAll();
+    
+    // Populate user data for each transaction
+    const transactionsWithUsers = await Promise.all(
+      transactions.map(async (tx) => {
+        try {
+          const { data: user } = await supabase.auth.admin.getUserById(tx.userId);
+          return {
+            ...tx,
+            user: {
+              id: user?.user?.id,
+              name: user?.user?.user_metadata?.name || 'Unknown User',
+              email: user?.user?.email || 'Unknown Email'
+            }
+          };
+        } catch (error) {
+          return {
+            ...tx,
+            user: {
+              id: tx.userId,
+              name: 'Unknown User',
+              email: 'Unknown Email'
+            }
+          };
+        }
+      })
+    );
+    
+    res.json({ success: true, data: transactionsWithUsers, transactions: transactionsWithUsers });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -151,33 +174,60 @@ exports.createTransaction = async (req, res) => {
   }
 };
 
-// PATCH /api/admin/transactions/:id
+// PUT /api/admin/transactions/:id
 exports.updateTransaction = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .update(req.body)
-      .eq('id', req.params.id)
-      .select();
-    if (error) throw error;
-    res.json({ success: true, transaction: data[0] });
+    const Transaction = require('../models/Transaction');
+    const { id } = req.params;
+    
+    // Admin can update any transaction without user restriction
+    const transactions = await Transaction.getAll();
+    const index = transactions.findIndex(t => t.id === id);
+    
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Transaction not found' });
+    }
+    
+    transactions[index] = {
+      ...transactions[index],
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
+    
+    await Transaction.saveTransactions(transactions);
+    res.json({ success: true, transaction: transactions[index] });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
 };
 
-// DELETE /api/admin/transactions/:id (Soft Delete)
+// DELETE /api/admin/transactions/:id
 exports.deleteTransaction = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', req.params.id)
-      .select();
-    if (error) throw error;
-    // Log activity
-    await logActivity(req.user?.id, 'delete_transaction', { transactionId: req.params.id });
-    res.json({ success: true, transaction: data[0] });
+    const Transaction = require('../models/Transaction');
+    const { id } = req.params;
+    
+    const transactions = await Transaction.getAll();
+    const index = transactions.findIndex(t => t.id === id);
+    
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Transaction not found' });
+    }
+    
+    const deletedTransaction = transactions[index];
+    transactions.splice(index, 1);
+    
+    await Transaction.saveTransactions(transactions);
+    
+    // Log activity if logger is available
+    try {
+      const { logActivity } = require('../utils/activityLogger');
+      await logActivity(req.user?.id, 'delete_transaction', { transactionId: id });
+    } catch (logError) {
+      console.log('Activity logging failed:', logError.message);
+    }
+    
+    res.json({ success: true, transaction: deletedTransaction });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

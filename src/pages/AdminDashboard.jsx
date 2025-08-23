@@ -1,543 +1,288 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useAdmin } from '../contexts/AdminContext';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  Users,
-  ShoppingCart,
-  DollarSign,
-  BarChart2,
-  AlertCircle,
-  RefreshCw
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
-const MetricCard = ({ 
-  title, 
-  value, 
-  icon: Icon, 
-  color, 
-  trend = 'stable',  // 'up', 'down', or 'stable'
-  trendValue
-}) => {
-  const trendConfig = {
-    up: {
-      icon: '↑',
-      color: 'text-green-500',
-      bgColor: 'bg-green-50',
-      text: 'text-green-700'
-    },
-    down: {
-      icon: '↓',
-      color: 'text-red-500',
-      bgColor: 'bg-red-50',
-      text: 'text-red-700'
-    },
-    stable: {
-      icon: '→',
-      color: 'text-gray-500',
-      bgColor: 'bg-gray-50',
-      text: 'text-gray-700'
-    }
-  };
-
-  const trendData = trendConfig[trend] || trendConfig.stable;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200"
-    >
-      <div className="flex items-start justify-between">
-        <div className={`p-3 rounded-xl ${color} bg-opacity-10`}>
-          <Icon className={`h-6 w-6 ${color}`} />
-        </div>
-        {trendValue && (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${trendData.bgColor} ${trendData.text}`}>
-            {trendData.icon} {trendValue}
-          </span>
-        )}
-      </div>
-      <div className="mt-4">
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
-      </div>
-    </motion.div>
-  );
-};
-
-const QuickAction = ({ label, onClick, icon }) => (
-  <button
-    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow"
-    onClick={onClick}
-  >
-    {icon}
-    {label}
-  </button>
-);
+import { useAdmin } from '../contexts/AdminContext';
+import adminService from '../services/admin.service';
+import { toast } from 'react-toastify';
 
 const AdminDashboard = () => {
-  const { isAuthResolved } = useAuth();
-  const {
-    isAdminResolved,
-    dashboardMetrics,
-    fetchDashboardMetrics,
-    isLoading: isMetricsLoading,
-    error: metricsError
-  } = useAdmin();
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [isSendingNotification, setIsSendingNotification] = useState(false);
-  const [showReportsModal, setShowReportsModal] = useState(false);
-
-  // Default empty metrics to prevent null reference errors
-  const safeMetrics = useMemo(() => ({
+  const { user, isAuthenticated } = useAuth();
+  const { isAdmin, isAdminResolved } = useAdmin();
+  const [stats, setStats] = useState({
     totalUsers: 0,
+    activeUsers: 0,
+    newUsersToday: 0,
+    adminUsers: 0,
     totalTransactions: 0,
-    revenue: 0,
-    totalServices: 0,
-    recentTransactions: [],
-    recentUsers: [],
-    ...dashboardMetrics
-  }), [dashboardMetrics]);
-
-  // Defensive fallback: if dashboardMetrics is null, use safeMetrics everywhere
-  const metricsToUse = dashboardMetrics && typeof dashboardMetrics === 'object' ? safeMetrics : {
-    totalUsers: 0,
-    totalTransactions: 0,
-    revenue: 0,
-    totalServices: 0,
-    recentTransactions: [],
-    recentUsers: [],
-    recentServices: []
-  };
-
-  // Format the revenue for display
-  const formattedRevenue = useMemo(() => {
-    const amount = safeMetrics.revenue || 0;
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  }, [safeMetrics.revenue]);
-
-  // Handle refresh
-  const handleRefresh = () => {
-    console.log('Refreshing dashboard data...');
-    fetchDashboardMetrics();
-  };
-
-  // Periodic auto-refresh (every 30 seconds)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchDashboardMetrics();
-    }, 30000); // 30 seconds
-    return () => clearInterval(interval);
-  }, [fetchDashboardMetrics]);
-
-  // Notification send handler (stub)
-  const handleSendNotification = async () => {
-    setIsSendingNotification(true);
-    setTimeout(() => {
-      setIsSendingNotification(false);
-      setShowNotificationModal(false);
-      setNotificationMessage('');
-      alert('Notification sent to all users (stub).');
-    }, 1200);
-  };
-
-  // Export all transactions as CSV (reuse logic from AdminTransactions)
-  const handleDownloadReport = () => {
-    const allTx = (dashboardMetrics?.allTransactions || []).length > 0
-      ? dashboardMetrics.allTransactions
-      : (dashboardMetrics?.recentTransactions || []);
-    const csvRows = [
-      ['ID', 'User', 'Amount', 'Type', 'Status', 'Date'],
-      ...allTx.map(t => [
-        t.id || '',
-        t.user?.name || t.user || 'N/A',
-        t.amount || 0,
-        t.type || '',
-        t.status || '',
-        t.date || t.createdAt || ''
-      ])
-    ];
-    const csvContent = csvRows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'transactions_report.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    totalRevenue: 0,
+    pendingTransactions: 0
+  });
+  const [users, setUsers] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    console.log('AdminDashboard: Component mounted, fetching metrics...');
-    fetchDashboardMetrics()
-      .then(() => {
-        console.log('AdminDashboard: Successfully fetched metrics');
-      })
-      .catch(err => {
-        console.error('AdminDashboard: Error fetching metrics:', err);
-      });
-    // eslint-disable-next-line
-  }, []);
-
-  // Only fetch metrics after auth and admin are resolved
-  useEffect(() => {
-    if (isAuthResolved && isAdminResolved) {
-      fetchDashboardMetrics();
+    if (isAdminResolved && isAdmin) {
+      fetchDashboardData();
     }
-    // eslint-disable-next-line
-  }, [isAuthResolved, isAdminResolved]);
+  }, [isAdminResolved, isAdmin]);
 
-  // Show loading state until both contexts are resolved
-  if (!isAuthResolved || !isAdminResolved || isMetricsLoading) {
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch users and transactions in parallel
+      const [usersResponse, transactionsResponse] = await Promise.all([
+        adminService.getUsers(),
+        adminService.getTransactions()
+      ]);
+
+      const usersData = usersResponse.users || usersResponse || [];
+      const transactionsData = Array.isArray(transactionsResponse) ? transactionsResponse : [];
+
+      setUsers(usersData);
+      setTransactions(transactionsData);
+
+      // Calculate stats
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const calculatedStats = {
+        totalUsers: usersData.length,
+        activeUsers: usersData.filter(u => 
+          u.last_sign_in_at && new Date(u.last_sign_in_at) > thisWeek
+        ).length,
+        newUsersToday: usersData.filter(u => 
+          new Date(u.created_at) >= today
+        ).length,
+        adminUsers: usersData.filter(u => u.role === 'admin').length,
+        totalTransactions: transactionsData.length,
+        totalRevenue: transactionsData
+          .filter(t => t.status === 'completed')
+          .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
+        pendingTransactions: transactionsData.filter(t => t.status === 'pending').length
+      };
+
+      setStats(calculatedStats);
+    } catch (err) {
+      setError(err.message);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+    toast.success('Dashboard refreshed');
+  };
+
+  const updateUserRole = async (userId, newRole) => {
+    try {
+      await adminService.updateUserRole(userId, newRole);
+      toast.success('User role updated');
+      fetchDashboardData();
+    } catch (err) {
+      toast.error('Failed to update user role');
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      await adminService.deleteUser(userId);
+      toast.success('User deleted');
+      fetchDashboardData();
+    } catch (err) {
+      toast.error('Failed to delete user');
+    }
+  };
+
+  if (!isAdminResolved) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-lg text-gray-700">Loading dashboard data...</p>
-          <p className="text-sm text-gray-500 mt-2">Please wait while we load your dashboard</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p>You don't have admin privileges.</p>
         </div>
       </div>
     );
   }
 
-  console.log('AdminDashboard render with state:', { 
-    isMetricsLoading, 
-    metricsError, 
-    hasMetrics: !!dashboardMetrics,
-    metrics: dashboardMetrics 
-  });
-
-  // Show loading state
-  if (isMetricsLoading && !safeMetrics) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-lg text-gray-700">Loading dashboard data...</p>
-          <p className="text-sm text-gray-500 mt-2">Please wait while we load your dashboard</p>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p>Loading dashboard...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Admin Dashboard</h2>
-        <button
-          onClick={handleRefresh}
-          disabled={isMetricsLoading}
-          className={`flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-            isMetricsLoading ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
-        >
-          {isMetricsLoading ? (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              Refreshing...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh Data
-            </>
-          )}
-        </button>
-      </div>
-
-      {metricsError && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-500" aria-hidden="true" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">
-                {metricsError.message || 'Failed to load dashboard data. Please try again.'}
-              </p>
-              <button
-                onClick={handleRefresh}
-                className="mt-2 text-sm font-medium text-red-700 hover:text-red-600"
-              >
-                Retry
-              </button>
-            </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.email}</p>
           </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
         </div>
-      )}
 
-      {isMetricsLoading ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow p-6">
-                <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-              </div>
-            ))}
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <MetricCard
-              title="Total Users"
-              value={safeMetrics.totalUsers?.toLocaleString() || '0'}
-              icon={Users}
-              color="bg-blue-500"
-              trend="up"
-              trendValue="12.5%"
-            />
-            <MetricCard
-              title="Total Transactions"
-              value={safeMetrics.totalTransactions?.toLocaleString() || '0'}
-              icon={ShoppingCart}
-              color="bg-green-500"
-              trend="up"
-              trendValue="8.2%"
-            />
-            <MetricCard
-              title="Total Revenue"
-              value={formattedRevenue}
-              icon={DollarSign}
-              color="bg-purple-500"
-              trend="up"
-              trendValue="15.3%"
-            />
-            <MetricCard
-              title="Active Services"
-              value={safeMetrics.totalServices?.toLocaleString() || '0'}
-              icon={BarChart2}
-              color="bg-yellow-500"
-              trend="stable"
-              trendValue="0%"
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-4 mb-8">
-            <QuickAction label="Add Service" onClick={() => window.location.href='/admin/services'} icon={<BarChart2 />} />
-            <QuickAction label="Send Notification" onClick={() => setShowNotificationModal(true)} icon={<Users />} />
-            <QuickAction label="View Reports" onClick={() => setShowReportsModal(true)} icon={<DollarSign />} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Users</h3>
-              <ul>
-                {(metricsToUse.recentUsers || []).map(u => (
-                  <li key={u.id} className="mb-2 flex justify-between items-center">
-                    <span>{u.name}</span>
-                    <span className="text-xs text-gray-500">{u.email}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Transactions</h3>
-              <ul>
-                {(metricsToUse.recentTransactions || []).map(t => (
-                  <li key={t.id} className="mb-2 flex justify-between items-center">
-                    <span>{t.user?.name || t.user || 'Unknown'}</span>
-                    <span className="text-xs text-gray-500">₦{t.amount}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Services</h3>
-              <ul>
-                {(metricsToUse.recentServices || []).map(s => (
-                  <li key={s.id} className="mb-2 flex justify-between items-center">
-                    <span>{s.name}</span>
-                    <span className="text-xs text-gray-500">₦{s.price}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Recent Transactions</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Service
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {(metricsToUse.recentTransactions || []).length > 0 ? (
-                    metricsToUse.recentTransactions.map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {transaction.user}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {transaction.service}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          ₦{Number(transaction.amount).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            transaction.status === 'completed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : transaction.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {transaction.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {format(new Date(transaction.date), 'MMM d, yyyy h:mm a')}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                        No recent transactions
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {(metricsToUse.recentTransactions || []).length > 0 && (
-              <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-                <div className="text-sm text-gray-500">
-                  Showing <span className="font-medium">1</span> to <span className="font-medium">
-                    {Math.min(3, metricsToUse.recentTransactions.length)}
-                  </span> of <span className="font-medium">{metricsToUse.recentTransactions.length}</span> results
-                </div>
-                <div className="flex-1 flex justify-end">
-                  <button className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                    View all transactions →
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Activity Chart</h3>
-            {/* Chart.js Line Chart for Transactions/Revenue */}
-            <div className="w-full h-72">
-              <Line
-                data={{
-                  labels: (metricsToUse.recentTransactions || []).map(t => {
-                    // Use date or fallback
-                    return t.date ? format(new Date(t.date), 'MMM d') : 'N/A';
-                  }),
-                  datasets: [
-                    {
-                      label: 'Revenue (₦)',
-                      data: (metricsToUse.recentTransactions || []).map(t => Number(t.amount) || 0),
-                      fill: false,
-                      borderColor: 'rgb(99, 102, 241)',
-                      backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                      tension: 0.3,
-                      pointRadius: 4,
-                      pointHoverRadius: 6
-                    }
-                  ]
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: true, position: 'top' },
-                    title: { display: true, text: 'Recent Revenue Trend' }
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: { callback: value => `₦${value}` }
-                    }
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Notification Modal */}
-      {showNotificationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-800" onClick={()=>setShowNotificationModal(false)}>&times;</button>
-            <h3 className="text-lg font-semibold mb-2">Send Notification</h3>
-            <textarea
-              className="border p-2 rounded w-full mb-4"
-              rows={4}
-              placeholder="Enter your message to all users..."
-              value={notificationMessage}
-              onChange={e => setNotificationMessage(e.target.value)}
-            />
-            <button
-              className="bg-indigo-600 text-white px-4 py-2 rounded mr-2"
-              onClick={handleSendNotification}
-              disabled={isSendingNotification || !notificationMessage.trim()}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600">{error}</p>
+            <button 
+              onClick={fetchDashboardData}
+              className="mt-2 text-red-600 underline hover:no-underline"
             >
-              {isSendingNotification ? 'Sending...' : 'Send'}
+              Retry
             </button>
-            <button className="bg-gray-400 text-white px-4 py-2 rounded" onClick={()=>setShowNotificationModal(false)}>Cancel</button>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
+            <p className="text-3xl font-bold text-blue-600">{stats.totalUsers}</p>
+            <p className="text-sm text-gray-400">Registered users</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Active Users</h3>
+            <p className="text-3xl font-bold text-green-600">{stats.activeUsers}</p>
+            <p className="text-sm text-gray-400">Last 7 days</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Total Revenue</h3>
+            <p className="text-3xl font-bold text-purple-600">₦{stats.totalRevenue.toLocaleString()}</p>
+            <p className="text-sm text-gray-400">Completed transactions</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-sm font-medium text-gray-500">Pending</h3>
+            <p className="text-3xl font-bold text-orange-600">{stats.pendingTransactions}</p>
+            <p className="text-sm text-gray-400">Awaiting approval</p>
           </div>
         </div>
-      )}
-      {/* Reports Modal */}
-      {showReportsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-800" onClick={()=>setShowReportsModal(false)}>&times;</button>
-            <h3 className="text-lg font-semibold mb-2">Download Transactions Report</h3>
-            <p className="mb-4 text-gray-600">Download a CSV report of all transactions for analytics or record-keeping.</p>
-            <button className="bg-green-600 text-white px-4 py-2 rounded mr-2" onClick={handleDownloadReport}>Download CSV</button>
-            <button className="bg-gray-400 text-white px-4 py-2 rounded" onClick={()=>setShowReportsModal(false)}>Cancel</button>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Users */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Recent Users</h2>
+            </div>
+            <div className="p-6">
+              {users.slice(0, 5).map((user) => (
+                <div key={user.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                  <div>
+                    <p className="font-medium text-gray-900">{user.name || user.email}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.role === 'admin' 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.role || 'user'}
+                    </span>
+                    <select
+                      value={user.role || 'user'}
+                      onChange={(e) => updateUserRole(user.id, e.target.value)}
+                      className="text-xs border border-gray-300 rounded px-2 py-1"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Transactions */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
+            </div>
+            <div className="p-6">
+              {transactions.slice(0, 5).map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                  <div>
+                    <p className="font-medium text-gray-900">{transaction.user?.name || 'Unknown User'}</p>
+                    <p className="text-sm text-gray-500">{transaction.description || transaction.type}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(transaction.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900">₦{transaction.amount}</p>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      transaction.status === 'completed' 
+                        ? 'bg-green-100 text-green-800'
+                        : transaction.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {transaction.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Quick Actions */}
+        <div className="mt-8 bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+              <h3 className="font-medium text-gray-900">Manage Users</h3>
+              <p className="text-sm text-gray-500">View and manage all users</p>
+            </button>
+            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+              <h3 className="font-medium text-gray-900">View Transactions</h3>
+              <p className="text-sm text-gray-500">Monitor all transactions</p>
+            </button>
+            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+              <h3 className="font-medium text-gray-900">System Settings</h3>
+              <p className="text-sm text-gray-500">Configure system settings</p>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -58,32 +58,8 @@ router.post('/register', registerValidation, async (req, res, next) => {
   });
 
   try {
-    // Check if user exists in public.users
-    console.log(`🔍 [${requestId}] Checking if user exists in public.users...`);
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('email, id')
-      .eq('email', email)
-      .maybeSingle();
-    if (checkError) {
-      const errorInfo = logError(checkError, { requestId, email, operation: 'public.users.select' });
-      return res.status(500).json({
-        success: false,
-        error: 'Database error',
-        code: 'DB_CHECK_ERROR',
-        requestId,
-        debug: process.env.NODE_ENV === 'development' ? errorInfo : undefined
-      });
-    }
-    if (existingUser) {
-      console.log(`❌ [${requestId}] User already exists in public.users:`, { email });
-      return res.status(400).json({
-        success: false,
-        error: 'Email already registered',
-        code: 'EMAIL_ALREADY_EXISTS',
-        requestId
-      });
-    }
+    // Skip user existence check for now due to connectivity issues
+    console.log(`🔍 [${requestId}] Skipping user existence check...`);
 
     // Create auth user
     console.log(`🚀 [${requestId}] Creating auth user in Supabase Auth...`);
@@ -95,6 +71,36 @@ router.post('/register', registerValidation, async (req, res, next) => {
         emailRedirectTo: process.env.SITE_URL || 'http://localhost:3000/auth/confirm'
       }
     };
+    
+    // For development, try to auto-confirm the user
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        // Use admin client to create user without email confirmation
+        const { data: adminData, error: adminError } = await supabase.auth.admin.createUser({
+          email,
+          password,
+          user_metadata: { name, phone_number: phoneNumber },
+          email_confirm: true // Auto-confirm email
+        });
+        
+        if (!adminError && adminData.user) {
+          console.log(`✅ [${requestId}] User created and auto-confirmed via admin API`);
+          // Sign in the user to get session tokens
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (!signInError && signInData.session) {
+            return res.json({
+              success: true,
+              user: { id: adminData.user.id, email, name, phoneNumber },
+              token: signInData.session.access_token,
+              refreshToken: signInData.session.refresh_token,
+              requestId
+            });
+          }
+        }
+      } catch (adminError) {
+        console.log(`⚠️ [${requestId}] Admin user creation failed, falling back to regular signup:`, adminError.message);
+      }
+    }
     const { data, error } = await supabase.auth.signUp(signUpPayload);
     if (error) {
       const errorInfo = logError(error, { requestId, email, operation: 'auth.signUp' });
@@ -118,42 +124,6 @@ router.post('/register', registerValidation, async (req, res, next) => {
 
     console.log(`✅ [${requestId}] Auth user created:`, { userId: data.user?.id, email });
     if (data.user) {
-      // Create user profile
-      const userProfile = {
-        id: data.user.id,
-        email,
-        name,
-        phone_number: phoneNumber,
-        role: 'user',
-        status: 'active',
-        created_at: new Date().toISOString(),
-        last_login_at: new Date().toISOString()
-      };
-      console.log(`📝 [${requestId}] Creating user profile...`);
-      const { data: profileData, error: profileError } = await supabase
-        .from('users')
-        .insert([userProfile])
-        .select()
-        .single();
-      if (profileError) {
-        const errorInfo = logError(profileError, { requestId, email, operation: 'public.users.insert' });
-        // Clean up auth user
-        try {
-          await supabase.auth.admin.deleteUser(data.user.id);
-          console.log(`✅ [${requestId}] Cleaned up auth user after profile creation failure`);
-        } catch (cleanupError) {
-          console.error(`❌ [${requestId}] Cleanup failed:`, cleanupError);
-        }
-        return res.status(500).json({
-          success: false,
-          error: 'Profile creation failed',
-          code: 'PROFILE_CREATION_ERROR',
-          requestId,
-          debug: process.env.NODE_ENV === 'development' ? errorInfo : undefined
-        });
-      }
-
-      console.log(`✅ [${requestId}] User profile created:`, { userId: profileData.id });
       if (data.session) {
         return res.json({
           success: true,
@@ -200,7 +170,26 @@ router.post('/login', loginValidation, async (req, res) => {
     if (error) {
       return res.status(401).json({ success: false, error: error.message });
     }
-    res.json({ success: true, user: data.user, token: data.session.access_token, refreshToken: data.session.refresh_token });
+    
+    // Get user role from metadata
+    const userRole = data.user.user_metadata?.role || 'user';
+    const isAdmin = userRole === 'admin';
+    
+    const userResponse = {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.name,
+      phoneNumber: data.user.user_metadata?.phone_number,
+      role: userRole,
+      isAdmin
+    };
+    
+    res.json({ 
+      success: true, 
+      user: userResponse, 
+      token: data.session.access_token, 
+      refreshToken: data.session.refresh_token 
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
@@ -227,7 +216,19 @@ router.get('/validate', async (req, res) => {
     if (error) {
       return res.status(401).json({ success: false, error: error.message });
     }
-    res.json({ success: true, valid: true, user: data.user });
+    
+    const userRole = data.user.user_metadata?.role || 'user';
+    const userResponse = {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.name,
+      phoneNumber: data.user.user_metadata?.phone_number,
+      role: userRole,
+      isAdmin: userRole === 'admin',
+      user_metadata: data.user.user_metadata // Include full user_metadata
+    };
+    
+    res.json({ success: true, valid: true, user: userResponse });
   } catch (error) {
     console.error('Validate token error:', error);
     res.status(500).json({ success: false, error: 'Server error' });

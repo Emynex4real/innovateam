@@ -1,30 +1,12 @@
-// Enhanced environment variable loading with detailed logging
-console.log('🔍 Starting server initialization...');
-console.log(`   Node.js version: ${process.version}`);
-console.log(`   Platform: ${process.platform} ${process.arch}`);
-console.log(`   Current working directory: ${process.cwd()}`);
-console.log(`   __dirname: ${__dirname}`);
-
+// Load environment variables FIRST before any other modules
 const path = require('path');
 const fs = require('fs');
-const express = require('express');
-const cors = require('cors');
-const rateLimit = require('express-rate-limit');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const compression = require('compression');
-const { errorHandler } = require('./middleware/errorHandler');
-const authRoutes = require('./routes/auth.routes');
-const { logger } = require('./utils/logger');
-const adminRoutes = require('./routes/admin.routes');
-const profileRoutes = require('./routes/profile.routes');
-const http = require('http');
 
 // Check if dotenv has already been loaded
 if (!process.env.LOADED_DOTENV) {
   try {
     const dotenv = require('dotenv');
-    const envPath = path.join(__dirname, '..', '.env');
+    const envPath = path.join(__dirname, '.env');
     console.log(`📁 Loading environment variables from: ${envPath}`);
     const envFileExists = fs.existsSync(envPath);
     if (!envFileExists) {
@@ -47,6 +29,26 @@ if (!process.env.LOADED_DOTENV) {
 } else {
   console.log('ℹ️ Environment variables already loaded');
 }
+
+// Enhanced environment variable loading with detailed logging
+console.log('🔍 Starting server initialization...');
+console.log(`   Node.js version: ${process.version}`);
+console.log(`   Platform: ${process.platform} ${process.arch}`);
+console.log(`   Current working directory: ${process.cwd()}`);
+console.log(`   __dirname: ${__dirname}`);
+
+const express = require('express');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const compression = require('compression');
+const { errorHandler } = require('./middleware/errorHandler');
+const authRoutes = require('./routes/auth.routes');
+const { logger } = require('./utils/logger');
+const adminRoutes = require('./routes/admin.routes');
+const profileRoutes = require('./routes/profile.routes');
+const http = require('http');
 
 // Verify required environment variables
 const requiredEnvVars = [
@@ -202,6 +204,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/transactions', require('./routes/transactions.routes'));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
@@ -236,7 +239,7 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 server.listen(PORT, HOST, () => {
   logger.info(`Server is running on http://${HOST}:${PORT}`);

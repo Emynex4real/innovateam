@@ -82,6 +82,7 @@ export const AdminProvider = ({ children }) => {
       return metrics;
     } catch (err) {
       console.warn('Using fallback dashboard metrics due to error:', err.message);
+      setError(err.message);
       // Set default metrics in case of error
       const fallbackMetrics = {
         totalUsers: 0,
@@ -104,9 +105,10 @@ export const AdminProvider = ({ children }) => {
     setError(null);
     try {
       const data = await adminService.getUsers(params);
-      setUsers(data.users);
+      setUsers(data.users || []);
     } catch (err) {
       setError(err.message || 'Failed to fetch users');
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }

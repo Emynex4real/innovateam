@@ -7,6 +7,7 @@ import PrivateLayout from "./layouts/PrivateLayout";
 import publicRoutes from "./routes/publicRoutes";
 import privateRoutes from "./routes/privateRoutes";
 import PrivateRoute from "./components/PrivateRoute";
+import AdminRoute from "./components/AdminRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TransactionProvider } from "./contexts/TransactionContext";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
@@ -107,11 +108,11 @@ function App() {
                 <Route
                   path="/admin"
                   element={
-                    <PrivateRoute>
+                    <AdminRoute>
                       <AdminProvider>
                         <AdminLayout />
                       </AdminProvider>
-                    </PrivateRoute>
+                    </AdminRoute>
                   }
                 >
                   <Route index element={<Navigate to="dashboard" replace />} />

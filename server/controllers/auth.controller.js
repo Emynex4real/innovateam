@@ -109,24 +109,48 @@ exports.login = async (req, res) => {
     // Authenticate with Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
-      logger.warn('❌ Login failed: Invalid credentials', { email });
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      logger.warn('❌ Login failed: Invalid credentials', { email, error: error?.message });
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    // Fetch user profile from users table
-    const { data: profile, error: profileError } = await supabase
+    // Try to fetch user profile from users table, create if doesn't exist
+    let profile;
+    const { data: existingProfile, error: profileError } = await supabase
       .from('users')
       .select('*')
       .eq('id', data.user.id)
       .single();
-    if (profileError || !profile) {
-      logger.warn('❌ Login failed: User profile not found', { email });
-      return res.status(401).json({ success: false, message: 'User profile not found' });
+    
+    if (profileError || !existingProfile) {
+      // Create profile if it doesn't exist
+      const { data: newProfile, error: createError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.name || data.user.email.split('@')[0],
+            role: data.user.user_metadata?.role || 'user'
+          }
+        ])
+        .select()
+        .single();
+      
+      if (createError) {
+        logger.warn('❌ Failed to create user profile', { email, error: createError.message });
+        // Use auth user data as fallback
+        profile = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.name || data.user.email.split('@')[0],
+          role: data.user.user_metadata?.role || 'user'
+        };
+      } else {
+        profile = newProfile;
+      }
+    } else {
+      profile = existingProfile;
     }
-
-    // Optionally, generate a JWT for session (or use Supabase session token)
-    // const token = data.session?.access_token;
-    // const refreshToken = data.session?.refresh_token;
 
     res.json({
       success: true,
@@ -134,8 +158,9 @@ exports.login = async (req, res) => {
         ...profile,
         id: profile.id,
         email: profile.email,
-        role: profile.role,
+        role: profile.role || 'user',
         isAdmin: profile.role === 'admin',
+        user_metadata: { role: profile.role || 'user' }
       },
       token: data.session?.access_token,
       refreshToken: data.session?.refresh_token,
@@ -144,7 +169,7 @@ exports.login = async (req, res) => {
     logger.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error logging in'
+      error: 'Error logging in'
     });
   }
 };

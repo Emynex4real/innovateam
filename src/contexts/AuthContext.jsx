@@ -25,7 +25,9 @@ export const AuthProvider = ({ children }) => {
         if (token && storedUser && refreshToken) {
           const isValid = await authService.validateToken();
           if (isValid && isMounted) {
-            setUser(storedUser);
+            // Get the updated user data from the service after validation
+            const updatedUser = authService.getUser();
+            setUser(updatedUser || storedUser);
             setIsAuthenticated(true);
             setIsLoading(false);
             return;
