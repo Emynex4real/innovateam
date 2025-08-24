@@ -17,6 +17,7 @@ export const LOCAL_STORAGE_KEYS = {
   AUTH_TOKEN: 'token',
   REFRESH_TOKEN: 'refreshToken',
   USER: 'user',
+  REMEMBER_ME: 'rememberMe',
   
   // App settings
   THEME: 'theme',

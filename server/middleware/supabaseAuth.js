@@ -1,36 +1,63 @@
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const supabase = require('../supabaseClient');
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-
-// Middleware to verify Supabase JWT and user role
-const requireAdmin = async (req, res, next) => {
+const requireAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader) return res.status(401).json({ success: false, message: 'No token provided' });
-    const token = authHeader.replace('Bearer ', '');
-
-    // Verify JWT and get user
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) return res.status(401).json({ success: false, message: 'Invalid token' });
-
-    // Fetch user record from users table
-    const { data: userRecord, error: userErr } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    if (userErr || !userRecord) return res.status(403).json({ success: false, message: 'User not found' });
-
-    // Check role
-    if (userRecord.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin privileges required' });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
     }
-    req.user = userRecord;
+
+    const token = authHeader.substring(7);
+    
+    // Verify token with Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
+    }
+
+    // Attach user to request
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.user_metadata?.role || 'user'
+    };
+
     next();
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Auth error', error: err.message });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Authentication error'
+    });
   }
 };
 
-module.exports = { requireAdmin };
+const requireAdmin = async (req, res, next) => {
+  try {
+    await requireAuth(req, res, () => {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin access required'
+        });
+      }
+      next();
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Authorization error'
+    });
+  }
+};
+
+module.exports = {
+  requireAuth,
+  requireAdmin
+};

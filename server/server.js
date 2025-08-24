@@ -204,7 +204,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/transactions', require('./routes/transactions.routes'));
+app.use('/api/wallet', require('./routes/wallet.routes'));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
