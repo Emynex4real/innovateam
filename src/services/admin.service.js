@@ -125,7 +125,7 @@ class AdminService {
   async getTransactions(page = 1, limit = 100) {
     try {
       const response = await this.api.get(`/admin/transactions?page=${page}&limit=${limit}`);
-      return response.data.data || response.data.transactions || [];
+      return response.data.data || response.data.transactions || response.data || [];
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch transactions');
     }

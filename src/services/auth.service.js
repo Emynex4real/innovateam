@@ -1,54 +1,140 @@
 import axios from 'axios';
-import { LOCAL_STORAGE_KEYS } from '../config/constants';
-import API_BASE_URL from '../config/api';
+import { LOCAL_STORAGE_KEYS, API_ENDPOINTS } from '../config/constants';
+import { API_BASE_URL } from '../config/constants';
 import logger from '../utils/logger';
+import secureTokenStorage from '../utils/secureStorage';
+import csrfProtection from '../utils/csrf';
+import errorHandler from '../utils/errorHandler';
+import { 
+  sanitizeInput, 
+  sanitizeForLog, 
+  isValidEmail, 
+  isValidPassword, 
+  validateLoginData, 
+  validateRegistrationData,
+  sanitizeUserData 
+} from '../utils/validation';
 
-const API_URL = API_BASE_URL || 'http://localhost:5000/api';
+// Secure API URL configuration
+const API_URL = API_BASE_URL || (process.env.NODE_ENV === 'production' 
+  ? 'https://your-backend-url.com/api' 
+  : 'https://localhost:5000/api'); // Use HTTPS even in development
+
+// Secure storage utility with error handling
+class SecureStorage {
+  static setItem(key, value) {
+    try {
+      if (typeof value === 'object') {
+        value = JSON.stringify(value);
+      }
+      localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      logger.auth('Storage error', { error: error.message });
+      return false;
+    }
+  }
+
+  static getItem(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      logger.auth('Storage retrieval error', { error: error.message });
+      return null;
+    }
+  }
+
+  static removeItem(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (error) {
+      logger.auth('Storage removal error', { error: error.message });
+      return false;
+    }
+  }
+
+  static getJSON(key) {
+    try {
+      const item = this.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (error) {
+      logger.auth('JSON parsing error', { key, error: error.message });
+      return null;
+    }
+  }
+}
 
 class AuthService {
   constructor() {
     this.initialized = false;
+    this.csrfToken = null;
     this.initialize();
   }
 
   initialize() {
     if (this.initialized) return;
     logger.service('Initializing AuthService');
+    
     this.api = axios.create({
       baseURL: API_URL,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest' // CSRF protection
+      },
       timeout: 10000,
+      withCredentials: true // Enable cookies for CSRF tokens
     });
 
+    // Request interceptor with CSRF protection
     this.api.interceptors.request.use(
       (config) => {
         const token = this.getToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        
+        // Add CSRF token for state-changing requests
+        if (csrfProtection.needsProtection(config.method)) {
+          const csrfHeaders = csrfProtection.getTokenForHeader();
+          Object.assign(config.headers, csrfHeaders);
+        }
+        
         return config;
       },
       (error) => Promise.reject(error)
     );
 
+    // Response interceptor with enhanced error handling
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // CSRF token is managed client-side, no need to extract from response
+        return response;
+      },
       async (error) => {
         const originalRequest = error.config;
         const status = error.response?.status;
+        
         if (status !== 431) {
-          logger.service('API error', { status, error: error.message });
+          logger.service('API error', { status, message: error.message });
         }
+        
         if (status === 401 && !originalRequest?._retry) {
           originalRequest._retry = true;
           try {
             const refreshToken = this.getRefreshToken();
             if (!refreshToken) {
               logger.service('No refresh token available');
+              this.clearStorage();
               return Promise.reject(error);
             }
+            
             logger.service('Attempting to refresh token');
-            const response = await axios.post(`${API_URL}/auth/refresh-token`, { refreshToken });
+            const response = await axios.post(`${API_URL}${API_ENDPOINTS.AUTH.REFRESH_TOKEN}`, 
+              { refreshToken },
+              { withCredentials: true }
+            );
+            
             const { token, refreshToken: newRefreshToken, user } = response.data;
             if (token && user) {
               logger.service('Token refresh successful');
@@ -60,27 +146,46 @@ class AuthService {
             }
           } catch (refreshError) {
             logger.service('Token refresh failed');
+            this.clearStorage();
             return Promise.reject(refreshError);
           }
         }
+        
         return Promise.reject(error);
       }
     );
+    
     this.initialized = true;
   }
 
+
+
   async login(credentials) {
     logger.auth('Login attempt started');
+    
+    // Input validation
+    const validation = validateLoginData(credentials);
+    if (!validation.isValid) {
+      return errorHandler.handleValidationError(validation.errors, 'login');
+    }
+    
     try {
-      const response = await this.api.post('/auth/login', credentials);
-      console.log('Login response:', response.data); // Debug log
+      // Sanitize inputs
+      const sanitizedCredentials = sanitizeUserData({
+        email: credentials.email.toLowerCase().trim(),
+        password: credentials.password
+      });
+      
+      const response = await this.api.post(API_ENDPOINTS.AUTH.LOGIN, sanitizedCredentials);
+      logger.auth('Login response received');
+      
       const { token, refreshToken, user } = response.data;
       if (!token || !refreshToken || !user) {
         logger.auth('Incomplete login response');
         return { success: false, error: 'Invalid login response' };
       }
       
-      // Ensure isAdmin is set correctly - check user_metadata.role
+      // Process user data securely
       const userWithAdmin = {
         ...user,
         role: user.user_metadata?.role || 'user',
@@ -90,72 +195,82 @@ class AuthService {
       this.setToken(token);
       this.setRefreshToken(refreshToken);
       this.setUser(userWithAdmin);
-      console.log('User stored:', userWithAdmin); // Debug log
+      
       logger.auth('Login successful');
       return { success: true, user: userWithAdmin };
     } catch (error) {
-      console.log(error)
-      logger.auth('Login error', { error: error.message });
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Login failed',
-      };
+      return errorHandler.handleAuthError(error, 'login');
     }
   }
 
-async register(userData) {
-  console.log('Registering user:', userData);
-  try {
-    const response = await this.api.post('/auth/register', userData, {
-      withCredentials: false // Prevent sending cookies
-    });
-    console.log(response);
-    const { token, refreshToken, user, info, requiresConfirmation } = response.data;
+  async register(userData) {
+    logger.auth('Registration attempt started');
     
-    // If user was created successfully with tokens, store them
-    if (token && refreshToken && user) {
-      this.setToken(token);
-      this.setRefreshToken(refreshToken);
-      this.setUser(user);
-      return { success: true, user };
+    // Input validation
+    const validation = validateRegistrationData(userData);
+    if (!validation.isValid) {
+      return errorHandler.handleValidationError(validation.errors, 'registration');
     }
     
-    // If registration succeeded but requires confirmation
-    if (info && requiresConfirmation) {
-      return { success: true, info, requiresConfirmation: true };
+    try {
+      // Sanitize inputs
+      const sanitizedData = sanitizeUserData({
+        ...userData,
+        email: userData.email.toLowerCase().trim()
+      });
+      
+      const response = await this.api.post(API_ENDPOINTS.AUTH.REGISTER, sanitizedData);
+      logger.auth('Registration response received');
+      
+      const { token, refreshToken, user, info, requiresConfirmation } = response.data;
+      
+      // If user was created successfully with tokens, store them
+      if (token && refreshToken && user) {
+        this.setToken(token);
+        this.setRefreshToken(refreshToken);
+        this.setUser(user);
+        logger.auth('Registration successful with immediate login');
+        return { success: true, user };
+      }
+      
+      // If registration succeeded but requires confirmation
+      if (info && requiresConfirmation) {
+        logger.auth('Registration successful, confirmation required');
+        return { success: true, info, requiresConfirmation: true };
+      }
+      
+      // If registration succeeded but no tokens
+      if (response.data.success) {
+        logger.auth('Registration successful');
+        return { success: true, info: info || 'Registration successful! You can now log in.' };
+      }
+      
+      return { success: false, error: 'Invalid registration response' };
+    } catch (error) {
+      return errorHandler.handleApiError(error, 'registration');
     }
-    
-    // If registration succeeded but no tokens (user created but not confirmed)
-    if (response.data.success) {
-      return { success: true, info: info || 'Registration successful! You can now log in.' };
-    }
-    
-    return { success: false, error: 'Invalid registration response' };
-  } catch (error) {
-    console.error('Registration error:', error.response?.data || error.message);
-    return {
-      success: false,
-      error: error.response?.data?.error || 'Registration failed',
-    };
   }
-}
 
   async logout() {
+    logger.auth('Logout attempt started');
     try {
-      await this.api.post('/auth/logout');
+      await this.api.post(API_ENDPOINTS.AUTH.LOGOUT);
+      logger.auth('Logout successful');
+    } catch (error) {
+      logger.auth('Logout API error', { message: error.message });
+      // Continue with local cleanup even if API call fails
+    } finally {
       this.clearStorage();
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Logout failed' };
     }
   }
 
   async validateToken() {
     try {
-      const response = await this.api.get('/auth/validate');
+      const response = await this.api.get(API_ENDPOINTS.AUTH.VALIDATE_TOKEN);
       const { valid, user } = response.data;
+      
       if (valid && user) {
-        // Preserve admin role from user_metadata
         const userWithAdmin = {
           ...user,
           role: user.user_metadata?.role || user.role || 'user',
@@ -163,45 +278,49 @@ async register(userData) {
         };
         this.setUser(userWithAdmin);
       }
+      
       return valid;
     } catch (error) {
+      logger.auth('Token validation failed');
       return false;
     }
   }
 
+  // Secure storage methods with error handling
   setUser(user) {
-    if (!user) return;
-    localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
+    if (!user) return false;
+    return SecureStorage.setItem(LOCAL_STORAGE_KEYS.USER, user);
   }
 
   setToken(token) {
-    if (!token) return;
-    localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
+    if (!token) return false;
+    return SecureStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
   }
 
   setRefreshToken(token) {
-    if (!token) return;
-    localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, token);
+    if (!token) return false;
+    return SecureStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, token);
   }
 
   getToken() {
-    return localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    return SecureStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
   }
 
   getRefreshToken() {
-    return localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
+    return SecureStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
   }
 
   getUser() {
-    const userString = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-    return userString ? JSON.parse(userString) : null;
+    return SecureStorage.getJSON(LOCAL_STORAGE_KEYS.USER);
   }
 
   clearStorage() {
     logger.auth('Clearing auth storage');
-    localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-    localStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
+    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.REMEMBER_ME);
+    csrfProtection.clearToken();
   }
 
   isAuthenticated() {
@@ -209,11 +328,11 @@ async register(userData) {
   }
 
   setRememberMe(value) {
-    localStorage.setItem('rememberMe', value);
+    SecureStorage.setItem(LOCAL_STORAGE_KEYS.REMEMBER_ME, value.toString());
   }
 
   getRememberMe() {
-    return localStorage.getItem('rememberMe') === 'true';
+    return SecureStorage.getItem(LOCAL_STORAGE_KEYS.REMEMBER_ME) === 'true';
   }
 
   async refreshToken() {
@@ -222,44 +341,86 @@ async register(userData) {
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
-      const response = await this.api.post('/auth/refresh-token', { refreshToken });
+      
+      const response = await this.api.post(API_ENDPOINTS.AUTH.REFRESH_TOKEN, { refreshToken });
       const { token, refreshToken: newRefreshToken, user } = response.data;
+      
       this.setToken(token);
       this.setRefreshToken(newRefreshToken);
       this.setUser(user);
+      
       return { success: true, user };
     } catch (error) {
       this.clearStorage();
-      return { success: false, error: error.message };
+      return errorHandler.handleAuthError(error, 'token refresh');
     }
   }
 
   async forgotPassword(email) {
+    logger.auth('Forgot password attempt started');
+    
+    // Input validation
+    if (!email || !isValidEmail(email)) {
+      return { success: false, error: 'Valid email is required' };
+    }
+    
     try {
-      await this.api.post('/auth/forgot-password', { email });
+      const sanitizedEmail = sanitizeInput(email.toLowerCase().trim());
+      await this.api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email: sanitizedEmail });
+      logger.auth('Forgot password request successful');
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Failed to send reset email' };
+      return errorHandler.handleApiError(error, 'forgot password');
     }
   }
 
   async resetPassword(token, newPassword) {
+    logger.auth('Password reset attempt started');
+    
+    // Input validation
+    if (!token || !newPassword) {
+      return { success: false, error: 'Token and new password are required' };
+    }
+    
+    if (!isValidPassword(newPassword)) {
+      return { success: false, error: 'Password must be at least 8 characters' };
+    }
+    
     try {
-      await this.api.post('/auth/reset-password', { token, newPassword });
+      await this.api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { 
+        token: sanitizeInput(token), 
+        newPassword 
+      });
+      logger.auth('Password reset successful');
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Failed to reset password' };
+      return errorHandler.handleApiError(error, 'password reset');
     }
   }
 
   async updateProfile(userData) {
+    logger.auth('Profile update attempt started');
+    
     try {
-      const response = await this.api.put('/auth/profile', userData);
+      // Sanitize inputs
+      const sanitizedData = sanitizeUserData({
+        ...userData,
+        email: userData.email ? userData.email.toLowerCase().trim() : undefined
+      });
+      
+      // Validate email if provided
+      if (sanitizedData.email && !isValidEmail(sanitizedData.email)) {
+        return { success: false, error: 'Invalid email format' };
+      }
+      
+      const response = await this.api.put(API_ENDPOINTS.USER.UPDATE_PROFILE, sanitizedData);
       const { user } = response.data;
+      
       this.setUser(user);
+      logger.auth('Profile update successful');
       return { success: true, user };
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Failed to update profile' };
+      return errorHandler.handleApiError(error, 'profile update');
     }
   }
 }

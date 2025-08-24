@@ -128,33 +128,7 @@ exports.getTransactions = async (req, res) => {
     const Transaction = require('../models/Transaction');
     const transactions = await Transaction.getAll();
     
-    // Populate user data for each transaction
-    const transactionsWithUsers = await Promise.all(
-      transactions.map(async (tx) => {
-        try {
-          const { data: user } = await supabase.auth.admin.getUserById(tx.userId);
-          return {
-            ...tx,
-            user: {
-              id: user?.user?.id,
-              name: user?.user?.user_metadata?.name || 'Unknown User',
-              email: user?.user?.email || 'Unknown Email'
-            }
-          };
-        } catch (error) {
-          return {
-            ...tx,
-            user: {
-              id: tx.userId,
-              name: 'Unknown User',
-              email: 'Unknown Email'
-            }
-          };
-        }
-      })
-    );
-    
-    res.json({ success: true, data: transactionsWithUsers, transactions: transactionsWithUsers });
+    res.json({ success: true, data: transactions, transactions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -180,22 +154,13 @@ exports.updateTransaction = async (req, res) => {
     const Transaction = require('../models/Transaction');
     const { id } = req.params;
     
-    // Admin can update any transaction without user restriction
-    const transactions = await Transaction.getAll();
-    const index = transactions.findIndex(t => t.id === id);
+    const updatedTransaction = await Transaction.update(id, req.body);
     
-    if (index === -1) {
+    if (!updatedTransaction) {
       return res.status(404).json({ success: false, message: 'Transaction not found' });
     }
     
-    transactions[index] = {
-      ...transactions[index],
-      ...req.body,
-      updatedAt: new Date().toISOString()
-    };
-    
-    await Transaction.saveTransactions(transactions);
-    res.json({ success: true, transaction: transactions[index] });
+    res.json({ success: true, transaction: updatedTransaction });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -207,17 +172,11 @@ exports.deleteTransaction = async (req, res) => {
     const Transaction = require('../models/Transaction');
     const { id } = req.params;
     
-    const transactions = await Transaction.getAll();
-    const index = transactions.findIndex(t => t.id === id);
+    const deleted = await Transaction.delete(id);
     
-    if (index === -1) {
+    if (!deleted) {
       return res.status(404).json({ success: false, message: 'Transaction not found' });
     }
-    
-    const deletedTransaction = transactions[index];
-    transactions.splice(index, 1);
-    
-    await Transaction.saveTransactions(transactions);
     
     // Log activity if logger is available
     try {
@@ -227,7 +186,7 @@ exports.deleteTransaction = async (req, res) => {
       console.log('Activity logging failed:', logError.message);
     }
     
-    res.json({ success: true, transaction: deletedTransaction });
+    res.json({ success: true, message: 'Transaction deleted successfully' });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

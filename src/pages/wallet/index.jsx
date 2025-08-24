@@ -1,61 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTransactions } from '../../contexts/TransactionContext';
-import { FiCreditCard, FiDollarSign, FiClock, FiArrowUp, FiArrowDown, FiX, FiClipboard, FiCheck, FiPlus } from 'react-icons/fi';
+import { FiCreditCard, FiDollarSign, FiArrowUp, FiArrowDown, FiX, FiPlus, FiRefreshCw, FiClock } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
-import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/card';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import Label from '../../components/ui/label';
-import { Separator } from '../../components/ui/separator';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
-import { v4 as uuidv4 } from 'uuid';
 import { Toaster } from 'react-hot-toast';
+import walletService from '../../services/wallet.service';
 
 const Wallet = () => {
-  const [showInput, setShowInput] = useState(false);
   const [amount, setAmount] = useState('');
   const [showPaymentPreview, setShowPaymentPreview] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [copiedAccount, setCopiedAccount] = useState(null);
-  const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [showBankDetails, setShowBankDetails] = useState(false);
-  const { user } = useAuth();
-  const { transactions = [], walletBalance = 0, fundWallet, getRecentTransactions } = useTransactions();
-  const transactionCharge = 50.0;
+  const [transactions, setTransactions] = useState([]);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const { user, isAuthenticated } = useAuth();
   const { isDarkMode } = useDarkMode();
+  const transactionCharge = 50.0;
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchWalletData();
+    }
+  }, [isAuthenticated]);
+
+  const fetchWalletData = async () => {
+    try {
+      setLoading(true);
+      const [balance, userTransactions, walletStats] = await Promise.all([
+        walletService.getBalance(),
+        walletService.getTransactions(),
+        walletService.getStats()
+      ]);
+      
+      setWalletBalance(balance);
+      setTransactions(userTransactions);
+      setStats(walletStats);
+    } catch (error) {
+      toast.error('Failed to load wallet data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchWalletData();
+    setRefreshing(false);
+    toast.success('Wallet refreshed');
+  };
 
   const handlePayment = async (method) => {
     if (!amount || !amount.trim()) {
-      toast.error('Please enter an amount', {
-        duration: 4000,
-        position: 'top-center',
-        style: {
-          background: isDarkMode ? '#1f2937' : '#fff',
-          color: isDarkMode ? '#fff' : '#000',
-          border: '1px solid',
-          borderColor: isDarkMode ? '#374151' : '#e5e7eb',
-        },
-      });
+      toast.error('Please enter an amount');
       return;
     }
 
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error('Please enter a valid amount greater than zero', {
-        duration: 4000,
-        position: 'top-center',
-        style: {
-          background: isDarkMode ? '#1f2937' : '#fff',
-          color: isDarkMode ? '#fff' : '#000',
-          border: '1px solid',
-          borderColor: isDarkMode ? '#374151' : '#e5e7eb',
-        },
-      });
+      toast.error('Please enter a valid amount greater than zero');
       return;
     }
 
@@ -66,103 +76,205 @@ const Wallet = () => {
     }
   };
 
-  const copyToClipboard = async (text, accountIndex) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedAccount(accountIndex);
-      setTimeout(() => setCopiedAccount(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
   const confirmCardPayment = async () => {
     try {
       const numAmount = parseFloat(amount);
-      await fundWallet(numAmount, 'card');
-      toast.success('Wallet funded successfully!', {
-        duration: 4000,
-        position: 'top-center',
-        style: {
-          background: isDarkMode ? '#1f2937' : '#fff',
-          color: isDarkMode ? '#fff' : '#000',
-          border: '1px solid',
-          borderColor: isDarkMode ? '#374151' : '#e5e7eb',
-        },
-      });
+      
+      await walletService.fundWallet(numAmount, 'card');
+
+      toast.success('Wallet funded successfully!');
       setAmount('');
       setShowPaymentPreview(false);
+      fetchWalletData();
     } catch (error) {
-      toast.error(error.message || 'Failed to fund wallet', {
-        duration: 4000,
-        position: 'top-center',
-        style: {
-          background: isDarkMode ? '#1f2937' : '#fff',
-          color: isDarkMode ? '#fff' : '#000',
-          border: '1px solid',
-          borderColor: isDarkMode ? '#374151' : '#e5e7eb',
-        },
-      });
+      toast.error(error.message || 'Failed to fund wallet');
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
-  // Helper function to safely format amount
   const formatAmount = (amount) => {
     const num = parseFloat(amount);
     return isNaN(num) ? '0.00' : num.toFixed(2);
   };
 
+  const getTransactionIcon = (type) => {
+    switch (type) {
+      case 'credit':
+        return <FiArrowDown className="w-5 h-5 text-green-500" />;
+      case 'debit':
+        return <FiArrowUp className="w-5 h-5 text-red-500" />;
+      default:
+        return <FiDollarSign className="w-5 h-5" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-500';
+      case 'pending':
+        return 'text-yellow-500';
+      case 'failed':
+        return 'text-red-500';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please Login</h1>
+          <p className="text-gray-600">You need to be logged in to access your wallet.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       className={cn(
-        "container mx-auto px-4 py-8",
+        "container mx-auto px-4 py-8 min-h-screen",
         isDarkMode ? "bg-black" : "bg-white"
       )}
     >
       <Toaster />
-      <div className="max-w-4xl mx-auto space-y-8">
-        <AnimatePresence>
-          {successMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className={`px-6 py-4 rounded-xl mb-6 flex items-center justify-between ${
-                isDarkMode 
-                  ? 'bg-green-900/30 border border-green-800 text-green-400' 
-                  : 'bg-green-50 border border-green-200/50 text-green-700'
-              }`}
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className={cn(
+              "text-4xl font-bold",
+              isDarkMode ? "text-white" : "text-black"
+            )}>
+              My Wallet
+            </h1>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className={cn(
+                "p-2 rounded-full transition-colors",
+                isDarkMode ? "hover:bg-white/10" : "hover:bg-black/10",
+                refreshing && "animate-spin"
+              )}
             >
-              <div className="flex items-center">
-                <FiCheck className="w-5 h-5 mr-2" />
-                {successMessage}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSuccessMessage('')}
-                className={isDarkMode ? 'hover:bg-green-800/30' : 'hover:bg-green-100'}
-              >
-                <FiX className="w-5 h-5" />
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <FiRefreshCw className={cn(
+                "w-6 h-6",
+                isDarkMode ? "text-white" : "text-black"
+              )} />
+            </button>
+          </div>
+          <p className={cn(
+            "text-lg",
+            isDarkMode ? "text-white/60" : "text-black/60"
+          )}>
+            Welcome, {user?.name || user?.email}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className={cn(
+            "border",
+            isDarkMode ? "bg-black border-white/10" : "bg-white border-black/10"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={cn(
+                    "text-sm font-medium",
+                    isDarkMode ? "text-white/60" : "text-black/60"
+                  )}>
+                    Wallet Balance
+                  </p>
+                  <p className={cn(
+                    "text-3xl font-bold",
+                    isDarkMode ? "text-white" : "text-black"
+                  )}>
+                    ₦{formatAmount(walletBalance)}
+                  </p>
+                </div>
+                <FiDollarSign className={cn(
+                  "w-8 h-8",
+                  isDarkMode ? "text-white/40" : "text-black/40"
+                )} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={cn(
+            "border",
+            isDarkMode ? "bg-black border-white/10" : "bg-white border-black/10"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={cn(
+                    "text-sm font-medium",
+                    isDarkMode ? "text-white/60" : "text-black/60"
+                  )}>
+                    Total Transactions
+                  </p>
+                  <p className={cn(
+                    "text-3xl font-bold text-blue-500"
+                  )}>
+                    {stats.totalTransactions || 0}
+                  </p>
+                </div>
+                <FiArrowUp className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={cn(
+            "border",
+            isDarkMode ? "bg-black border-white/10" : "bg-white border-black/10"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={cn(
+                    "text-sm font-medium",
+                    isDarkMode ? "text-white/60" : "text-black/60"
+                  )}>
+                    Total Credits
+                  </p>
+                  <p className="text-3xl font-bold text-green-500">
+                    ₦{formatAmount(stats.totalCredits || 0)}
+                  </p>
+                </div>
+                <FiArrowDown className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={cn(
+            "border",
+            isDarkMode ? "bg-black border-white/10" : "bg-white border-black/10"
+          )}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={cn(
+                    "text-sm font-medium",
+                    isDarkMode ? "text-white/60" : "text-black/60"
+                  )}>
+                    Pending
+                  </p>
+                  <p className="text-3xl font-bold text-yellow-500">
+                    {stats.pendingTransactions || 0}
+                  </p>
+                </div>
+                <FiClock className="w-8 h-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Fund Wallet Card */}
           <Card className={cn(
             "border",
             isDarkMode ? "bg-black border-white/10" : "bg-white border-black/10"
@@ -172,64 +284,19 @@ const Wallet = () => {
                 "text-2xl font-bold",
                 isDarkMode ? "text-white" : "text-black"
               )}>
-                Wallet Balance
-              </CardTitle>
-              <CardDescription className={cn(
-                isDarkMode ? "text-white/60" : "text-black/60"
-              )}>
-                Your current available balance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={cn(
-                    "text-5xl font-bold tracking-tight",
-                    isDarkMode ? "text-white" : "text-black"
-                  )}>
-                    ₦{formatAmount(walletBalance)}
-                  </p>
-                  <p className={cn(
-                    "text-sm mt-2",
-                    isDarkMode ? "text-white/60" : "text-black/60"
-                  )}>
-                    Available for transactions
-                  </p>
-                </div>
-                <div className={cn(
-                  "p-3 rounded-full",
-                  isDarkMode ? "bg-white/5" : "bg-black/5"
-                )}>
-                  <FiDollarSign className={cn(
-                    "w-8 h-8",
-                    isDarkMode ? "text-white" : "text-black"
-                  )} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={cn(
-            "border",
-            isDarkMode ? "bg-black border-white/10" : "bg-white border-black/10"
-          )}>
-            <CardHeader>
-              <CardTitle className={cn(
-                "text-xl font-bold",
-                isDarkMode ? "text-white" : "text-black"
-              )}>
                 Fund Your Wallet
               </CardTitle>
               <CardDescription className={cn(
                 isDarkMode ? "text-white/60" : "text-black/60"
               )}>
-                Add funds to your wallet using any of the payment methods below
+                Add funds to your wallet using secure payment methods
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="amount" className={cn(
+                    "text-sm font-medium",
                     isDarkMode ? "text-white" : "text-black"
                   )}>Amount (₦)</Label>
                   <Input
@@ -239,7 +306,7 @@ const Wallet = () => {
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Enter amount"
                     className={cn(
-                      "w-full",
+                      "w-full h-12 text-lg",
                       isDarkMode ? "bg-black border-white/10 text-white" : "bg-white border-black/10 text-black"
                     )}
                   />
@@ -281,13 +348,14 @@ const Wallet = () => {
             </CardContent>
           </Card>
 
+          {/* Recent Transactions */}
           <Card className={cn(
             "border",
             isDarkMode ? "bg-black border-white/10" : "bg-white border-black/10"
           )}>
             <CardHeader>
               <CardTitle className={cn(
-                "text-xl font-bold",
+                "text-2xl font-bold",
                 isDarkMode ? "text-white" : "text-black"
               )}>
                 Recent Transactions
@@ -295,19 +363,22 @@ const Wallet = () => {
               <CardDescription className={cn(
                 isDarkMode ? "text-white/60" : "text-black/60"
               )}>
-                Your recent wallet activities
+                Your latest wallet activities
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {transactions && transactions.length > 0 ? (
-                <div className="space-y-4">
-                  {transactions.map((transaction, index) => (
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : transactions && transactions.length > 0 ? (
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  {transactions.slice(0, 10).map((transaction) => (
                     <motion.div
-                      key={index}
-                      variants={cardVariants}
+                      key={transaction.id}
                       className={cn(
-                        "p-4 rounded-lg flex items-center justify-between",
-                        isDarkMode ? "bg-white/5" : "bg-black/5"
+                        "p-4 rounded-lg flex items-center justify-between border",
+                        isDarkMode ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
                       )}
                     >
                       <div className="flex items-center space-x-4">
@@ -315,17 +386,7 @@ const Wallet = () => {
                           "p-3 rounded-full",
                           isDarkMode ? "bg-white/10" : "bg-black/10"
                         )}>
-                          {transaction.type === 'credit' ? (
-                            <FiArrowDown className={cn(
-                              "w-5 h-5",
-                              isDarkMode ? "text-white" : "text-black"
-                            )} />
-                          ) : (
-                            <FiArrowUp className={cn(
-                              "w-5 h-5",
-                              isDarkMode ? "text-white" : "text-black"
-                            )} />
-                          )}
+                          {getTransactionIcon(transaction.type)}
                         </div>
                         <div>
                           <p className={cn(
@@ -338,52 +399,62 @@ const Wallet = () => {
                             "text-sm",
                             isDarkMode ? "text-white/60" : "text-black/60"
                           )}>
-                            {new Date(transaction.date).toLocaleDateString()}
+                            {new Date(transaction.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
-                      <p className={cn(
-                        "font-semibold",
-                        isDarkMode ? "text-white" : "text-black"
-                      )}>
-                        {transaction.type === 'credit' ? '+' : '-'} ₦{formatAmount(transaction.amount)}
-                      </p>
+                      <div className="text-right">
+                        <p className={cn(
+                          "font-semibold",
+                          transaction.type === 'credit' ? "text-green-500" : "text-red-500"
+                        )}>
+                          {transaction.type === 'credit' ? '+' : '-'} ₦{formatAmount(transaction.amount)}
+                        </p>
+                        <p className={cn(
+                          "text-xs capitalize",
+                          getStatusColor(transaction.status)
+                        )}>
+                          {transaction.status}
+                        </p>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
               ) : (
                 <div className={cn(
-                  "text-center py-8",
+                  "text-center py-12",
                   isDarkMode ? "text-white/60" : "text-black/60"
                 )}>
-                  <p>No transactions yet</p>
-                  <p className="text-sm mt-2">Your transaction history will appear here</p>
+                  <FiDollarSign className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">No transactions yet</p>
+                  <p className="text-sm">Your transaction history will appear here</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
+        {/* Payment Confirmation Modal */}
         <AnimatePresence>
           {showPaymentPreview && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 className={cn(
-                  "w-full max-w-md p-6 rounded-lg shadow-lg",
-                  isDarkMode ? "bg-black" : "bg-white"
+                  "w-full max-w-md p-6 rounded-lg shadow-xl",
+                  isDarkMode ? "bg-black border border-white/10" : "bg-white border border-black/10"
                 )}
               >
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <h3 className={cn(
-                    "text-lg font-semibold",
+                    "text-xl font-semibold",
                     isDarkMode ? "text-white" : "text-black"
                   )}>
                     Confirm Payment
@@ -403,31 +474,39 @@ const Wallet = () => {
                     "p-4 rounded-lg",
                     isDarkMode ? "bg-white/5" : "bg-black/5"
                   )}>
-                    <div className="space-y-2">
-                      <p className={cn(
-                        "text-sm",
-                        isDarkMode ? "text-white/60" : "text-black/60"
-                      )}>
-                        Transaction ID: {uuidv4()}
-                      </p>
-                      <p className={cn(
-                        "text-sm",
-                        isDarkMode ? "text-white/60" : "text-black/60"
-                      )}>
-                        Amount: ₦{formatAmount(amount)}
-                      </p>
-                      <p className={cn(
-                        "text-sm",
-                        isDarkMode ? "text-white/60" : "text-black/60"
-                      )}>
-                        Transaction Charge: ₦{transactionCharge.toFixed(2)}
-                      </p>
-                      <p className={cn(
-                        "text-sm font-semibold",
-                        isDarkMode ? "text-white" : "text-black"
-                      )}>
-                        Total: ₦{(parseFloat(amount) + transactionCharge).toFixed(2)}
-                      </p>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className={cn(
+                          "text-sm",
+                          isDarkMode ? "text-white/60" : "text-black/60"
+                        )}>Amount:</span>
+                        <span className={cn(
+                          "text-sm font-medium",
+                          isDarkMode ? "text-white" : "text-black"
+                        )}>₦{formatAmount(amount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={cn(
+                          "text-sm",
+                          isDarkMode ? "text-white/60" : "text-black/60"
+                        )}>Transaction Charge:</span>
+                        <span className={cn(
+                          "text-sm font-medium",
+                          isDarkMode ? "text-white" : "text-black"
+                        )}>₦{transactionCharge.toFixed(2)}</span>
+                      </div>
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between">
+                          <span className={cn(
+                            "font-semibold",
+                            isDarkMode ? "text-white" : "text-black"
+                          )}>Total:</span>
+                          <span className={cn(
+                            "font-semibold",
+                            isDarkMode ? "text-white" : "text-black"
+                          )}>₦{(parseFloat(amount) + transactionCharge).toFixed(2)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-3">
@@ -435,7 +514,7 @@ const Wallet = () => {
                       onClick={() => setShowPaymentPreview(false)}
                       className={cn(
                         "flex-1",
-                        isDarkMode ? "bg-white/5 hover:bg-white/10" : "bg-black/5 hover:bg-black/10"
+                        isDarkMode ? "bg-white/10 hover:bg-white/20 text-white" : "bg-black/10 hover:bg-black/20 text-black"
                       )}
                     >
                       Cancel
@@ -463,23 +542,23 @@ const Wallet = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 className={cn(
-                  "w-full max-w-md p-6 rounded-lg shadow-lg",
-                  isDarkMode ? "bg-black" : "bg-white"
+                  "w-full max-w-md p-6 rounded-lg shadow-xl",
+                  isDarkMode ? "bg-black border border-white/10" : "bg-white border border-black/10"
                 )}
               >
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <h3 className={cn(
-                    "text-lg font-semibold",
+                    "text-xl font-semibold",
                     isDarkMode ? "text-white" : "text-black"
                   )}>
-                    Bank Account Details
+                    Bank Transfer Details
                   </h3>
                   <button
                     onClick={() => setShowBankDetails(false)}
@@ -492,17 +571,36 @@ const Wallet = () => {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  {/* Add bank account details here */}
                   <div className={cn(
                     "p-4 rounded-lg",
                     isDarkMode ? "bg-white/5" : "bg-black/5"
                   )}>
                     <p className={cn(
-                      "text-sm",
+                      "text-sm mb-4",
                       isDarkMode ? "text-white/60" : "text-black/60"
                     )}>
-                      Please make your payment and the funds will be credited to your wallet within 24 hours.
+                      Transfer ₦{formatAmount(amount)} to the account below and your wallet will be credited within 24 hours.
                     </p>
+                    <div className="space-y-2">
+                      <p className={cn(
+                        "text-sm",
+                        isDarkMode ? "text-white" : "text-black"
+                      )}>
+                        <strong>Bank:</strong> Example Bank
+                      </p>
+                      <p className={cn(
+                        "text-sm",
+                        isDarkMode ? "text-white" : "text-black"
+                      )}>
+                        <strong>Account Number:</strong> 1234567890
+                      </p>
+                      <p className={cn(
+                        "text-sm",
+                        isDarkMode ? "text-white" : "text-black"
+                      )}>
+                        <strong>Account Name:</strong> Your Company Name
+                      </p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => setShowBankDetails(false)}
