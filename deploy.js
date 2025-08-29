@@ -7,7 +7,7 @@ const packageJson = require('./package.json');
 // Function to update homepage and port based on environment
 function updateConfig(isProduction) {
   // Update homepage
-  packageJson.homepage = isProduction ? '/innovateam' : '.';
+  packageJson.homepage = isProduction ? '.' : '.';
 
   // Set PORT from environment or default
   const port = process.env.PORT || (isProduction ? 80 : 3000); // Default 3000 for dev, 80 for prod
