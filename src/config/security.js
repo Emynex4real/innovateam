@@ -9,7 +9,7 @@ export const CSP_CONFIG = {
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'font-src': ["'self'", 'https://fonts.gstatic.com'],
   'img-src': ["'self'", 'data:', 'https:'],
-  'connect-src': ["'self'", 'https://innovateam-api.onrender.com', 'http://localhost:5000'],
+  'connect-src': ["'self'", 'https://innovateam-api.onrender.com', 'https://innovateam-api.onrender.com/api', 'http://localhost:5000'],
   'frame-ancestors': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'"]
