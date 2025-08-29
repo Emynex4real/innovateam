@@ -17,7 +17,7 @@ import {
 
 // Secure API URL configuration
 const API_URL = API_BASE_URL || (process.env.NODE_ENV === 'production' 
-  ? 'https://your-backend-url.com/api' 
+  ? 'https://innovateam-api.onrender.com/api' 
   : 'http://localhost:5000/api'); // Allow HTTP for local development
 
 // Secure storage utility with error handling
