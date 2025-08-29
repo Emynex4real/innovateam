@@ -26,10 +26,12 @@ class ApiService {
       baseURL: API_BASE_URL,
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest' // CSRF protection
+        ...(process.env.NODE_ENV === 'production' && {
+          'X-Requested-With': 'XMLHttpRequest' // CSRF protection only in production
+        })
       },
       timeout: 15000, // 15 seconds
-      withCredentials: true // Enable cookies for CSRF tokens
+      withCredentials: process.env.NODE_ENV === 'production' // Enable cookies only in production
     });
 
     this.setupInterceptors();
@@ -41,8 +43,14 @@ class ApiService {
     // Request interceptor with security features
     this.client.interceptors.request.use(
       (config) => {
-        // Add CSRF token for state-changing requests
-        if (csrfProtection.needsProtection(config.method)) {
+        // Add authorization token
+        const token = localStorage.getItem('token'); // Use same key as auth service
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        // Add CSRF token for state-changing requests (only in production)
+        if (process.env.NODE_ENV === 'production' && csrfProtection.needsProtection(config.method)) {
           const csrfHeaders = csrfProtection.getTokenForHeader();
           Object.assign(config.headers, csrfHeaders);
         }
@@ -59,7 +67,8 @@ class ApiService {
         logger.service('API Request', {
           method: config.method?.toUpperCase(),
           url: sanitizeForLog(config.url || ''),
-          hasData: !!config.data
+          hasData: !!config.data,
+          hasToken: !!token
         });
 
         return config;

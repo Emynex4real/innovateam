@@ -9,7 +9,33 @@ exports.getUsers = async (req, res) => {
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    res.json({ success: true, users });
+    
+    // Enhance users with transaction stats
+    const Transaction = require('../models/Transaction');
+    const enhancedUsers = await Promise.all(
+      users.map(async (user) => {
+        try {
+          const userTransactions = await Transaction.findByUserId(user.id);
+          const stats = await Transaction.getUserStats(user.id);
+          
+          return {
+            ...user,
+            transactionCount: userTransactions.length,
+            totalSpent: stats.totalDebits,
+            lastTransaction: userTransactions[0]?.createdAt || null
+          };
+        } catch {
+          return {
+            ...user,
+            transactionCount: 0,
+            totalSpent: 0,
+            lastTransaction: null
+          };
+        }
+      })
+    );
+    
+    res.json({ success: true, users: enhancedUsers });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -109,14 +135,22 @@ exports.deleteUser = async (req, res) => {
 // GET /api/admin/users/:id/transactions - get all transactions for a user
 exports.getUserTransactions = async (req, res) => {
   try {
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', req.params.id)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json({ success: true, data: transactions });
+    const Transaction = require('../models/Transaction');
+    const transactions = await Transaction.findByUserId(req.params.id);
+    
+    // Get user info for context
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', req.params.id)
+      .single();
+    
+    const enhancedTransactions = transactions.map(tx => ({
+      ...tx,
+      user: user || { name: 'Unknown User', email: 'N/A' }
+    }));
+    
+    res.json({ success: true, data: enhancedTransactions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -128,7 +162,30 @@ exports.getTransactions = async (req, res) => {
     const Transaction = require('../models/Transaction');
     const transactions = await Transaction.getAll();
     
-    res.json({ success: true, data: transactions, transactions });
+    // Enhance transactions with user data
+    const enhancedTransactions = await Promise.all(
+      transactions.map(async (tx) => {
+        try {
+          const { data: user } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('id', tx.userId)
+            .single();
+          
+          return {
+            ...tx,
+            user: user || { name: 'Unknown User', email: 'N/A' }
+          };
+        } catch {
+          return {
+            ...tx,
+            user: { name: 'Unknown User', email: 'N/A' }
+          };
+        }
+      })
+    );
+    
+    res.json({ success: true, data: enhancedTransactions, transactions: enhancedTransactions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -137,12 +194,22 @@ exports.getTransactions = async (req, res) => {
 // POST /api/admin/transactions
 exports.createTransaction = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert([req.body])
-      .select();
-    if (error) throw error;
-    res.status(201).json({ success: true, transaction: data[0] });
+    const Transaction = require('../models/Transaction');
+    const transaction = await Transaction.create(req.body);
+    
+    // Get user info for the response
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', transaction.userId)
+      .single();
+    
+    const enhancedTransaction = {
+      ...transaction,
+      user: user || { name: 'Unknown User', email: 'N/A' }
+    };
+    
+    res.status(201).json({ success: true, transaction: enhancedTransaction });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }

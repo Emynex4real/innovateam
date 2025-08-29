@@ -18,7 +18,7 @@ import {
 // Secure API URL configuration
 const API_URL = API_BASE_URL || (process.env.NODE_ENV === 'production' 
   ? 'https://your-backend-url.com/api' 
-  : 'https://localhost:5000/api'); // Use HTTPS even in development
+  : 'http://localhost:5000/api'); // Allow HTTP for local development
 
 // Secure storage utility with error handling
 class SecureStorage {
@@ -80,10 +80,12 @@ class AuthService {
       baseURL: API_URL,
       headers: { 
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest' // CSRF protection
+        ...(process.env.NODE_ENV === 'production' && {
+          'X-Requested-With': 'XMLHttpRequest' // CSRF protection only in production
+        })
       },
       timeout: 10000,
-      withCredentials: true // Enable cookies for CSRF tokens
+      withCredentials: process.env.NODE_ENV === 'production' // Enable cookies only in production
     });
 
     // Request interceptor with CSRF protection
@@ -94,8 +96,8 @@ class AuthService {
           config.headers.Authorization = `Bearer ${token}`;
         }
         
-        // Add CSRF token for state-changing requests
-        if (csrfProtection.needsProtection(config.method)) {
+        // Add CSRF token for state-changing requests (only in production)
+        if (process.env.NODE_ENV === 'production' && csrfProtection.needsProtection(config.method)) {
           const csrfHeaders = csrfProtection.getTokenForHeader();
           Object.assign(config.headers, csrfHeaders);
         }
@@ -180,6 +182,7 @@ class AuthService {
       logger.auth('Login response received');
       
       const { token, refreshToken, user } = response.data;
+      console.log('DEBUG: Server returned user data:', user); // Debug log
       if (!token || !refreshToken || !user) {
         logger.auth('Incomplete login response');
         return { success: false, error: 'Invalid login response' };
@@ -188,8 +191,8 @@ class AuthService {
       // Process user data securely
       const userWithAdmin = {
         ...user,
-        role: user.user_metadata?.role || 'user',
-        isAdmin: user.user_metadata?.role === 'admin'
+        role: user.user_metadata?.role || user.role || 'user',
+        isAdmin: user.user_metadata?.role === 'admin' || user.role === 'admin' || user.isAdmin === true
       };
       
       this.setToken(token);
@@ -289,38 +292,76 @@ class AuthService {
   // Secure storage methods with error handling
   setUser(user) {
     if (!user) return false;
-    return SecureStorage.setItem(LOCAL_STORAGE_KEYS.USER, user);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
+      return true;
+    } catch (error) {
+      logger.auth('Failed to store user', { error: error.message });
+      return false;
+    }
   }
 
   setToken(token) {
     if (!token) return false;
-    return SecureStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
+      return true;
+    } catch (error) {
+      logger.auth('Failed to store token', { error: error.message });
+      return false;
+    }
   }
 
   setRefreshToken(token) {
     if (!token) return false;
-    return SecureStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, token);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN, token);
+      return true;
+    } catch (error) {
+      logger.auth('Failed to store refresh token', { error: error.message });
+      return false;
+    }
   }
 
   getToken() {
-    return SecureStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    } catch (error) {
+      logger.auth('Failed to get token', { error: error.message });
+      return null;
+    }
   }
 
   getRefreshToken() {
-    return SecureStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
+    } catch (error) {
+      logger.auth('Failed to get refresh token', { error: error.message });
+      return null;
+    }
   }
 
   getUser() {
-    return SecureStorage.getJSON(LOCAL_STORAGE_KEYS.USER);
+    try {
+      const userString = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
+      return userString ? JSON.parse(userString) : null;
+    } catch (error) {
+      logger.auth('Failed to get user', { error: error.message });
+      return null;
+    }
   }
 
   clearStorage() {
     logger.auth('Clearing auth storage');
-    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
-    SecureStorage.removeItem(LOCAL_STORAGE_KEYS.REMEMBER_ME);
-    csrfProtection.clearToken();
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.REMEMBER_ME);
+      csrfProtection.clearToken();
+    } catch (error) {
+      logger.auth('Failed to clear storage', { error: error.message });
+    }
   }
 
   isAuthenticated() {
@@ -328,11 +369,20 @@ class AuthService {
   }
 
   setRememberMe(value) {
-    SecureStorage.setItem(LOCAL_STORAGE_KEYS.REMEMBER_ME, value.toString());
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.REMEMBER_ME, value.toString());
+    } catch (error) {
+      logger.auth('Failed to set remember me', { error: error.message });
+    }
   }
 
   getRememberMe() {
-    return SecureStorage.getItem(LOCAL_STORAGE_KEYS.REMEMBER_ME) === 'true';
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_KEYS.REMEMBER_ME) === 'true';
+    } catch (error) {
+      logger.auth('Failed to get remember me', { error: error.message });
+      return false;
+    }
   }
 
   async refreshToken() {

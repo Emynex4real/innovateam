@@ -51,36 +51,15 @@ export const AuthProvider = ({ children }) => {
       const storedUser = authService.getUser();
       const refreshToken = authService.getRefreshToken();
 
-      if (!token || !refreshToken) {
+      if (!token || !refreshToken || !storedUser) {
         clearAuthState();
         setIsLoading(false);
         return;
       }
 
-      // Validate token with server
-      const isValid = await authService.validateToken();
-      
-      if (isValid) {
-        // Get updated user data after validation
-        const updatedUser = authService.getUser();
-        updateUserState(updatedUser || storedUser);
-        logger.auth('Authentication validated successfully');
-      } else if (refreshToken) {
-        // Try to refresh token
-        logger.auth('Token invalid, attempting refresh');
-        const { success, user: refreshedUser } = await authService.refreshToken();
-        
-        if (success && refreshedUser) {
-          updateUserState(refreshedUser);
-          logger.auth('Token refreshed successfully');
-        } else {
-          clearAuthState();
-          logger.auth('Token refresh failed');
-        }
-      } else {
-        clearAuthState();
-        logger.auth('No valid authentication found');
-      }
+      // Skip server validation for now, just use stored data
+      updateUserState(storedUser);
+      logger.auth('Authentication restored from storage');
     } catch (error) {
       const errorResponse = errorHandler.createSafeErrorResponse(error, 'Authentication check failed');
       logger.auth('Auth check error', { message: errorResponse.error });

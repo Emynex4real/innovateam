@@ -2,25 +2,24 @@
 import React, { lazy } from "react";
 
 // Lazy load components
-const Dashboard = lazy(() => import("../pages/dashboard"));
-const Profile = lazy(() => import("../pages/profile"));
-const Wallet = lazy(() => import("../pages/wallet"));
-const WaecResultChecker = lazy(() => import("../pages/result checker/waec result checker"));
+const Dashboard = lazy(() => import("../pages/EducationalDashboard"));
+const Profile = lazy(() => import("../pages/ModernProfile"));
+const Wallet = lazy(() => import("../pages/ModernWallet"));
+const WaecResultChecker = lazy(() => import("../pages/ModernWaecChecker"));
 const NecoResultChecker = lazy(() => import("../pages/result checker/neco result checker"));
 const NbaisResultChecker = lazy(() => import("../pages/result checker/nbais result checker"));
 const NabtebResultChecker = lazy(() => import("../pages/result checker/nabteb result checker"));
 const WaecGce = lazy(() => import("../pages/result checker/waec gce"));
-const DataSubscription = lazy(() => import("../pages/data-subscription"));
-const AirtimeSubscription = lazy(() => import("../pages/airtime-subscription"));
+
 const OLevelUpload = lazy(() => import("../pages/jamb services/olevel upload"));
-const AdmissionLetter = lazy(() => import("../pages/jamb services/admission letter"));
+const AdmissionLetter = lazy(() => import("../pages/ModernAdmissionLetter"));
 const OriginalResult = lazy(() => import("../pages/jamb services/original result"));
 const JambPinVending = lazy(() => import("../pages/jamb services/pin vending"));
 const CapsPrinting = lazy(() => import("../pages/jamb services/reprinting"));
 const OLevelEntry = lazy(() => import("../pages/jamb services/olevel upload/new entry"));
-const Transactions = lazy(() => import("../pages/transactions"));
-const Support = lazy(() => import("../pages/support"));
-const AiExaminer = lazy(() => import("../pages/ai examiner"));
+const Transactions = lazy(() => import("../pages/ModernTransactions"));
+const Support = lazy(() => import("../pages/ModernSupport"));
+const AiExaminer = lazy(() => import("../pages/ModernAiExaminer"));
 const CourseAdvisor = lazy(() => import("../pages/dashboard/course-advisor"));
 
 // Define private routes
@@ -45,11 +44,7 @@ const privateRoutes = [
     element: <Wallet />,
     title: "Wallet" 
   },
-  { 
-    path: "/buy-data", 
-    element: <DataSubscription />,
-    title: "Data Subscription" 
-  },
+
   { 
     path: "/scratch-card/waec-checker", 
     element: <WaecResultChecker />,
@@ -75,11 +70,7 @@ const privateRoutes = [
     element: <WaecGce />,
     title: "WAEC GCE" 
   },
-  { 
-    path: "/buy-airtime", 
-    element: <AirtimeSubscription />,
-    title: "Airtime Subscription" 
-  },
+
   { 
     path: "/buy-admission-letter", 
     element: <AdmissionLetter />,
