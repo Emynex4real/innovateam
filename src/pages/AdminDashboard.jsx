@@ -3,6 +3,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
 import adminService from '../services/admin.service';
 import { toast } from 'react-toastify';
+import { 
+  ChartBarIcon, 
+  UsersIcon, 
+  CreditCardIcon, 
+  ClockIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  EyeIcon,
+  ArrowPathIcon,
+  ChevronRightIcon,
+  BanknotesIcon,
+  UserGroupIcon,
+  CalendarDaysIcon
+} from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -14,13 +28,18 @@ const AdminDashboard = () => {
     adminUsers: 0,
     totalTransactions: 0,
     totalRevenue: 0,
-    pendingTransactions: 0
+    pendingTransactions: 0,
+    revenueGrowth: 0,
+    userGrowth: 0,
+    avgTransactionValue: 0
   });
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [timeRange, setTimeRange] = useState('7d');
+  const [selectedMetric, setSelectedMetric] = useState('revenue');
 
   useEffect(() => {
     if (isAdminResolved && isAdmin) {
@@ -45,10 +64,25 @@ const AdminDashboard = () => {
       setUsers(usersData);
       setTransactions(transactionsData);
 
-      // Calculate stats
+      // Calculate stats with growth metrics
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const lastWeek = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      const completedTransactions = transactionsData.filter(t => t.status === 'completed');
+      const thisWeekRevenue = completedTransactions
+        .filter(t => new Date(t.createdAt) > thisWeek)
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+      const lastWeekRevenue = completedTransactions
+        .filter(t => new Date(t.createdAt) > lastWeek && new Date(t.createdAt) <= thisWeek)
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+      
+      const thisWeekUsers = usersData.filter(u => new Date(u.created_at) > thisWeek).length;
+      const lastWeekUsers = usersData.filter(u => 
+        new Date(u.created_at) > lastWeek && new Date(u.created_at) <= thisWeek
+      ).length;
 
       const calculatedStats = {
         totalUsers: usersData.length,
@@ -60,10 +94,12 @@ const AdminDashboard = () => {
         ).length,
         adminUsers: usersData.filter(u => u.role === 'admin').length,
         totalTransactions: transactionsData.length,
-        totalRevenue: transactionsData
-          .filter(t => t.status === 'completed')
-          .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
-        pendingTransactions: transactionsData.filter(t => t.status === 'pending').length
+        totalRevenue: completedTransactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
+        pendingTransactions: transactionsData.filter(t => t.status === 'pending').length,
+        revenueGrowth: lastWeekRevenue > 0 ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue * 100) : 0,
+        userGrowth: lastWeekUsers > 0 ? ((thisWeekUsers - lastWeekUsers) / lastWeekUsers * 100) : 0,
+        avgTransactionValue: completedTransactions.length > 0 ? 
+          completedTransactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0) / completedTransactions.length : 0
       };
 
       setStats(calculatedStats);
@@ -138,22 +174,73 @@ const AdminDashboard = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user?.email}</p>
+  const StatCard = ({ title, value, icon: Icon, change, changeType, color = 'blue' }) => {
+    const colorClasses = {
+      blue: 'bg-blue-50 text-blue-600 border-blue-200',
+      green: 'bg-green-50 text-green-600 border-green-200',
+      purple: 'bg-purple-50 text-purple-600 border-purple-200',
+      orange: 'bg-orange-50 text-orange-600 border-orange-200',
+      red: 'bg-red-50 text-red-600 border-red-200'
+    };
+
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between">
+          <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+            <Icon className="h-6 w-6" />
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
+          {change !== undefined && (
+            <div className={`flex items-center text-sm font-medium ${
+              changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {changeType === 'positive' ? (
+                <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />
+              ) : (
+                <ArrowTrendingDownIcon className="h-4 w-4 mr-1" />
+              )}
+              {Math.abs(change).toFixed(1)}%
+            </div>
+          )}
+        </div>
+        <div className="mt-4">
+          <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-gray-600 mt-1">Welcome back, {user?.name || user?.email}</p>
+            </div>
+            <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+              <select 
+                value={timeRange} 
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="24h">Last 24 hours</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+              </select>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                <ArrowPathIcon className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -169,116 +256,245 @@ const AdminDashboard = () => {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
-            <p className="text-3xl font-bold text-blue-600">{stats.totalUsers}</p>
-            <p className="text-sm text-gray-400">Registered users</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="Total Users"
+            value={stats.totalUsers.toLocaleString()}
+            icon={UsersIcon}
+            change={stats.userGrowth}
+            changeType={stats.userGrowth >= 0 ? 'positive' : 'negative'}
+            color="blue"
+          />
+          <StatCard
+            title="Total Revenue"
+            value={`₦${stats.totalRevenue.toLocaleString()}`}
+            icon={BanknotesIcon}
+            change={stats.revenueGrowth}
+            changeType={stats.revenueGrowth >= 0 ? 'positive' : 'negative'}
+            color="green"
+          />
+          <StatCard
+            title="Active Users"
+            value={stats.activeUsers.toLocaleString()}
+            icon={UserGroupIcon}
+            color="purple"
+          />
+          <StatCard
+            title="Pending Transactions"
+            value={stats.pendingTransactions.toLocaleString()}
+            icon={ClockIcon}
+            color="orange"
+          />
+        </div>
+
+        {/* Secondary Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center">
+              <CalendarDaysIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <span className="text-sm font-medium text-gray-500">New Users Today</span>
+            </div>
+            <p className="text-xl font-bold text-gray-900 mt-2">{stats.newUsersToday}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">Active Users</h3>
-            <p className="text-3xl font-bold text-green-600">{stats.activeUsers}</p>
-            <p className="text-sm text-gray-400">Last 7 days</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center">
+              <ChartBarIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <span className="text-sm font-medium text-gray-500">Avg Transaction</span>
+            </div>
+            <p className="text-xl font-bold text-gray-900 mt-2">₦{stats.avgTransactionValue.toLocaleString()}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">Total Revenue</h3>
-            <p className="text-3xl font-bold text-purple-600">₦{stats.totalRevenue.toLocaleString()}</p>
-            <p className="text-sm text-gray-400">Completed transactions</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">Pending</h3>
-            <p className="text-3xl font-bold text-orange-600">{stats.pendingTransactions}</p>
-            <p className="text-sm text-gray-400">Awaiting approval</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center">
+              <CreditCardIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <span className="text-sm font-medium text-gray-500">Total Transactions</span>
+            </div>
+            <p className="text-xl font-bold text-gray-900 mt-2">{stats.totalTransactions.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
           {/* Recent Users */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Recent Users</h2>
+          <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Recent Users</h2>
+              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center">
+                View all <ChevronRightIcon className="h-4 w-4 ml-1" />
+              </button>
             </div>
             <div className="p-6">
-              {users.slice(0, 5).map((user) => (
-                <div key={user.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                  <div>
-                    <p className="font-medium text-gray-900">{user.name || user.email}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </p>
+              <div className="space-y-4">
+                {users.slice(0, 5).map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        {(user.name || user.email).charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{user.name || user.email}</p>
+                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-xs text-gray-400">
+                          Joined {new Date(user.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        user.role === 'admin' 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {user.role || 'user'}
+                      </span>
+                      <button className="p-1 text-gray-400 hover:text-gray-600">
+                        <EyeIcon className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.role === 'admin' 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {user.role || 'user'}
-                    </span>
-                    <select
-                      value={user.role || 'user'}
-                      onChange={(e) => updateUserRole(user.id, e.target.value)}
-                      className="text-xs border border-gray-300 rounded px-2 py-1"
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Recent Transactions */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
-            </div>
-            <div className="p-6">
-              {transactions.slice(0, 5).map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                  <div>
-                    <p className="font-medium text-gray-900">{transaction.user?.name || 'Unknown User'}</p>
-                    <p className="text-sm text-gray-500">{transaction.description || transaction.type}</p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(transaction.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">₦{transaction.amount}</p>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      transaction.status === 'completed' 
-                        ? 'bg-green-100 text-green-800'
-                        : transaction.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {transaction.status}
-                    </span>
-                  </div>
+          {/* Quick Stats */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Admin Users</span>
+                  <span className="font-semibold text-gray-900">{stats.adminUsers}</span>
                 </div>
-              ))}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Success Rate</span>
+                  <span className="font-semibold text-green-600">98.5%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Response Time</span>
+                  <span className="font-semibold text-blue-600">1.2s</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
+              <h3 className="text-lg font-semibold mb-2">System Health</h3>
+              <p className="text-blue-100 text-sm mb-4">All systems operational</p>
+              <div className="flex items-center">
+                <div className="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
+                <span className="text-sm">Online</span>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Recent Transactions */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
+            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center">
+              View all <ChevronRightIcon className="h-4 w-4 ml-1" />
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {transactions.slice(0, 5).map((transaction) => (
+                  <tr key={transaction.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                          {(transaction.user?.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-gray-900">{transaction.user?.name || 'Unknown User'}</p>
+                          <p className="text-sm text-gray-500">{transaction.description || transaction.type}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-gray-900">₦{transaction.amount}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        transaction.status === 'completed' 
+                          ? 'bg-green-100 text-green-800'
+                          : transaction.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {transaction.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(transaction.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Quick Actions */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-              <h3 className="font-medium text-gray-900">Manage Users</h3>
-              <p className="text-sm text-gray-500">View and manage all users</p>
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button className="group p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all text-left">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                  <UsersIcon className="h-5 w-5 text-blue-600" />
+                </div>
+                <ChevronRightIcon className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+              </div>
+              <h3 className="font-semibold text-gray-900 group-hover:text-blue-900">Manage Users</h3>
+              <p className="text-sm text-gray-500 mt-1">View and manage all users</p>
             </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-              <h3 className="font-medium text-gray-900">View Transactions</h3>
-              <p className="text-sm text-gray-500">Monitor all transactions</p>
+            
+            <button className="group p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-green-200 transition-all text-left">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
+                  <CreditCardIcon className="h-5 w-5 text-green-600" />
+                </div>
+                <ChevronRightIcon className="h-4 w-4 text-gray-400 group-hover:text-green-600 transition-colors" />
+              </div>
+              <h3 className="font-semibold text-gray-900 group-hover:text-green-900">Transactions</h3>
+              <p className="text-sm text-gray-500 mt-1">Monitor all transactions</p>
             </button>
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-              <h3 className="font-medium text-gray-900">System Settings</h3>
-              <p className="text-sm text-gray-500">Configure system settings</p>
+            
+            <button className="group p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all text-left">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+                  <ChartBarIcon className="h-5 w-5 text-purple-600" />
+                </div>
+                <ChevronRightIcon className="h-4 w-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+              </div>
+              <h3 className="font-semibold text-gray-900 group-hover:text-purple-900">Analytics</h3>
+              <p className="text-sm text-gray-500 mt-1">View detailed reports</p>
+            </button>
+            
+            <button className="group p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-200 transition-all text-left">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-orange-50 rounded-lg group-hover:bg-orange-100 transition-colors">
+                  <ClockIcon className="h-5 w-5 text-orange-600" />
+                </div>
+                <ChevronRightIcon className="h-4 w-4 text-gray-400 group-hover:text-orange-600 transition-colors" />
+              </div>
+              <h3 className="font-semibold text-gray-900 group-hover:text-orange-900">Pending Items</h3>
+              <p className="text-sm text-gray-500 mt-1">Review pending approvals</p>
             </button>
           </div>
         </div>

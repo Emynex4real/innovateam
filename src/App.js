@@ -39,12 +39,15 @@ import { SecurityUtils } from "./config/security";
 
 // Security headers setup
 const setupSecurityHeaders = () => {
-  // Set CSP meta tag if not already present
-  if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
-    const cspMeta = document.createElement('meta');
-    cspMeta.httpEquiv = 'Content-Security-Policy';
-    cspMeta.content = SecurityUtils.generateCSPHeader();
-    document.head.appendChild(cspMeta);
+  // Skip CSP in development to avoid localhost issues
+  if (process.env.NODE_ENV === 'production') {
+    // Set CSP meta tag if not already present
+    if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
+      const cspMeta = document.createElement('meta');
+      cspMeta.httpEquiv = 'Content-Security-Policy';
+      cspMeta.content = SecurityUtils.generateCSPHeader();
+      document.head.appendChild(cspMeta);
+    }
   }
 
   // Add security event listeners

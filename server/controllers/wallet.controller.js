@@ -1,5 +1,6 @@
 const Wallet = require('../models/Wallet');
 const Transaction = require('../models/Transaction');
+const TransactionService = require('../services/transaction.service');
 
 // GET /api/wallet/balance
 exports.getBalance = async (req, res) => {
@@ -38,6 +39,9 @@ exports.fundWallet = async (req, res) => {
       `Wallet funded via ${paymentMethod}`
     );
 
+    // Record transaction
+    await TransactionService.recordWalletFunding(userId, parseFloat(amount), result.transaction?.reference || 'FUND-' + Date.now());
+
     res.json({
       success: true,
       data: {
@@ -68,6 +72,15 @@ exports.deductFromWallet = async (req, res) => {
     }
 
     const result = await Wallet.deductFunds(userId, parseFloat(amount), description);
+
+    // Record transaction
+    await TransactionService.recordTransaction(userId, {
+      type: 'debit',
+      amount: parseFloat(amount),
+      description,
+      status: 'completed',
+      category: 'payment'
+    });
 
     res.json({
       success: true,

@@ -62,7 +62,11 @@ export const WalletProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchWalletData();
+      // Add small delay to ensure token is properly set
+      const timer = setTimeout(() => {
+        fetchWalletData();
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated]);
 

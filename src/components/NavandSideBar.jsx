@@ -92,8 +92,7 @@ const NavandSideBar = ({ children }) => {
         { path: "/dashboard/scratch-card/waec-gce", label: "WAEC GCE" },
       ],
     },
-    { path: "/dashboard/buy-data", icon: <BiData />, label: "Buy Data" },
-    { path: "/dashboard/buy-airtime", icon: <BiPhone />, label: "Airtime" },
+
     {
       path: "#",
       icon: <BiBook />,
@@ -132,8 +131,8 @@ const NavandSideBar = ({ children }) => {
         />
       )}
       
-      <header className={`fixed top-0 left-0 right-0 shadow-md z-50 flex items-center justify-between px-4 py-3 transition-colors duration-200 ${
-        isDarkMode ? 'bg-dark-surface text-dark-text-primary border-b border-dark-border' : 'bg-white text-gray-900'
+      <header className={`fixed top-0 left-0 right-0 shadow-lg z-50 flex items-center justify-between px-6 py-4 transition-colors duration-200 backdrop-blur-sm ${
+        isDarkMode ? 'bg-gray-900/95 text-white border-b border-gray-700' : 'bg-white/95 text-gray-900 border-b border-gray-200'
       }`}>
         <div className="flex items-center gap-4">
           <button
@@ -151,20 +150,18 @@ const NavandSideBar = ({ children }) => {
               alt="ArewaGate Logo"
               className="h-8 w-8 transition-transform duration-200 hover:scale-105"
             />
-            <span className={`text-xl font-bold hidden md:block ${
-              isDarkMode ? 'text-dark-text-primary' : 'text-gray-800'
-            }`}>ArewaGate</span>
+            <span className={`text-xl font-bold hidden md:block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent`}>ArewaGate</span>
           </Link>
         </div>
         <nav className="flex items-center gap-6">
           <div className="relative" ref={userDropdownRef}>
             <button
               onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className={`flex items-center space-x-2 focus:outline-none ${
-                isDarkMode ? 'text-dark-text-primary hover:text-primary-400' : 'text-gray-700 hover:text-green-500'
+              className={`flex items-center space-x-3 focus:outline-none p-2 rounded-lg transition-all duration-200 ${
+                isDarkMode ? 'text-white hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center">
+              <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center font-semibold shadow-lg">
                 {user?.email?.charAt(0)?.toUpperCase()}
               </div>
               <svg
@@ -179,8 +176,8 @@ const NavandSideBar = ({ children }) => {
 
             {/* Dropdown Menu */}
             {isUserDropdownOpen && (
-              <div className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-50 border ${
-                isDarkMode ? 'bg-dark-surface border-dark-border' : 'bg-white border-gray-200'
+              <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-xl py-2 z-50 border backdrop-blur-sm ${
+                isDarkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-gray-200'
               }`}>
                 <div className={`px-4 py-2 border-b ${isDarkMode ? 'border-dark-border' : 'border-gray-200'}`}>
                   <div className={`text-sm ${isDarkMode ? 'text-dark-text-secondary' : 'text-gray-500'}`}>Signed in as</div>
@@ -249,9 +246,9 @@ const NavandSideBar = ({ children }) => {
       <aside
         ref={sidebarRef}
         className={`fixed top-16 bottom-0 transition-all duration-300 ease-in-out z-50 ${
-          isDarkMode ? 'bg-dark-surface border-r border-dark-border' : 'bg-white shadow-lg'
+          isDarkMode ? 'bg-gray-900 border-r border-gray-700' : 'bg-white border-r border-gray-200'
         } ${isSidebarOpen ? 'left-0' : '-left-64'} lg:left-0
-          w-64 lg:w-auto lg:min-w-[4rem] ${isCollapsed ? 'lg:w-16' : 'lg:w-64'}`}
+          w-64 lg:w-auto lg:min-w-[4rem] ${isCollapsed ? 'lg:w-16' : 'lg:w-64'} shadow-xl`}
         style={{ maxHeight: "calc(100vh - 4rem)", overflowY: "auto" }}
         onMouseEnter={() => !isSidebarOpen && window.innerWidth >= 1024 && setIsCollapsed(false)}
         onMouseLeave={() => !isSidebarOpen && window.innerWidth >= 1024 && setIsCollapsed(true)}
@@ -260,12 +257,14 @@ const NavandSideBar = ({ children }) => {
           {sidebarItems.map((item) => (
             <li key={item.label}>
               <div
-                className={`flex items-center justify-between p-2 rounded-lg transition-all duration-200 ${
+                className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 group ${
                   location.pathname === item.path || item.subItems?.some((sub) => sub.path === location.pathname)
-                    ? "bg-green-500 text-white"
+                    ? isDarkMode
+                      ? "bg-blue-600 text-white shadow-lg"
+                      : "bg-blue-600 text-white shadow-lg"
                     : isDarkMode
-                      ? "text-dark-text-primary hover:bg-dark-border hover:text-primary-400"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                      ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                 }`}
               >
                 <Link
@@ -273,8 +272,12 @@ const NavandSideBar = ({ children }) => {
                   className="flex items-center flex-grow"
                   onClick={item.onClick || null}
                 >
-                  <span className="text-2xl">{item.icon}</span>
-                  <span className={`ml-3 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"} text-sm font-medium`}>
+                  <span className={`text-xl transition-colors duration-200 ${
+                    location.pathname === item.path || item.subItems?.some((sub) => sub.path === location.pathname)
+                      ? "text-white"
+                      : "group-hover:text-blue-600"
+                  }`}>{item.icon}</span>
+                  <span className={`ml-3 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"} text-sm font-semibold transition-colors duration-200`}>
                     {item.label}
                   </span>
                 </Link>
@@ -282,8 +285,8 @@ const NavandSideBar = ({ children }) => {
                   <button
                     onClick={() => toggleDropdown(item.label)}
                     className={`p-1 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"} ${
-                      isDarkMode ? 'hover:bg-dark-border' : 'hover:bg-gray-200'
-                    } rounded-full`}
+                      isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                    } rounded-full transition-colors duration-200`}
                   >
                     {openDropdown === item.label ? (
                       <BiChevronUp className="text-lg" />
@@ -294,20 +297,20 @@ const NavandSideBar = ({ children }) => {
                 )}
               </div>
               {item.subItems && openDropdown === item.label && (
-                <ul className={`pl-8 mt-1 space-y-1 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"}`}>
+                <ul className={`pl-6 mt-2 space-y-1 ${(isCollapsed && window.innerWidth >= 1024) || (!isSidebarOpen && window.innerWidth < 1024) ? "hidden" : "block"}`}>
                   {item.subItems.map((subItem) => (
                     <li key={subItem.path}>
                       <Link
                         to={subItem.path}
-                        className={`block p-2 rounded-lg text-sm transition-all duration-200 ${
+                        className={`block p-2 rounded-lg text-sm transition-all duration-200 relative ${
                           location.pathname === subItem.path
                             ? isDarkMode
-                              ? "bg-dark-border text-primary-400 font-semibold"
-                              : "bg-green-100 text-green-500 font-semibold"
+                              ? "bg-blue-500 text-white font-semibold shadow-md"
+                              : "bg-blue-500 text-white font-semibold shadow-md"
                             : isDarkMode
-                              ? "text-dark-text-secondary hover:bg-dark-border hover:text-primary-400"
-                              : "text-gray-600 hover:bg-gray-100 hover:text-green-500"
-                        }`}
+                              ? "text-gray-400 hover:bg-gray-800 hover:text-white"
+                              : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+                        } ${location.pathname === subItem.path ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-white before:rounded-r' : ''}`}
                       >
                         {subItem.label}
                       </Link>

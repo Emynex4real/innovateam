@@ -9,7 +9,7 @@ export const CSP_CONFIG = {
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'font-src': ["'self'", 'https://fonts.gstatic.com'],
   'img-src': ["'self'", 'data:', 'https:'],
-  'connect-src': ["'self'", process.env.REACT_APP_API_URL || 'https://localhost:5000'],
+  'connect-src': ["'self'", process.env.REACT_APP_API_URL || 'http://localhost:5000', 'https://localhost:5000'],
   'frame-ancestors': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'"]
