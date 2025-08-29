@@ -1,5 +1,5 @@
 export const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://your-backend-url.com/api'  // Replace with your actual backend URL
+  ? 'https://innovateam-api.onrender.com/api'
   : 'http://localhost:5000/api';
 
 export const APP_ROUTES = {
