@@ -96,11 +96,11 @@ class AuthService {
           config.headers.Authorization = `Bearer ${token}`;
         }
         
-        // Add CSRF token for state-changing requests (only in production)
-        if (process.env.NODE_ENV === 'production' && csrfProtection.needsProtection(config.method)) {
-          const csrfHeaders = csrfProtection.getTokenForHeader();
-          Object.assign(config.headers, csrfHeaders);
-        }
+        // Disable CSRF token for now to avoid CORS issues
+        // if (process.env.NODE_ENV === 'production' && csrfProtection.needsProtection(config.method)) {
+        //   const csrfHeaders = csrfProtection.getTokenForHeader();
+        //   Object.assign(config.headers, csrfHeaders);
+        // }
         
         return config;
       },
