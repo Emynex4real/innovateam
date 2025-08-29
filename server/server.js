@@ -64,13 +64,13 @@ const requiredEnvVars = [
 console.log('🔍 Verifying required environment variables...');
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingVars.join(', '));
+  console.warn('⚠️ Missing environment variables:', missingVars.join(', '));
   console.log('Current environment variables:', 
     Object.keys(process.env).filter(k => 
       k.startsWith('SUPABASE_') || k.startsWith('JWT_') || k === 'NODE_ENV' || k === 'PORT'
     )
   );
-  process.exit(1);
+  console.log('⚠️ Server will start but some features may not work');
 }
 
 // Log non-sensitive configuration
@@ -95,6 +95,16 @@ if (missingVars.length === 0) {
 const app = express();
 const server = http.createServer(app);
 server.maxHeadersSize = 16384; // Increase max header size to 16KB
+
+// Health check endpoint (before other middleware)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Root route (before other middleware)
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to the API', timestamp: new Date().toISOString() });
+});
 
 // Filter out irrelevant cookies to prevent 431 error
 app.use((req, res, next) => {
@@ -230,15 +240,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the API' });
-});
 
 // Error handling
 app.use(errorHandler);
