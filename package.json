@@ -49,7 +49,7 @@
   "scripts": {
     "start": "cross-env PORT=3000 node --max-old-space-size=4096 deploy.js && craco start",
     "build": "node deploy.js --deploy && craco build",
-    "vercel-build": "CI=false craco build",
+    "vercel-build": "CI=false npm run build",
     "test": "craco test --coverage --watchAll=false",
     "test:watch": "craco test --coverage --watchAll",
     "eject": "react-scripts eject",

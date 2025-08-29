@@ -9,11 +9,38 @@ class Wallet {
       .eq('id', userId)
       .single();
 
-    if (error) return 0;
+    if (error) {
+      // If user doesn't exist, create them with 0 balance
+      if (error.code === 'PGRST116') {
+        await this.createUserIfNotExists(userId);
+        return 0;
+      }
+      return 0;
+    }
     return data?.wallet_balance || 0;
   }
 
+  static async createUserIfNotExists(userId) {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          wallet_balance: 0,
+          created_at: new Date().toISOString()
+        });
+      if (error && error.code !== '23505') { // Ignore duplicate key error
+        console.error('Failed to create user:', error);
+      }
+    } catch (err) {
+      console.error('Error creating user:', err);
+    }
+  }
+
   static async updateBalance(userId, newBalance) {
+    // Ensure user exists first
+    await this.createUserIfNotExists(userId);
+    
     const { data, error } = await supabase
       .from('users')
       .update({ 
