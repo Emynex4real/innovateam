@@ -39,16 +39,7 @@ import { SecurityUtils } from "./config/security";
 
 // Security headers setup
 const setupSecurityHeaders = () => {
-  // Skip CSP to avoid connection issues
-  if (false && process.env.NODE_ENV === 'production') {
-    // Set CSP meta tag if not already present
-    if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
-      const cspMeta = document.createElement('meta');
-      cspMeta.httpEquiv = 'Content-Security-Policy';
-      cspMeta.content = SecurityUtils.generateCSPHeader();
-      document.head.appendChild(cspMeta);
-    }
-  }
+  // CSP disabled to avoid connection issues
 
   // Add security event listeners
   window.addEventListener('securitypolicyviolation', (event) => {
@@ -152,8 +143,8 @@ function App() {
   ], []);
 
   useEffect(() => {
-    // Setup security measures
-    setupSecurityHeaders();
+    // Setup security measures (CSP disabled)
+    // setupSecurityHeaders();
 
     // Set page title
     const currentRoute = allRoutes.find((route) => route.path === location.pathname);
