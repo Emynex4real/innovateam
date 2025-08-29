@@ -199,6 +199,11 @@ if (process.env.NODE_ENV === 'production') {
 }
 app.use('/api/', apiLimiter);
 
+// Simple test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working', timestamp: new Date().toISOString() });
+});
+
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
