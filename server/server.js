@@ -145,7 +145,11 @@ const corsOptions = {
     if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
-    const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+    const allowedOrigins = [
+      'https://innovateamm.vercel.app',
+      'http://localhost:3000',
+      ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+    ];
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
