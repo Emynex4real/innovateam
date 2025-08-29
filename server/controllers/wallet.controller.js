@@ -33,27 +33,34 @@ exports.fundWallet = async (req, res) => {
       });
     }
 
-    const result = await Wallet.addFunds(
-      userId, 
-      parseFloat(amount), 
-      `Wallet funded via ${paymentMethod}`
-    );
+    // Simplified funding - just add to balance
+    const currentBalance = await Wallet.getBalance(userId);
+    const newBalance = currentBalance + parseFloat(amount);
+    await Wallet.updateBalance(userId, newBalance);
 
-    // Record transaction
-    await TransactionService.recordWalletFunding(userId, parseFloat(amount), result.transaction?.reference || 'FUND-' + Date.now());
+    // Create simple transaction record
+    const transaction = {
+      id: Date.now().toString(),
+      amount: parseFloat(amount),
+      type: 'credit',
+      description: `Wallet funded via ${paymentMethod}`,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    };
 
     res.json({
       success: true,
       data: {
-        newBalance: result.newBalance,
-        transaction: result.transaction
+        newBalance,
+        transaction
       },
       message: 'Wallet funded successfully'
     });
   } catch (error) {
+    console.error('Wallet funding error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Failed to fund wallet'
     });
   }
 };
