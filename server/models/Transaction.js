@@ -17,7 +17,15 @@ class Transaction {
   }
 
   async saveTransactions(transactions) {
-    await fs.writeFile(this.dataPath, JSON.stringify(transactions, null, 2));
+    try {
+      // Ensure directory exists
+      const dir = path.dirname(this.dataPath);
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(this.dataPath, JSON.stringify(transactions, null, 2));
+    } catch (error) {
+      console.error('Failed to save transactions:', error);
+      throw error;
+    }
   }
 
   static async create(transactionData) {
