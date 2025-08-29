@@ -53,7 +53,7 @@ const EducationalDashboard = () => {
       description: 'Registration & result checking',
       icon: AcademicCapIcon,
       color: 'blue',
-      href: '/buy-admission-letter',
+      href: 'buy-admission-letter',
       price: '₦500'
     },
     {
@@ -62,7 +62,7 @@ const EducationalDashboard = () => {
       description: 'Result verification service',
       icon: DocumentTextIcon,
       color: 'green',
-      href: '/buy-olevel-upload',
+      href: 'buy-olevel-upload',
       price: '₦1,000'
     },
     {
@@ -71,7 +71,7 @@ const EducationalDashboard = () => {
       description: 'Practice tests & feedback',
       icon: LightBulbIcon,
       color: 'purple',
-      href: '/ai-examiner',
+      href: 'ai-examiner',
       price: '₦750'
     },
     {
@@ -80,7 +80,7 @@ const EducationalDashboard = () => {
       description: 'University course guidance',
       icon: BookOpenIcon,
       color: 'orange',
-      href: '/course-advisor',
+      href: 'course-advisor',
       price: 'Free'
     }
   ];
@@ -102,7 +102,7 @@ const EducationalDashboard = () => {
               <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                 <BellIcon className="h-5 w-5" />
               </button>
-              <Link to="/profile" className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+              <Link to="profile" className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                 <UserCircleIcon className="h-5 w-5" />
               </Link>
             </div>
@@ -123,14 +123,14 @@ const EducationalDashboard = () => {
             </div>
             <div className="flex space-x-3">
               <Link 
-                to="/wallet" 
+                to="wallet" 
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 <PlusIcon className="h-4 w-4 inline mr-1" />
                 Add Funds
               </Link>
               <Link 
-                to="/transactions" 
+                to="transactions" 
                 className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
               >
                 History
@@ -217,7 +217,7 @@ const EducationalDashboard = () => {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-              <Link to="/transactions" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="transactions" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                 View All
               </Link>
             </div>
@@ -234,7 +234,7 @@ const EducationalDashboard = () => {
                 <h4 className="text-lg font-medium text-gray-900 mb-2">No transactions yet</h4>
                 <p className="text-gray-500 mb-4">Start using our educational services to see your activity here.</p>
                 <Link 
-                  to="/buy-data" 
+                  to="buy-olevel-upload" 
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
                 >
                   Explore Services
