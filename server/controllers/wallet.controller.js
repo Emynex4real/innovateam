@@ -1,21 +1,32 @@
-const Wallet = require('../models/Wallet');
-const Transaction = require('../models/Transaction');
-const TransactionService = require('../services/transaction.service');
+const supabase = require('../supabaseClient');
 
 // GET /api/wallet/balance
 exports.getBalance = async (req, res) => {
   try {
     const userId = req.user.id;
-    const balance = await Wallet.getBalance(userId);
     
+    const { data, error } = await supabase
+      .from('users')
+      .select('wallet_balance')
+      .eq('id', userId)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      // User doesn't exist, create with 0 balance
+      await supabase
+        .from('users')
+        .insert({ id: userId, wallet_balance: 0 });
+      return res.json({ success: true, data: { balance: 0 } });
+    }
+
     res.json({
       success: true,
-      data: { balance }
+      data: { balance: data?.wallet_balance || 0 }
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Failed to get balance'
     });
   }
 };
@@ -24,7 +35,7 @@ exports.getBalance = async (req, res) => {
 exports.fundWallet = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, paymentMethod = 'card' } = req.body;
+    const { amount } = req.body;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
@@ -33,34 +44,54 @@ exports.fundWallet = async (req, res) => {
       });
     }
 
-    // Simplified funding - just add to balance
-    const currentBalance = await Wallet.getBalance(userId);
-    const newBalance = currentBalance + parseFloat(amount);
-    await Wallet.updateBalance(userId, newBalance);
+    // Get current balance
+    let { data: user } = await supabase
+      .from('users')
+      .select('wallet_balance')
+      .eq('id', userId)
+      .single();
 
-    // Create simple transaction record
-    const transaction = {
-      id: Date.now().toString(),
-      amount: parseFloat(amount),
-      type: 'credit',
-      description: `Wallet funded via ${paymentMethod}`,
-      status: 'completed',
-      createdAt: new Date().toISOString()
-    };
+    if (!user) {
+      // Create user if doesn't exist
+      await supabase
+        .from('users')
+        .insert({ id: userId, wallet_balance: 0 });
+      user = { wallet_balance: 0 };
+    }
+
+    const newBalance = (user.wallet_balance || 0) + parseFloat(amount);
+
+    // Update balance
+    await supabase
+      .from('users')
+      .update({ wallet_balance: newBalance })
+      .eq('id', userId);
 
     res.json({
       success: true,
-      data: {
-        newBalance,
-        transaction
-      },
+      data: { newBalance },
       message: 'Wallet funded successfully'
     });
   } catch (error) {
-    console.error('Wallet funding error:', error);
+    console.error('Fund wallet error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fund wallet'
+    });
+  }
+};
+
+// GET /api/wallet/transactions
+exports.getTransactions = async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: []
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get transactions'
     });
   }
 };
@@ -69,7 +100,7 @@ exports.fundWallet = async (req, res) => {
 exports.deductFromWallet = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, description = 'Payment' } = req.body;
+    const { amount } = req.body;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
@@ -78,47 +109,39 @@ exports.deductFromWallet = async (req, res) => {
       });
     }
 
-    const result = await Wallet.deductFunds(userId, parseFloat(amount), description);
+    // Get current balance
+    const { data: user } = await supabase
+      .from('users')
+      .select('wallet_balance')
+      .eq('id', userId)
+      .single();
 
-    // Record transaction
-    await TransactionService.recordTransaction(userId, {
-      type: 'debit',
-      amount: parseFloat(amount),
-      description,
-      status: 'completed',
-      category: 'payment'
-    });
+    const currentBalance = user?.wallet_balance || 0;
+
+    if (currentBalance < amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient balance'
+      });
+    }
+
+    const newBalance = currentBalance - parseFloat(amount);
+
+    // Update balance
+    await supabase
+      .from('users')
+      .update({ wallet_balance: newBalance })
+      .eq('id', userId);
 
     res.json({
       success: true,
-      data: {
-        newBalance: result.newBalance,
-        transaction: result.transaction
-      },
+      data: { newBalance },
       message: 'Payment processed successfully'
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
-    });
-  }
-};
-
-// GET /api/wallet/transactions
-exports.getTransactions = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const transactions = await Transaction.findByUserId(userId);
-    
-    res.json({
-      success: true,
-      data: transactions
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
+      message: 'Failed to process payment'
     });
   }
 };
@@ -127,22 +150,26 @@ exports.getTransactions = async (req, res) => {
 exports.getStats = async (req, res) => {
   try {
     const userId = req.user.id;
-    const [balance, stats] = await Promise.all([
-      Wallet.getBalance(userId),
-      Transaction.getUserStats(userId)
-    ]);
     
+    const { data } = await supabase
+      .from('users')
+      .select('wallet_balance')
+      .eq('id', userId)
+      .single();
+
     res.json({
       success: true,
       data: {
-        balance,
-        ...stats
+        balance: data?.wallet_balance || 0,
+        totalTransactions: 0,
+        totalCredits: 0,
+        totalDebits: 0
       }
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Failed to get stats'
     });
   }
 };
