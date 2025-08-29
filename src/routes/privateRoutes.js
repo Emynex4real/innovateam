@@ -1,26 +1,26 @@
 // src/routes/privateRoutes.js
-import React, { lazy } from "react";
+import React from "react";
 
-// Lazy load components
-const Dashboard = lazy(() => import("../pages/EducationalDashboard"));
-const Profile = lazy(() => import("../pages/ModernProfile"));
-const Wallet = lazy(() => import("../pages/ModernWallet"));
-const WaecResultChecker = lazy(() => import("../pages/ModernWaecChecker"));
-const NecoResultChecker = lazy(() => import("../pages/result checker/neco result checker"));
-const NbaisResultChecker = lazy(() => import("../pages/result checker/nbais result checker"));
-const NabtebResultChecker = lazy(() => import("../pages/result checker/nabteb result checker"));
-const WaecGce = lazy(() => import("../pages/result checker/waec gce"));
+// Regular imports to avoid chunk loading issues
+import Dashboard from "../pages/EducationalDashboard";
+import Profile from "../pages/ModernProfile";
+import Wallet from "../pages/ModernWallet";
+import WaecResultChecker from "../pages/ModernWaecChecker";
+import NecoResultChecker from "../pages/result checker/neco result checker";
+import NbaisResultChecker from "../pages/result checker/nbais result checker";
+import NabtebResultChecker from "../pages/result checker/nabteb result checker";
+import WaecGce from "../pages/result checker/waec gce";
 
-const OLevelUpload = lazy(() => import("../pages/jamb services/olevel upload"));
-const AdmissionLetter = lazy(() => import("../pages/ModernAdmissionLetter"));
-const OriginalResult = lazy(() => import("../pages/jamb services/original result"));
-const JambPinVending = lazy(() => import("../pages/jamb services/pin vending"));
-const CapsPrinting = lazy(() => import("../pages/jamb services/reprinting"));
-const OLevelEntry = lazy(() => import("../pages/jamb services/olevel upload/new entry"));
-const Transactions = lazy(() => import("../pages/ModernTransactions"));
-const Support = lazy(() => import("../pages/ModernSupport"));
-const AiExaminer = lazy(() => import("../pages/ModernAiExaminer"));
-const CourseAdvisor = lazy(() => import("../pages/dashboard/course-advisor"));
+import OLevelUpload from "../pages/jamb services/olevel upload";
+import AdmissionLetter from "../pages/ModernAdmissionLetter";
+import OriginalResult from "../pages/jamb services/original result";
+import JambPinVending from "../pages/jamb services/pin vending";
+import CapsPrinting from "../pages/jamb services/reprinting";
+import OLevelEntry from "../pages/jamb services/olevel upload/new entry";
+import Transactions from "../pages/ModernTransactions";
+import Support from "../pages/ModernSupport";
+import AiExaminer from "../pages/ModernAiExaminer";
+import CourseAdvisor from "../pages/dashboard/course-advisor";
 
 // Define private routes
 const privateRoutes = [

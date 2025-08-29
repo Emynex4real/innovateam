@@ -1,13 +1,13 @@
 // src/routes/publicRoutes.js
-import React, { lazy } from "react";
+import React from "react";
 
-// Lazy load components
-const Home = lazy(() => import("../pages/Home"));
-const About = lazy(() => import("../pages/About"));
-const Blogs = lazy(() => import("../pages/Blogs"));
-const Login = lazy(() => import("../pages/login"));
-const Register = lazy(() => import("../pages/register"));
-const NotFound = lazy(() => import("../pages/NotFound"));
+// Regular imports to avoid chunk loading issues
+import Home from "../pages/Home";
+import About from "../pages/About";
+import Blogs from "../pages/Blogs";
+import Login from "../pages/login";
+import Register from "../pages/register";
+import NotFound from "../pages/NotFound";
 
 // Define public routes
 const publicRoutes = [
