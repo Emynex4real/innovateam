@@ -39,8 +39,8 @@ import { SecurityUtils } from "./config/security";
 
 // Security headers setup
 const setupSecurityHeaders = () => {
-  // Skip CSP in development to avoid localhost issues
-  if (process.env.NODE_ENV === 'production') {
+  // Skip CSP to avoid connection issues
+  if (false && process.env.NODE_ENV === 'production') {
     // Set CSP meta tag if not already present
     if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
       const cspMeta = document.createElement('meta');
