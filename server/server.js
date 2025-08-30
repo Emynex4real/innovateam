@@ -210,6 +210,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/wallet', require('./routes/wallet.routes'));
 app.use('/api/services', require('./routes/services.routes'));
+app.use('/api/ai-examiner', require('./routes/aiExaminer.routes'));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
