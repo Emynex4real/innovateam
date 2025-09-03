@@ -1,20 +1,16 @@
 import apiService from './api.service';
 
 class AIExaminerService {
-  async uploadDocument(file) {
+  async submitText(text, title = 'Study Material') {
     try {
-      const formData = new FormData();
-      formData.append('document', file);
-      
-      const response = await apiService.post('/ai-examiner/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      const response = await apiService.post('/ai-examiner/submit-text', {
+        text,
+        title
       });
       
       return response;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to upload document');
+      throw new Error(error.response?.data?.message || 'Failed to process text');
     }
   }
 

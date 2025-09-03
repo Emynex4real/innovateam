@@ -1,37 +1,13 @@
 const supabase = require('../supabaseClient');
 const { v4: uuidv4 } = require('uuid');
-const pdf = require('pdf-parse');
-const mammoth = require('mammoth');
 
 class AIExaminerController {
-  // Extract text from uploaded document
-  async extractTextFromDocument(file) {
-    try {
-      let text = '';
-      
-      switch (file.mimetype) {
-        case 'application/pdf':
-          const pdfData = await pdf(file.buffer);
-          text = pdfData.text;
-          break;
-          
-        case 'text/plain':
-          text = file.buffer.toString('utf-8');
-          break;
-          
-        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-          const docxResult = await mammoth.extractRawText({ buffer: file.buffer });
-          text = docxResult.value;
-          break;
-          
-        default:
-          throw new Error('Unsupported file type');
-      }
-      
-      return text.trim();
-    } catch (error) {
-      throw new Error(`Failed to extract text: ${error.message}`);
+  // Process text input
+  processTextInput(text) {
+    if (!text || text.trim().length < 100) {
+      throw new Error('Text content is too short to generate meaningful questions');
     }
+    return text.trim();
   }
 
   // Generate questions using AI/ML approach
@@ -234,57 +210,51 @@ class AIExaminerController {
   }
 
   // Controller methods
-  async uploadDocument(req, res) {
+  async submitText(req, res) {
     try {
-      if (!req.file) {
+      const { text, title = 'Study Material' } = req.body;
+      
+      if (!text) {
         return res.status(400).json({
           success: false,
-          message: 'No document uploaded'
+          message: 'No text content provided'
         });
       }
 
       const userId = req.user.id;
-      const extractedText = await this.extractTextFromDocument(req.file);
+      const processedText = this.processTextInput(text);
 
-      if (extractedText.length < 100) {
-        return res.status(400).json({
-          success: false,
-          message: 'Document content is too short to generate meaningful questions'
-        });
-      }
-
-      // Store document in database
-      const { data: document, error } = await supabase
+      // Store text content in database
+      const documentId = uuidv4();
+      const { error } = await supabase
         .from('ai_documents')
         .insert({
-          id: uuidv4(),
+          id: documentId,
           user_id: userId,
-          filename: req.file.originalname,
-          content: extractedText,
-          file_size: req.file.size,
-          mime_type: req.file.mimetype,
+          filename: title,
+          content: processedText,
+          file_size: processedText.length,
+          mime_type: 'text/plain',
           created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+        });
 
       if (error) throw error;
 
       res.json({
         success: true,
         data: {
-          documentId: document.id,
-          filename: document.filename,
-          contentLength: extractedText.length,
-          preview: extractedText.substring(0, 200) + '...'
+          documentId,
+          filename: title,
+          contentLength: processedText.length,
+          preview: processedText.substring(0, 200) + '...'
         },
-        message: 'Document uploaded and processed successfully'
+        message: 'Text content processed successfully'
       });
     } catch (error) {
-      console.error('Upload document error:', error);
+      console.error('Submit text error:', error);
       res.status(500).json({
         success: false,
-        message: error.message || 'Failed to upload document'
+        message: error.message || 'Failed to process text'
       });
     }
   }
