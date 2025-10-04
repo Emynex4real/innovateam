@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi";
 import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 import toast from 'react-hot-toast';
-import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
-import Button from "../../components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import Label from "../../components/ui/label";
+import { Label } from "../../components/ui/label";
 import { Checkbox } from "../../components/ui/checkbox";
 
 const Login = () => {

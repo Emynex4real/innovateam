@@ -1,14 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Tab } from '@headlessui/react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
-import axios from 'axios';
 import debounce from 'lodash/debounce';
 import deepseekService from '../../services/deepseek.service';
-import { FaGraduationCap, FaCheckCircle, FaExclamationCircle, FaStar, FaTrophy } from 'react-icons/fa';
-
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { 
+  GraduationCap, 
+  CheckCircle, 
+  AlertCircle, 
+  Star, 
+  Trophy, 
+  Target,
+  BookOpen,
+  TrendingUp,
+  Users,
+  Award,
+  Download,
+  FileText,
+  BarChart3,
+  Sparkles,
+  Brain,
+  Zap,
+  Filter,
+  Search,
+  ChevronDown,
+  Info,
+  HelpCircle
+} from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Checkbox } from '../../components/ui/checkbox';
+import { Separator } from '../../components/ui/separator';
+import { cn } from '../../lib/utils';
 
 // Create debounced API call function
 const debouncedApiCall = debounce((request) => request(), 1000);
@@ -20,31 +45,122 @@ const OLEVEL_SUBJECTS = [
   "Technical Drawing", "Commerce", "Accounting", "Computer Studies", "Civic Education", "CRS", "IRS"
 ];
 
-function classNames(...classes) {
-  return classes.filter(Boolean).join(' ');
-}
-
-const SIDEBAR_BRAND = (
-  <div className="flex flex-col items-center py-8 bg-green-900 text-white min-h-screen">
-    <FaGraduationCap size={48} className="mb-2" />
-    <h2 className="text-2xl font-bold mb-2">FUTA Advisor</h2>
-    <p className="text-sm mb-4">Your smart guide to university admission success.</p>
-    <hr className="border-green-700 w-3/4 mb-4" />
-    <span className="text-xs">Powered by AI & Real Data</span>
-  </div>
-);
-
-const Card = ({ children, className }) => (
-  <div className={`bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 mb-8 ${className || ''}`}>{children}</div>
-);
-
 const ProgressBar = ({ loading }) => (
   loading ? (
-    <div className="w-full bg-green-100 rounded-full h-2.5 mb-4">
-      <div className="bg-green-600 h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+    <div className="w-full bg-green-100 dark:bg-green-900/20 rounded-full h-2 mb-4">
+      <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
     </div>
   ) : null
 );
+
+const StatCard = ({ icon: Icon, title, value, description, color = "blue" }) => {
+  const colorClasses = {
+    blue: {
+      text: "text-blue-600 dark:text-blue-400",
+      bg: "bg-blue-100 dark:bg-blue-900/20"
+    },
+    green: {
+      text: "text-green-600 dark:text-green-400",
+      bg: "bg-green-100 dark:bg-green-900/20"
+    },
+    yellow: {
+      text: "text-yellow-600 dark:text-yellow-400",
+      bg: "bg-yellow-100 dark:bg-yellow-900/20"
+    }
+  };
+  
+  return (
+    <Card className="relative overflow-hidden">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className={`text-2xl font-bold ${colorClasses[color].text}`}>{value}</p>
+            <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          </div>
+          <div className={`p-3 rounded-full ${colorClasses[color].bg}`}>
+            <Icon className={`h-6 w-6 ${colorClasses[color].text}`} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const GradeSelector = ({ subject, value, onChange }) => (
+  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+    <Label className="font-medium text-sm">{subject}</Label>
+    <select
+      value={value || ''}
+      onChange={(e) => onChange(subject, e.target.value)}
+      className="w-20 p-1 text-sm border rounded focus:ring-2 focus:ring-green-500 focus:border-transparent bg-background"
+    >
+      <option value="">Grade</option>
+      {GRADES.map(grade => (
+        <option key={grade} value={grade}>{grade}</option>
+      ))}
+    </select>
+  </div>
+);
+
+const CourseCard = ({ course, index, maxScore }) => {
+  const match = (course.score * 100).toFixed(0);
+  const isBest = course.score === maxScore;
+  const isHighMatch = course.score >= 0.7;
+  const isMediumMatch = course.score >= 0.4 && course.score < 0.7;
+  
+  return (
+    <Card className={cn(
+      "transition-all duration-200 hover:shadow-lg",
+      isBest && "ring-2 ring-yellow-400 shadow-lg",
+      isHighMatch && !isBest && "border-green-200 dark:border-green-800",
+      isMediumMatch && "border-yellow-200 dark:border-yellow-800"
+    )}>
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h4 className="font-semibold text-lg">{course.course}</h4>
+              {isBest && <Award className="h-5 w-5 text-yellow-500" />}
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">{course.faculty}</p>
+            <p className="text-xs text-muted-foreground">Cutoff: {course.cutoff} | Capacity: {course.capacity}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "px-3 py-1 rounded-full text-sm font-medium",
+              isHighMatch ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
+              isMediumMatch ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400" :
+              "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+            )}>
+              {match}% Match
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Career Prospects</Label>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {course.careerProspects.slice(0, 3).map((career, idx) => (
+                <span key={idx} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs rounded">
+                  {career}
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          {isBest && (
+            <div className="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/10 rounded border border-yellow-200 dark:border-yellow-800">
+              <Sparkles className="h-4 w-4 text-yellow-600" />
+              <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">Top Recommendation</span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const CourseAdvisor = () => {
   // Expanded FUTA Course Database with accurate requirements and UTME subject combinations
@@ -567,6 +683,7 @@ const CourseAdvisor = () => {
       careerProspects: ["Urban Planner", "Regional Developer", "Policy Advisor"]
     }
   };
+  
   const COURSE_LIST = Object.keys(FUTA_COURSES);
   const STATE_LIST = [
     "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
@@ -576,6 +693,7 @@ const CourseAdvisor = () => {
     "Yobe", "Zamfara"
   ];
   const GENDER_LIST = ["Male", "Female", "Other"];
+  
   const [preferredCourse, setPreferredCourse] = useState("");
   const [stateOfOrigin, setStateOfOrigin] = useState("");
   const [gender, setGender] = useState("");
@@ -591,7 +709,9 @@ const CourseAdvisor = () => {
   const [preferredEligibility, setPreferredEligibility] = useState(null);
   const [recommendLoading, setRecommendLoading] = useState(false);
 
-
+  const GRADE_POINTS = {
+    "A1": 9, "B2": 8, "B3": 7, "C4": 6, "C5": 5, "C6": 4
+  };
 
   // Mock user data for collaborative filtering (in real app, fetch from API)
   const mockUsers = [
@@ -599,16 +719,6 @@ const CourseAdvisor = () => {
     { id: 2, jamb: 190, gpa: 6.0, interests: ['agriculture', 'science'], courses: ['Agricultural Engineering', 'Biotechnology'] },
     // Add more mock data as needed
   ];
-
-  // Question Generator State
-  const [file, setFile] = useState(null);
-  const [questions, setQuestions] = useState('');
-  const [questionLoading, setQuestionLoading] = useState(false);
-  const fileInputRef = React.useRef(null);
-
-  const GRADE_POINTS = {
-    "A1": 9, "B2": 8, "B3": 7, "C4": 6, "C5": 5, "C6": 4
-  };
 
   const calculateGPA = (grades) => {
     const validGrades = Object.values(grades).filter(grade => grade && GRADE_POINTS[grade]);
@@ -623,8 +733,6 @@ const CourseAdvisor = () => {
     const intersection = new Set([...interests1].filter(i => interests2.has(i)));
     return intersection.size / Math.max(interests1.size, interests2.size);
   };
-
-
 
   const getCollaborativeScore = (userJamb, userGpa, userInterests, course) => {
     const similarUsers = mockUsers.map(u => {
@@ -827,23 +935,25 @@ const CourseAdvisor = () => {
     if (recommendLoading) return null;
 
     if (eligibleCourses.length === 0) {
-      let recommendationText = `❌ No courses meet your current qualifications.\n\n`;
-      if (preferredEligibility && preferredCourse) {
-        recommendationText += `Regarding your preferred course "${preferredCourse}", you don't qualify because:\n`;
-        preferredEligibility.reasons.forEach(reason => {
-          recommendationText += `   • ${reason}\n`;
-        });
-        recommendationText += `\n`;
-      }
-      recommendationText += `💡 Recommendations:\n`;
-      recommendationText += `• Consider retaking JAMB to improve your score\n`;
-      recommendationText += `• Improve O-Level grades in key subjects\n`;
-      recommendationText += `• Consider foundation programs\n`;
-
       return (
-        <div className="text-center py-12">
-          <FaGraduationCap className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <p className="text-lg text-gray-500 whitespace-pre-wrap">{recommendationText}</p>
+        <div className="text-center py-8">
+          <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No Eligible Courses Found</h3>
+          <p className="text-muted-foreground mb-4">
+            Based on your current qualifications, no courses meet the admission requirements.
+          </p>
+          
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p className="font-medium">💡 Recommendations:</p>
+            <div className="flex flex-col gap-1">
+              <span>• Consider retaking JAMB to improve your score</span>
+              <span>• Improve O-Level grades in key subjects</span>
+              <span>• Explore foundation programs</span>
+              <span>• Consider alternative pathways</span>
+            </div>
+          </div>
         </div>
       );
     }
@@ -851,377 +961,484 @@ const CourseAdvisor = () => {
     const highMatch = eligibleCourses.filter(c => c.score >= 0.7).length;
     const mediumMatch = eligibleCourses.filter(c => c.score >= 0.4 && c.score < 0.7).length;
     const lowMatch = eligibleCourses.filter(c => c.score < 0.4).length;
-
-    const topCourse = eligibleCourses[0];
-    const topMatch = (topCourse.score * 100).toFixed(0);
-
     const maxScore = Math.max(...eligibleCourses.map(c => c.score));
-    const isPreferredTop = topCourse.course === preferredCourse;
-    const hasBetter = eligibleCourses.length > 1 && topCourse.score < maxScore;
+    const topCourse = eligibleCourses[0];
 
     return (
-      <div>
-        {preferredEligibility && preferredCourse && !preferredEligibility.eligible && (
-          <div className="bg-red-800 rounded-lg p-4 mb-4 text-white">
-            <h3 className="font-bold mb-2">Your Preferred Course: {preferredCourse}</h3>
-            <p>Unfortunately, you don't qualify because:</p>
-            <ul className="list-disc pl-5">
-              {preferredEligibility.reasons.map((reason, idx) => (
-                <li key={idx}>{reason}</li>
-              ))}
-            </ul>
-            <p className="mt-2">We've recommended alternatives from the same faculty that are similar and less competitive for better admission chances.</p>
-          </div>
-        )}
-        <div className="bg-gray-800 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FaTrophy className="text-yellow-400" />
-              <span className="text-white font-semibold">Top Recommendation</span>
-            </div>
-            <div className="bg-green-600 rounded-full px-3 py-1 text-white text-sm">{topMatch}% Match</div>
-          </div>
-          <h3 className="text-xl font-bold text-white mt-2">{topCourse.course}</h3>
-          <p className="text-gray-400">{topCourse.faculty}</p>
-          <p className="text-gray-400">Cutoff: {topCourse.cutoff}</p>
-          <p className="text-gray-400">Capacity: {topCourse.capacity}</p>
-          <div className="mt-2">
-            <span className="text-gray-300">Career Prospects:</span>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {topCourse.careerProspects.map((career, idx) => (
-                <div key={idx} className="bg-blue-600 rounded px-2 py-1 text-white text-sm">{career}</div>
-              ))}
-            </div>
-          </div>
-          {isPreferredTop && hasBetter && (
-            <p className="text-yellow-400 mt-2">Note: You have a better chance in other courses with higher match, but we prioritized your preferred.</p>
-          )}
-          <div className="mt-2">
-            <span className="text-gray-300">Explanation:</span>
-            <ul className="list-disc pl-5 text-gray-400">
-              {topCourse.reasons.map((reason, idx) => (
-                <li key={idx}>{reason}</li>
-              ))}
-            </ul>
-          </div>
+      <div className="space-y-6">
+        {/* Statistics */}
+        <div className="grid grid-cols-3 gap-4">
+          <StatCard
+            icon={TrendingUp}
+            title="High Match"
+            value={highMatch}
+            description="70%+ compatibility"
+            color="green"
+          />
+          <StatCard
+            icon={Target}
+            title="Medium Match"
+            value={mediumMatch}
+            description="40-70% compatibility"
+            color="yellow"
+          />
+          <StatCard
+            icon={Users}
+            title="Total Eligible"
+            value={eligibleCourses.length}
+            description="Courses available"
+            color="blue"
+          />
         </div>
-        <div className="bg-gray-800 rounded-lg p-4 mb-4">
-          <h3 className="text-white font-semibold mb-2">Prediction Statistics</h3>
-          <div className="flex justify-around text-center">
-            <div>
-              <p className="text-green-500 font-bold">{highMatch}</p>
-              <p className="text-gray-400 text-sm">High Match (70%+)</p>
+
+        {/* Top Recommendation */}
+        <Card className="border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-600" />
+                <span className="font-semibold text-green-800 dark:text-green-200">Top Recommendation</span>
+              </div>
+              <div className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                {(topCourse.score * 100).toFixed(0)}% Match
+              </div>
             </div>
-            <div>
-              <p className="text-yellow-500 font-bold">{mediumMatch}</p>
-              <p className="text-gray-400 text-sm">Medium Match (40-70%)</p>
-            </div>
-            <div>
-              <p className="text-red-500 font-bold">{lowMatch}</p>
-              <p className="text-gray-400 text-sm">Low Match (&lt;40%)</p>
-            </div>
-          </div>
-        </div>
-        <div className="mb-4">
-          <h3 className="text-white font-semibold mb-2">All Eligible Courses ({eligibleCourses.length})</h3>
-          <div className="space-y-3">
-            {eligibleCourses.map((course, index) => {
-              const match = (course.score * 100).toFixed(0);
-              const isBest = course.score === maxScore;
-              return (
-                <div key={index} className="bg-gray-800 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-white font-semibold">{course.course}</h4>
-                    <div className="flex items-center gap-2">
-                      <FaStar className="text-yellow-400" />
-                      <span className="text-white">{match}%</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-400 text-sm">{course.faculty}</p>
-                  <p className="text-gray-400 text-sm">Cutoff: {course.cutoff}</p>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {course.careerProspects.map((career, idx) => (
-                      <div key={idx} className="bg-gray-600 rounded px-2 py-1 text-gray-300 text-sm">{career}</div>
-                    ))}
-                  </div>
-                  {isBest && <div className="bg-yellow-600 rounded px-2 py-1 text-white text-sm inline-block mt-2">Best Match</div>}
+            
+            <h3 className="text-xl font-bold mb-2">{topCourse.course}</h3>
+            <p className="text-muted-foreground mb-4">{topCourse.faculty} • Cutoff: {topCourse.cutoff} • Capacity: {topCourse.capacity}</p>
+            
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Career Prospects</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {topCourse.careerProspects.map((career, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs rounded">
+                      {career}
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Match Analysis</Label>
+                <ul className="text-sm text-muted-foreground mt-1 space-y-1">
+                  {topCourse.reasons.map((reason, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-500 mt-1 flex-shrink-0" />
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* All Courses */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">All Eligible Courses ({eligibleCourses.length})</h3>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportJSON}>
+                <Download className="h-4 w-4 mr-2" />
+                JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportCSV}>
+                <FileText className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={exportJSON} className="bg-green-600 text-white px-4 py-2 rounded">JSON</button>
-          <button onClick={exportCSV} className="bg-green-600 text-white px-4 py-2 rounded">CSV</button>
+          
+          <div className="space-y-3">
+            {eligibleCourses.map((course, index) => (
+              <CourseCard
+                key={index}
+                course={course}
+                index={index}
+                maxScore={maxScore}
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
   };
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    setQuestions('');
-
-    if (!selectedFile) return;
-
-    if (selectedFile.type !== 'text/plain') {
-      toast.error('Please upload a .txt file');
-      fileInputRef.current.value = '';
-      return;
-    }
-
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
-      fileInputRef.current.value = '';
-      return;
-    }
-
-    setFile(selectedFile);
-  };
-
-  const handleQuestionSubmit = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      toast.error('Please select a file');
-      return;
-    }
-
-    setQuestionLoading(true);
-    setQuestions('');
-
-    try {
-      const text = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
-        reader.readAsText(file);
-      });
-
-      const generatedQuestions = await deepseekService.generateQuestions(text);
-      setQuestions(generatedQuestions);
-      toast.success('Questions generated successfully!');
-    } catch (error) {
-      console.error('Question Generation Error:', error);
-      toast.error(error.message || 'Failed to generate questions');
-    } finally {
-      setQuestionLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-8 px-2 sm:px-6 lg:px-12">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white flex items-center gap-2">
-            <FaGraduationCap className="text-green-600" /> FUTA Course Advisor
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Get personalized course recommendations based on your qualifications and interests
-          </p>
-        </div>
-        <div className="mb-6">
-          <div className="flex space-x-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
-            <button
-              onClick={() => setSelectedIndex(0)}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                selectedIndex === 0
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              Individual Prediction
-            </button>
-            <button
-              onClick={() => setSelectedIndex(1)}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                selectedIndex === 1
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              Help & FAQ
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-white/10 rounded-full backdrop-blur-sm">
+                <GraduationCap className="h-12 w-12" />
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-bold mb-4">
+              FUTA Course Advisor
+            </h1>
+            <p className="text-xl md:text-2xl text-green-100 mb-8 max-w-3xl mx-auto">
+              AI-powered course recommendations tailored to your academic profile and career aspirations
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-sm">
+              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
+                <Brain className="h-4 w-4" />
+                <span>AI-Powered</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
+                <Target className="h-4 w-4" />
+                <span>Personalized</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
+                <Zap className="h-4 w-4" />
+                <span>Real-time</span>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Navigation Tabs */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border">
+            <Button
+              variant={selectedIndex === 0 ? "default" : "ghost"}
+              onClick={() => setSelectedIndex(0)}
+              className="flex-1 justify-center"
+            >
+              <Target className="h-4 w-4 mr-2" />
+              Course Prediction
+            </Button>
+            <Button
+              variant={selectedIndex === 1 ? "default" : "ghost"}
+              onClick={() => setSelectedIndex(1)}
+              className="flex-1 justify-center"
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Help & FAQ
+            </Button>
+          </div>
+        </div>
+
         {selectedIndex === 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             {/* Form Section */}
-            <div className="rounded-lg shadow-lg p-6 bg-white dark:bg-gray-800">
-              <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Enter Your Details</h2>
-              <form onSubmit={handleRecommendationSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Full Name</label>
-                    <input
-                      type="text"
-                      value={"Regular User"}
-                      readOnly
-                      className="w-full p-3 rounded-lg border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">JAMB Score (0-400)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="400"
-                      value={jambScore}
-                      onChange={(e) => setJambScore(e.target.value)}
-                      className="w-full p-3 rounded-lg border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                      required
-                      placeholder="Enter your UTME score"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Preferred Course</label>
-                    <select
-                      value={preferredCourse}
-                      onChange={e => setPreferredCourse(e.target.value)}
-                      className="w-full p-3 rounded-lg border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                    >
-                      <option value="">Select preferred course</option>
-                      {COURSE_LIST.map(course => (
-                        <option key={course} value={course}>{course}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">State of Origin</label>
-                    <select
-                      value={stateOfOrigin}
-                      onChange={e => setStateOfOrigin(e.target.value)}
-                      className="w-full p-3 rounded-lg border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                    >
-                      <option value="">Select state</option>
-                      {STATE_LIST.map(state => (
-                        <option key={state} value={state}>{state}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Gender</label>
-                    <select
-                      value={gender}
-                      onChange={e => setGender(e.target.value)}
-                      className="w-full p-3 rounded-lg border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                    >
-                      <option value="">Select gender</option>
-                      {GENDER_LIST.map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                {/* UTME Subjects */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">UTME Subjects (Select exactly 4, including English Language)</label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-                    {["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "Economics", "Geography", "Agricultural Science", "Fine Art", "Government", "Literature in English"].map(subject => (
-                      <label key={subject} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={utmeSubjects.includes(subject)}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              if (utmeSubjects.length < 4) setUtmeSubjects([...utmeSubjects, subject]);
-                            } else {
-                              if (subject !== "English Language") setUtmeSubjects(utmeSubjects.filter(s => s !== subject));
-                            }
-                          }}
-                          disabled={subject === "English Language" || (utmeSubjects.length >= 4 && !utmeSubjects.includes(subject))}
-                          className="rounded text-green-600 focus:ring-green-500"
+            <div className="xl:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-green-600" />
+                    Academic Profile
+                  </CardTitle>
+                  <CardDescription>
+                    Enter your academic details for personalized course recommendations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <form onSubmit={handleRecommendationSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input
+                          id="name"
+                          value="Regular User"
+                          readOnly
+                          className="bg-muted"
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{subject}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                {/* O-Level Subjects and Grades (Select at least 5) */}
-                <div>
-                  <h3 className="text-lg font-medium text-green-700 dark:text-green-400 mb-2">
-                    O-Level Subjects and Grades (Select at least 5)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {OLEVEL_SUBJECTS.map(subject => (
-                      <div key={subject} className="flex items-center space-x-2">
-                        <span className="text-gray-700 dark:text-gray-300 font-semibold w-32">{subject}</span>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="jamb">JAMB Score (0-400)</Label>
+                        <Input
+                          id="jamb"
+                          type="number"
+                          min="0"
+                          max="400"
+                          value={jambScore}
+                          onChange={(e) => setJambScore(e.target.value)}
+                          placeholder="Enter your UTME score"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="preferred">Preferred Course (Optional)</Label>
                         <select
-                          value={olevelGrades[subject] || ''}
-                          onChange={e => setOlevelGrades({ ...olevelGrades, [subject]: e.target.value })}
-                          className="form-select block w-32 rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          id="preferred"
+                          value={preferredCourse}
+                          onChange={e => setPreferredCourse(e.target.value)}
+                          className="w-full p-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         >
-                          <option value="">Grade</option>
-                          {GRADES.map(grade => (
-                            <option key={grade} value={grade}>{grade}</option>
+                          <option value="">Select preferred course</option>
+                          {COURSE_LIST.map(course => (
+                            <option key={course} value={course}>{course}</option>
                           ))}
                         </select>
                       </div>
-                    ))}
-                  </div>
-                </div>
-                {/* Interests */}
-                <div>
-                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">Interests and Career Goals</label>
-                  <textarea
-                    value={interests}
-                    onChange={(e) => setInterests(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    rows="3"
-                    required
-                    placeholder="What subjects do you enjoy? What career interests you?"
-                  />
-                </div>
-                <ProgressBar loading={recommendLoading} />
-                <button
-                  type="submit"
-                  disabled={recommendLoading}
-                  className={`w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${recommendLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {recommendLoading ? 'Getting Recommendations...' : 'Predict Admission'}
-                </button>
-              </form>
+                      <div className="space-y-2">
+                        <Label htmlFor="state">State of Origin</Label>
+                        <select
+                          id="state"
+                          value={stateOfOrigin}
+                          onChange={e => setStateOfOrigin(e.target.value)}
+                          className="w-full p-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                          <option value="">Select state</option>
+                          {STATE_LIST.map(state => (
+                            <option key={state} value={state}>{state}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="gender">Gender</Label>
+                      <select
+                        id="gender"
+                        value={gender}
+                        onChange={e => setGender(e.target.value)}
+                        className="w-full p-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="">Select gender</option>
+                        {GENDER_LIST.map(g => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <Separator />
+
+                    {/* UTME Subjects */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-semibold">UTME Subjects</Label>
+                        <p className="text-sm text-muted-foreground">Select exactly 4 subjects (English Language is mandatory)</p>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "Economics", "Geography", "Agricultural Science", "Fine Art", "Government", "Literature in English"].map(subject => (
+                          <div key={subject} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={subject}
+                              checked={utmeSubjects.includes(subject)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  if (utmeSubjects.length < 4) setUtmeSubjects([...utmeSubjects, subject]);
+                                } else {
+                                  if (subject !== "English Language") setUtmeSubjects(utmeSubjects.filter(s => s !== subject));
+                                }
+                              }}
+                              disabled={subject === "English Language" || (utmeSubjects.length >= 4 && !utmeSubjects.includes(subject))}
+                            />
+                            <Label htmlFor={subject} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                              {subject}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {utmeSubjects.length}/4 subjects
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    {/* O-Level Subjects */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-semibold">O-Level Results</Label>
+                        <p className="text-sm text-muted-foreground">Select grades for at least 5 subjects</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {OLEVEL_SUBJECTS.map(subject => (
+                          <GradeSelector
+                            key={subject}
+                            subject={subject}
+                            value={olevelGrades[subject]}
+                            onChange={(subj, grade) => setOlevelGrades({ ...olevelGrades, [subj]: grade })}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {Object.keys(olevelGrades).filter(subj => olevelGrades[subj]).length} subjects
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    {/* Interests */}
+                    <div className="space-y-2">
+                      <Label htmlFor="interests" className="text-base font-semibold">Interests & Career Goals</Label>
+                      <Textarea
+                        id="interests"
+                        value={interests}
+                        onChange={(e) => setInterests(e.target.value)}
+                        placeholder="Describe your interests, hobbies, and career aspirations. What subjects do you enjoy? What kind of work excites you?"
+                        rows={4}
+                        required
+                      />
+                    </div>
+
+                    <ProgressBar loading={recommendLoading} />
+                    
+                    <Button
+                      type="submit"
+                      disabled={recommendLoading}
+                      className="w-full h-12 text-base font-semibold"
+                      size="lg"
+                    >
+                      {recommendLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Analyzing Your Profile...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Get My Course Recommendations
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
             </div>
+
             {/* Results Section */}
-            <div className="rounded-lg shadow-lg p-6 bg-white dark:bg-gray-800">
-              <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Prediction Results</h2>
-              {eligibleCourses.length === 0 && !recommendLoading ? (
-                <div className="text-center py-12">
-                  <FaGraduationCap className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg text-gray-500">Fill out the form and click "Predict Admission" to see your results</p>
-                </div>
-              ) : renderResults()}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                    Prediction Results
+                  </CardTitle>
+                  <CardDescription>
+                    Your personalized course recommendations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {eligibleCourses.length === 0 && !recommendLoading ? (
+                    <div className="text-center py-12">
+                      <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+                        <GraduationCap className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Ready to Discover Your Path?</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Fill out your academic profile to get personalized course recommendations
+                      </p>
+                      <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>AI-powered matching</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Real FUTA requirements</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Career prospects included</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : renderResults()}
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}
+
         {selectedIndex === 1 && (
-          <div className="rounded-lg shadow-lg p-6 bg-white dark:bg-gray-800">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Help & FAQ</h2>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">How does the course advisor work?</h3>
-                <p className="text-gray-600 dark:text-gray-400">Our system analyzes your JAMB score, O-Level grades, and interests to recommend eligible courses at FUTA. It considers course requirements and your academic profile for personalized suggestions.</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">What information do I need to provide?</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-400">
-                  <li>JAMB score (0-400)</li>
-                  <li>O-Level grades for at least 5 subjects</li>
-                  <li>Your interests and career goals</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">How accurate are the recommendations?</h3>
-                <p className="text-gray-600 dark:text-gray-400">Recommendations are based on FUTA's requirements and your input. Actual admission depends on many factors, so use this as a guide.</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">What if I'm not eligible for any course?</h3>
-                <p className="text-gray-600 dark:text-gray-400">If no courses are recommended, consider improving your JAMB score or O-Level grades, or explore alternative programs.</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-blue-600" />
+                  How It Works
+                </CardTitle>
+                <CardDescription>
+                  Understanding our AI-powered recommendation system
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">1</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Academic Analysis</h4>
+                      <p className="text-sm text-muted-foreground">We analyze your JAMB score, O-Level grades, and UTME subjects against FUTA's admission requirements.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">2</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Interest Matching</h4>
+                      <p className="text-sm text-muted-foreground">Our AI matches your interests and career goals with course content and career prospects.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">3</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Smart Recommendations</h4>
+                      <p className="text-sm text-muted-foreground">Get ranked course suggestions with match percentages and detailed explanations.</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5 text-orange-600" />
+                  Frequently Asked Questions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="font-semibold mb-2">What information do I need?</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• JAMB/UTME score (0-400)</li>
+                    <li>• O-Level grades (at least 5 subjects)</li>
+                    <li>• UTME subject combination</li>
+                    <li>• Your interests and career goals</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">How accurate are the recommendations?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Our recommendations are based on official FUTA requirements and historical data. However, actual admission depends on various factors including competition and policy changes.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">What if I'm not eligible for any course?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Consider retaking JAMB for a higher score, improving O-Level grades, or exploring foundation programs and alternative pathways.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Can I save my results?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Yes! You can export your recommendations as JSON or CSV files for future reference and planning.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
