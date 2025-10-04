@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiSun, FiMoon } from 'react-icons/fi';
-import logo from '../../../images/arewa_gate_logo6.png';
+import Logo from '../../../components/ui/logo';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTransactions } from '../../../contexts/TransactionContext';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
@@ -18,17 +18,14 @@ const NavBar = () => {
   const { walletBalance } = useTransactions();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
-  // Toggle sidebar
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => !prev);
   };
 
-  // Close sidebar explicitly
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
 
-  // Close sidebar when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -62,7 +59,6 @@ const NavBar = () => {
     };
   }, []);
 
-  // Handle search submission
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -79,27 +75,19 @@ const NavBar = () => {
   ];
 
   return (
-    <nav className={`w-full shadow-md sticky top-0 z-50 font-nunito transition-colors duration-200 ${
-      isDarkMode ? 'bg-dark-surface text-dark-text-primary' : 'bg-white text-gray-900'
-    }`}>
+    <nav className="w-full bg-black/95 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50 font-nunito">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        {/* Logo */}
         <Link to="/" className="flex items-center" onClick={closeSidebar}>
-          <img src={logo} alt="Arewa Gate Logo" className="h-10 md:h-12 transition-transform duration-200 hover:scale-105" />
+          <Logo size="md" textColor="white" className="transition-transform duration-200 hover:scale-105" />
         </Link>
 
-        {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-8">
           <ul className="flex gap-6">
             {navItems.map((item) => (
               <li key={item.label}>
                 <Link
                   to={item.path}
-                  className={`text-base font-medium transition-all duration-200 ${
-                    isDarkMode 
-                      ? 'text-dark-text-primary hover:text-primary-400' 
-                      : 'text-gray-700 hover:text-green-500'
-                  } hover:border-b-2 hover:border-green-500 pb-1`}
+                  className="text-base font-medium text-white hover:text-green-400 transition-all duration-200 hover:border-b-2 hover:border-green-500 pb-1"
                 >
                   {item.label}
                 </Link>
@@ -107,37 +95,25 @@ const NavBar = () => {
             ))}
           </ul>
 
-          {/* Dark Mode Toggle - Desktop */}
           <button
             onClick={toggleDarkMode}
-            className={`p-2 rounded-full transition-colors duration-200 ${
-              isDarkMode 
-                ? 'text-yellow-300 hover:bg-dark-border' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors duration-200"
             aria-label="Toggle dark mode"
           >
             {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
           </button>
 
-          {/* Search Bar */}
           <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`py-2 px-4 w-48 rounded-md border transition-all duration-200 text-sm ${
-                isDarkMode
-                  ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:border-primary-500'
-                  : 'bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent'
-              }`}
+              className="py-2 px-4 w-48 rounded-md border bg-gray-900 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-sm"
             />
             <button
               type="submit"
-              className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
-                isDarkMode ? 'text-dark-text-secondary hover:text-primary-400' : 'text-gray-500 hover:text-green-500'
-              }`}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-400"
               aria-label="Search"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -146,12 +122,11 @@ const NavBar = () => {
             </button>
           </form>
 
-          {/* Auth Section */}
           {isAuthenticated ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-green-500 focus:outline-none"
+                className="flex items-center space-x-2 text-white hover:text-green-400 focus:outline-none"
               >
                 <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center">
                   {user?.email?.charAt(0)?.toUpperCase()}
@@ -166,27 +141,26 @@ const NavBar = () => {
                 </svg>
               </button>
 
-              {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <div className="text-sm text-gray-500">Signed in as</div>
-                    <div className="text-sm font-medium text-gray-900 truncate">{user?.email}</div>
+                <div className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-md shadow-lg py-1 z-50 border border-gray-700">
+                  <div className="px-4 py-2 border-b border-gray-700">
+                    <div className="text-sm text-gray-400">Signed in as</div>
+                    <div className="text-sm font-medium text-white truncate">{user?.email}</div>
                   </div>
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <div className="text-sm text-gray-500">Balance</div>
-                    <div className="text-sm font-medium text-gray-900">₦{walletBalance.toLocaleString()}</div>
+                  <div className="px-4 py-2 border-b border-gray-700">
+                    <div className="text-sm text-gray-400">Balance</div>
+                    <div className="text-sm font-medium text-green-400">₦{walletBalance.toLocaleString()}</div>
                   </div>
                   <Link
                     to="/dashboard"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                    className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Dashboard
                   </Link>
                   <Link
                     to="/dashboard/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500"
+                    className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Profile
@@ -196,7 +170,7 @@ const NavBar = () => {
                       logout();
                       setIsDropdownOpen(false);
                     }}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800"
                   >
                     Sign out
                   </button>
@@ -207,13 +181,13 @@ const NavBar = () => {
             <div className="flex items-center space-x-4">
               <Link
                 to="/register"
-                className="px-5 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                className="px-5 py-2 rounded-md border border-green-600 text-sm font-medium text-green-400 hover:bg-green-600 hover:text-white transition-all duration-200"
               >
                 Sign up
               </Link>
               <Link
                 to="/login"
-                className="px-5 py-2 bg-green-500 text-white rounded-md text-sm font-medium hover:bg-green-600 transition-all duration-200"
+                className="px-5 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-all duration-200"
               >
                 Login
               </Link>
@@ -221,28 +195,19 @@ const NavBar = () => {
           )}
         </div>
 
-        {/* Mobile Navigation */}
         <div className="flex items-center gap-4 lg:hidden">
-          {/* Dark Mode Toggle - Mobile */}
           <button
             onClick={toggleDarkMode}
-            className={`p-2 rounded-full transition-colors duration-200 ${
-              isDarkMode 
-                ? 'text-yellow-300 hover:bg-dark-border' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors duration-200"
             aria-label="Toggle dark mode"
           >
             {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
           </button>
 
-          {/* Mobile Menu Button */}
           <button
             ref={toggleButtonRef}
             onClick={toggleSidebar}
-            className={`p-2 rounded-md ${
-              isDarkMode ? 'text-dark-text-primary hover:bg-dark-border' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className="p-2 rounded-md text-white hover:bg-gray-800"
             aria-label="Toggle menu"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -257,17 +222,13 @@ const NavBar = () => {
         ref={sidebarRef}
         className={`fixed inset-y-0 right-0 w-64 transform transition-transform duration-300 ease-in-out lg:hidden z-50 ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        } ${isDarkMode ? 'bg-dark-surface border-l border-dark-border' : 'bg-white border-l border-gray-200'}`}
+        } bg-gray-900 border-l border-gray-800`}
       >
-        <div className={`p-5 flex justify-between items-center border-b ${
-          isDarkMode ? 'border-dark-border' : 'border-gray-200'
-        }`}>
-          <img src={logo} alt="Arewa Gate Logo" className="h-10" />
+        <div className="p-5 flex justify-between items-center border-b border-gray-800">
+          <Logo size="sm" textColor="white" />
           <button 
             onClick={closeSidebar} 
-            className={`${
-              isDarkMode ? 'text-dark-text-secondary hover:text-primary-400' : 'text-gray-600 hover:text-green-500'
-            }`} 
+            className="text-gray-400 hover:text-white" 
             aria-label="Close Sidebar"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,11 +241,7 @@ const NavBar = () => {
             <li key={item.label}>
               <Link
                 to={item.path}
-                className={`flex items-center p-3 rounded-md transition-all duration-200 ${
-                  isDarkMode 
-                    ? 'text-dark-text-primary hover:bg-dark-border' 
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-green-500'
-                }`}
+                className="flex items-center p-3 text-white hover:bg-gray-800 hover:text-green-400 rounded-md transition-all duration-200"
                 onClick={closeSidebar}
               >
                 <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -301,17 +258,11 @@ const NavBar = () => {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full py-2 px-4 rounded-md border transition-all duration-200 ${
-                  isDarkMode
-                    ? 'bg-dark-surface border-dark-border text-dark-text-primary placeholder-dark-text-secondary focus:border-primary-500'
-                    : 'border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent'
-                }`}
+                className="w-full py-2 px-4 rounded-md border bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
               />
               <button
                 type="submit"
-                className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
-                  isDarkMode ? 'text-dark-text-secondary hover:text-primary-400' : 'text-gray-500 hover:text-green-500'
-                }`}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-400"
                 aria-label="Search"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -322,31 +273,31 @@ const NavBar = () => {
           </li>
           {isAuthenticated ? (
             <li>
-              <div className="p-3 border-t border-gray-200">
+              <div className="p-3 border-t border-gray-800">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center text-lg">
                     {user?.email?.charAt(0)?.toUpperCase()}
                   </div>
                   <div>
-                    <div className="text-sm text-gray-500">Signed in as</div>
-                    <div className="text-sm font-medium text-gray-900 truncate">{user?.email}</div>
+                    <div className="text-sm text-gray-400">Signed in as</div>
+                    <div className="text-sm font-medium text-white truncate">{user?.email}</div>
                   </div>
                 </div>
                 <div className="mb-4">
-                  <div className="text-sm text-gray-500">Balance</div>
-                  <div className="text-sm font-medium text-gray-900">₦{walletBalance.toLocaleString()}</div>
+                  <div className="text-sm text-gray-400">Balance</div>
+                  <div className="text-sm font-medium text-green-400">₦{walletBalance.toLocaleString()}</div>
                 </div>
                 <div className="space-y-2">
                   <Link
                     to="/dashboard"
-                    className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500 rounded-md"
+                    className="block w-full px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400 rounded-md"
                     onClick={closeSidebar}
                   >
                     Dashboard
                   </Link>
                   <Link
                     to="/dashboard/profile"
-                    className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-green-500 rounded-md"
+                    className="block w-full px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400 rounded-md"
                     onClick={closeSidebar}
                   >
                     Profile
@@ -356,7 +307,7 @@ const NavBar = () => {
                       logout();
                       closeSidebar();
                     }}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 rounded-md"
+                    className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded-md"
                   >
                     Sign out
                   </button>
@@ -368,7 +319,7 @@ const NavBar = () => {
               <li>
                 <Link
                   to="/register"
-                  className="block w-full p-3 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200 text-center"
+                  className="block w-full p-3 rounded-md border border-green-600 text-sm font-medium text-green-400 hover:bg-green-600 hover:text-white transition-all duration-200 text-center"
                   onClick={closeSidebar}
                 >
                   Sign up
@@ -377,7 +328,7 @@ const NavBar = () => {
               <li>
                 <Link
                   to="/login"
-                  className="block w-full bg-green-500 text-white p-3 rounded-md text-center font-medium hover:bg-green-600 transition-all duration-200"
+                  className="block w-full bg-green-600 text-white p-3 rounded-md text-center font-medium hover:bg-green-700 transition-all duration-200"
                   onClick={closeSidebar}
                 >
                   Login

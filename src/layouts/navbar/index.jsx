@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import logo from '../../images/arewa_gate_logo6.png';
+import Logo from '../../components/ui/logo';
 
 const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -67,7 +67,7 @@ const NavBar = () => {
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center" onClick={closeSidebar}>
-          <img src={logo} alt="Arewa Gate Logo" className="h-10 md:h-12 transition-transform duration-200 hover:scale-105" />
+          <Logo size="md" className="transition-transform duration-200 hover:scale-105" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -140,7 +140,7 @@ const NavBar = () => {
         } lg:hidden z-50 overflow-y-auto`}
       >
         <div className="p-5 flex justify-between items-center border-b border-gray-200">
-          <img src={logo} alt="Arewa Gate Logo" className="h-10" />
+          <Logo size="sm" />
           <button onClick={closeSidebar} className="text-gray-600 hover:text-primary-color" aria-label="Close Sidebar">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

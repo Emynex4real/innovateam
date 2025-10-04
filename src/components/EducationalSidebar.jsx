@@ -169,10 +169,10 @@ const EducationalSidebar = ({ children }) => {
             
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">A</span>
+                <span className="text-white font-bold text-sm">I</span>
               </div>
               <span className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                ArewaGate
+                InnovaTeam
               </span>
             </Link>
           </div>
