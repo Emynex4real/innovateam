@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiSun, FiMoon } from 'react-icons/fi';
+import { FiSun, FiMoon, FiMenu, FiX, FiSearch } from 'react-icons/fi';
 import Logo from '../../../components/ui/logo';
+import { Button } from '../../../components/ui/button';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTransactions } from '../../../contexts/TransactionContext';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
@@ -10,6 +11,7 @@ const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const sidebarRef = useRef(null);
   const toggleButtonRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -18,13 +20,13 @@ const NavBar = () => {
   const { walletBalance } = useTransactions();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-  };
-
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -34,7 +36,7 @@ const NavBar = () => {
         toggleButtonRef.current &&
         !toggleButtonRef.current.contains(event.target)
       ) {
-        closeSidebar();
+        setIsSidebarOpen(false);
       }
 
       if (
@@ -45,18 +47,8 @@ const NavBar = () => {
       }
     };
 
-    const handleEscapeKey = (event) => {
-      if (event.key === 'Escape') {
-        closeSidebar();
-      }
-    };
-
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscapeKey);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleSearch = (e) => {
@@ -64,289 +56,422 @@ const NavBar = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchQuery('');
-      closeSidebar();
+      setIsSidebarOpen(false);
     }
   };
 
   const navItems = [
-    { path: '/', label: 'Home', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-    { path: '/about', label: 'About', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { path: '/blogs', label: 'Blogs', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+    { path: '/', label: 'Home' },
+    { path: '/course-advisor', label: 'Course Advisor' },
+    { path: '/about', label: 'About' },
+    { path: '/contact', label: 'Contact' },
   ];
 
   return (
-    <nav className="w-full bg-black/95 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50 font-nunito">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link to="/" className="flex items-center" onClick={closeSidebar}>
-          <Logo size="md" textColor="white" className="transition-transform duration-200 hover:scale-105" />
-        </Link>
+    <>
+      <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${
+        isScrolled 
+          ? isDarkMode 
+            ? 'bg-black/95 backdrop-blur-md border-b border-gray-800/50 shadow-lg' 
+            : 'bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg'
+          : isDarkMode
+            ? 'bg-transparent'
+            : 'bg-transparent'
+      }`}>
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center group">
+              <Logo 
+                size="md" 
+                textColor={isDarkMode ? "white" : isScrolled ? "dark" : "white"} 
+                className="transition-all duration-300 group-hover:scale-105" 
+              />
+            </Link>
 
-        <div className="hidden lg:flex items-center gap-8">
-          <ul className="flex gap-6">
-            {navItems.map((item) => (
-              <li key={item.label}>
-                <Link
-                  to={item.path}
-                  className="text-base font-medium text-white hover:text-green-400 transition-all duration-200 hover:border-b-2 hover:border-green-500 pb-1"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-8">
+              <ul className="flex items-center space-x-8">
+                {navItems.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      to={item.path}
+                      className={`text-sm font-medium transition-all duration-300 relative group ${
+                        isDarkMode 
+                          ? 'text-gray-300 hover:text-green-400' 
+                          : isScrolled 
+                            ? 'text-gray-700 hover:text-green-600' 
+                            : 'text-white/90 hover:text-green-400'
+                      }`}
+                    >
+                      {item.label}
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-green-400 to-emerald-400 transition-all duration-300 group-hover:w-full"></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
 
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors duration-200"
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
-          </button>
+              {/* Search */}
+              <div className="relative">
+                <form onSubmit={handleSearch} className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`w-48 px-4 py-2 pl-10 rounded-full border transition-all duration-300 text-sm ${
+                      isDarkMode 
+                        ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-400 focus:bg-gray-800 focus:border-green-500' 
+                        : isScrolled
+                          ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500'
+                          : 'bg-white/10 border-white/20 text-white placeholder-white/60 focus:bg-white/20 focus:border-green-400'
+                    } focus:outline-none focus:ring-2 focus:ring-green-500/20`}
+                  />
+                  <FiSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                    isDarkMode 
+                      ? 'text-gray-400' 
+                      : isScrolled 
+                        ? 'text-gray-500' 
+                        : 'text-white/60'
+                  }`} />
+                </form>
+              </div>
 
-          <form onSubmit={handleSearch} className="relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="py-2 px-4 w-48 rounded-md border bg-gray-900 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-sm"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-400"
-              aria-label="Search"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-          </form>
-
-          {isAuthenticated ? (
-            <div className="relative" ref={dropdownRef}>
+              {/* Theme Toggle */}
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-2 text-white hover:text-green-400 focus:outline-none"
+                onClick={toggleDarkMode}
+                className={`p-2 rounded-full transition-all duration-300 ${
+                  isDarkMode 
+                    ? 'text-gray-400 hover:text-yellow-400 hover:bg-gray-800' 
+                    : isScrolled
+                      ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      : 'text-white/80 hover:text-yellow-400 hover:bg-white/10'
+                }`}
+                aria-label="Toggle theme"
               >
-                <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center">
-                  {user?.email?.charAt(0)?.toUpperCase()}
-                </div>
-                <svg
-                  className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                {isDarkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
               </button>
 
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-md shadow-lg py-1 z-50 border border-gray-700">
-                  <div className="px-4 py-2 border-b border-gray-700">
-                    <div className="text-sm text-gray-400">Signed in as</div>
-                    <div className="text-sm font-medium text-white truncate">{user?.email}</div>
-                  </div>
-                  <div className="px-4 py-2 border-b border-gray-700">
-                    <div className="text-sm text-gray-400">Balance</div>
-                    <div className="text-sm font-medium text-green-400">₦{walletBalance.toLocaleString()}</div>
-                  </div>
-                  <Link
-                    to="/dashboard"
-                    className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/dashboard/profile"
-                    className="block px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    Profile
-                  </Link>
+              {/* Auth Section */}
+              {isAuthenticated ? (
+                <div className="relative" ref={dropdownRef}>
                   <button
-                    onClick={() => {
-                      logout();
-                      setIsDropdownOpen(false);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-full transition-all duration-300 ${
+                      isDarkMode 
+                        ? 'hover:bg-gray-800' 
+                        : isScrolled
+                          ? 'hover:bg-gray-100'
+                          : 'hover:bg-white/10'
+                    }`}
                   >
-                    Sign out
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <span className="text-white font-semibold text-sm">
+                        {user?.email?.charAt(0)?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="hidden md:block text-left">
+                      <div className={`text-sm font-medium ${
+                        isDarkMode 
+                          ? 'text-white' 
+                          : isScrolled 
+                            ? 'text-gray-900' 
+                            : 'text-white'
+                      }`}>
+                        {user?.name || user?.email?.split('@')[0]}
+                      </div>
+                      <div className={`text-xs ${
+                        isDarkMode 
+                          ? 'text-green-400' 
+                          : isScrolled 
+                            ? 'text-green-600' 
+                            : 'text-green-300'
+                      }`}>
+                        ₦{walletBalance.toLocaleString()}
+                      </div>
+                    </div>
                   </button>
+
+                  {isDropdownOpen && (
+                    <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-xl border backdrop-blur-md ${
+                      isDarkMode 
+                        ? 'bg-gray-900/95 border-gray-700' 
+                        : 'bg-white/95 border-gray-200'
+                    } overflow-hidden`}>
+                      <div className={`px-4 py-3 border-b ${
+                        isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                      }`}>
+                        <div className={`text-sm font-medium ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {user?.email}
+                        </div>
+                        <div className={`text-xs mt-1 ${
+                          isDarkMode ? 'text-green-400' : 'text-green-600'
+                        }`}>
+                          Balance: ₦{walletBalance.toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      <div className="py-1">
+                        <Link
+                          to="/dashboard"
+                          className={`block px-4 py-2 text-sm transition-colors ${
+                            isDarkMode 
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-white' 
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          Dashboard
+                        </Link>
+                        <Link
+                          to="/dashboard/profile"
+                          className={`block px-4 py-2 text-sm transition-colors ${
+                            isDarkMode 
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-white' 
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          Profile
+                        </Link>
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm text-red-500 transition-colors ${
+                            isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-red-50'
+                          }`}
+                        >
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    asChild 
+                    variant="ghost" 
+                    size="sm"
+                    className={`transition-all duration-300 ${
+                      isDarkMode 
+                        ? 'text-gray-300 hover:text-white hover:bg-gray-800' 
+                        : isScrolled
+                          ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                          : 'text-white/90 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Link to="/login">Sign In</Link>
+                  </Button>
+                  <Button 
+                    asChild 
+                    size="sm"
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-green-500/25 transition-all duration-300"
+                  >
+                    <Link to="/register">Get Started</Link>
+                  </Button>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/register"
-                className="px-5 py-2 rounded-md border border-green-600 text-sm font-medium text-green-400 hover:bg-green-600 hover:text-white transition-all duration-200"
-              >
-                Sign up
-              </Link>
-              <Link
-                to="/login"
-                className="px-5 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-all duration-200"
-              >
-                Login
-              </Link>
-            </div>
-          )}
-        </div>
 
-        <div className="flex items-center gap-4 lg:hidden">
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors duration-200"
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
-          </button>
-
-          <button
-            ref={toggleButtonRef}
-            onClick={toggleSidebar}
-            className="p-2 rounded-md text-white hover:bg-gray-800"
-            aria-label="Toggle menu"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+            {/* Mobile Menu Button */}
+            <button
+              ref={toggleButtonRef}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className={`lg:hidden p-2 rounded-lg transition-all duration-300 ${
+                isDarkMode 
+                  ? 'text-gray-300 hover:text-white hover:bg-gray-800' 
+                  : isScrolled
+                    ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                    : 'text-white/90 hover:text-white hover:bg-white/10'
+              }`}
+              aria-label="Toggle menu"
+            >
+              {isSidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
 
       {/* Mobile Sidebar */}
       <div
         ref={sidebarRef}
-        className={`fixed inset-y-0 right-0 w-64 transform transition-transform duration-300 ease-in-out lg:hidden z-50 ${
+        className={`fixed inset-y-0 right-0 w-80 transform transition-transform duration-300 ease-in-out lg:hidden z-50 ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        } bg-gray-900 border-l border-gray-800`}
+        } ${
+          isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
+        } backdrop-blur-md border-l ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
       >
-        <div className="p-5 flex justify-between items-center border-b border-gray-800">
-          <Logo size="sm" textColor="white" />
-          <button 
-            onClick={closeSidebar} 
-            className="text-gray-400 hover:text-white" 
-            aria-label="Close Sidebar"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <ul className="p-5 space-y-4">
-          {navItems.map((item) => (
-            <li key={item.label}>
+        <div className="p-6 h-full overflow-y-auto">
+          {/* Mobile Header */}
+          <div className="flex items-center justify-between mb-8">
+            <Logo 
+              size="md" 
+              textColor={isDarkMode ? "white" : "dark"} 
+            />
+            <button 
+              onClick={() => setIsSidebarOpen(false)} 
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode 
+                  ? 'text-gray-400 hover:text-white hover:bg-gray-800' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          <nav className="space-y-2 mb-8">
+            {navItems.map((item) => (
               <Link
+                key={item.label}
                 to={item.path}
-                className="flex items-center p-3 text-white hover:bg-gray-800 hover:text-green-400 rounded-md transition-all duration-200"
-                onClick={closeSidebar}
+                className={`block px-4 py-3 rounded-xl transition-all duration-300 ${
+                  isDarkMode 
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-800' 
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+                onClick={() => setIsSidebarOpen(false)}
               >
-                <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                </svg>
                 {item.label}
               </Link>
-            </li>
-          ))}
-          <li>
-            <form onSubmit={handleSearch} className="relative mt-4">
+            ))}
+          </nav>
+
+          {/* Mobile Search */}
+          <form onSubmit={handleSearch} className="mb-8">
+            <div className="relative">
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-2 px-4 rounded-md border bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                className={`w-full px-4 py-3 pl-10 rounded-xl border transition-colors ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500'
+                } focus:outline-none focus:ring-2 focus:ring-green-500/20`}
               />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-400"
-                aria-label="Search"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </form>
-          </li>
+              <FiSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`} />
+            </div>
+          </form>
+
+          {/* Mobile Theme Toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors mb-8 ${
+              isDarkMode 
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800' 
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <span>Theme</span>
+            {isDarkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
+          </button>
+
+          {/* Mobile Auth */}
           {isAuthenticated ? (
-            <li>
-              <div className="p-3 border-t border-gray-800">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center text-lg">
+            <div className={`p-4 rounded-xl border ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">
                     {user?.email?.charAt(0)?.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Signed in as</div>
-                    <div className="text-sm font-medium text-white truncate">{user?.email}</div>
-                  </div>
+                  </span>
                 </div>
-                <div className="mb-4">
-                  <div className="text-sm text-gray-400">Balance</div>
-                  <div className="text-sm font-medium text-green-400">₦{walletBalance.toLocaleString()}</div>
-                </div>
-                <div className="space-y-2">
-                  <Link
-                    to="/dashboard"
-                    className="block w-full px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400 rounded-md"
-                    onClick={closeSidebar}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/dashboard/profile"
-                    className="block w-full px-4 py-2 text-sm text-white hover:bg-gray-800 hover:text-green-400 rounded-md"
-                    onClick={closeSidebar}
-                  >
-                    Profile
-                  </Link>
-                  <button
-                    onClick={() => {
-                      logout();
-                      closeSidebar();
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded-md"
-                  >
-                    Sign out
-                  </button>
+                <div>
+                  <div className={`font-medium ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {user?.name || user?.email?.split('@')[0]}
+                  </div>
+                  <div className={`text-sm ${
+                    isDarkMode ? 'text-green-400' : 'text-green-600'
+                  }`}>
+                    ₦{walletBalance.toLocaleString()}
+                  </div>
                 </div>
               </div>
-            </li>
+              <div className="space-y-2">
+                <Link
+                  to="/dashboard"
+                  className={`block w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700' 
+                      : 'text-gray-700 hover:bg-gray-200'
+                  }`}
+                  onClick={() => setIsSidebarOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/dashboard/profile"
+                  className={`block w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700' 
+                      : 'text-gray-700 hover:bg-gray-200'
+                  }`}
+                  onClick={() => setIsSidebarOpen(false)}
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsSidebarOpen(false);
+                  }}
+                  className={`block w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 transition-colors ${
+                    isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'
+                  }`}
+                >
+                  Sign out
+                </button>
+              </div>
+            </div>
           ) : (
-            <>
-              <li>
-                <Link
-                  to="/register"
-                  className="block w-full p-3 rounded-md border border-green-600 text-sm font-medium text-green-400 hover:bg-green-600 hover:text-white transition-all duration-200 text-center"
-                  onClick={closeSidebar}
-                >
-                  Sign up
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/login"
-                  className="block w-full bg-green-600 text-white p-3 rounded-md text-center font-medium hover:bg-green-700 transition-all duration-200"
-                  onClick={closeSidebar}
-                >
-                  Login
-                </Link>
-              </li>
-            </>
+            <div className="space-y-3">
+              <Button 
+                asChild 
+                variant="outline" 
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 text-gray-300 hover:bg-gray-800' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <Button 
+                asChild 
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <Link to="/register">Get Started</Link>
+              </Button>
+            </div>
           )}
-        </ul>
+        </div>
       </div>
 
-      {/* Overlay */}
+      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 lg:hidden z-40"
-          onClick={closeSidebar}
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
-    </nav>
+    </>
   );
 };
 
