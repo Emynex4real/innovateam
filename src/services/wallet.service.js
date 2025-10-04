@@ -27,6 +27,11 @@ function setLocalTransactions(transactions) {
 }
 
 class WalletService {
+  constructor() {
+    // Initialize sample data on first load
+    this.initializeSampleData();
+  }
+
   async getBalance() {
     logger.service('Getting wallet balance');
     return getLocalWallet();
@@ -46,7 +51,7 @@ class WalletService {
       amount: parseFloat(amount),
       type: 'credit',
       category: 'funding',
-      status: 'Successful',
+      status: 'completed',
       date: new Date().toISOString()
     });
     setLocalTransactions(transactions);
@@ -70,7 +75,7 @@ class WalletService {
       amount,
       type: 'debit',
       category: 'purchase',
-      status: 'Successful',
+      status: 'completed',
       date: new Date().toISOString()
     });
     setLocalTransactions(transactions);
@@ -88,6 +93,73 @@ class WalletService {
     const balance = getLocalWallet();
     const transactions = getLocalTransactions();
     return { balance, transactions };
+  }
+
+  // Clear all wallet data (for testing)
+  clearWalletData() {
+    localStorage.removeItem(WALLET_KEY);
+    localStorage.removeItem(TRANSACTIONS_KEY);
+    this.initializeSampleData();
+  }
+
+  // Initialize sample data for demo purposes
+  initializeSampleData() {
+    const existingTransactions = getLocalTransactions();
+    if (existingTransactions.length === 0) {
+      const sampleTransactions = [
+        {
+          id: Date.now() - 86400000 * 5,
+          label: 'WAEC Result Checker',
+          description: 'WAEC Result Checker Service',
+          amount: 3400,
+          type: 'debit',
+          category: 'education',
+          status: 'completed',
+          date: new Date(Date.now() - 86400000 * 5).toISOString()
+        },
+        {
+          id: Date.now() - 86400000 * 3,
+          label: 'Wallet Funded',
+          description: 'Funded wallet via card',
+          amount: 5000,
+          type: 'credit',
+          category: 'funding',
+          status: 'completed',
+          date: new Date(Date.now() - 86400000 * 3).toISOString()
+        },
+        {
+          id: Date.now() - 86400000 * 2,
+          label: 'O-Level Upload',
+          description: 'O-Level Result Upload Service',
+          amount: 1000,
+          type: 'debit',
+          category: 'education',
+          status: 'completed',
+          date: new Date(Date.now() - 86400000 * 2).toISOString()
+        },
+        {
+          id: Date.now() - 86400000,
+          label: 'AI Examiner',
+          description: 'AI Examiner Practice Test',
+          amount: 750,
+          type: 'debit',
+          category: 'education',
+          status: 'completed',
+          date: new Date(Date.now() - 86400000).toISOString()
+        }
+      ];
+      setLocalTransactions(sampleTransactions);
+      // Adjust balance to reflect transactions
+      let currentBalance = 10000;
+      sampleTransactions.forEach(tx => {
+        if (tx.type === 'credit') {
+          currentBalance += tx.amount;
+        } else {
+          currentBalance -= tx.amount;
+        }
+      });
+      setLocalWallet(currentBalance);
+    }
   }
 }
 

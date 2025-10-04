@@ -1007,6 +1007,21 @@ const CourseAdvisor = () => {
             <h3 className="text-xl font-bold mb-2">{topCourse.course}</h3>
             <p className="text-muted-foreground mb-4">{topCourse.faculty} • Cutoff: {topCourse.cutoff} • Capacity: {topCourse.capacity}</p>
             
+            {/* Better Chance Notice */}
+            {preferredCourse && topCourse.course === preferredCourse && eligibleCourses.length > 1 && eligibleCourses[1].score > topCourse.score && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-800 dark:text-blue-200 mb-1">Note:</p>
+                    <p className="text-blue-700 dark:text-blue-300">
+                      You have a better chance in other courses with higher match ({(eligibleCourses[1].score * 100).toFixed(0)}% vs {(topCourse.score * 100).toFixed(0)}%), but we prioritized your preferred choice.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Career Prospects</Label>
@@ -1067,33 +1082,30 @@ const CourseAdvisor = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <div className="flex justify-center mb-6">
-              <div className="p-4 bg-white/10 rounded-full backdrop-blur-sm">
-                <GraduationCap className="h-12 w-12" />
+      {/* Compact Header */}
+      <div className="bg-white dark:bg-slate-900 border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                <GraduationCap className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">FUTA Course Advisor</h1>
+                <p className="text-sm text-muted-foreground">AI-powered course recommendations</p>
               </div>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">
-              FUTA Course Advisor
-            </h1>
-            <p className="text-xl md:text-2xl text-green-100 mb-8 max-w-3xl mx-auto">
-              AI-powered course recommendations tailored to your academic profile and career aspirations
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-sm">
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                <Brain className="h-4 w-4" />
+            <div className="hidden md:flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Brain className="h-3 w-3" />
                 <span>AI-Powered</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                <Target className="h-4 w-4" />
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Target className="h-3 w-3" />
                 <span>Personalized</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                <Zap className="h-4 w-4" />
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Zap className="h-3 w-3" />
                 <span>Real-time</span>
               </div>
             </div>

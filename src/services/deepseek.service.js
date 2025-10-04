@@ -9,10 +9,8 @@ class DeepSeekService {
     
     this.apiKey = process.env.REACT_APP_DEEPSEEK_API_KEY;
     
-    // Use proxy in development, direct URL in production
-    this.baseURL = process.env.NODE_ENV === 'development' 
-      ? '/api/deepseek' 
-      : 'https://api.deepseek.ai/v1';
+    // Use direct URL for all environments
+    this.baseURL = 'https://api.deepseek.com/v1';
     
     if (!this.apiKey) {
       console.error('DeepSeek API key is not configured. Please check your .env file.');
