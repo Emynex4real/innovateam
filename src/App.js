@@ -7,7 +7,7 @@ import "./App.css";
 // Layouts
 import PublicLayout from "./layouts/PublicLayout";
 import PrivateLayout from "./layouts/PrivateLayout";
-import AdminLayout from "./components/AdminLayout";
+import SimpleAdminLayout from "./components/SimpleAdminLayout";
 
 // Routes
 import publicRoutes from "./routes/publicRoutes";
@@ -23,14 +23,12 @@ import Loading from "./components/Loading";
 import { AuthProvider } from "./contexts/AuthContext";
 import { WalletProvider } from "./contexts/WalletContext";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { AdminProvider } from "./contexts/AdminContext";
 import { SecurityProvider } from "./components/security/SecurityProvider";
 
 // Pages
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
-import AdminTransactions from "./pages/AdminTransactions";
-import AdminServices from "./pages/AdminServices";
+import AdminPanel from "./pages/admin";
 
 // Utils
 import logger from "./utils/logger";
@@ -148,7 +146,7 @@ function App() {
 
     // Set page title
     const currentRoute = allRoutes.find((route) => route.path === location.pathname);
-    document.title = currentRoute?.title ? `${currentRoute.title} | ArewaGate` : "ArewaGate";
+    document.title = currentRoute?.title ? `${currentRoute.title} | InnovaTeam` : "InnovaTeam";
 
     // Log page navigation
     logger.userAction('Page navigation', {
@@ -172,8 +170,9 @@ function App() {
   return (
     <SecurityProvider>
       <AuthProvider>
-        <DarkModeProvider>
-          <WalletProvider>
+        <ThemeProvider>
+          <DarkModeProvider>
+            <WalletProvider>
             <SecureErrorBoundary>
               <div className="App">
                 <Suspense fallback={<SecureLoading />}>
@@ -219,51 +218,20 @@ function App() {
 
                     {/* Admin Routes */}
                     <Route
-                      path="/admin"
+                      path="/admin/*"
                       element={
                         <AdminRoute>
                           <AdminProvider>
                             <ErrorBoundary>
-                              <AdminLayout />
+                              <Routes>
+                                <Route path="/" element={<AdminPanel />} />
+                                <Route path="/dashboard" element={<AdminPanel />} />
+                              </Routes>
                             </ErrorBoundary>
                           </AdminProvider>
                         </AdminRoute>
                       }
-                    >
-                      <Route index element={<Navigate to="dashboard" replace />} />
-                      <Route 
-                        path="dashboard" 
-                        element={
-                          <ErrorBoundary>
-                            <AdminDashboard />
-                          </ErrorBoundary>
-                        } 
-                      />
-                      <Route 
-                        path="users" 
-                        element={
-                          <ErrorBoundary>
-                            <AdminUsers />
-                          </ErrorBoundary>
-                        } 
-                      />
-                      <Route 
-                        path="transactions" 
-                        element={
-                          <ErrorBoundary>
-                            <AdminTransactions />
-                          </ErrorBoundary>
-                        } 
-                      />
-                      <Route 
-                        path="services" 
-                        element={
-                          <ErrorBoundary>
-                            <AdminServices />
-                          </ErrorBoundary>
-                        } 
-                      />
-                    </Route>
+                    />
 
                     {/* Catch-all route */}
                     <Route 
@@ -283,8 +251,9 @@ function App() {
                 />
               </div>
             </SecureErrorBoundary>
-          </WalletProvider>
-        </DarkModeProvider>
+            </WalletProvider>
+          </DarkModeProvider>
+        </ThemeProvider>
       </AuthProvider>
     </SecurityProvider>
   );
