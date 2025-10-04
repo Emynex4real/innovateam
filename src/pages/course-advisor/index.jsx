@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
@@ -6,6 +6,7 @@ import axios from 'axios';
 import debounce from 'lodash/debounce';
 import deepseekService from '../../services/deepseek.service';
 import { FaGraduationCap, FaCheckCircle, FaExclamationCircle, FaStar, FaTrophy } from 'react-icons/fa';
+
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -46,7 +47,8 @@ const ProgressBar = ({ loading }) => (
 );
 
 const CourseAdvisor = () => {
-    const FUTA_COURSES = {
+  // Expanded FUTA Course Database with accurate requirements and UTME subject combinations
+  const FUTA_COURSES = {
     "Agric Extension & Communication Technology": {
       faculty: "Agriculture",
       cutoff: 180,
@@ -589,14 +591,20 @@ const CourseAdvisor = () => {
   const [preferredEligibility, setPreferredEligibility] = useState(null);
   const [recommendLoading, setRecommendLoading] = useState(false);
 
+
+
+  // Mock user data for collaborative filtering (in real app, fetch from API)
+  const mockUsers = [
+    { id: 1, jamb: 220, gpa: 7.5, interests: ['technology', 'engineering'], courses: ['Computer Science', 'Computer Engineering'] },
+    { id: 2, jamb: 190, gpa: 6.0, interests: ['agriculture', 'science'], courses: ['Agricultural Engineering', 'Biotechnology'] },
+    // Add more mock data as needed
+  ];
+
   // Question Generator State
   const [file, setFile] = useState(null);
   const [questions, setQuestions] = useState('');
   const [questionLoading, setQuestionLoading] = useState(false);
   const fileInputRef = React.useRef(null);
-
-  // Expanded FUTA Course Database with accurate requirements and UTME subject combinations
-
 
   const GRADE_POINTS = {
     "A1": 9, "B2": 8, "B3": 7, "C4": 6, "C5": 5, "C6": 4
@@ -609,17 +617,38 @@ const CourseAdvisor = () => {
     return totalPoints / validGrades.length;
   };
 
-  const checkCourseEligibility = (course, jambScore, olevelGrades, interests, utmeSubjects) => {
+  const getCourseSimilarity = (course1, course2) => {
+    const interests1 = new Set(FUTA_COURSES[course1].interests);
+    const interests2 = new Set(FUTA_COURSES[course2].interests);
+    const intersection = new Set([...interests1].filter(i => interests2.has(i)));
+    return intersection.size / Math.max(interests1.size, interests2.size);
+  };
+
+
+
+  const getCollaborativeScore = (userJamb, userGpa, userInterests, course) => {
+    const similarUsers = mockUsers.map(u => {
+      const jambSim = 1 - Math.abs(userJamb - u.jamb) / 400;
+      const gpaSim = 1 - Math.abs(userGpa - u.gpa) / 9;
+      const interestSim = userInterests.filter(i => u.interests.includes(i)).length / Math.max(userInterests.length, u.interests.length);
+      const similarity = (jambSim + gpaSim + interestSim) / 3;
+      return { similarity, courses: u.courses };
+    }).sort((a, b) => b.similarity - a.similarity).slice(0, 3);
+
+    return similarUsers.reduce((sum, u) => sum + (u.courses.includes(course) ? u.similarity : 0), 0) / 3;
+  };
+
+  const checkCourseEligibility = async (course, jambScore, olevelGrades, interests, utmeSubjects) => {
     const courseData = FUTA_COURSES[course];
     if (!courseData) return { eligible: false, score: 0, reasons: [] };
 
     let score = 0;
     const reasons = [];
 
-    // Check JAMB score (40% weight)
+    // Check JAMB score (30% weight, reduced for hybrid)
     if (jambScore >= courseData.cutoff) {
       const jambScore_normalized = Math.min((jambScore - courseData.cutoff + 50) / 100, 1);
-      score += jambScore_normalized * 0.4;
+      score += jambScore_normalized * 0.3;
       reasons.push(`JAMB Score: ${jambScore} (Cutoff: ${courseData.cutoff}) ✓`);
     } else {
       reasons.push(`JAMB Score: ${jambScore} (Below cutoff: ${courseData.cutoff}) ✗`);
@@ -658,14 +687,19 @@ const CourseAdvisor = () => {
       reasons.push(`UTME Subjects: Met ✓`);
     }
 
-    // Check interest alignment (30% weight)
+    // Content-based interest alignment (20% weight)
     const interestWords = interests.toLowerCase().split(/\s+/);
     const matchingInterests = courseData.interests.filter(interest => 
       interestWords.some(word => word.includes(interest) || interest.includes(word))
     );
     const interestScore = matchingInterests.length / courseData.interests.length;
-    score += interestScore * 0.3;
+    score += interestScore * 0.2;
     reasons.push(`Interest Match: ${(interestScore * 100).toFixed(0)}% (${matchingInterests.join(', ')})`);
+
+    // Collaborative score (20% weight)
+    const collabScore = getCollaborativeScore(jambScore, calculateGPA(olevelGrades), interestWords, course);
+    score += collabScore * 0.2;
+    reasons.push(`Collaborative Match: ${(collabScore * 100).toFixed(0)}%`);
 
     return {
       eligible: true,
@@ -714,27 +748,42 @@ const CourseAdvisor = () => {
       
       let eligibleCourses = [];
       
-      // Check eligibility for all courses
-      Object.keys(FUTA_COURSES).forEach(courseName => {
-        const eligibility = checkCourseEligibility(courseName, score, olevelGrades, interests, utmeSubjects);
+      // Check eligibility for all courses with hybrid scoring
+      for (const courseName of Object.keys(FUTA_COURSES)) {
+        const eligibility = await checkCourseEligibility(courseName, score, olevelGrades, interests, utmeSubjects);
         if (eligibility.eligible) {
           eligibleCourses.push({
             course: courseName,
             ...eligibility
           });
         }
-      });
+      }
 
       // Sort by score (highest first)
       eligibleCourses.sort((a, b) => b.score - a.score);
 
       let preferredEligibilityLocal = null;
       if (preferredCourse) {
-        preferredEligibilityLocal = checkCourseEligibility(preferredCourse, score, olevelGrades, interests, utmeSubjects);
+        preferredEligibilityLocal = await checkCourseEligibility(preferredCourse, score, olevelGrades, interests, utmeSubjects);
         setPreferredEligibility(preferredEligibilityLocal);
         if (preferredEligibilityLocal.eligible) {
           eligibleCourses = eligibleCourses.filter(c => c.course !== preferredCourse);
           eligibleCourses.unshift({ course: preferredCourse, ...preferredEligibilityLocal });
+        } else {
+          // Find alternatives from same faculty, related, less competitive
+          const preferredData = FUTA_COURSES[preferredCourse];
+          if (preferredData) {
+            const sameFacultyCourses = eligibleCourses.filter(c => c.faculty === preferredData.faculty);
+            sameFacultyCourses.sort((a, b) => {
+              const simA = getCourseSimilarity(preferredCourse, a.course);
+              const simB = getCourseSimilarity(preferredCourse, b.course);
+              const compA = (a.cutoff - preferredData.cutoff) + (preferredData.capacity - a.capacity) / 100; // Lower cutoff, higher capacity better
+              const compB = (b.cutoff - preferredData.cutoff) + (preferredData.capacity - b.capacity) / 100;
+              return (simB - simA) || (compA - compB);
+            });
+            const otherCourses = eligibleCourses.filter(c => c.faculty !== preferredData.faculty);
+            eligibleCourses = sameFacultyCourses.concat(otherCourses);
+          }
         }
       }
 
@@ -808,7 +857,7 @@ const CourseAdvisor = () => {
 
     const maxScore = Math.max(...eligibleCourses.map(c => c.score));
     const isPreferredTop = topCourse.course === preferredCourse;
-    const hasBetter = eligibleCourses.length > 1 && eligibleCourses[0].score < maxScore; // if preferred is top but lower score
+    const hasBetter = eligibleCourses.length > 1 && topCourse.score < maxScore;
 
     return (
       <div>
@@ -821,6 +870,7 @@ const CourseAdvisor = () => {
                 <li key={idx}>{reason}</li>
               ))}
             </ul>
+            <p className="mt-2">We've recommended alternatives from the same faculty that are similar and less competitive for better admission chances.</p>
           </div>
         )}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
@@ -846,6 +896,14 @@ const CourseAdvisor = () => {
           {isPreferredTop && hasBetter && (
             <p className="text-yellow-400 mt-2">Note: You have a better chance in other courses with higher match, but we prioritized your preferred.</p>
           )}
+          <div className="mt-2">
+            <span className="text-gray-300">Explanation:</span>
+            <ul className="list-disc pl-5 text-gray-400">
+              {topCourse.reasons.map((reason, idx) => (
+                <li key={idx}>{reason}</li>
+              ))}
+            </ul>
+          </div>
         </div>
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <h3 className="text-white font-semibold mb-2">Prediction Statistics</h3>
