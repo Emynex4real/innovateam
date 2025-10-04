@@ -36,12 +36,12 @@ const EducationalDashboard = () => {
 
   useEffect(() => {
     if (transactions.length > 0) {
-      const completed = transactions.filter(t => t.status === 'completed');
+      const completed = transactions.filter(t => t.status === 'completed' || t.status === 'Successful');
       setStats({
         totalSpent: completed.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
         servicesUsed: completed.length,
         completedTransactions: completed.length,
-        successRate: completed.length > 0 ? (completed.length / transactions.length) * 100 : 0
+        successRate: transactions.length > 0 ? (completed.length / transactions.length) * 100 : 0
       });
     }
   }, [transactions]);
@@ -184,7 +184,7 @@ const EducationalDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Level</p>
-                <p className="text-xl font-bold text-gray-900">{Math.floor((stats.totalSpent || 0) / 1000) + 1}</p>
+                <p className="text-xl font-bold text-gray-900">{Math.max(1, Math.floor((stats.totalSpent || 0) / 2000) + 1)}</p>
               </div>
             </div>
           </div>
@@ -253,13 +253,13 @@ const EducationalDashboard = () => {
                     <div className="text-right">
                       <p className="font-semibold text-gray-900">₦{transaction.amount}</p>
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        transaction.status === 'completed' 
+                        (transaction.status === 'completed' || transaction.status === 'Successful')
                           ? 'bg-green-100 text-green-800'
                           : transaction.status === 'pending'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {transaction.status}
+                        {transaction.status === 'Successful' ? 'completed' : transaction.status}
                       </span>
                     </div>
                   </div>

@@ -19,7 +19,7 @@ import CapsPrinting from "../pages/jamb services/reprinting";
 import OLevelEntry from "../pages/jamb services/olevel upload/new entry";
 import Transactions from "../pages/ModernTransactions";
 import Support from "../pages/ModernSupport";
-import AiExaminer from "../pages/ModernAiExaminer";
+import AiExaminer from "../pages/ai examiner";
 import CourseRecommender from "../pages/dashboard/course-advisor/CourseRecommender";
 import CourseAdvisor from "../pages/course-advisor";
 
