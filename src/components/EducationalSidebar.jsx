@@ -30,7 +30,7 @@ const EducationalSidebar = ({ children }) => {
   const sidebarRef = useRef(null);
   
   const { user, logout } = useAuth();
-  const { balance } = useWallet();
+  const { walletBalance } = useWallet();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const menuItems = [
@@ -85,7 +85,8 @@ const EducationalSidebar = ({ children }) => {
       isGroup: true,
       children: [
         { label: 'AI Examiner', path: '/dashboard/ai-examiner' },
-        { label: 'Course Advisor', path: '/dashboard/course-advisor' }
+        { label: 'Course Advisor (AI)', path: '/dashboard/course-advisor' },
+        { label: 'Course Recommender', path: '/dashboard/course-advisor/recommender' }
       ]
     },
     {
@@ -212,7 +213,7 @@ const EducationalSidebar = ({ children }) => {
                       {user?.email}
                     </p>
                     <p className="text-xs text-blue-600 font-medium mt-1">
-                      ₦{(balance || 0).toLocaleString()}
+                      ₦{(walletBalance || 0).toLocaleString()}
                     </p>
                   </div>
                   
@@ -271,7 +272,7 @@ const EducationalSidebar = ({ children }) => {
               <WalletIcon className="h-4 w-4 text-blue-600" />
             </div>
             <p className="text-lg font-bold text-blue-600 mt-1">
-              ₦{(balance || 0).toLocaleString()}
+              ₦{(walletBalance || 0).toLocaleString()}
             </p>
           </div>
 

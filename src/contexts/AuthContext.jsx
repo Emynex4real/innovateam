@@ -7,7 +7,7 @@ import errorHandler from '../utils/errorHandler';
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -312,7 +312,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => {
+const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -320,4 +320,5 @@ export const useAuth = () => {
   return context;
 };
 
+export { AuthProvider, useAuth };
 export default AuthContext;

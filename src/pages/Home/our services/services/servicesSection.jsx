@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Info } from "lucide-react";
+import { toast } from 'react-toastify';
+import { useWallet } from '../../../../contexts/WalletContext';
 import CategoryFilter from './categoryFilter';
 import SearchInput from './searchInput';
 import ServiceCard from './serviceCard';
 
 const ServicesSection = ({ services, isAuthenticated, isDarkMode }) => {
   const navigate = useNavigate();
+  const { walletBalance, addTransaction } = useWallet();
   const [filter, setFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [displayedServices, setDisplayedServices] = useState(services);
@@ -36,13 +39,37 @@ const ServicesSection = ({ services, isAuthenticated, isDarkMode }) => {
     setDisplayedServices(filtered);
   }, [filter, searchTerm, services]);
 
-  const handleProceed = (title) => {
-    if (isAuthenticated) {
-      alert(`Proceeding with service: You selected: ${title}`);
-      navigate("/homepage", { state: { service: title } });
-    } else {
-      alert("Authentication required: Please log in to continue");
+  const handleProceed = async (title, service) => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to continue");
       navigate("/login", { state: { service: title } });
+      return;
+    }
+
+    if (!service) {
+      toast.error("Service information not available");
+      return;
+    }
+
+    // Check wallet balance
+    if (walletBalance < service.price) {
+      toast.error(`Insufficient wallet balance. Required: ₦${service.price.toLocaleString()}, Available: ₦${walletBalance.toLocaleString()}`);
+      return;
+    }
+
+    try {
+      // Process the transaction
+      await addTransaction({
+        amount: service.price,
+        description: `Purchase: ${title}`
+      });
+      
+      toast.success(`Successfully purchased ${title} for ₦${service.price.toLocaleString()}`);
+      
+      // Navigate to the service page or dashboard
+      navigate("/dashboard", { state: { service: title, purchased: true } });
+    } catch (error) {
+      toast.error(error.message || "Transaction failed. Please try again.");
     }
   };
 
@@ -92,7 +119,7 @@ const ServicesSection = ({ services, isAuthenticated, isDarkMode }) => {
                 image={service.image}
                 price={service.price}
                 category={service.category}
-                onProceed={handleProceed}
+                onProceed={(title, serviceData) => handleProceed(title, serviceData || service)}
                 isDarkMode={isDarkMode}
               />
             ))}

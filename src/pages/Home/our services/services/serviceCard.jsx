@@ -38,7 +38,7 @@ const ServiceCard = ({ id, title, image, price, category, onProceed, isDarkMode 
           </div>
 
           <button
-            onClick={() => onProceed(title)}
+            onClick={() => onProceed(title, { id, title, price, category })}
             className="flex items-center gap-1 text-green-600 font-medium hover:underline transition-all"
           >
             Get Access
@@ -47,7 +47,7 @@ const ServiceCard = ({ id, title, image, price, category, onProceed, isDarkMode 
         </div>
 
         <button
-          onClick={() => onProceed(title)}
+          onClick={() => onProceed(title, { id, title, price, category })}
           className={`mt-3 sm:mt-4 w-full py-2 sm:py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
             isDarkMode 
               ? 'bg-green-600 hover:bg-green-700 text-white' 

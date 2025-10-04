@@ -20,7 +20,8 @@ import OLevelEntry from "../pages/jamb services/olevel upload/new entry";
 import Transactions from "../pages/ModernTransactions";
 import Support from "../pages/ModernSupport";
 import AiExaminer from "../pages/ModernAiExaminer";
-import CourseAdvisor from "../pages/dashboard/course-advisor";
+import CourseRecommender from "../pages/dashboard/course-advisor/CourseRecommender";
+import CourseAdvisor from "../pages/course-advisor";
 
 // Define private routes
 const privateRoutes = [
@@ -119,7 +120,12 @@ const privateRoutes = [
   { 
     path: "/course-advisor", 
     element: <CourseAdvisor />,
-    title: "Course Advisor AI" 
+    title: "Course Advisor (AI)" 
+  },
+  { 
+    path: "/course-advisor/recommender", 
+    element: <CourseRecommender />,
+    title: "Course Recommender" 
   },
 ];
 
