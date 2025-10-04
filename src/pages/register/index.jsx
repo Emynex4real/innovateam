@@ -122,33 +122,24 @@ const handleSubmit = async (e) => {
     console.log('Registration result:', result);
     
     if (result.success) {
-      if (result.info && result.info.includes('email')) {
-        toast.success(result.info); // e.g., "Registration successful! Please check your email..."
-      } else {
-        toast.success("Account created successfully!");
-        setFormData({
-          name: "",
-          email: "",
-          phoneNumber: "",
-          password: "",
-          confirmPassword: "",
-          agreeToTerms: false,
-        });
-        navigate("/login");
-      }
+      toast.success("Account created successfully!");
+      setFormData({
+        name: "",
+        email: "",
+        phoneNumber: "",
+        password: "",
+        confirmPassword: "",
+        agreeToTerms: false,
+      });
+      navigate("/login");
     } else {
       const errorMessage = typeof result.error === 'string' ? result.error : 'Failed to create account';
-      console.error('Registration failed:', errorMessage);
       setErrors({ submit: errorMessage });
       toast.error(errorMessage);
     }
   } catch (error) {
-    console.error('Registration error:', error);
-    const errorMessage = error?.response?.data?.message || 
-                        (typeof error === 'string' ? error : error?.message) || 
-                        "Failed to create account. Please try again.";
-    setErrors({ submit: errorMessage });
-    toast.error(errorMessage);
+    setErrors({ submit: "Failed to create account. Please try again." });
+    toast.error("Failed to create account. Please try again.");
   } finally {
     setIsLoading(false);
   }

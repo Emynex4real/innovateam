@@ -120,6 +120,7 @@ const Dashboard = () => {
       type: 'debit',
       category: service.category,
       status: 'Successful',
+      date: new Date().toISOString()
     });
   };
 

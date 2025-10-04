@@ -1,68 +1,93 @@
-import apiService from './api.service';
+
 import logger from '../utils/logger';
+
+// LocalStorage keys
+const WALLET_KEY = 'wallet_balance';
+const TRANSACTIONS_KEY = 'wallet_transactions';
+
+function getLocalWallet() {
+  const balance = parseFloat(localStorage.getItem(WALLET_KEY) || '10000');
+  return balance;
+}
+
+function setLocalWallet(balance) {
+  localStorage.setItem(WALLET_KEY, String(balance));
+}
+
+function getLocalTransactions() {
+  try {
+    return JSON.parse(localStorage.getItem(TRANSACTIONS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function setLocalTransactions(transactions) {
+  localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(transactions));
+}
 
 class WalletService {
   async getBalance() {
-    try {
-      logger.service('Getting wallet balance');
-      const response = await apiService.get('/wallet/balance');
-      return response.data?.balance || 0;
-    } catch (error) {
-      logger.service('Failed to get balance', { error: error.message });
-      throw new Error(error.response?.data?.message || 'Failed to fetch balance');
-    }
+    logger.service('Getting wallet balance');
+    return getLocalWallet();
   }
 
   async fundWallet(amount, paymentMethod = 'card') {
-    try {
-      logger.service('Funding wallet', { amount, paymentMethod });
-      const response = await apiService.post('/wallet/fund', {
-        amount: parseFloat(amount),
-        paymentMethod
-      });
-      logger.service('Wallet funded successfully');
-      return response.data || response;
-    } catch (error) {
-      logger.service('Failed to fund wallet', { error: error.message });
-      throw new Error(error.response?.data?.message || 'Failed to fund wallet');
-    }
+    logger.service('Funding wallet', { amount, paymentMethod });
+    let balance = getLocalWallet();
+    balance += parseFloat(amount);
+    setLocalWallet(balance);
+    // Add transaction
+    const transactions = getLocalTransactions();
+    transactions.unshift({
+      id: Date.now(),
+      label: 'Wallet Funded',
+      description: `Funded wallet via ${paymentMethod}`,
+      amount: parseFloat(amount),
+      type: 'credit',
+      category: 'funding',
+      status: 'Successful',
+      date: new Date().toISOString()
+    });
+    setLocalTransactions(transactions);
+    logger.service('Wallet funded successfully');
+    return { success: true, balance };
   }
 
   async deductFromWallet(amount, description) {
-    try {
-      logger.service('Deducting from wallet', { amount, description });
-      const response = await apiService.post('/wallet/deduct', {
-        amount: parseFloat(amount),
-        description
-      });
-      logger.service('Wallet deduction successful');
-      return response.data || response;
-    } catch (error) {
-      logger.service('Failed to deduct from wallet', { error: error.message });
-      throw new Error(error.response?.data?.message || 'Failed to process payment');
-    }
+    logger.service('Deducting from wallet', { amount, description });
+    let balance = getLocalWallet();
+    amount = parseFloat(amount);
+    if (balance < amount) throw new Error('Insufficient balance');
+    balance -= amount;
+    setLocalWallet(balance);
+    // Add transaction
+    const transactions = getLocalTransactions();
+    transactions.unshift({
+      id: Date.now(),
+      label: description,
+      description,
+      amount,
+      type: 'debit',
+      category: 'purchase',
+      status: 'Successful',
+      date: new Date().toISOString()
+    });
+    setLocalTransactions(transactions);
+    logger.service('Wallet deduction successful');
+    return { success: true, balance };
   }
 
   async getTransactions() {
-    try {
-      logger.service('Getting wallet transactions');
-      const response = await apiService.get('/wallet/transactions');
-      return response.data || [];
-    } catch (error) {
-      logger.service('Failed to get transactions', { error: error.message });
-      throw new Error(error.response?.data?.message || 'Failed to fetch transactions');
-    }
+    logger.service('Getting wallet transactions');
+    return getLocalTransactions();
   }
 
   async getStats() {
-    try {
-      logger.service('Getting wallet stats');
-      const response = await apiService.get('/wallet/stats');
-      return response.data || {};
-    } catch (error) {
-      logger.service('Failed to get wallet stats', { error: error.message });
-      throw new Error(error.response?.data?.message || 'Failed to fetch wallet stats');
-    }
+    logger.service('Getting wallet stats');
+    const balance = getLocalWallet();
+    const transactions = getLocalTransactions();
+    return { balance, transactions };
   }
 }
 

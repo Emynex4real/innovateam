@@ -35,7 +35,7 @@ import {
 
 const ModernUserDashboard = () => {
   const { user } = useAuth();
-  const { balance, transactions, loading: walletLoading, fetchWalletData } = useWallet();
+  const { walletBalance, transactions, loading: walletLoading, fetchWalletData } = useWallet();
   const [stats, setStats] = useState({
     totalSpent: 0,
     servicesUsed: 0,
@@ -69,12 +69,12 @@ const ModernUserDashboard = () => {
         pendingTransactions: pending.length,
         completedTransactions: completed.length,
         monthlySpending: monthlyTxs.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
-        savingsThisMonth: Math.max(0, balance - 1000),
+        savingsThisMonth: Math.max(0, walletBalance - 1000),
         streakDays: 7,
         successRate: completed.length > 0 ? (completed.length / transactions.length) * 100 : 0
       });
     }
-  }, [transactions, balance]);
+  }, [transactions, walletBalance]);
 
   const services = [
     {
@@ -314,7 +314,7 @@ const ModernUserDashboard = () => {
                   <span className="text-blue-100 font-medium">Wallet Balance</span>
                 </div>
                 <div className="text-5xl font-bold text-white mb-2">
-                  ₦{walletLoading ? '...' : (balance || 0).toLocaleString()}
+                  ₦{walletLoading ? '...' : (walletBalance || 0).toLocaleString()}
                 </div>
                 <p className="text-blue-100">Available for premium services</p>
                 
@@ -451,7 +451,7 @@ const ModernUserDashboard = () => {
                         <div>
                           <p className="font-semibold text-gray-900">{transaction.description}</p>
                           <p className="text-sm text-gray-500">
-                            {new Date(transaction.createdAt).toLocaleDateString()}
+                            {new Date(transaction.date).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

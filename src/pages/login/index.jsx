@@ -54,11 +54,10 @@ const Login = () => {
           navigate(from, { replace: true });
         }
       } else {
-        toast.error(result.error?.response?.data?.message || "Invalid credentials");
-        setFormError(result.error?.response?.data?.message || "Invalid credentials");
+        toast.error(result.error || "Invalid credentials");
+        setFormError(result.error || "Invalid credentials");
       }
     } catch (error) {
-      console.error("Login error:", error);
       setFormError("An error occurred. Please try again.");
     }
   };
@@ -75,10 +74,9 @@ const Login = () => {
         setFormError("");
         toast.success("Password reset instructions sent to your email");
       } else {
-        setFormError(result.error?.response?.data?.message || "Failed to send password reset instructions");
+        setFormError(result.error || "Failed to send password reset instructions");
       }
     } catch (error) {
-      console.error("Forgot password error:", error);
       setFormError("Failed to send password reset instructions");
     }
   };

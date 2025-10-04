@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiCreditCard, FiDollarSign, FiArrowUp, FiArrowDown, FiX, FiPlus, FiRefreshCw, FiClock } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import { useWallet } from '../../contexts/WalletContext';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -16,43 +17,32 @@ const Wallet = () => {
   const [amount, setAmount] = useState('');
   const [showPaymentPreview, setShowPaymentPreview] = useState(false);
   const [showBankDetails, setShowBankDetails] = useState(false);
-  const [transactions, setTransactions] = useState([]);
-  const [walletBalance, setWalletBalance] = useState(0);
   const [stats, setStats] = useState({});
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const { walletBalance, transactions, loading, fundWallet, fetchWalletData } = useWallet();
   const { isDarkMode } = useDarkMode();
   const transactionCharge = 50.0;
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchWalletData();
+      fetchWalletStats();
     }
   }, [isAuthenticated]);
 
-  const fetchWalletData = async () => {
+  const fetchWalletStats = async () => {
     try {
-      setLoading(true);
-      const [balance, userTransactions, walletStats] = await Promise.all([
-        walletService.getBalance(),
-        walletService.getTransactions(),
-        walletService.getStats()
-      ]);
-      
-      setWalletBalance(balance);
-      setTransactions(userTransactions);
+      const walletStats = await walletService.getStats();
       setStats(walletStats);
     } catch (error) {
-      toast.error('Failed to load wallet data');
-    } finally {
-      setLoading(false);
+      toast.error('Failed to load wallet stats');
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchWalletData();
+    await fetchWalletStats();
     setRefreshing(false);
     toast.success('Wallet refreshed');
   };
@@ -80,12 +70,11 @@ const Wallet = () => {
     try {
       const numAmount = parseFloat(amount);
       
-      await walletService.fundWallet(numAmount, 'card');
+      await fundWallet(numAmount, 'card');
 
       toast.success('Wallet funded successfully!');
       setAmount('');
       setShowPaymentPreview(false);
-      fetchWalletData();
     } catch (error) {
       toast.error(error.message || 'Failed to fund wallet');
     }
@@ -399,7 +388,7 @@ const Wallet = () => {
                             "text-sm",
                             isDarkMode ? "text-white/60" : "text-black/60"
                           )}>
-                            {new Date(transaction.createdAt).toLocaleDateString()}
+                            {new Date(transaction.date).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

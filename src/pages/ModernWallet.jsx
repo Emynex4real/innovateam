@@ -17,7 +17,7 @@ import {
 
 const ModernWallet = () => {
   const { user } = useAuth();
-  const { balance, transactions, loading, fetchWalletData, fundWallet } = useWallet();
+  const { walletBalance, transactions, loading, fetchWalletData, fundWallet } = useWallet();
   const { isDarkMode } = useDarkMode();
   const [fundAmount, setFundAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -103,7 +103,7 @@ const ModernWallet = () => {
               </div>
               
               <div className="text-4xl font-bold text-gray-900 mb-2">
-                ₦{loading ? '...' : (balance || 0).toLocaleString()}
+                ₦{loading ? '...' : (walletBalance || 0).toLocaleString()}
               </div>
               
               <p className="text-gray-600">
@@ -145,7 +145,7 @@ const ModernWallet = () => {
                           <div>
                             <p className="font-medium text-gray-900">{transaction.description}</p>
                             <p className="text-sm text-gray-500">
-                              {new Date(transaction.createdAt).toLocaleDateString()}
+                              {new Date(transaction.date).toLocaleDateString()}
                             </p>
                           </div>
                         </div>

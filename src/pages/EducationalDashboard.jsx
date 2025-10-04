@@ -21,7 +21,7 @@ import {
 
 const EducationalDashboard = () => {
   const { user } = useAuth();
-  const { balance, transactions, loading: walletLoading, fetchWalletData } = useWallet();
+  const { walletBalance, transactions, loading: walletLoading, fetchWalletData } = useWallet();
   const { isDarkMode } = useDarkMode();
   const [stats, setStats] = useState({
     totalSpent: 0,
@@ -118,7 +118,7 @@ const EducationalDashboard = () => {
                 <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Wallet Balance</span>
               </div>
               <div className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                ₦{walletLoading ? '...' : (balance || 0).toLocaleString()}
+                ₦{walletLoading ? '...' : (walletBalance || 0).toLocaleString()}
               </div>
             </div>
             <div className="flex space-x-3">
@@ -247,7 +247,7 @@ const EducationalDashboard = () => {
                     <div>
                       <p className="font-medium text-gray-900">{transaction.description}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(transaction.createdAt).toLocaleDateString()}
+                        {new Date(transaction.date).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">

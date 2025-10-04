@@ -11,8 +11,6 @@ export const WalletProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const fetchWalletData = async () => {
-    if (!isAuthenticated) return;
-    
     try {
       setLoading(true);
       const [balance, userTransactions] = await Promise.all([
@@ -20,10 +18,16 @@ export const WalletProvider = ({ children }) => {
         walletService.getTransactions()
       ]);
       
+      console.log('WalletContext: Setting balance to:', balance);
+      console.log('WalletContext: Setting transactions to:', userTransactions);
+      
       setWalletBalance(balance);
       setTransactions(userTransactions);
     } catch (error) {
       console.error('Failed to fetch wallet data:', error);
+      // Set defaults on error
+      setWalletBalance(0);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
@@ -62,14 +66,17 @@ export const WalletProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Add small delay to ensure token is properly set
-      const timer = setTimeout(() => {
-        fetchWalletData();
-      }, 1000);
-      return () => clearTimeout(timer);
+      fetchWalletData();
     }
   }, [isAuthenticated]);
 
+  // Also fetch on mount regardless of auth status for localStorage data
+  useEffect(() => {
+    fetchWalletData();
+  }, []);
+
+  console.log('WalletContext: Current balance in provider:', walletBalance);
+  
   return (
     <WalletContext.Provider
       value={{

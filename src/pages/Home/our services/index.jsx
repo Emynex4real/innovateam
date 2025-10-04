@@ -1,4 +1,6 @@
 import React from "react";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useDarkMode } from "../../../contexts/DarkModeContext";
 import ServicesSection from './services/servicesSection';
 import waecResultChecker from '../../../images/waec-result-checker.jpg';
@@ -80,6 +82,18 @@ const Index = ({ isAuthenticated }) => {
         : 'bg-gradient-to-b from-white to-gray-50'
     }`}>
       <ServicesSection services={servicesData} isAuthenticated={isAuthenticated} isDarkMode={isDarkMode} />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={isDarkMode ? "dark" : "light"}
+      />
     </div>
   );
 };

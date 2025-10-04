@@ -95,10 +95,11 @@ const ModernSidebar = ({ children }) => {
       color: 'from-violet-500 to-purple-500',
       isGroup: true,
       new: true,
-      children: [
-        { label: 'AI Examiner', path: '/dashboard/ai-examiner', new: true },
-        { label: 'Course Advisor', path: '/dashboard/course-advisor' }
-      ]
+        children: [
+          { label: 'AI Examiner', path: '/dashboard/ai-examiner', new: true },
+          { label: 'Course Advisor (Dashboard)', path: '/dashboard/course-advisor', new: true },
+          { label: 'Course Advisor (Legacy)', path: '/course-advisor', new: true }
+        ]
     },
     {
       id: 'transactions',

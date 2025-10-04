@@ -17,7 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const WalletPage = () => {
-  const { balance, transactions, loading, fetchWalletData, fundWallet } = useWallet();
+  const { walletBalance, transactions, loading, fetchWalletData, fundWallet } = useWallet();
   const [showFundModal, setShowFundModal] = useState(false);
   const [fundAmount, setFundAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -90,7 +90,7 @@ const WalletPage = () => {
                 <span className="text-xl font-semibold">Current Balance</span>
               </div>
               <div className="text-5xl font-bold mb-2">
-                ₦{loading ? '...' : balance.toLocaleString()}
+                ₦{loading ? '...' : walletBalance.toLocaleString()}
               </div>
               <p className="text-blue-100">Available for services and transactions</p>
             </div>
