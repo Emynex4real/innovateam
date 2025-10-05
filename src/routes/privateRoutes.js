@@ -3,22 +3,22 @@ import React from "react";
 
 // Regular imports to avoid chunk loading issues
 import Dashboard from "../pages/EducationalDashboard";
-import Profile from "../pages/ModernProfile";
-import Wallet from "../pages/ModernWallet";
-import WaecResultChecker from "../pages/ModernWaecChecker";
+import Profile from "../pages/profile";
+import Wallet from "../pages/wallet";
+import WaecResultChecker from "../pages/result checker/waec result checker";
 import NecoResultChecker from "../pages/result checker/neco result checker";
 import NbaisResultChecker from "../pages/result checker/nbais result checker";
 import NabtebResultChecker from "../pages/result checker/nabteb result checker";
 import WaecGce from "../pages/result checker/waec gce";
 
 import OLevelUpload from "../pages/jamb services/olevel upload";
-import AdmissionLetter from "../pages/ModernAdmissionLetter";
+import AdmissionLetter from "../pages/jamb services/admission letter";
 import OriginalResult from "../pages/jamb services/original result";
 import JambPinVending from "../pages/jamb services/pin vending";
 import CapsPrinting from "../pages/jamb services/reprinting";
 import OLevelEntry from "../pages/jamb services/olevel upload/new entry";
-import Transactions from "../pages/ModernTransactions";
-import Support from "../pages/ModernSupport";
+import Transactions from "../pages/transactions";
+import Support from "../pages/support";
 import AiExaminer from "../pages/ai examiner";
 import CourseRecommender from "../pages/dashboard/course-advisor/CourseRecommender";
 import CourseAdvisor from "../pages/course-advisor";

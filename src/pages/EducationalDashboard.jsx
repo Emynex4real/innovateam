@@ -1,274 +1,407 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useWallet } from '../contexts/WalletContext';
-import { useDarkMode } from '../contexts/DarkModeContext';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  WalletIcon,
-  DocumentTextIcon,
-  AcademicCapIcon,
-  ChartBarIcon,
-  BellIcon,
-  UserCircleIcon,
-  ArrowTrendingUpIcon,
-  CheckCircleIcon,
-  PlusIcon,
-  BookOpenIcon,
-  ClipboardDocumentCheckIcon,
-  LightBulbIcon,
-  StarIcon
-} from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
+import { 
+  CreditCard, 
+  Database, 
+  DollarSign, 
+  ChevronDown, 
+  ChevronUp, 
+  TrendingUp, 
+  Activity, 
+  Users, 
+  ArrowUpRight 
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useTransactions } from '../contexts/TransactionContext';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+
+// Import images directly
+import waecResultCheckerImg from '../assets/images/services/waec-result-checker.jpg';
+import necoResultCheckerImg from '../assets/images/services/neco-result-checker.jpg';
+import nabtebResultCheckerImg from '../assets/images/services/nabteb-result-checker.jpg';
+import nbaisResultCheckerImg from '../assets/images/services/nbais-result-checker.jpg';
+import waecGceImg from '../assets/images/services/waec-gce.jpg';
+import placeholderImg from '../assets/images/services/placeholder.svg';
 
 const EducationalDashboard = () => {
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   const { user } = useAuth();
-  const { walletBalance, transactions, loading: walletLoading, fetchWalletData } = useWallet();
-  const { isDarkMode } = useDarkMode();
-  const [stats, setStats] = useState({
-    totalSpent: 0,
-    servicesUsed: 0,
-    completedTransactions: 0,
-    successRate: 0
-  });
+  const { transactions, walletBalance, getRecentTransactions, getTransactionsByType, addTransaction } =
+    useTransactions();
 
-  useEffect(() => {
-    fetchWalletData();
-  }, []);
-
-  useEffect(() => {
-    if (transactions.length > 0) {
-      const completed = transactions.filter(t => t.status === 'completed' || t.status === 'Successful');
-      setStats({
-        totalSpent: completed.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
-        servicesUsed: completed.length,
-        completedTransactions: completed.length,
-        successRate: transactions.length > 0 ? (completed.length / transactions.length) * 100 : 0
-      });
-    }
-  }, [transactions]);
-
-  const services = [
+  const stats = [
     {
-      id: 1,
-      name: 'JAMB Services',
-      description: 'Registration & result checking',
-      icon: AcademicCapIcon,
-      color: 'blue',
-      href: 'buy-admission-letter',
-      price: '₦500'
+      title: "Total Balance",
+      value: `₦${(walletBalance || 0).toLocaleString()}`,
+      icon: DollarSign,
+      change: "+12.5%",
+      changeType: "positive"
     },
     {
-      id: 2,
-      name: 'O-Level Upload',
-      description: 'Result verification service',
-      icon: DocumentTextIcon,
-      color: 'green',
-      href: 'buy-olevel-upload',
-      price: '₦1,000'
+      title: "This Month",
+      value: `₦${getTransactionsByType('credit').reduce((sum, tx) => sum + tx.amount, 0).toLocaleString()}`,
+      icon: TrendingUp,
+      change: "+8.2%",
+      changeType: "positive"
     },
     {
-      id: 3,
-      name: 'AI Examiner',
-      description: 'Practice tests & feedback',
-      icon: LightBulbIcon,
-      color: 'purple',
-      href: 'ai-examiner',
-      price: '₦750'
+      title: "Transactions",
+      value: transactions.length.toString(),
+      icon: Activity,
+      change: "+23.1%",
+      changeType: "positive"
     },
     {
-      id: 4,
-      name: 'Course Advisor',
-      description: 'University course guidance',
-      icon: BookOpenIcon,
-      color: 'orange',
-      href: 'course-advisor',
-      price: 'Free'
+      title: "Services Used",
+      value: "12",
+      icon: Users,
+      change: "+4.3%",
+      changeType: "positive"
     }
   ];
 
-  return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Welcome, {user?.name || user?.email?.split('@')[0]}
-              </h1>
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>Your educational services dashboard</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                <BellIcon className="h-5 w-5" />
-              </button>
-              <Link to="profile" className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                <UserCircleIcon className="h-5 w-5" />
-              </Link>
-            </div>
-          </div>
-        </div>
+  const recentTransactions = getRecentTransactions(5);
 
-        {/* Wallet Card */}
-        <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg shadow-sm border p-6 mb-8`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center mb-2">
-                <WalletIcon className="h-5 w-5 text-blue-600 mr-2" />
-                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Wallet Balance</span>
-              </div>
-              <div className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                ₦{walletLoading ? '...' : (walletBalance || 0).toLocaleString()}
-              </div>
-            </div>
-            <div className="flex space-x-3">
-              <Link 
-                to="wallet" 
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                <PlusIcon className="h-4 w-4 inline mr-1" />
-                Add Funds
-              </Link>
-              <Link 
-                to="transactions" 
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                History
-              </Link>
-            </div>
-          </div>
+  const services = [
+    {
+      title: 'WAEC Result Checker',
+      price: '₦3,400.00',
+      image: waecResultCheckerImg,
+      link: '/dashboard/scratch-card/waec-checker',
+      category: 'education',
+      popularity: 'high',
+      features: ['Instant results', 'Secure payment', '24/7 support'],
+    },
+    {
+      title: 'NECO Result Checker',
+      price: '₦1,300.00',
+      image: necoResultCheckerImg,
+      link: '/dashboard/scratch-card/neco-checker',
+      category: 'education',
+      popularity: 'medium',
+      features: ['Fast processing', 'Easy to use', 'Detailed reports'],
+    },
+    {
+      title: 'NABTEB Result Checker',
+      price: '₦900.00',
+      image: nabtebResultCheckerImg,
+      link: '/dashboard/scratch-card/nabteb-checker',
+      category: 'education',
+      popularity: 'low',
+      features: ['Quick results', 'Affordable', 'User-friendly'],
+    },
+    {
+      title: 'NBAIS Result Checker',
+      price: '₦1,100.00',
+      image: nbaisResultCheckerImg,
+      link: '/dashboard/scratch-card/nbais-checker',
+      category: 'education',
+    },
+    {
+      title: 'WAEC GCE',
+      price: '₦28,000.00',
+      image: waecGceImg,
+      link: '/dashboard/scratch-card/waec-gce',
+      category: 'education',
+    },
+  ];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  const toggleTransactions = () => setShowAllTransactions((prev) => !prev);
+
+  const handlePurchaseService = (service) => {
+    const amount = parseFloat(service.price.replace('₦', '').replace(',', ''));
+    if (walletBalance < amount) {
+      alert('Insufficient balance');
+      return;
+    }
+    addTransaction({
+      label: service.title,
+      description: `Purchased ${service.title}`,
+      amount: amount,
+      type: 'debit',
+      category: service.category,
+      status: 'Successful',
+      date: new Date().toISOString()
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-8"
+      >
+        {/* Header */}
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {user?.name || 'User'}!
+          </h1>
+          <p className="text-muted-foreground">
+            Here's what's happening with your account today.
+          </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <ChartBarIcon className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Spent</p>
-                <p className="text-xl font-bold text-gray-900">₦{(stats.totalSpent || 0).toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircleIcon className="h-5 w-5 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Services Used</p>
-                <p className="text-xl font-bold text-gray-900">{stats.servicesUsed}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <ArrowTrendingUpIcon className="h-5 w-5 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Success Rate</p>
-                <p className="text-xl font-bold text-gray-900">{stats.successRate.toFixed(1)}%</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <StarIcon className="h-5 w-5 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Level</p>
-                <p className="text-xl font-bold text-gray-900">{Math.max(1, Math.floor((stats.totalSpent || 0) / 2000) + 1)}</p>
-              </div>
-            </div>
-          </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div key={index} variants={cardVariants}>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {stat.title}
+                    </CardTitle>
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <p className="text-xs text-muted-foreground">
+                      <span className={`inline-flex items-center ${
+                        stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        <ArrowUpRight className="h-3 w-3 mr-1" />
+                        {stat.change}
+                      </span>
+                      {" from last month"}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* Services Grid */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Educational Services</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service) => (
-              <Link key={service.id} to={service.href} className="block">
-                <div className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow">
-                  <div className={`p-3 bg-${service.color}-100 rounded-lg w-fit mb-4`}>
-                    <service.icon className={`h-6 w-6 text-${service.color}-600`} />
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-7">
+          {/* Wallet Overview */}
+          <motion.div variants={cardVariants} className="lg:col-span-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Wallet Overview</CardTitle>
+                    <CardDescription>
+                      Your current balance and recent activity
+                    </CardDescription>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">{service.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{service.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-gray-900">{service.price}</span>
-                    <span className="text-sm text-blue-600 font-medium">Learn more →</span>
+                  <Button asChild>
+                    <Link to="/dashboard/wallet">
+                      Fund Wallet
+                    </Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                      <DollarSign className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">₦{(walletBalance || 0).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">Available Balance</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Scratch Cards</span>
+                      </div>
+                      <p className="text-lg font-semibold">
+                        ₦{getTransactionsByType('scratch_card').reduce((sum, tx) => sum + tx.amount, 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Database className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Data Services</span>
+                      </div>
+                      <p className="text-lg font-semibold">
+                        ₦{getTransactionsByType('data').reduce((sum, tx) => sum + tx.amount, 0).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </Link>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Recent Transactions */}
+          <motion.div variants={cardVariants} className="lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Recent Activity</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleTransactions}
+                  >
+                    {showAllTransactions ? (
+                      <>
+                        Show Less <ChevronUp className="ml-1 h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        View All <ChevronDown className="ml-1 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentTransactions.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-4">
+                      No recent transactions
+                    </p>
+                  ) : (
+                    (showAllTransactions ? recentTransactions : recentTransactions.slice(0, 3)).map(
+                      (transaction) => (
+                        <motion.div
+                          key={transaction.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex items-center justify-between space-x-4"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                              transaction.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                            }`}>
+                              {transaction.type === 'credit' ? '+' : '-'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{transaction.label}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(transaction.date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-sm font-medium ${
+                              transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transaction.type === 'credit' ? '+' : '-'}₦{Number(transaction.amount || 0).toLocaleString()}
+                            </p>
+                            <Badge variant="secondary" className="text-xs">
+                              {transaction.status || 'Completed'}
+                            </Badge>
+                          </div>
+                        </motion.div>
+                      )
+                    )
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Services Section */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Available Services</h2>
+              <p className="text-muted-foreground">
+                Choose from our range of educational services
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <Link to="/dashboard/services">View All</Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {services.map((service, index) => (
+              <motion.div key={index} variants={cardVariants}>
+                <Card className="h-full overflow-hidden group hover:shadow-lg transition-shadow">
+                  <div className="aspect-video relative overflow-hidden">
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.src = placeholderImg;
+                      }}
+                    />
+                    {service.popularity && (
+                      <Badge 
+                        className="absolute top-2 right-2" 
+                        variant={service.popularity === 'high' ? 'default' : 'secondary'}
+                      >
+                        {service.popularity === 'high' ? 'Popular' : 'New'}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-base line-clamp-1">
+                          {service.title}
+                        </h3>
+                        <p className="text-2xl font-bold text-primary">
+                          {service.price}
+                        </p>
+                      </div>
+                      
+                      {service.features && (
+                        <ul className="space-y-1">
+                          {service.features.slice(0, 2).map((feature, idx) => (
+                            <li key={idx} className="flex items-center text-xs text-muted-foreground">
+                              <div className="w-1 h-1 rounded-full bg-primary mr-2" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          className="flex-1"
+                          onClick={() => handlePurchaseService(service)}
+                        >
+                          Purchase
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <Link to={service.link}>
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-              <Link to="transactions" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View All
-              </Link>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            {walletLoading ? (
-              <div className="flex items-center justify-center h-20">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            ) : transactions.length === 0 ? (
-              <div className="text-center py-8">
-                <ClipboardDocumentCheckIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No transactions yet</h4>
-                <p className="text-gray-500 mb-4">Start using our educational services to see your activity here.</p>
-                <Link 
-                  to="buy-olevel-upload" 
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Explore Services
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {transactions.slice(0, 5).map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                    <div>
-                      <p className="font-medium text-gray-900">{transaction.description}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(transaction.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">₦{transaction.amount}</p>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        (transaction.status === 'completed' || transaction.status === 'Successful')
-                          ? 'bg-green-100 text-green-800'
-                          : transaction.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {transaction.status === 'Successful' ? 'completed' : transaction.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
