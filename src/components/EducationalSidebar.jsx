@@ -147,7 +147,7 @@ const EducationalSidebar = ({ children }) => {
   };
 
   return (
-    <div className={`flex min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className="flex min-h-screen bg-background">
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
@@ -157,21 +157,21 @@ const EducationalSidebar = ({ children }) => {
       )}
 
       {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-b shadow-sm`}>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className={`lg:hidden p-2 rounded-md ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+              className="lg:hidden p-2 rounded-md hover:bg-accent"
             >
               {isOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
             </button>
             
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">I</span>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">I</span>
               </div>
-              <span className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <span className="text-lg font-semibold text-foreground">
                 InnovaTeam
               </span>
             </Link>
@@ -180,7 +180,7 @@ const EducationalSidebar = ({ children }) => {
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleDarkMode}
-              className={`p-2 rounded-md ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+              className="p-2 rounded-md hover:bg-accent"
             >
               {isDarkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </button>
@@ -188,31 +188,31 @@ const EducationalSidebar = ({ children }) => {
             <div className="relative">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-2 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="flex items-center space-x-2 p-1 rounded-md hover:bg-accent"
               >
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-sm">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-primary-foreground font-medium text-sm">
                     {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </span>
                 </div>
                 <div className="hidden md:block">
-                  <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <p className="text-sm font-medium text-foreground">
                     {user?.name || user?.email?.split('@')[0]}
                   </p>
                 </div>
-                <ChevronDownIcon className={`h-4 w-4 transition-transform ${showUserDropdown ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                <ChevronDownIcon className={`h-4 w-4 transition-transform ${showUserDropdown ? 'rotate-180' : ''} text-muted-foreground`} />
               </button>
 
               {showUserDropdown && (
-                <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg border z-50 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                  <div className={`px-4 py-3 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg border bg-popover text-popover-foreground z-50">
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-sm font-medium text-foreground">
                       {user?.name || user?.email?.split('@')[0]}
                     </p>
-                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <p className="text-xs text-muted-foreground">
                       {user?.email}
                     </p>
-                    <p className="text-xs text-blue-600 font-medium mt-1">
+                    <p className="text-xs text-primary font-medium mt-1">
                       ₦{(walletBalance || 0).toLocaleString()}
                     </p>
                   </div>
@@ -220,7 +220,7 @@ const EducationalSidebar = ({ children }) => {
                   <div className="py-1">
                     <Link
                       to="/dashboard/profile"
-                      className={`block px-4 py-2 text-sm ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                      className="block px-4 py-2 text-sm text-foreground hover:bg-accent"
                       onClick={() => setShowUserDropdown(false)}
                     >
                       Profile Settings
@@ -229,7 +229,7 @@ const EducationalSidebar = ({ children }) => {
                     {user?.isAdmin && (
                       <Link
                         to="/admin/dashboard"
-                        className={`block px-4 py-2 text-sm font-medium text-orange-600 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-orange-50'}`}
+                        className="block px-4 py-2 text-sm font-medium text-orange-600 hover:bg-accent"
                         onClick={() => setShowUserDropdown(false)}
                       >
                         🛡️ Admin Panel
@@ -241,7 +241,7 @@ const EducationalSidebar = ({ children }) => {
                         handleLogout();
                         setShowUserDropdown(false);
                       }}
-                      className={`block w-full text-left px-4 py-2 text-sm text-red-600 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'}`}
+                      className="block w-full text-left px-4 py-2 text-sm text-destructive hover:bg-accent"
                     >
                       Sign Out
                     </button>
@@ -256,22 +256,20 @@ const EducationalSidebar = ({ children }) => {
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
-        className={`fixed top-14 bottom-0 z-40 w-64 transition-transform duration-300 ${
-          isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-        } border-r ${
+        className={`fixed top-14 bottom-0 z-40 w-64 transition-transform duration-300 bg-background border-r border-border ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
         <div className="p-4 h-full overflow-y-auto">
           {/* Wallet Balance */}
-          <div className={`mb-6 p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-blue-50'}`}>
+          <div className="mb-6 p-3 rounded-lg bg-primary/10 border border-primary/20">
             <div className="flex items-center justify-between">
-              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <span className="text-sm font-medium text-muted-foreground">
                 Wallet Balance
               </span>
-              <WalletIcon className="h-4 w-4 text-blue-600" />
+              <WalletIcon className="h-4 w-4 text-primary" />
             </div>
-            <p className="text-lg font-bold text-blue-600 mt-1">
+            <p className="text-lg font-bold text-primary mt-1">
               ₦{(walletBalance || 0).toLocaleString()}
             </p>
           </div>
@@ -289,12 +287,8 @@ const EducationalSidebar = ({ children }) => {
                       onClick={() => toggleGroup(item.id)}
                       className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
                         isActive
-                          ? isDarkMode
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-blue-600 text-white'
-                          : isDarkMode
-                            ? 'text-gray-300 hover:bg-gray-800'
-                            : 'text-gray-700 hover:bg-gray-100'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                       }`}
                     >
                       <div className="flex items-center">
@@ -312,12 +306,8 @@ const EducationalSidebar = ({ children }) => {
                             to={child.path}
                             className={`block p-2 rounded-md text-sm transition-colors ${
                               location.pathname === child.path
-                                ? isDarkMode
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-blue-500 text-white'
-                                : isDarkMode
-                                  ? 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                                  : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                                ? 'bg-primary/90 text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                             }`}
                           >
                             {child.label}
@@ -335,16 +325,10 @@ const EducationalSidebar = ({ children }) => {
                   to={item.path}
                   className={`flex items-center p-3 rounded-lg transition-colors ${
                     isActive
-                      ? isDarkMode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-600 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : item.isAdmin
-                        ? isDarkMode
-                          ? 'text-orange-400 hover:bg-orange-900/20'
-                          : 'text-orange-600 hover:bg-orange-50'
-                        : isDarkMode
-                          ? 'text-gray-300 hover:bg-gray-800'
-                          : 'text-gray-700 hover:bg-gray-100'
+                        ? 'text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20'
+                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
                 >
                   <item.icon className="h-5 w-5 mr-3" />
@@ -360,9 +344,7 @@ const EducationalSidebar = ({ children }) => {
           <div className="absolute bottom-4 left-4 right-4">
             <button
               onClick={handleLogout}
-              className={`w-full flex items-center p-3 rounded-lg transition-colors text-red-600 ${
-                isDarkMode ? 'hover:bg-red-900/20' : 'hover:bg-red-50'
-              }`}
+              className="w-full flex items-center p-3 rounded-lg transition-colors text-destructive hover:bg-destructive/10"
             >
               <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
               <span className="font-medium">Logout</span>

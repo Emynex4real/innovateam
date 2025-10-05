@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../../components/ui/logo';
+import { useDarkMode } from '../../contexts/DarkModeContext';
+import { Moon, Sun } from 'lucide-react';
+import { Button } from '../../components/ui/button';
 
 const NavBar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const sidebarRef = useRef(null);
-  const toggleButtonRef = useRef(null); // Ref for the toggle button
+  const toggleButtonRef = useRef(null);
   const navigate = useNavigate();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Toggle sidebar
   const toggleSidebar = () => {
@@ -63,7 +67,9 @@ const NavBar = () => {
   ];
 
   return (
-    <nav className="w-full bg-white shadow-md sticky top-0 z-50 font-nunito">
+    <nav className={`w-full sticky top-0 z-50 font-nunito transition-colors duration-300 ${
+      isDarkMode ? 'bg-gray-900 shadow-lg' : 'bg-white shadow-md'
+    }`}>
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center" onClick={closeSidebar}>
@@ -77,9 +83,14 @@ const NavBar = () => {
               <li key={item.label}>
                 <Link
                   to={item.path}
-                  className="text-gray-700 text-base font-medium hover:text-green-500 hover:border-b-2 hover:border-green-500 pb-1 transition-all duration-200"
+                  className={`text-base font-medium pb-1 transition-all duration-200 relative group ${
+                    isDarkMode ? 'text-gray-300 hover:text-green-400' : 'text-gray-700 hover:text-green-500'
+                  }`}
                 >
                   {item.label}
+                  <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-green-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ${
+                    isDarkMode ? 'bg-green-400' : 'bg-green-500'
+                  }`}></span>
                 </Link>
               </li>
             ))}
@@ -92,11 +103,17 @@ const NavBar = () => {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="py-2 px-4 w-48 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-color focus:border-transparent transition-all duration-200 text-sm"
+              className={`py-2 px-4 w-48 rounded-md border focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-sm ${
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
+                  : 'bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary-color"
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                isDarkMode ? 'text-gray-400 hover:text-green-400' : 'text-gray-500 hover:text-green-500'
+              }`}
               aria-label="Search"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,43 +122,77 @@ const NavBar = () => {
             </button>
           </form>
 
+          {/* Dark Mode Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleDarkMode}
+            className={`rounded-full ${
+              isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            aria-label="Toggle Dark Mode"
+          >
+            {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+
           {/* Login Button */}
           <Link
             to="/login"
-            className="bg-green-500 text-white px-5 py-2 rounded-md font-medium hover:bg-green-600 transition-all duration-200 text-sm"
+            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-5 py-2 rounded-md font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm shadow-md"
           >
             Login
           </Link>
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          ref={toggleButtonRef}
-          className="lg:hidden focus:outline-none p-2"
-          onClick={toggleSidebar}
-          aria-label="Toggle Navigation Menu"
-          aria-expanded={isSidebarOpen}
-        >
-          <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {isSidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
+        <div className="flex items-center lg:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleDarkMode}
+            className={`rounded-full mr-2 ${
+              isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            aria-label="Toggle Dark Mode"
+          >
+            {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+          <button
+            ref={toggleButtonRef}
+            className={`focus:outline-none p-2 rounded-md ${
+              isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            onClick={toggleSidebar}
+            aria-label="Toggle Navigation Menu"
+            aria-expanded={isSidebarOpen}
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isSidebarOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Mobile Sidebar */}
       <div
         ref={sidebarRef}
-        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 h-full w-72 shadow-xl transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:hidden z-50 overflow-y-auto`}
+        } lg:hidden z-50 overflow-y-auto ${
+          isDarkMode ? 'bg-gray-900 text-gray-200' : 'bg-white text-gray-800'
+        }`}
       >
-        <div className="p-5 flex justify-between items-center border-b border-gray-200">
+        <div className={`p-5 flex justify-between items-center border-b ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}>
           <Logo size="sm" />
-          <button onClick={closeSidebar} className="text-gray-600 hover:text-primary-color" aria-label="Close Sidebar">
+          <button onClick={closeSidebar} className={`p-2 rounded-md ${
+            isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+          }`} aria-label="Close Sidebar">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -152,7 +203,9 @@ const NavBar = () => {
             <li key={item.label}>
               <Link
                 to={item.path}
-                className="flex items-center p-3 text-gray-700 hover:bg-gray-100 hover:text-primary-color rounded-md transition-all duration-200"
+                className={`flex items-center p-3 rounded-md transition-all duration-200 ${
+                  isDarkMode ? 'text-gray-300 hover:bg-gray-800 hover:text-green-400' : 'text-gray-700 hover:bg-gray-100 hover:text-green-500'
+                }`}
                 onClick={closeSidebar}
               >
                 <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,11 +222,17 @@ const NavBar = () => {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-2 px-4 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-color focus:border-transparent transition-all duration-200"
+                className={`w-full py-2 px-4 rounded-md border focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
+                    : 'bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary-color"
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                  isDarkMode ? 'text-gray-400 hover:text-green-400' : 'text-gray-500 hover:text-green-500'
+                }`}
                 aria-label="Search"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -185,7 +244,7 @@ const NavBar = () => {
           <li>
             <Link
               to="/login"
-              className="block w-full bg-primary-color text-white p-3 rounded-md text-center font-medium hover:bg-green-600 transition-all duration-200"
+              className="block w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white p-3 rounded-md text-center font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-md"
               onClick={closeSidebar}
             >
               Login

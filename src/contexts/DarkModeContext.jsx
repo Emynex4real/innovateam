@@ -23,6 +23,18 @@ export const DarkModeProvider = ({ children }) => {
     return false;
   });
 
+  // Initialize dark mode on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('darkMode');
+      if (savedMode !== null) {
+        const isDark = savedMode === 'true';
+        document.documentElement.classList.toggle('dark', isDark);
+        setIsDarkMode(isDark);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('darkMode', isDarkMode);

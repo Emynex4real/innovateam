@@ -84,7 +84,13 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
+        serif: ['Georgia', 'serif'],
+        mono: ['Menlo', 'monospace'],
+        display: ['Oswald', 'sans-serif'],
+        body: ['"Open Sans"', 'sans-serif'],
         nunito: ['Nunito', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
       },
       spacing: {
         '72': '18rem',

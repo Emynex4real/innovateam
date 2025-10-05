@@ -1,10 +1,16 @@
-function WaecGce() {
+import React from 'react';
+import ResultCheckerTemplate from '../../../components/ResultCheckerTemplate';
+
+const WaecGce = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-900">WAEC GCE</h1>
-      <p className="mt-4 text-gray-600">This is a placeholder for the WAEC GCE service.</p>
-    </div>
+    <ResultCheckerTemplate
+      title="WAEC GCE"
+      description="Purchase your WAEC GCE registration and check your results instantly"
+      pricePerCard={28000}
+      serialPrefix="GCE"
+      initialCards={[]}
+    />
   );
-}
+};
 
 export default WaecGce;
