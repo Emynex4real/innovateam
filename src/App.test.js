@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/SupabaseAuthContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import * as authService from './services/auth.service';
 

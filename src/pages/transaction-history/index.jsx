@@ -1,10 +1,11 @@
 // src/pages/transactionHistory/index.jsx
 import React, { useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
-import { useTransactions } from '../../contexts/TransactionContext';
+
 
 const TransactionHistory = () => {
-  const { transactions } = useTransactions();
+  // Mock data for now - will be replaced with Supabase data
+  const transactions = [];
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 

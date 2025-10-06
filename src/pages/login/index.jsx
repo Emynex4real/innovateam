@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/SupabaseAuthContext";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi";
@@ -15,14 +15,13 @@ import { Checkbox } from "../../components/ui/checkbox";
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, isLoading, forgotPassword } = useAuth();
+  const { signIn, isAuthenticated, loading, resetPassword } = useAuth();
   const { isDarkMode } = useDarkMode();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [showSocial, setShowSocial] = useState(false);
   const [formError, setFormError] = useState("");
 
   const containerVariants = {
@@ -40,19 +39,13 @@ const Login = () => {
     }
 
     try {
-      const result = await login({ email, password }, rememberMe);
+      const result = await signIn(email, password);
       if (result.success) {
         setEmail("");
         setPassword("");
         setRememberMe(false);
-        // Always redirect admin to /admin/dashboard after login
-        if (result.user && (result.user.role === 'admin' || result.user.isAdmin)) {
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          // Redirect to the page they tried to visit or dashboard
-          const from = location.state?.from?.pathname || "/dashboard";
-          navigate(from, { replace: true });
-        }
+        const from = location.state?.from?.pathname || "/dashboard";
+        navigate(from, { replace: true });
       } else {
         toast.error(result.error || "Invalid credentials");
         setFormError(result.error || "Invalid credentials");
@@ -69,7 +62,7 @@ const Login = () => {
       return;
     }
     try {
-      const result = await forgotPassword(email);
+      const result = await resetPassword(email);
       if (result.success) {
         setFormError("");
         toast.success("Password reset instructions sent to your email");
@@ -88,10 +81,9 @@ const Login = () => {
   };
 
   useEffect(() => {
-    // Remove the automatic redirect since we handle it in handleSubmit
-    // if (isAuthenticated) {
-    //   navigate("/dashboard");
-    // }
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
   }, [isAuthenticated, navigate]);
 
   return (
@@ -153,7 +145,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -168,7 +160,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                   <button
                     type="button"
@@ -186,7 +178,7 @@ const Login = () => {
                     id="remember"
                     checked={rememberMe}
                     onCheckedChange={setRememberMe}
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                   <Label htmlFor="remember" className="text-sm cursor-pointer">
                     Remember me
@@ -197,7 +189,7 @@ const Login = () => {
                   variant="link"
                   className="text-primary-color hover:text-primary-color/80"
                   onClick={handleForgotPassword}
-                  disabled={isLoading}
+                  disabled={loading}
                 >
                   Forgot password?
                 </Button>
@@ -210,9 +202,9 @@ const Login = () => {
                     ? 'bg-primary-color hover:bg-primary-color/90 text-white' 
                     : 'bg-primary-color hover:bg-primary-color/90 text-white'
                 } font-semibold py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-color/50 disabled:opacity-50 disabled:cursor-not-allowed`}
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
+                {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                     Signing in...
@@ -244,7 +236,7 @@ const Login = () => {
                     : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
                 } transition-colors duration-200`}
                 onClick={() => handleSocialLogin("google")}
-                disabled={isLoading}
+                disabled={loading}
               >
                 <FaGoogle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
               </Button>
@@ -257,7 +249,7 @@ const Login = () => {
                     : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
                 } transition-colors duration-200`}
                 onClick={() => handleSocialLogin("facebook")}
-                disabled={isLoading}
+                disabled={loading}
               >
                 <FaFacebook className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
               </Button>
@@ -270,7 +262,7 @@ const Login = () => {
                     : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
                 } transition-colors duration-200`}
                 onClick={() => handleSocialLogin("twitter")}
-                disabled={isLoading}
+                disabled={loading}
               >
                 <FaTwitter className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
               </Button>

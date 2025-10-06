@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/SupabaseAuthContext';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -28,10 +28,10 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
+        name: user?.user_metadata?.full_name || user?.email || '',
         email: user.email || '',
-        phone: user.phone || '',
-        address: user.address || '',
+        phone: user?.user_metadata?.phone || '',
+        address: user?.user_metadata?.address || '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',

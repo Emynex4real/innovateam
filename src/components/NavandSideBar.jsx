@@ -1,8 +1,7 @@
 // src/components/NavandSideBar.jsx
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useTransactions } from "../contexts/TransactionContext";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/SupabaseAuthContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {
   BiGrid,
@@ -32,8 +31,8 @@ const NavandSideBar = ({ children }) => {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   const userDropdownRef = useRef(null);
-  const { logout, user } = useAuth();
-  const { walletBalance } = useTransactions();
+  const { signOut, user } = useAuth();
+  const walletBalance = 0; // Mock data for now
   const { isDarkMode } = useDarkMode();
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
@@ -68,7 +67,7 @@ const NavandSideBar = ({ children }) => {
   };
 
   const handleLogout = async () => {
-      const result = await logout();
+      const result = await signOut();
       if (result.success) {
       navigate('/login');
       } else {

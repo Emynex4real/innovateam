@@ -1,8 +1,10 @@
-import { useTransactions } from '../contexts/TransactionContext';
+
 import { toast } from 'react-toastify';
 
 export const useJambTransaction = () => {
-  const { addTransaction, walletBalance } = useTransactions();
+  // Mock data for now - will be replaced with Supabase data
+  const walletBalance = 0;
+  const addTransaction = (transaction) => {};
 
   const processJambTransaction = async (params) => {
     const {

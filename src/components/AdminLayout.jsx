@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAdmin } from '../contexts/AdminContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 
 const AdminLayout = () => {
   const { isAdmin, isLoading, isAdminResolved } = useAdmin();

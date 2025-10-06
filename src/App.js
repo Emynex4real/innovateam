@@ -20,8 +20,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Loading from "./components/Loading";
 
 // Contexts
-import { AuthProvider } from "./contexts/AuthContext";
-import { WalletProvider } from "./contexts/WalletContext";
+import { AuthProvider } from "./contexts/SupabaseAuthContext";
+// import { WalletProvider } from "./contexts/WalletContext"; // Replaced by Supabase
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AdminProvider } from "./contexts/AdminContext";
@@ -172,7 +172,6 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <DarkModeProvider>
-            <WalletProvider>
             <SecureErrorBoundary>
               <div className="App">
                 <Suspense fallback={<SecureLoading />}>
@@ -251,7 +250,6 @@ function App() {
                 />
               </div>
             </SecureErrorBoundary>
-            </WalletProvider>
           </DarkModeProvider>
         </ThemeProvider>
       </AuthProvider>

@@ -14,7 +14,7 @@ import {
   QuestionMarkCircleIcon,
   ArrowLeftOnRectangleIcon,
 } from '@heroicons/react/24/outline';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import { toast } from 'react-hot-toast';
 
 const navigation = [

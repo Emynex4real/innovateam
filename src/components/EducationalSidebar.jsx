@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useWallet } from '../contexts/WalletContext';
+import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import {
   HomeIcon,
@@ -29,8 +28,8 @@ const EducationalSidebar = ({ children }) => {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   
-  const { user, logout } = useAuth();
-  const { walletBalance } = useWallet();
+  const { user, profile, signOut } = useAuth();
+  const walletBalance = profile?.wallet_balance || 0;
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const menuItems = [
@@ -104,7 +103,7 @@ const EducationalSidebar = ({ children }) => {
 
   // Add admin panel for admin users
   const finalMenuItems = [...menuItems];
-  if (user?.isAdmin) {
+  if (profile?.role === 'admin') {
     finalMenuItems.push({
       id: 'admin-panel',
       label: 'Admin Panel',
@@ -133,7 +132,7 @@ const EducationalSidebar = ({ children }) => {
   };
 
   const handleLogout = async () => {
-    const result = await logout();
+    const result = await signOut();
     if (result.success) {
       navigate('/login');
     }
@@ -225,7 +224,7 @@ const EducationalSidebar = ({ children }) => {
                       Profile Settings
                     </Link>
                     
-                    {user?.isAdmin && (
+                    {profile?.role === 'admin' && (
                       <Link
                         to="/admin/dashboard"
                         className="block px-4 py-2 text-sm font-medium text-orange-600 hover:bg-accent"
