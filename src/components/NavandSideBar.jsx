@@ -32,6 +32,9 @@ const NavandSideBar = ({ children }) => {
   const sidebarRef = useRef(null);
   const userDropdownRef = useRef(null);
   const { signOut, user, profile } = useAuth();
+  
+  // Debug log
+  console.log('NavBar - User:', user?.email, 'Profile:', profile?.role);
   const walletBalance = 0; // Mock data for now
   const { isDarkMode } = useDarkMode();
 
@@ -212,7 +215,7 @@ const NavandSideBar = ({ children }) => {
                 >
                   Profile
                 </Link>
-                {profile?.role === 'admin' && (
+                {(profile?.role === 'admin' || user?.email === 'innovateamnigeria@gmail.com') && (
                   <Link
                     to="/admin/dashboard"
                     className={`block px-4 py-2 text-sm font-medium ${
