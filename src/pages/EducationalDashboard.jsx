@@ -124,21 +124,32 @@ const EducationalDashboard = () => {
 
   const toggleTransactions = () => setShowAllTransactions((prev) => !prev);
 
-  const handlePurchaseService = (service) => {
-    const amount = parseFloat(service.price.replace('₦', '').replace(',', ''));
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+
+  const handlePurchaseClick = (service) => {
+    setSelectedService(service);
+    setShowConfirmModal(true);
+  };
+
+  const confirmPurchase = () => {
+    const amount = parseFloat(selectedService.price.replace('₦', '').replace(',', ''));
     if (walletBalance < amount) {
       alert('Insufficient balance');
+      setShowConfirmModal(false);
       return;
     }
     addTransaction({
-      label: service.title,
-      description: `Purchased ${service.title}`,
+      label: selectedService.title,
+      description: `Purchased ${selectedService.title}`,
       amount: amount,
       type: 'debit',
-      category: service.category,
+      category: selectedService.category,
       status: 'Successful',
       date: new Date().toISOString()
     });
+    setShowConfirmModal(false);
+    alert('Purchase successful!');
   };
 
   return (
@@ -377,20 +388,13 @@ const EducationalDashboard = () => {
                         </ul>
                       )}
                       
-                      <div className="flex gap-2 pt-2">
+                      <div className="pt-2">
                         <Button
-                          className="flex-1"
-                          onClick={() => handlePurchaseService(service)}
-                        >
-                          Purchase
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
+                          className="w-full"
                           asChild
                         >
                           <Link to={service.link}>
-                            <ArrowUpRight className="h-4 w-4" />
+                            View Service
                           </Link>
                         </Button>
                       </div>
@@ -402,6 +406,33 @@ const EducationalDashboard = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Confirm Purchase</h3>
+            <p className="text-muted-foreground mb-4">
+              Are you sure you want to purchase {selectedService?.title} for {selectedService?.price}?
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={confirmPurchase}
+              >
+                Confirm Purchase
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
