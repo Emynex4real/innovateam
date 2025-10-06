@@ -56,21 +56,27 @@ export class AdminService {
         .select('id, email, full_name, role, wallet_balance, is_verified, created_at')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching users:', error)
+        throw error
+      }
+
+      console.log('Fetched users:', data) // Debug log
 
       return {
         success: true,
-        data: data.map(user => ({
+        data: (data || []).map(user => ({
           id: user.id,
-          name: user.full_name,
+          name: user.full_name || user.email?.split('@')[0],
           email: user.email,
-          role: user.role,
+          role: user.role || 'student',
           status: 'active',
-          walletBalance: user.wallet_balance,
+          walletBalance: user.wallet_balance || 0,
           createdAt: user.created_at
         }))
       }
     } catch (error) {
+      console.error('AdminService.getUsers error:', error)
       return { success: false, error: error.message }
     }
   }
@@ -183,6 +189,8 @@ export class AdminService {
       return { success: false, error: error.message }
     }
   }
+
+
 
   // Get analytics data
   static async getAnalytics() {

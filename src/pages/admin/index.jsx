@@ -70,6 +70,8 @@ const AdminPanel = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
+
+      
       const [metricsResult, usersResult, transactionsResult, courseResult, analyticsResult] = await Promise.all([
         AdminService.getDashboardMetrics(),
         AdminService.getUsers(),
