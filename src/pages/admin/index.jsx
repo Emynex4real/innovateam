@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/SupabaseAuthContext';
 import { useAdmin } from '../../contexts/AdminContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import realTimeService from '../../services/realtime.service';

@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useTransactions } from "../../contexts/TransactionContext";
+
 import { PhoneIcon, WifiIcon } from "@heroicons/react/24/outline";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 
 const DataSubscription = () => {
-  const { addTransaction, walletBalance, transactions } = useTransactions();
+  // Mock data for now - will be replaced with Supabase data
+  const walletBalance = 0;
+  const addTransaction = (transaction) => {};
+  const transactions = [];
   const [network, setNetwork] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");

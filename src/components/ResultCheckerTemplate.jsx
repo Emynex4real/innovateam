@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Copy, Check, CreditCard, FileText, Calendar, Hash } from 'lucide-react';
-import { useTransactions } from '../contexts/TransactionContext';
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -21,7 +21,9 @@ const ResultCheckerTemplate = ({
   const [notification, setNotification] = useState({ visible: false, message: '', type: '' });
   const [copiedCardId, setCopiedCardId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const { addTransaction, walletBalance } = useTransactions();
+  // Mock data for now - will be replaced with Supabase data
+  const walletBalance = 0;
+  const addTransaction = (transaction) => {};
 
   const totalAmount = quantity * pricePerCard;
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Star, Users, Award, Zap, Target, BookOpen, MessageCircle, Play, TrendingUp, Brain, Sparkles, Sun, Moon, Menu, X, Search, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/SupabaseAuthContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -23,7 +23,7 @@ const NavBar = () => {
   const toggleButtonRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, signOut } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   useEffect(() => {
@@ -193,7 +193,7 @@ const NavBar = () => {
                         </Link>
                         <button
                           onClick={() => {
-                            logout();
+                            signOut();
                             setIsDropdownOpen(false);
                           }}
                           className={`block w-full text-left px-4 py-2 text-sm font-semibold text-red-500 transition-colors ${
@@ -360,7 +360,7 @@ const NavBar = () => {
                 </Link>
                 <button
                   onClick={() => {
-                    logout();
+                    signOut();
                     setIsSidebarOpen(false);
                   }}
                   className={`block w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 transition-colors ${

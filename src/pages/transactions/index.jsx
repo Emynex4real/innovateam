@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTransactions } from '../../contexts/TransactionContext';
+
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -10,7 +10,8 @@ import { Download, Filter, Search, X, Calendar, DollarSign, TrendingUp, Trending
 import toast from 'react-hot-toast';
 
 const Transactions = () => {
-  const { transactions } = useTransactions();
+  // Mock data for now - will be replaced with Supabase data
+  const transactions = [];
   const { isDarkMode } = useDarkMode();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');

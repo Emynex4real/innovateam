@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTransactions } from '../../contexts/TransactionContext';
+import { useAuth } from '../../contexts/SupabaseAuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -15,7 +14,10 @@ const Wallet = () => {
   const [showFundModal, setShowFundModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-  const { transactions, walletBalance, addTransaction } = useTransactions();
+  // Mock data for now - will be replaced with Supabase data
+  const transactions = [];
+  const walletBalance = 0;
+  const addTransaction = (transaction) => {};
 
   const handleFundWallet = async () => {
     if (!amount || parseFloat(amount) <= 0) {

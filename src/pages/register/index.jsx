@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiUser, FiMail, FiPhone, FiLock, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi";
 import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 import { toast, Toaster } from "react-hot-toast";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/SupabaseAuthContext";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -14,7 +14,7 @@ import { Checkbox } from "../../components/ui/checkbox";
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register: authRegister } = useAuth();
+  const { signUp } = useAuth();
   const { isDarkMode } = useDarkMode();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -111,39 +111,41 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  setIsLoading(true);
-  try {
-    console.log('Attempting registration with:', { ...formData, password: '[REDACTED]' });
-    const result = await authRegister(formData);
-    console.log('Registration result:', result);
-    
-    if (result.success) {
-      toast.success("Account created successfully!");
-      setFormData({
-        name: "",
-        email: "",
-        phoneNumber: "",
-        password: "",
-        confirmPassword: "",
-        agreeToTerms: false,
+    setIsLoading(true);
+    try {
+      const result = await signUp(formData.email, formData.password, {
+        fullName: formData.name,
+        phone: formData.phoneNumber
       });
-      navigate("/login");
-    } else {
-      const errorMessage = typeof result.error === 'string' ? result.error : 'Failed to create account';
-      setErrors({ submit: errorMessage });
-      toast.error(errorMessage);
+      
+      if (result.success) {
+        toast.success("Account created successfully! Please check your email to verify your account.");
+        setFormData({
+          name: "",
+          email: "",
+          phoneNumber: "",
+          password: "",
+          confirmPassword: "",
+          agreeToTerms: false,
+        });
+        navigate("/login");
+      } else {
+        const errorMessage = result.error || 'Failed to create account';
+        setErrors({ submit: errorMessage });
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      setErrors({ submit: "Failed to create account. Please try again." });
+      toast.error("Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    setErrors({ submit: "Failed to create account. Please try again." });
-    toast.error("Failed to create account. Please try again.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
+
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 relative ${
       isDarkMode 

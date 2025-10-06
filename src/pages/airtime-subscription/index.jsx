@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useTransactions } from "../../contexts/TransactionContext";
+
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import { PhoneIcon } from "@heroicons/react/24/outline";
@@ -38,7 +38,10 @@ const itemVariants = {
 };
 
 const AirtimeSubscription = () => {
-  const { walletBalance, addTransaction, transactions } = useTransactions();
+  // Mock data for now - will be replaced with Supabase data
+  const walletBalance = 0;
+  const addTransaction = (transaction) => {};
+  const transactions = [];
   const [network, setNetwork] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [amount, setAmount] = useState("");

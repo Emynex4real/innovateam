@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiSun, FiMoon, FiMenu, FiX, FiSearch } from 'react-icons/fi';
 import Logo from '../../../components/ui/logo';
 import { Button } from '../../../components/ui/button';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useTransactions } from '../../../contexts/TransactionContext';
+import { useAuth } from '../../../contexts/SupabaseAuthContext';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
 
 const NavBar = () => {
@@ -16,8 +15,9 @@ const NavBar = () => {
   const toggleButtonRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
-  const { walletBalance } = useTransactions();
+  const { user, signOut } = useAuth();
+  const isAuthenticated = !!user;
+  const walletBalance = 0; // Mock data for now
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   useEffect(() => {
@@ -238,7 +238,7 @@ const NavBar = () => {
                         </Link>
                         <button
                           onClick={() => {
-                            logout();
+                            signOut();
                             setIsDropdownOpen(false);
                           }}
                           className={`block w-full text-left px-4 py-2 text-sm text-red-500 transition-colors ${
@@ -427,7 +427,7 @@ const NavBar = () => {
                 </Link>
                 <button
                   onClick={() => {
-                    logout();
+                    signOut();
                     setIsSidebarOpen(false);
                   }}
                   className={`block w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 transition-colors ${
