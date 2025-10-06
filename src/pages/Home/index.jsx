@@ -82,14 +82,14 @@ const NavBar = () => {
             : 'bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg'
           : isDarkMode
             ? 'bg-transparent'
-            : 'bg-transparent'
+            : 'bg-white shadow-sm'
       }`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center group">
               <Logo 
                 size="md" 
-                textColor={isDarkMode ? "white" : isScrolled ? "dark" : "white"} 
+                textColor={isDarkMode ? "white" : "dark"} 
                 className="transition-all duration-300 group-hover:scale-105" 
               />
             </Link>
@@ -105,7 +105,7 @@ const NavBar = () => {
                           ? 'text-gray-100 hover:text-green-400' 
                           : isScrolled 
                             ? 'text-gray-900 hover:text-green-600' 
-                            : 'text-white hover:text-green-400'
+                            : 'text-gray-900 hover:text-green-600'
                       }`}
                     >
                       {item.label}
@@ -127,7 +127,7 @@ const NavBar = () => {
                         ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-200 focus:bg-gray-800 focus:border-green-500' 
                         : isScrolled
                           ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-700 focus:border-green-500'
-                          : 'bg-white/10 border-white/20 text-white placeholder-white/80 focus:bg-white/20 focus:border-green-400'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-700 focus:border-green-500'
                     } focus:outline-none focus:ring-2 focus:ring-green-500/20`}
                   />
                   <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
@@ -135,7 +135,7 @@ const NavBar = () => {
                       ? 'text-gray-200' 
                       : isScrolled 
                         ? 'text-gray-700' 
-                        : 'text-white/80'
+                        : 'text-gray-700'
                   }`} />
                 </form>
               </div>
@@ -147,7 +147,7 @@ const NavBar = () => {
                     ? 'text-gray-200 hover:text-yellow-400 hover:bg-gray-800' 
                     : isScrolled
                       ? 'text-gray-800 hover:text-gray-900 hover:bg-gray-100'
-                      : 'text-white/90 hover:text-yellow-400 hover:bg-white/10'
+                      : 'text-gray-800 hover:text-gray-900 hover:bg-gray-100'
                 }`}
                 aria-label="Toggle theme"
               >
@@ -163,7 +163,7 @@ const NavBar = () => {
                         ? 'hover:bg-gray-800' 
                         : isScrolled
                           ? 'hover:bg-gray-100'
-                          : 'hover:bg-white/10'
+                          : 'hover:bg-gray-100'
                     }`}
                   >
                     <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
@@ -217,7 +217,7 @@ const NavBar = () => {
                         ? 'text-gray-100 hover:text-white hover:bg-gray-800' 
                         : isScrolled
                           ? 'text-gray-900 hover:text-gray-900 hover:bg-gray-100'
-                          : 'text-white hover:text-white hover:bg-white/10'
+                          : 'text-gray-900 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
                     <Link to="/login">Sign In</Link>
@@ -241,7 +241,7 @@ const NavBar = () => {
                   ? 'text-gray-100 hover:text-white hover:bg-gray-800' 
                   : isScrolled
                     ? 'text-gray-900 hover:text-gray-900 hover:bg-gray-100'
-                    : 'text-white hover:text-white hover:bg-white/10'
+                    : 'text-gray-900 hover:text-gray-900 hover:bg-gray-100'
               }`}
               aria-label="Toggle menu"
             >

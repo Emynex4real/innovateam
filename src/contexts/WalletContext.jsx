@@ -45,10 +45,18 @@ export const WalletProvider = ({ children }) => {
 
   const addTransaction = async (transactionData) => {
     try {
-      const result = await walletService.deductFromWallet(
-        transactionData.amount, 
-        transactionData.description
-      );
+      let result;
+      if (transactionData.type === 'credit') {
+        result = await walletService.fundWallet(
+          transactionData.amount, 
+          'card'
+        );
+      } else {
+        result = await walletService.deductFromWallet(
+          transactionData.amount, 
+          transactionData.description || transactionData.label
+        );
+      }
       await fetchWalletData(); // Refresh data
       return result;
     } catch (error) {
