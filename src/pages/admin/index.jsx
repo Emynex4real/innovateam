@@ -14,6 +14,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import ThemeToggle from '../../components/ui/theme-toggle';
+import { Menu, X } from 'lucide-react';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -30,6 +31,7 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const { user, logout } = useAuth();
   const { getDashboardMetrics, getUsers, getTransactions } = useAdmin();
@@ -614,15 +616,33 @@ const AdminPanel = () => {
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 lg:hidden z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
       {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700">
+      <div className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0`}>
+        <div className="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 px-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">A</span>
             </div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Admin</h1>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
         
         <nav className="mt-6 px-3">
@@ -635,7 +655,10 @@ const AdminPanel = () => {
                   ? 'bg-blue-600 text-white' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                setSidebarOpen(false);
+              }}
             >
               <span className="mr-3 text-lg">{item.icon}</span>
               {item.name}
@@ -648,7 +671,10 @@ const AdminPanel = () => {
             <Button
               variant="ghost"
               className="w-full justify-start h-11 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={handleDashboard}
+              onClick={() => {
+                handleDashboard();
+                setSidebarOpen(false);
+              }}
             >
               <span className="mr-3 text-lg">🏠</span>
               Return to Dashboard
@@ -656,7 +682,10 @@ const AdminPanel = () => {
             <Button
               variant="ghost"
               className="w-full justify-start h-11 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-              onClick={handleLogout}
+              onClick={() => {
+                handleLogout();
+                setSidebarOpen(false);
+              }}
             >
               <span className="mr-3 text-lg">🚪</span>
               Sign Out
@@ -666,10 +695,18 @@ const AdminPanel = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-6">
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Admin Dashboard
             </h2>
