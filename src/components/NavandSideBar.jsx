@@ -31,7 +31,7 @@ const NavandSideBar = ({ children }) => {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   const userDropdownRef = useRef(null);
-  const { signOut, user } = useAuth();
+  const { signOut, user, profile } = useAuth();
   const walletBalance = 0; // Mock data for now
   const { isDarkMode } = useDarkMode();
 
@@ -212,7 +212,7 @@ const NavandSideBar = ({ children }) => {
                 >
                   Profile
                 </Link>
-                {user?.isAdmin && (
+                {profile?.role === 'admin' && (
                   <Link
                     to="/admin/dashboard"
                     className={`block px-4 py-2 text-sm font-medium ${

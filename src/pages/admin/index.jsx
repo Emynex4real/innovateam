@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/SupabaseAuthContext';
-import { useAdmin } from '../../contexts/AdminContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import realTimeService from '../../services/realtime.service';
+import { AdminService } from '../../services/supabase/admin.service';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -28,17 +26,20 @@ const AdminPanel = () => {
   });
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [courseRecommendations, setCourseRecommendations] = useState([]);
+  const [analytics, setAnalytics] = useState({});
   const [loading, setLoading] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('connected');
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  const { user, logout } = useAuth();
-  const { getDashboardMetrics, getUsers, getTransactions } = useAdmin();
+  const { user, signOut } = useAuth();
+
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     navigate('/login');
   };
 
@@ -58,122 +59,78 @@ const AdminPanel = () => {
   useEffect(() => {
     loadDashboardData();
     
-    // Set up real-time updates every 30 seconds
+    // Refresh data every 30 seconds
     const interval = setInterval(loadDashboardData, 30000);
-    
-    // Subscribe to real-time events
-    const unsubscribeStats = realTimeService.subscribe('stats_update', (data) => {
-      setStats(prev => ({ ...prev, ...data, lastUpdated: new Date().toLocaleTimeString() }));
-    });
-    
-    const unsubscribeNewUser = realTimeService.subscribe('new_user', (user) => {
-      setUsers(prev => [user, ...prev.slice(0, 49)]); // Keep only latest 50
-      setStats(prev => ({ 
-        ...prev, 
-        totalUsers: prev.totalUsers + 1,
-        activeUsers: user.status === 'active' ? prev.activeUsers + 1 : prev.activeUsers,
-        lastUpdated: new Date().toLocaleTimeString()
-      }));
-    });
-    
-    const unsubscribeNewTransaction = realTimeService.subscribe('new_transaction', (transaction) => {
-      setTransactions(prev => [transaction, ...prev.slice(0, 49)]); // Keep only latest 50
-      setStats(prev => ({ 
-        ...prev, 
-        totalTransactions: prev.totalTransactions + 1,
-        revenue: prev.revenue + (transaction.amount || 0),
-        todayRevenue: new Date(transaction.createdAt).toDateString() === new Date().toDateString() 
-          ? prev.todayRevenue + (transaction.amount || 0) 
-          : prev.todayRevenue,
-        completedTransactions: transaction.status === 'completed' ? prev.completedTransactions + 1 : prev.completedTransactions,
-        pendingTransactions: transaction.status === 'pending' ? prev.pendingTransactions + 1 : prev.pendingTransactions,
-        lastUpdated: new Date().toLocaleTimeString()
-      }));
-    });
-    
-    const unsubscribeUserUpdate = realTimeService.subscribe('user_updated', (updatedUser) => {
-      setUsers(prev => prev.map(user => 
-        user.id === updatedUser.id ? { ...user, ...updatedUser } : user
-      ));
-    });
-    
-    const unsubscribeTransactionUpdate = realTimeService.subscribe('transaction_updated', (updatedTransaction) => {
-      setTransactions(prev => prev.map(tx => 
-        tx.id === updatedTransaction.id ? { ...tx, ...updatedTransaction } : tx
-      ));
-    });
-    
-    // Monitor connection status
-    const statusInterval = setInterval(() => {
-      setConnectionStatus(realTimeService.getStatus());
-    }, 1000);
     
     return () => {
       clearInterval(interval);
-      clearInterval(statusInterval);
-      unsubscribeStats();
-      unsubscribeNewUser();
-      unsubscribeNewTransaction();
-      unsubscribeUserUpdate();
-      unsubscribeTransactionUpdate();
     };
   }, []);
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Fetch real-time data from multiple endpoints
-      const [metricsResponse, usersResponse, transactionsResponse] = await Promise.all([
-        fetch('/api/admin/live-metrics', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-        fetch('/api/admin/live-users', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-        fetch('/api/admin/live-transactions', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+      const [metricsResult, usersResult, transactionsResult, courseResult, analyticsResult] = await Promise.all([
+        AdminService.getDashboardMetrics(),
+        AdminService.getUsers(),
+        AdminService.getTransactions(),
+        AdminService.getCourseRecommendations(),
+        AdminService.getAnalytics()
       ]);
       
-      const [metricsData, usersData, transactionsData] = await Promise.all([
-        metricsResponse.ok ? metricsResponse.json() : getDashboardMetrics(),
-        usersResponse.ok ? usersResponse.json() : getUsers(),
-        transactionsResponse.ok ? transactionsResponse.json() : getTransactions()
-      ]);
+      if (metricsResult.success) {
+        setStats(metricsResult.data);
+      }
       
-      // Calculate real-time stats
-      const realTimeStats = {
-        totalUsers: usersData.length,
-        activeUsers: usersData.filter(u => u.status === 'active').length,
-        totalTransactions: transactionsData.length,
-        revenue: transactionsData.reduce((sum, t) => sum + (t.amount || 0), 0),
-        completedTransactions: transactionsData.filter(t => t.status === 'completed').length,
-        pendingTransactions: transactionsData.filter(t => t.status === 'pending').length,
-        failedTransactions: transactionsData.filter(t => t.status === 'failed').length,
-        todayRevenue: transactionsData
-          .filter(t => new Date(t.createdAt).toDateString() === new Date().toDateString())
-          .reduce((sum, t) => sum + (t.amount || 0), 0),
-        ...metricsData
-      };
+      if (usersResult.success) {
+        setUsers(usersResult.data);
+      }
       
-      setStats(realTimeStats);
-      setUsers(usersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-      setTransactions(transactionsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      if (transactionsResult.success) {
+        setTransactions(transactionsResult.data);
+      }
+      
+      if (courseResult.success) {
+        setCourseRecommendations(courseResult.data);
+      }
+      
+      if (analyticsResult.success) {
+        setAnalytics(analyticsResult.data);
+      }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      // Use consistent fallback data
-      setStats({
-        totalUsers: 1234,
-        activeUsers: 856,
-        totalTransactions: 2341,
-        revenue: 1250000,
-        lastUpdated: new Date().toLocaleTimeString()
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUserAction = async (userId, action) => {
+  const handleUserAction = async (userId, action, newRole = null) => {
+    setActionLoading(true);
     try {
-      // Implement user actions (activate, deactivate, delete)
+      if (action === 'makeAdmin') {
+        await AdminService.updateUserRole(userId, 'admin');
+      } else if (action === 'makeUser') {
+        await AdminService.updateUserRole(userId, 'student');
+      } else if (action === 'delete') {
+        await AdminService.deleteUser(userId);
+      }
       await loadDashboardData();
     } catch (error) {
       console.error('User action failed:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleTransactionAction = async (transactionId, status) => {
+    setActionLoading(true);
+    try {
+      await AdminService.updateTransactionStatus(transactionId, status);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Transaction action failed:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -200,7 +157,7 @@ const AdminPanel = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-100 text-sm font-medium">Total Users</p>
-                      <p className="text-3xl font-bold mt-2">{stats.totalUsers || users.length}</p>
+                      <p className="text-3xl font-bold mt-2">{stats.totalUsers || 0}</p>
                       <p className="text-blue-100 text-xs mt-1">Active: {stats.activeUsers || 0}</p>
                     </div>
                     <div className="text-4xl opacity-20">👥</div>
@@ -228,7 +185,7 @@ const AdminPanel = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-purple-100 text-sm font-medium">Transactions</p>
-                      <p className="text-3xl font-bold mt-2">{stats.totalTransactions || transactions.length}</p>
+                      <p className="text-3xl font-bold mt-2">{stats.totalTransactions || 0}</p>
                       <p className="text-purple-100 text-xs mt-1">Pending: {stats.pendingTransactions || 0}</p>
                     </div>
                     <div className="text-4xl opacity-20">💳</div>
@@ -358,10 +315,38 @@ const AdminPanel = () => {
                             {user.status || 'active'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.role || 'user'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <span className={`px-2 py-1 text-xs rounded ${
+                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {user.role || 'student'}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900">Edit</button>
-                          <button className="text-red-600 hover:text-red-900">Delete</button>
+                          {user.role !== 'admin' ? (
+                            <button 
+                              onClick={() => handleUserAction(user.id, 'makeAdmin')}
+                              disabled={actionLoading}
+                              className="text-purple-600 hover:text-purple-900 disabled:opacity-50"
+                            >
+                              Make Admin
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleUserAction(user.id, 'makeUser')}
+                              disabled={actionLoading}
+                              className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                            >
+                              Remove Admin
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleUserAction(user.id, 'delete')}
+                            disabled={actionLoading}
+                            className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -407,6 +392,7 @@ const AdminPanel = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -425,6 +411,26 @@ const AdminPanel = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(tx.createdAt || Date.now()).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                          {tx.status === 'pending' && (
+                            <>
+                              <button 
+                                onClick={() => handleTransactionAction(tx.id, 'completed')}
+                                disabled={actionLoading}
+                                className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => handleTransactionAction(tx.id, 'failed')}
+                                disabled={actionLoading}
+                                className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -452,7 +458,7 @@ const AdminPanel = () => {
               </div>
               <div className="bg-white p-6 rounded-lg shadow border">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Recommendations</h3>
-                <p className="text-3xl font-bold text-green-600">{stats.recommendations || 8901}</p>
+                <p className="text-3xl font-bold text-green-600">{stats.recommendations || 0}</p>
                 <p className="text-sm text-gray-600">Generated this month</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow border">
@@ -463,20 +469,23 @@ const AdminPanel = () => {
             </div>
             
             <div className="bg-white p-6 rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Analytics</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Course Recommendations</h3>
               <div className="space-y-4">
-                {['Computer Science', 'Mechanical Engineering', 'Civil Engineering', 'Biochemistry', 'Architecture'].map((course, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded">
+                {courseRecommendations.slice(0, 10).map((rec, index) => (
+                  <div key={rec.id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded">
                     <div>
-                      <p className="font-medium text-gray-900">{course}</p>
-                      <p className="text-sm text-gray-600">{450 - index * 50} recommendations</p>
+                      <p className="font-medium text-gray-900">{rec.users?.full_name || rec.users?.email}</p>
+                      <p className="text-sm text-gray-600">JAMB Score: {rec.jamb_score}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-green-600">+{15 - index * 2}%</p>
-                      <p className="text-xs text-gray-500">vs last month</p>
+                      <p className="text-sm font-medium text-green-600">{rec.match_percentage}% match</p>
+                      <p className="text-xs text-gray-500">{new Date(rec.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                 ))}
+                {courseRecommendations.length === 0 && (
+                  <p className="text-center text-gray-500 py-4">No course recommendations yet</p>
+                )}
               </div>
             </div>
           </div>
@@ -490,22 +499,22 @@ const AdminPanel = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white p-6 rounded-lg shadow border">
                 <h3 className="text-sm font-medium text-gray-600">Daily Active Users</h3>
-                <p className="text-2xl font-bold text-gray-900">{Math.floor(users.length * 0.7)}</p>
+                <p className="text-2xl font-bold text-gray-900">{analytics.dailyActiveUsers || 0}</p>
                 <p className="text-xs text-green-600">+12% from yesterday</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow border">
                 <h3 className="text-sm font-medium text-gray-600">Conversion Rate</h3>
-                <p className="text-2xl font-bold text-gray-900">3.2%</p>
+                <p className="text-2xl font-bold text-gray-900">{analytics.conversionRate || 0}%</p>
                 <p className="text-xs text-green-600">+0.5% from last week</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow border">
                 <h3 className="text-sm font-medium text-gray-600">Avg Session Duration</h3>
-                <p className="text-2xl font-bold text-gray-900">8m 32s</p>
+                <p className="text-2xl font-bold text-gray-900">{analytics.avgSessionDuration || '0m 0s'}</p>
                 <p className="text-xs text-red-600">-2% from last week</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow border">
                 <h3 className="text-sm font-medium text-gray-600">Bounce Rate</h3>
-                <p className="text-2xl font-bold text-gray-900">24.5%</p>
+                <p className="text-2xl font-bold text-gray-900">{analytics.bounceRate || 0}%</p>
                 <p className="text-xs text-green-600">-3% from last week</p>
               </div>
             </div>
