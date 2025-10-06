@@ -251,6 +251,153 @@ const NavBar = () => {
         </div>
       </nav>
 
+      {/* Mobile Sidebar */}
+      <div
+        ref={sidebarRef}
+        className={`fixed inset-y-0 right-0 w-80 transform transition-transform duration-300 ease-in-out lg:hidden z-50 ${
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        } ${
+          isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
+        } backdrop-blur-md border-l ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
+      >
+        <div className="p-6 h-full overflow-y-auto">
+          <div className="flex items-center justify-between mb-8">
+            <Logo 
+              size="md" 
+              textColor={isDarkMode ? "white" : "dark"} 
+            />
+            <button 
+              onClick={() => setIsSidebarOpen(false)} 
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode 
+                  ? 'text-gray-400 hover:text-white hover:bg-gray-800' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <nav className="space-y-2 mb-8">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                to={item.path}
+                className={`block px-4 py-3 rounded-xl transition-all duration-300 ${
+                  isDarkMode 
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-800' 
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <form onSubmit={handleSearch} className="mb-8">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full px-4 py-3 pl-10 rounded-xl border transition-colors ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-green-500' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500'
+                } focus:outline-none focus:ring-2 focus:ring-green-500/20`}
+              />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`} />
+            </div>
+          </form>
+
+          <button
+            onClick={toggleDarkMode}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors mb-8 ${
+              isDarkMode 
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800' 
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <span>Theme</span>
+            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {isAuthenticated ? (
+            <div className={`p-4 rounded-xl border ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">
+                    {user?.email?.charAt(0)?.toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <div className={`font-medium ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {user?.name || user?.email?.split('@')[0]}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Link
+                  to="/dashboard"
+                  className={`block w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700' 
+                      : 'text-gray-700 hover:bg-gray-200'
+                  }`}
+                  onClick={() => setIsSidebarOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsSidebarOpen(false);
+                  }}
+                  className={`block w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 transition-colors ${
+                    isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'
+                  }`}
+                >
+                  Sign out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Button 
+                asChild 
+                variant="outline" 
+                className={`w-full ${
+                  isDarkMode 
+                    ? 'border-gray-700 text-gray-300 hover:bg-gray-800' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <Button 
+                asChild 
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <Link to="/register">Get Started</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 lg:hidden z-40"
