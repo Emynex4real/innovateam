@@ -796,16 +796,17 @@ const CourseAdvisor = () => {
     }
 
     // Content-based interest alignment (20% weight)
-    const interestWords = interests.toLowerCase().split(/\s+/);
+    const selectedInterests = interests.split(',').map(i => i.trim().toLowerCase()).filter(Boolean);
+    const interestWords = selectedInterests.join(' ').split(/\s+/);
     const matchingInterests = courseData.interests.filter(interest => 
       interestWords.some(word => word.includes(interest) || interest.includes(word))
     );
-    const interestScore = matchingInterests.length / courseData.interests.length;
+    const interestScore = matchingInterests.length / Math.max(courseData.interests.length, 1);
     score += interestScore * 0.2;
     reasons.push(`Interest Match: ${(interestScore * 100).toFixed(0)}% (${matchingInterests.join(', ')})`);
 
     // Collaborative score (20% weight)
-    const collabScore = getCollaborativeScore(jambScore, calculateGPA(olevelGrades), interestWords, course);
+    const collabScore = getCollaborativeScore(jambScore, calculateGPA(olevelGrades), selectedInterests, course);
     score += collabScore * 0.2;
     reasons.push(`Collaborative Match: ${(collabScore * 100).toFixed(0)}%`);
 
@@ -1283,16 +1284,48 @@ const CourseAdvisor = () => {
                     <Separator />
 
                     {/* Interests */}
-                    <div className="space-y-2">
-                      <Label htmlFor="interests" className="text-base font-semibold">Interests & Career Goals</Label>
-                      <Textarea
-                        id="interests"
-                        value={interests}
-                        onChange={(e) => setInterests(e.target.value)}
-                        placeholder="Describe your interests, hobbies, and career aspirations. What subjects do you enjoy? What kind of work excites you?"
-                        rows={4}
-                        required
-                      />
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-semibold">Interests (Select up to 3)</Label>
+                        <p className="text-sm text-muted-foreground">Choose your main areas of interest to get better recommendations</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {[
+                          "Technology & Innovation",
+                          "Engineering & Design", 
+                          "Environmental Sciences",
+                          "Business & Management",
+                          "Health Sciences",
+                          "Agriculture & Food Security"
+                        ].map(interest => {
+                          const selectedInterests = interests.split(',').map(i => i.trim()).filter(Boolean);
+                          const isSelected = selectedInterests.includes(interest);
+                          const canSelect = selectedInterests.length < 3 || isSelected;
+                          
+                          return (
+                            <div key={interest} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={interest}
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  if (checked && canSelect) {
+                                    setInterests(selectedInterests.concat(interest).join(', '));
+                                  } else if (!checked) {
+                                    setInterests(selectedInterests.filter(i => i !== interest).join(', '));
+                                  }
+                                }}
+                                disabled={!canSelect}
+                              />
+                              <Label htmlFor={interest} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                {interest}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {interests.split(',').map(i => i.trim()).filter(Boolean).length}/3 interests
+                      </p>
                     </div>
 
                     <ProgressBar loading={recommendLoading} />

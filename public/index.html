@@ -28,9 +28,20 @@
     <script>
       // Prevent flash of unstyled content by applying dark mode immediately
       (function() {
-        const savedMode = localStorage.getItem('darkMode');
-        if (savedMode === 'true') {
-          document.documentElement.classList.add('dark');
+        try {
+          const savedMode = localStorage.getItem('darkMode');
+          if (savedMode === 'true') {
+            document.documentElement.classList.add('dark');
+          } else if (savedMode === 'false') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            // Apply system preference if no saved preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+        } catch (e) {
+          // Fallback to light mode if localStorage is not available
         }
       })();
     </script>

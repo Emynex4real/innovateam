@@ -15,29 +15,35 @@ export const DarkModeProvider = ({ children }) => {
       return savedMode === 'true';
     }
 
-    // If no saved preference and running in a browser, check system preference
-    if (window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-
+    // Default to light mode instead of system preference
     return false;
   });
 
   // Initialize dark mode on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedMode = localStorage.getItem('darkMode');
-      if (savedMode !== null) {
-        const isDark = savedMode === 'true';
-        document.documentElement.classList.toggle('dark', isDark);
-        setIsDarkMode(isDark);
+      // Check both darkMode and theme keys for compatibility
+      const savedDarkMode = localStorage.getItem('darkMode');
+      const savedTheme = localStorage.getItem('theme');
+      
+      let isDark = false;
+      if (savedDarkMode !== null) {
+        isDark = savedDarkMode === 'true';
+      } else if (savedTheme !== null) {
+        isDark = savedTheme === 'dark';
       }
+      
+      setIsDarkMode(isDark);
+      document.documentElement.classList.toggle('dark', isDark);
+      localStorage.setItem('darkMode', isDark.toString());
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
   }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('darkMode', isDarkMode);
+      localStorage.setItem('darkMode', isDarkMode.toString());
+      localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
       document.documentElement.classList.toggle('dark', isDarkMode);
     }
   }, [isDarkMode]);
