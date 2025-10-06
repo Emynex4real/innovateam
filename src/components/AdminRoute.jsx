@@ -15,7 +15,12 @@ const AdminRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (profile?.role !== 'admin') {
+  // Wait for profile to load before checking admin status
+  if (!profile) {
+    return <Loading />;
+  }
+
+  if (profile.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
