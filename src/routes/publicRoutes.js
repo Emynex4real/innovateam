@@ -5,6 +5,7 @@ import React from "react";
 import Home from "../pages/Home";
 import About from "../pages/About";
 import Blogs from "../pages/Blogs";
+import Contact from "../pages/Contact";
 import Login from "../pages/login";
 import Register from "../pages/register";
 import NotFound from "../pages/NotFound";
@@ -29,6 +30,11 @@ const publicRoutes = [
     path: "/blogs", 
     element: <Blogs />,
     title: "Blogs" 
+  },
+  { 
+    path: "/contact", 
+    element: <Contact />,
+    title: "Contact" 
   },
   { 
     path: "/login", 
