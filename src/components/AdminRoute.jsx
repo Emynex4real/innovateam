@@ -4,10 +4,10 @@ import { useAuth } from '../contexts/SupabaseAuthContext';
 import Loading from './Loading';
 
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, loading, profile } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  if (loading) {
     return <Loading />;
   }
 
@@ -15,7 +15,7 @@ const AdminRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!user?.isAdmin) {
+  if (profile?.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
