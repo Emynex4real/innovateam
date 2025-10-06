@@ -20,6 +20,7 @@ const ResultCheckerTemplate = ({
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [notification, setNotification] = useState({ visible: false, message: '', type: '' });
   const [copiedCardId, setCopiedCardId] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { addTransaction, walletBalance } = useTransactions();
 
   const totalAmount = quantity * pricePerCard;
@@ -34,7 +35,12 @@ const ResultCheckerTemplate = ({
     return { id: Date.now() + Math.random(), serial, pin, date: new Date().toLocaleDateString('en-CA') };
   };
 
-  const handlePurchase = async () => {
+  const handlePurchaseClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const confirmPurchase = async () => {
+    setShowConfirmModal(false);
     setIsPurchasing(true);
     setNotification({ visible: false, message: '', type: '' });
 
@@ -177,7 +183,7 @@ const ResultCheckerTemplate = ({
                 </div>
                 
                 <Button
-                  onClick={handlePurchase}
+                  onClick={handlePurchaseClick}
                   disabled={isPurchasing || walletBalance < totalAmount}
                   className="w-full"
                   size="lg"
@@ -276,6 +282,33 @@ const ResultCheckerTemplate = ({
             </Card>
           </motion.div>
         </div>
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Confirm Purchase</h3>
+              <p className="text-muted-foreground mb-4">
+                Are you sure you want to purchase {quantity} {title} card{quantity > 1 ? 's' : ''} for ₦{totalAmount.toLocaleString()}?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={confirmPurchase}
+                >
+                  Confirm Purchase
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
