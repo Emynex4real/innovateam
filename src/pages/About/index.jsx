@@ -1,81 +1,228 @@
-import { useEffect } from 'react';
-import aboutus from '../../images/arewa_gate_about-2.jpg';
+import React from 'react';
+import { Award, Shield, Clock, Zap, Users, Target, BookOpen, Star, CheckCircle, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 import NavBar from '../Home/navBar/index';
+import aboutus from '../../images/arewa_gate_about-2.jpg';
+import { Link } from 'react-router-dom';
 
 const About = () => {
   const qualities = [
-    { id: 1, title: 'We are Professional', icon: 'flaticon-reward', description: 'Expert team delivering top-notch services' },
-    { id: 2, title: 'Licensed and Certified', icon: 'flaticon-certificate', description: 'Fully accredited and recognized' },
-    { id: 3, title: '24/7 Customer Support', icon: 'flaticon-enterprise', description: 'Round-the-clock assistance' },
-    { id: 4, title: 'Fast & Secured', icon: 'flaticon-working-team', description: 'Swift and safe operations' },
+    { 
+      icon: <Award className="w-8 h-8" />, 
+      title: 'Professional Excellence', 
+      description: 'Expert team delivering top-notch educational services with proven track record' 
+    },
+    { 
+      icon: <Shield className="w-8 h-8" />, 
+      title: 'Licensed & Certified', 
+      description: 'Fully accredited and recognized by educational authorities' 
+    },
+    { 
+      icon: <Clock className="w-8 h-8" />, 
+      title: '24/7 Support', 
+      description: 'Round-the-clock assistance for all your educational needs' 
+    },
+    { 
+      icon: <Zap className="w-8 h-8" />, 
+      title: 'Fast & Secure', 
+      description: 'Swift processing with enterprise-grade security measures' 
+    },
   ];
 
-  useEffect(() => {
-    // Optional: Add animation trigger on scroll
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('animate-fade-in-up');
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
+  const stats = [
+    { number: '2,800+', label: 'Students Helped' },
+    { number: '850+', label: 'Admissions Secured' },
+    { number: '95%', label: 'Success Rate' },
+    { number: '5+', label: 'Years Experience' }
+  ];
 
-    document.querySelectorAll('.quality-card').forEach((card) => observer.observe(card));
-    return () => observer.disconnect();
-  }, []);
+  const values = [
+    {
+      icon: <Target className="w-6 h-6" />,
+      title: 'Our Mission',
+      description: 'To democratize access to quality education and empower every Nigerian student to achieve their academic dreams through innovative technology and personalized guidance.'
+    },
+    {
+      icon: <BookOpen className="w-6 h-6" />,
+      title: 'Our Vision',
+      description: 'To become Nigeria\'s leading educational technology platform, transforming how students navigate their academic journey from secondary school to university.'
+    },
+    {
+      icon: <Star className="w-6 h-6" />,
+      title: 'Our Values',
+      description: 'Excellence, Innovation, Integrity, and Student-centricity guide everything we do. We believe every student deserves the best possible chance at success.'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-background-color">
+    <div className="min-h-screen bg-background">
       <NavBar />
-      <main className="py-12 px-4 font-nunito">
-        {/* About Section */}
-        <section className="max-w-6xl mx-auto py-16 flex flex-col lg:flex-row gap-10 items-center justify-center">
-          <div className="lg:w-1/2 flex justify-center">
-            <img 
-              src={aboutus} 
-              alt="About Us" 
-              className="w-full max-w-md rounded-2xl shadow-lg object-cover"
-              loading="lazy"
-            />
-          </div>
-          <div className="lg:w-1/2 space-y-6 text-center lg:text-left">
-            <h1 className="text-3xl md:text-4xl font-bold text-text-color">About Us</h1>
-            <p className="text-gray-600 text-base md:text-lg leading-relaxed">
-              We are a dedicated team committed to empowering individuals through quality education and reliable services. 
-              With years of experience, we provide comprehensive solutions tailored to your needs, ensuring excellence 
-              and satisfaction in every step. Our mission is to bridge the gap between opportunity and achievement, 
-              offering innovative and secure services that make a difference.
+      
+      {/* Hero Section */}
+      <section className="py-20 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        <div className="container mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto">
+            <Badge className="mb-4 bg-primary/10 border border-primary/20 text-primary">
+              <Users className="w-4 h-4 mr-2" />
+              About InnovaTeam
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
+              Empowering <span className="bg-gradient-to-r from-primary to-green-500 bg-clip-text text-transparent">Education</span>
+            </h1>
+            <p className="text-xl text-muted-foreground leading-relaxed">
+              We're dedicated to transforming the educational landscape in Nigeria through innovative technology and personalized guidance.
             </p>
-            <button className="bg-primary-color text-white px-6 py-2 rounded-md font-medium hover:bg-green-600 transition-colors duration-200">
-              Learn More
-            </button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Qualities Section */}
-        <section id="qualities" className="py-16 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-center text-text-color mb-12">Why Choose Us</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {qualities.map((quality) => (
-                <div 
-                  key={quality.id} 
-                  className="quality-card flex flex-col items-center text-center p-6 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-200"
-                >
-                  <div className="mb-4">
-                    <i className={`flat ${quality.icon} text-4xl text-primary-color`}></i>
-                  </div>
-                  <h5 className="text-lg font-semibold text-text-color mb-2">{quality.title}</h5>
-                  <p className="text-gray-600 text-sm">{quality.description}</p>
-                </div>
-              ))}
+      {/* About Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Bridging Dreams and Reality
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                InnovaTeam was founded with a simple yet powerful vision: to ensure that every Nigerian student has access to the guidance and resources they need to succeed academically.
+              </p>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Through our AI-powered course advisor, comprehensive JAMB services, and dedicated support team, we've helped thousands of students navigate their educational journey and secure admissions to their dream institutions.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Badge variant="secondary" className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>AI-Powered Recommendations</span>
+                </Badge>
+                <Badge variant="secondary" className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Comprehensive Services</span>
+                </Badge>
+                <Badge variant="secondary" className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Expert Support</span>
+                </Badge>
+              </div>
+              <Button asChild size="lg">
+                <Link to="/course-advisor">
+                  Try Course Advisor
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </div>
+            <div className="relative">
+              <Card className="overflow-hidden">
+                <img 
+                  src={aboutus} 
+                  alt="About InnovaTeam" 
+                  className="w-full h-auto object-cover"
+                />
+              </Card>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <Card key={index}>
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">{stat.number}</div>
+                  <div className="text-muted-foreground">{stat.label}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Values Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">
+              Our Mission, Vision & Values
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              The principles that guide our commitment to educational excellence
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {values.map((value, index) => (
+              <Card key={index} className="text-center">
+                <CardContent className="p-8">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full mb-6">
+                    <div className="text-primary">{value.icon}</div>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-4">{value.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{value.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">
+              Why Choose InnovaTeam?
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Discover what makes us the preferred choice for thousands of students
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {qualities.map((quality, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
+                <CardContent className="p-6 text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full mb-4">
+                    <div className="text-primary">{quality.icon}</div>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-3">{quality.title}</h3>
+                  <p className="text-muted-foreground text-sm">{quality.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight">
+            Ready to Start Your Journey?
+          </h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Join thousands of successful students and discover your perfect academic path today.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg">
+              <Link to="/register">
+                Get Started Now
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link to="/contact">
+                Contact Us
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
