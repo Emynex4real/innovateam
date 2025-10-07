@@ -14,10 +14,10 @@ export const APP_ROUTES = {
 // Storage keys for authentication and user data
 export const LOCAL_STORAGE_KEYS = {
   // Authentication
-  AUTH_TOKEN: 'token',
-  REFRESH_TOKEN: 'refreshToken',
-  USER: 'user',
-  REMEMBER_ME: 'rememberMe',
+  AUTH_TOKEN: process.env.REACT_APP_TOKEN_KEY || 'jamb_auth_token',
+  REFRESH_TOKEN: process.env.REACT_APP_REFRESH_KEY || 'jamb_refresh_token',
+  USER: process.env.REACT_APP_USER_KEY || 'jamb_user_data',
+  REMEMBER_ME: 'jamb_remember_me',
   
   // App settings
   THEME: 'theme',

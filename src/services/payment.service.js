@@ -80,16 +80,19 @@ class PaymentService {
     try {
       logger.service('Verifying payment', { reference });
       
+      // Import CSRF protection
+      const { csrfProtection } = await import('../utils/csrfProtection');
+      
       // Validate domain trust
       const apiUrl = '/api/payments/verify';
       
-      // Call backend verification endpoint
+      // Call backend verification endpoint with CSRF protection
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
+        headers: csrfProtection.addTokenToHeaders({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.getAuthToken()}`
-        },
+        }),
         body: JSON.stringify({ reference })
       });
       
@@ -97,7 +100,14 @@ class PaymentService {
         throw new Error(`Verification failed: ${response.status}`);
       }
       
-      const result = await response.json();
+      // Safely parse JSON response
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        throw new Error('Invalid JSON response from payment service');
+      }
       
       // Validate Paystack response structure
       const validation = thirdPartySecurityManager.validatePaystackResponse(result);

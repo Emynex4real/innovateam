@@ -141,6 +141,11 @@ class ThirdPartySecurityManager {
 
   // Monitor third-party service health
   async monitorServiceHealth(service, endpoint) {
+    // Validate endpoint URL to prevent SSRF
+    if (!this.isDomainTrusted(endpoint)) {
+      throw new Error('Untrusted domain for health check');
+    }
+    
     const startTime = Date.now();
     
     try {

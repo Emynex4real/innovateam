@@ -20,19 +20,34 @@ export class MFAUtils {
     return codes;
   }
 
-  // Validate TOTP code (simplified - use proper TOTP library in production)
+  // Validate TOTP code with constant-time comparison
   static validateTOTP(secret, token, window = 1) {
     // This is a simplified implementation
     // In production, use a proper TOTP library like 'otplib'
     const timeStep = Math.floor(Date.now() / 30000);
+    let isValid = false;
     
+    // Always check all possible tokens to prevent timing attacks
     for (let i = -window; i <= window; i++) {
       const expectedToken = this.generateTOTP(secret, timeStep + i);
-      if (expectedToken === token) {
-        return true;
+      if (this.constantTimeCompare(expectedToken, token)) {
+        isValid = true;
       }
     }
-    return false;
+    return isValid;
+  }
+
+  // Constant-time string comparison to prevent timing attacks
+  static constantTimeCompare(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+    
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return result === 0;
   }
 
   // Generate TOTP (simplified)
@@ -116,7 +131,8 @@ export class SMSMFAUtils {
         return false;
       }
       
-      if (stored.phone !== phoneNumber || stored.code !== inputCode) {
+      if (!this.constantTimeCompare(stored.phone, phoneNumber) || 
+          !this.constantTimeCompare(stored.code, inputCode)) {
         return false;
       }
       
@@ -163,7 +179,8 @@ export class EmailMFAUtils {
         return false;
       }
       
-      if (stored.email !== email || stored.code !== inputCode) {
+      if (!MFAUtils.constantTimeCompare(stored.email, email) || 
+          !MFAUtils.constantTimeCompare(stored.code, inputCode)) {
         return false;
       }
       
