@@ -1,17 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
+import { useWallet } from '../../contexts/WalletContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Download, Filter, Search, X, Calendar, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { TransactionUtils } from '../../services/wallet.service.enhanced';
 import toast from 'react-hot-toast';
 
 const Transactions = () => {
-  // Mock data for now - will be replaced with Supabase data
-  const transactions = [];
+  const { transactions, loading } = useWallet();
   const { isDarkMode } = useDarkMode();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -191,7 +191,7 @@ const Transactions = () => {
                         <p className="text-sm text-muted-foreground">{transaction.description}</p>
                         <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                           <span>{new Date(transaction.date).toLocaleDateString()}</span>
-                          <Badge variant={transaction.status === 'Successful' ? 'default' : 'destructive'}>
+                          <Badge variant={transaction.status === 'completed' ? 'default' : 'destructive'}>
                             {transaction.status}
                           </Badge>
                         </div>
@@ -200,7 +200,7 @@ const Transactions = () => {
                         <p className={`text-lg font-semibold ${
                           transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {transaction.type === 'credit' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
+                          {TransactionUtils.formatAmount(transaction.amount)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(transaction.date).toLocaleTimeString()}
@@ -268,7 +268,7 @@ const Transactions = () => {
                       <p className={`mt-1 text-2xl font-bold ${
                         selectedTransaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {selectedTransaction.type === 'credit' ? '+' : '-'}₦{selectedTransaction.amount.toLocaleString()}
+                        {selectedTransaction.type === 'credit' ? '+' : ''}{TransactionUtils.formatAmount(selectedTransaction.amount)}
                       </p>
                     </div>
                     <div>
@@ -281,7 +281,7 @@ const Transactions = () => {
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
                       <div className="mt-2">
-                        <Badge variant={selectedTransaction.status === 'Successful' ? 'default' : 'destructive'}>
+                        <Badge variant={selectedTransaction.status === 'completed' ? 'default' : 'destructive'}>
                           {selectedTransaction.status}
                         </Badge>
                       </div>
