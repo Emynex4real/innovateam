@@ -1,225 +1,113 @@
-import logger from './logger';
-import { sanitizeForLog } from './validation';
+// Secure Error Handling
+import { secureLogger } from './secureLogger';
 
-/**
- * Comprehensive error handling utility
- */
 class ErrorHandler {
   constructor() {
-    this.errorCodes = {
-      NETWORK_ERROR: 'NETWORK_ERROR',
-      VALIDATION_ERROR: 'VALIDATION_ERROR',
-      AUTHENTICATION_ERROR: 'AUTHENTICATION_ERROR',
-      AUTHORIZATION_ERROR: 'AUTHORIZATION_ERROR',
-      SERVER_ERROR: 'SERVER_ERROR',
-      UNKNOWN_ERROR: 'UNKNOWN_ERROR'
-    };
+    this.errorCounts = new Map();
+    this.setupErrorBoundary();
   }
 
-  /**
-   * Handle API errors with proper logging and user-friendly messages
-   */
-  handleApiError(error, context = '') {
-    const errorInfo = this.extractErrorInfo(error);
-    
-    // Log error with sanitized information
-    logger.auth(`API error in ${context}`, {
-      status: errorInfo.status,
-      code: errorInfo.code,
-      message: sanitizeForLog(errorInfo.message),
-      url: errorInfo.url
+  // Handle and log errors securely
+  async handleError(error, context = {}) {
+    // Increment error count for monitoring
+    const errorKey = `${error.name}_${error.message}`;
+    this.errorCounts.set(errorKey, (this.errorCounts.get(errorKey) || 0) + 1);
+
+    // Log error securely
+    await secureLogger.logError(error, {
+      ...context,
+      errorCount: this.errorCounts.get(errorKey)
     });
 
-    return {
-      success: false,
-      error: errorInfo.userMessage,
-      code: errorInfo.code,
-      status: errorInfo.status
-    };
+    // Return user-friendly error message
+    return this.getUserFriendlyMessage(error);
   }
 
-  /**
-   * Extract error information from various error types
-   */
-  extractErrorInfo(error) {
-    // Network errors
-    if (!error.response) {
-      return {
-        status: 0,
-        code: this.errorCodes.NETWORK_ERROR,
-        message: 'Network error',
-        userMessage: 'Network error. Please check your internet connection.',
-        url: error.config?.url || 'unknown'
-      };
-    }
-
-    const status = error.response.status;
-    const data = error.response.data;
-    const url = error.config?.url || 'unknown';
-
-    // Extract error message from various response formats
-    let message = 'Unknown error';
-    if (typeof data === 'string') {
-      message = data;
-    } else if (data?.error) {
-      message = data.error;
-    } else if (data?.message) {
-      message = data.message;
-    } else if (error.message) {
-      message = error.message;
-    }
-
-    // Determine error code and user message based on status
-    let code = this.errorCodes.UNKNOWN_ERROR;
-    let userMessage = message;
-
-    switch (status) {
-      case 400:
-        code = this.errorCodes.VALIDATION_ERROR;
-        userMessage = data?.error || 'Invalid request. Please check your input.';
-        break;
-      case 401:
-        code = this.errorCodes.AUTHENTICATION_ERROR;
-        userMessage = 'Authentication failed. Please log in again.';
-        break;
-      case 403:
-        code = this.errorCodes.AUTHORIZATION_ERROR;
-        userMessage = 'You do not have permission to perform this action.';
-        break;
-      case 404:
-        code = this.errorCodes.UNKNOWN_ERROR;
-        userMessage = 'Resource not found.';
-        break;
-      case 422:
-        code = this.errorCodes.VALIDATION_ERROR;
-        userMessage = data?.error || 'Validation failed. Please check your input.';
-        break;
-      case 429:
-        code = this.errorCodes.UNKNOWN_ERROR;
-        userMessage = 'Too many requests. Please try again later.';
-        break;
-      case 500:
-      case 502:
-      case 503:
-      case 504:
-        code = this.errorCodes.SERVER_ERROR;
-        userMessage = 'Server error. Please try again later.';
-        break;
-      default:
-        userMessage = message || 'An unexpected error occurred.';
-    }
-
-    return {
-      status,
-      code,
-      message,
-      userMessage,
-      url
+  // Convert technical errors to user-friendly messages
+  getUserFriendlyMessage(error) {
+    const errorMappings = {
+      'Network Error': 'Connection problem. Please check your internet and try again.',
+      'Request timeout': 'The request took too long. Please try again.',
+      'Rate limit exceeded': 'Too many requests. Please wait a moment and try again.',
+      'Validation failed': 'Please check your input and try again.',
+      'Authentication failed': 'Please log in again to continue.',
+      'Permission denied': 'You don\'t have permission to perform this action.',
+      'Payment failed': 'Payment could not be processed. Please try again.',
+      'File too large': 'File is too large. Please choose a smaller file.',
+      'Invalid file type': 'File type not supported. Please choose a different file.'
     };
+
+    // Check for specific error patterns
+    for (const [pattern, message] of Object.entries(errorMappings)) {
+      if (error.message.includes(pattern) || error.name.includes(pattern)) {
+        return message;
+      }
+    }
+
+    // Default fallback message
+    return 'Something went wrong. Please try again or contact support if the problem persists.';
   }
 
-  /**
-   * Handle validation errors
-   */
-  handleValidationError(errors, context = '') {
-    logger.auth(`Validation error in ${context}`, { errors });
-    
-    const firstError = Object.values(errors)[0];
-    return {
-      success: false,
-      error: firstError || 'Validation failed',
-      code: this.errorCodes.VALIDATION_ERROR,
-      validationErrors: errors
-    };
-  }
-
-  /**
-   * Handle storage errors
-   */
-  handleStorageError(error, operation = 'storage operation') {
-    logger.auth(`Storage error during ${operation}`, { 
-      error: sanitizeForLog(error.message) 
+  // Setup React Error Boundary equivalent
+  setupErrorBoundary() {
+    window.addEventListener('error', async (event) => {
+      await this.handleError(event.error || new Error(event.message), {
+        type: 'boundary_error',
+        filename: event.filename,
+        lineno: event.lineno
+      });
     });
-    
-    return {
-      success: false,
-      error: 'Storage operation failed. Please try again.',
-      code: this.errorCodes.UNKNOWN_ERROR
-    };
   }
 
-  /**
-   * Handle authentication errors
-   */
-  handleAuthError(error, operation = 'authentication') {
-    const errorInfo = this.extractErrorInfo(error);
-    
-    logger.auth(`Authentication error during ${operation}`, {
-      status: errorInfo.status,
-      message: sanitizeForLog(errorInfo.message)
-    });
-
-    // Special handling for authentication errors
-    if (errorInfo.status === 401) {
-      return {
-        success: false,
-        error: 'Your session has expired. Please log in again.',
-        code: this.errorCodes.AUTHENTICATION_ERROR,
-        requiresLogin: true
-      };
-    }
-
-    return {
-      success: false,
-      error: errorInfo.userMessage,
-      code: errorInfo.code
-    };
-  }
-
-  /**
-   * Create a safe error response for logging
-   */
-  createSafeErrorResponse(error, defaultMessage = 'An error occurred') {
+  // Async operation wrapper with error handling
+  async withErrorHandling(operation, context = {}) {
     try {
-      const message = error?.message || error?.error || defaultMessage;
-      return {
-        success: false,
-        error: sanitizeForLog(message)
-      };
-    } catch (e) {
-      return {
-        success: false,
-        error: defaultMessage
-      };
+      return await operation();
+    } catch (error) {
+      const userMessage = await this.handleError(error, context);
+      throw new Error(userMessage);
     }
   }
 
-  /**
-   * Check if error is retryable
-   */
-  isRetryableError(error) {
-    if (!error.response) return true; // Network errors are retryable
+  // Validation error handler
+  handleValidationError(field, value, rule) {
+    const error = new Error(`Validation failed for ${field}`);
+    error.name = 'ValidationError';
     
-    const status = error.response.status;
-    return [408, 429, 500, 502, 503, 504].includes(status);
+    this.handleError(error, {
+      field,
+      value: typeof value === 'string' ? value.substring(0, 50) : value,
+      rule,
+      type: 'validation'
+    });
+
+    return `Invalid ${field}. ${this.getValidationMessage(rule)}`;
   }
 
-  /**
-   * Get retry delay based on error type
-   */
-  getRetryDelay(attempt = 1) {
-    // Exponential backoff with jitter
-    const baseDelay = 1000; // 1 second
-    const maxDelay = 30000; // 30 seconds
-    
-    const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
-    const jitter = Math.random() * 0.1 * delay; // 10% jitter
-    
-    return delay + jitter;
+  getValidationMessage(rule) {
+    const messages = {
+      required: 'This field is required.',
+      email: 'Please enter a valid email address.',
+      phone: 'Please enter a valid phone number.',
+      amount: 'Please enter a valid amount.',
+      minLength: 'Input is too short.',
+      maxLength: 'Input is too long.',
+      pattern: 'Input format is invalid.'
+    };
+
+    return messages[rule] || 'Please check your input.';
+  }
+
+  // Get error statistics for monitoring
+  getErrorStats() {
+    return {
+      totalErrors: Array.from(this.errorCounts.values()).reduce((sum, count) => sum + count, 0),
+      uniqueErrors: this.errorCounts.size,
+      topErrors: Array.from(this.errorCounts.entries())
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5)
+    };
   }
 }
 
-// Create singleton instance
-const errorHandler = new ErrorHandler();
-
-export default errorHandler;
+export const errorHandler = new ErrorHandler();
