@@ -11,12 +11,30 @@ node_modules/
 # production
 /client/build
 
-# misc
-#.env
+# Environment files - SECURITY CRITICAL
+.env
+.env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.secure
+
+# Security sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+keys/
+credentials/
+
+# Logs that may contain sensitive data
+*.log
+logs/
+server/logs/
+server/*.log
 
 npm-debug.log*
 yarn-debug.log*

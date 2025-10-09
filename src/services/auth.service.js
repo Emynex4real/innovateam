@@ -13,25 +13,15 @@ import {
 
 
 // Mock user database for local-only authentication
+// Note: In production, use proper authentication service
 const mockUsers = [
   {
     id: '1',
-    email: 'admin@example.com',
-    password: 'Admin123!',
+    email: process.env.REACT_APP_ADMIN_EMAIL || 'admin@example.com',
+    password: process.env.REACT_APP_ADMIN_PASSWORD || 'Admin123!',
     name: 'Admin User',
     role: 'admin',
     isAdmin: true,
-    emailVerified: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    email: 'user@example.com',
-    password: 'User123!',
-    name: 'Regular User',
-    role: 'user',
-    isAdmin: false,
     emailVerified: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
