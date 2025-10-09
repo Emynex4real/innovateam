@@ -192,9 +192,26 @@ class SecureLogger {
     }
   }
 
-  // Security event logging
+  // Security event logging - NEVER log sensitive data
   security(event, data = null) {
-    this.log('Security', 'warn', event, data);
+    // Filter out sensitive data
+    const safeData = data ? this.filterSensitiveData(data) : null;
+    this.log('Security', 'warn', event, safeData);
+  }
+  
+  // Filter sensitive data from logs
+  filterSensitiveData(data) {
+    const sensitive = ['password', 'token', 'key', 'secret', 'pin', 'card', 'cvv', 'ssn'];
+    const filtered = { ...data };
+    
+    Object.keys(filtered).forEach(key => {
+      const lowerKey = key.toLowerCase();
+      if (sensitive.some(s => lowerKey.includes(s))) {
+        filtered[key] = '[REDACTED]';
+      }
+    });
+    
+    return filtered;
   }
 
   // User action logging (for analytics)
