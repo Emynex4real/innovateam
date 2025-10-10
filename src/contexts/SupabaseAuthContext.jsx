@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { AuthService } from '../services/supabase'
 import { supabase } from '../lib/supabase'
+import SessionSecurity, { SecureTokenManager } from '../utils/sessionSecurity'
+import logger from '../utils/logger'
 
 const AuthContext = createContext({})
 
@@ -17,16 +19,34 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState(null)
+  const [sessionSecurity] = useState(() => new SessionSecurity())
 
   useEffect(() => {
+    // Initialize session security
+    sessionSecurity.init(
+      () => handleSessionTimeout(),
+      () => handleSessionWarning()
+    );
+
     // Get initial session
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
+      
+      // Validate session security
+      if (session && !SecureTokenManager.getToken()) {
+        // Session exists but no secure token - force logout
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session)
       setUser(session?.user ?? null)
       
       if (session?.user) {
-        loadUserProfile(session.user.id) // Don't await - load in background
+        loadUserProfile(session.user.id)
       }
       
       setLoading(false)
@@ -50,8 +70,29 @@ export const AuthProvider = ({ children }) => {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      sessionSecurity.forceLogout()
+    }
   }, [])
+
+  // Handle session timeout
+  const handleSessionTimeout = async () => {
+    logger.security('Session timeout - forcing logout');
+    await signOut();
+    window.location.href = '/login?reason=timeout';
+  };
+
+  // Handle session warning
+  const handleSessionWarning = () => {
+    // Show warning to user (implement UI notification)
+    console.warn('Session will expire in 2 minutes');
+  };
+
+  // Extend session
+  const extendSession = () => {
+    sessionSecurity.extendSession();
+  };
 
   const loadUserProfile = async (userId) => {
     try {
@@ -94,6 +135,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null)
         setProfile(null)
         setSession(null)
+        sessionSecurity.forceLogout()
       }
       return result
     } finally {
@@ -129,8 +171,10 @@ export const AuthProvider = ({ children }) => {
     signOut,
     updateProfile,
     resetPassword,
+    extendSession,
     isAuthenticated: !!user,
-    isAdmin: profile?.role === 'admin'
+    isAdmin: profile?.role === 'admin',
+    sessionValid: sessionSecurity.isSessionValid()
   }
 
   return (

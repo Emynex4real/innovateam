@@ -36,7 +36,7 @@ const SelectTrigger = React.forwardRef(({ className, children, value, onValueCha
         onClick={() => setIsOpen(!isOpen)}
         {...props}
       >
-        <span>{selectedValue || 'Select...'}</span>
+        <span>{typeof selectedValue === 'string' ? selectedValue.replace(/[<>"'&]/g, '') : 'Select...'}</span>
         <ChevronDown className="h-4 w-4 opacity-50" />
       </button>
       {isOpen && (
@@ -83,7 +83,7 @@ const SelectItem = React.forwardRef(({ className, children, value, onSelect, ...
     onClick={() => onSelect?.(value)}
     {...props}
   >
-    {children}
+    {typeof children === 'string' ? children.replace(/[<>"'&]/g, '') : children}
   </div>
 ))
 SelectItem.displayName = "SelectItem"

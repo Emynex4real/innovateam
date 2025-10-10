@@ -1,21 +1,36 @@
 // Enhanced Admin API service with comprehensive website integration
+const ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'arewagate.com', 'api.arewagate.com'];
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+// Validate URL to prevent SSRF
+function validateUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    return ALLOWED_HOSTS.includes(urlObj.hostname);
+  } catch {
+    return false;
+  }
+}
+
 class EnhancedAdminService {
-  // Get authentication headers
-  getAuthHeaders() {
+  // Get authentication headers with CSRF protection
+  async getAuthHeaders() {
+    const { csrfProtection } = await import('../utils/csrfProtection');
     const token = localStorage.getItem('token');
-    return {
+    return csrfProtection.addTokenToHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
-    };
+    });
   }
 
   // Dashboard Metrics
   async getDashboardMetrics() {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/dashboard/metrics`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/dashboard/metrics`, {
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to fetch metrics');
@@ -42,8 +57,11 @@ class EnhancedAdminService {
   async getUsers(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
+      if (!validateUrl(`${API_BASE_URL}/api/admin/users`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/users?${queryString}`, {
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to fetch users');
@@ -65,8 +83,11 @@ class EnhancedAdminService {
   async getTransactions(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
+      if (!validateUrl(`${API_BASE_URL}/api/admin/transactions`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/transactions?${queryString}`, {
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to fetch transactions');
@@ -87,9 +108,12 @@ class EnhancedAdminService {
   // User Actions
   async updateUserRole(userId, newRole) {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/users/${userId}/role`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/role`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: await this.getAuthHeaders(),
         body: JSON.stringify({ role: newRole })
       });
       
@@ -103,9 +127,12 @@ class EnhancedAdminService {
 
   async updateUserStatus(userId, status) {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/users/${userId}/status`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/status`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: await this.getAuthHeaders(),
         body: JSON.stringify({ status })
       });
       
@@ -119,9 +146,12 @@ class EnhancedAdminService {
 
   async deleteUser(userId) {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/users/${userId}`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to delete user');
@@ -135,9 +165,12 @@ class EnhancedAdminService {
   // Transaction Actions
   async updateTransaction(transactionId, updates) {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/transactions/${transactionId}`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/transactions/${transactionId}`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: await this.getAuthHeaders(),
         body: JSON.stringify(updates)
       });
       
@@ -152,8 +185,11 @@ class EnhancedAdminService {
   // System Settings
   async getSystemSettings() {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/settings`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to fetch settings');
@@ -173,9 +209,12 @@ class EnhancedAdminService {
 
   async updateSystemSettings(settings) {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/settings`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: await this.getAuthHeaders(),
         body: JSON.stringify(settings)
       });
       
@@ -190,9 +229,12 @@ class EnhancedAdminService {
   // System Actions
   async clearCache() {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/system/clear-cache`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/system/clear-cache`, {
         method: 'POST',
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to clear cache');
@@ -205,9 +247,12 @@ class EnhancedAdminService {
 
   async backupDatabase() {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/system/backup`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/system/backup`, {
         method: 'POST',
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to backup database');
@@ -220,9 +265,12 @@ class EnhancedAdminService {
 
   async restartSystem() {
     try {
+      if (!validateUrl(`${API_BASE_URL}/api/admin/system/restart`)) {
+        throw new Error('Invalid URL');
+      }
       const response = await fetch(`${API_BASE_URL}/api/admin/system/restart`, {
         method: 'POST',
-        headers: this.getAuthHeaders()
+        headers: await this.getAuthHeaders()
       });
       
       if (!response.ok) throw new Error('Failed to restart system');

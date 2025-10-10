@@ -10,11 +10,22 @@ import { VALIDATION_RULES } from '../config/constants';
 export const sanitizeInput = (input) => {
   if (typeof input !== 'string') return input;
   
-  // Remove potentially dangerous characters and encode special chars
+  // Enhanced XSS protection
   return input
     .trim()
-    .replace(/[<>\"']/g, '') // Remove HTML/script tags
-    .replace(/[\r\n\t]/g, ' ') // Replace line breaks with spaces for log safety
+    .replace(/[<>"'&]/g, (match) => {
+      const entities = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '&': '&amp;'
+      };
+      return entities[match];
+    })
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+=/gi, '') // Remove event handlers
+    .replace(/[\r\n\t]/g, ' ') // Replace line breaks with spaces
     .substring(0, 1000); // Limit length to prevent DoS
 };
 

@@ -1,14 +1,39 @@
 import axios from 'axios';
 import debounce from 'lodash/debounce';
+import { apiSecurity } from './apiSecurity';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-// Create axios instance with DeepSeek base URL
+// Create axios instance with security enhancements
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Request interceptor for security
+api.interceptors.request.use((config) => {
+  // Add security headers
+  config.headers = apiSecurity.addSecurityHeaders(config.headers);
+  
+  // Sanitize request data
+  if (config.data && typeof config.data === 'object') {
+    config.data = apiSecurity.sanitizeRequest(config.data);
+  }
+  
+  return config;
+}, (error) => Promise.reject(error));
+
+// Response interceptor for validation
+api.interceptors.response.use((response) => {
+  return response;
+}, (error) => {
+  if (error.code === 'ECONNABORTED') {
+    return Promise.reject(new Error('Request timeout'));
+  }
+  return Promise.reject(error);
 });
 
 // Create debounced functions for API calls (1 second delay)
