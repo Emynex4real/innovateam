@@ -18,7 +18,7 @@ export const getCourseRecommendations = async (data) => {
   return new Promise((resolve, reject) => {
     debouncedRequest(async () => {
       try {
-        const response = await api.post('/recommend', data);
+        const response = await api.post('/api/recommend', data);
         resolve(response.data);
       } catch (error) {
         console.error('Course Recommendation Error:', error);
@@ -35,7 +35,7 @@ export const generateQuestions = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
         
-        const response = await api.post('/generate-questions', formData, {
+        const response = await api.post('/api/generate-questions', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
