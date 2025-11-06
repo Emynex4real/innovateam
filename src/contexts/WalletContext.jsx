@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './SupabaseAuthContext';
-import WalletService from '../services/supabase/wallet.service';
-import logger from '../utils/logger';
+import { useAuth } from './AuthContext';
+import WalletService from '../services/wallet.service';
 
 const WalletContext = createContext();
 
 export const WalletProvider = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,16 +46,6 @@ export const WalletProvider = ({ children }) => {
       if (result.success) {
         await fetchWalletData(); // Refresh data
       }
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const processServicePayment = async (serviceData) => {
-    try {
-      const result = await walletService.processServicePayment(serviceData);
-      await fetchWalletData(); // Refresh data
       return result;
     } catch (error) {
       throw error;
@@ -139,7 +128,7 @@ export const WalletProvider = ({ children }) => {
     fetchWalletData();
   }, []);
 
-  logger.debug('WalletContext: Current balance in provider:', { balance: walletBalance, transactionCount: transactions.length });
+
   
   return (
     <WalletContext.Provider
