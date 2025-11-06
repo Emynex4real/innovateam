@@ -1,30 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { WalletProvider } from './contexts/WalletContext';
-import { secureLogger } from './utils/secureLogger';
-import { securityMonitor } from './utils/securityMonitor';
-import { clientSecurity } from './utils/clientSecurity';
-
-// Import your existing components
-import Home from './components/Home';
-import CourseAdvisor from './components/CourseAdvisor';
-import QuestionGenerator from './components/QuestionGenerator';
+import Home from './pages/Home';
+import CourseAdvisor from './pages/course-advisor';
+import QuestionGenerator from './pages/question-generator';
 
 function App() {
-  useEffect(() => {
-    // Initialize security systems
-    secureLogger.setupGlobalErrorHandling();
-    securityMonitor.setupRealTimeMonitoring();
-    clientSecurity.preventClickjacking();
-    clientSecurity.setupDataClearing();
-
-    // Log application start
-    secureLogger.logEvent('app_started', {
-      version: process.env.REACT_APP_VERSION,
-      timestamp: new Date().toISOString()
-    });
-  }, []);
-
   return (
     <WalletProvider>
       <Router>
