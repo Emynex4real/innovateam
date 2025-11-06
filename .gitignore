@@ -12,11 +12,21 @@ node_modules/
 /client/build
 
 # misc
-#.env
+.env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Build files
+build/
+dist/
+
+# Logs
+*.log
+server_backup_old/error.log
+server_backup_old/server.log
 
 npm-debug.log*
 yarn-debug.log*
