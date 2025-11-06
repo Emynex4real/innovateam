@@ -1,47 +1,60 @@
 // CSRF Protection Utility
 class CSRFProtection {
   constructor() {
-    this.tokenKey = 'csrf_token';
-    this.headerName = 'X-CSRF-Token';
+    this.token = null;
+    this.tokenExpiry = null;
   }
 
-  // Generate CSRF token
-  generateToken() {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    sessionStorage.setItem(this.tokenKey, token);
-    return token;
-  }
-
-  // Get current CSRF token
-  getToken() {
-    let token = sessionStorage.getItem(this.tokenKey);
-    if (!token) {
-      token = this.generateToken();
+  // Get CSRF token from server
+  async getToken() {
+    try {
+      const response = await fetch('/api/csrf-token', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get CSRF token');
+      }
+      
+      const data = await response.json();
+      this.token = data.csrfToken;
+      this.tokenExpiry = Date.now() + (5 * 60 * 1000); // 5 minutes
+      return this.token;
+    } catch (error) {
+      console.error('CSRF token fetch error:', error);
+      return null;
     }
-    return token;
+  }
+
+  // Get valid token (fetch new if expired)
+  async getValidToken() {
+    if (!this.token || Date.now() > this.tokenExpiry) {
+      await this.getToken();
+    }
+    return this.token;
   }
 
   // Add CSRF token to request headers
-  addTokenToHeaders(headers = {}) {
-    return {
-      ...headers,
-      [this.headerName]: this.getToken()
-    };
+  async addTokenToHeaders(headers = {}) {
+    const token = await this.getValidToken();
+    if (token) {
+      headers['x-csrf-token'] = token;
+    }
+    return headers;
   }
 
-  // Validate CSRF token
-  validateToken(token) {
-    const storedToken = sessionStorage.getItem(this.tokenKey);
-    return storedToken && storedToken === token;
-  }
-
-  // Clear CSRF token
-  clearToken() {
-    sessionStorage.removeItem(this.tokenKey);
+  // Add CSRF token to form data
+  async addTokenToFormData(formData) {
+    const token = await this.getValidToken();
+    if (token) {
+      formData.append('_csrf', token);
+    }
+    return formData;
   }
 }
 
-export const csrfProtection = new CSRFProtection();
+// Create singleton instance
+const csrfProtection = new CSRFProtection();
+
 export default csrfProtection;

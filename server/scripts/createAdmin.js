@@ -2,13 +2,22 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
 
+// Get admin credentials from environment variables
+const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+const adminPassword = process.env.ADMIN_PASSWORD;
+
+if (!adminPassword) {
+  console.error('❌ ADMIN_PASSWORD environment variable is required');
+  process.exit(1);
+}
+
 // User data
 const adminUser = {
   id: Date.now().toString(),
   name: 'Admin User',
-  email: 'admin@example.com',
+  email: adminEmail,
   phoneNumber: '1234567890',
-  password: bcrypt.hashSync('admin123', 10),
+  password: bcrypt.hashSync(adminPassword, 10),
   role: 'admin',
   createdAt: new Date().toISOString()
 };
@@ -42,8 +51,8 @@ if (!adminExists) {
   try {
     fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
     console.log('✅ Admin user created successfully!');
-    console.log('Email: admin@example.com');
-    console.log('Password: admin123');
+    console.log(`Email: ${adminEmail}`);
+    console.log('Password: [HIDDEN]');
   } catch (error) {
     console.error('Error saving admin user:', error);
     process.exit(1);

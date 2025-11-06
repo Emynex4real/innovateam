@@ -24,7 +24,13 @@ export const sanitizeInput = (input) => {
       return entities[match];
     })
     .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, '') // Remove event handlers
+    .replace(/data:text\/html/gi, '') // Remove data URLs
+    .replace(/vbscript:/gi, '') // Remove vbscript
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // Remove iframes
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '') // Remove objects
+    .replace(/<embed\b[^<]*>/gi, '') // Remove embeds
     .replace(/[\r\n\t]/g, ' ') // Replace line breaks with spaces
     .substring(0, 1000); // Limit length to prevent DoS
 };

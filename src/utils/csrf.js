@@ -12,33 +12,28 @@ class CSRFProtection {
   }
 
   /**
-   * Generate a cryptographically secure CSRF token
+   * Fetch CSRF token from server
    */
-  generateToken() {
+  async fetchTokenFromServer() {
     try {
-      // Use crypto.getRandomValues if available (modern browsers)
-      if (window.crypto && window.crypto.getRandomValues) {
-        const array = new Uint8Array(32);
-        window.crypto.getRandomValues(array);
-        const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-        
-        this.token = token;
-        this.tokenExpiry = Date.now() + this.TOKEN_LIFETIME;
-        
-        logger.auth('CSRF token generated');
-        return token;
-      } else {
-        // Fallback for older browsers
-        const token = this.generateFallbackToken();
-        this.token = token;
-        this.tokenExpiry = Date.now() + this.TOKEN_LIFETIME;
-        
-        logger.auth('CSRF token generated (fallback)');
-        return token;
+      const response = await fetch('/api/csrf-token', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch CSRF token');
       }
+      
+      const data = await response.json();
+      this.token = data.csrfToken;
+      this.tokenExpiry = Date.now() + this.TOKEN_LIFETIME;
+      
+      logger.auth('CSRF token fetched from server');
+      return this.token;
     } catch (error) {
-      logger.auth('CSRF token generation failed', { error: error.message });
-      return this.generateFallbackToken();
+      logger.auth('CSRF token fetch failed', { error: error.message });
+      return null;
     }
   }
 
@@ -60,11 +55,11 @@ class CSRFProtection {
   }
 
   /**
-   * Get current CSRF token, generate new one if expired
+   * Get current CSRF token, fetch new one if expired
    */
-  getToken() {
+  async getToken() {
     if (!this.token || !this.tokenExpiry || Date.now() > this.tokenExpiry) {
-      return this.generateToken();
+      return await this.fetchTokenFromServer();
     }
     
     return this.token;
@@ -126,10 +121,9 @@ class CSRFProtection {
   /**
    * Get token for inclusion in headers
    */
-  getTokenForHeader() {
-    return {
-      'X-CSRF-Token': this.getToken()
-    };
+  async getTokenForHeader() {
+    const token = await this.getToken();
+    return token ? { 'x-csrf-token': token } : {};
   }
 
   /**

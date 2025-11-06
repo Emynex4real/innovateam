@@ -1,6 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { validateRequest } = require('../middleware/validateRequest');
+const { authenticate } = require('../middleware/authenticate');
 const router = express.Router();
 const supabase = require('../supabaseClient');
 
@@ -252,20 +253,12 @@ router.post('/refresh-token', async (req, res) => {
   }
 });
 
-router.get('/api/profile/me', async (req, res) => {
-  const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'No token provided' });
-  }
+router.get('/api/profile/me', authenticate, async (req, res) => {
   try {
-    const { data: user, error: authError } = await supabase.auth.getUser(token);
-    if (authError) {
-      return res.status(401).json({ success: false, error: authError.message });
-    }
     const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('*')
-      .eq('id', user.user.id)
+      .eq('id', req.user.id)
       .single();
     if (profileError || !profile) {
       return res.status(404).json({ success: false, error: 'Profile not found' });
@@ -277,20 +270,12 @@ router.get('/api/profile/me', async (req, res) => {
   }
 });
 
-router.post('/api/profile', async (req, res) => {
-  const token = req.headers.authorization?.split('Bearer ')[1];
+router.post('/api/profile', authenticate, async (req, res) => {
   const { name, phone_number } = req.body;
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'No token provided' });
-  }
   try {
-    const { data: user, error: authError } = await supabase.auth.getUser(token);
-    if (authError) {
-      return res.status(401).json({ success: false, error: authError.message });
-    }
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .insert([{ id: user.user.id, email: user.user.email, name, phone_number, role: 'user', status: 'active' }])
+      .insert([{ id: req.user.id, email: req.user.email, name, phone_number, role: 'user', status: 'active' }])
       .select()
       .single();
     if (profileError) {

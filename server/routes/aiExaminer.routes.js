@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const aiExaminerController = require('../controllers/aiExaminer.controller');
-const { requireAuth } = require('../middleware/supabaseAuth');
+const { authenticate } = require('../middleware/authenticate');
 
 // Apply authentication to all routes
-router.use(requireAuth);
+router.use(authenticate);
 
 // Routes
 router.post('/submit-text', aiExaminerController.submitText);

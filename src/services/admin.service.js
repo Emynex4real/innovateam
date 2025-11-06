@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import API_BASE_URL from '../config/api';
+import { sanitizeUserInput } from '../utils/xssProtection';
 
 const API_URL = API_BASE_URL || 'http://localhost:5000/api';
 
@@ -158,17 +159,44 @@ class AdminService {
     }
   }
 
-  // Real-time data polling
+  // Real-time data polling with XSS protection
   startRealTimeUpdates(callback, interval = 30000) {
     const updateData = async () => {
-      const stats = await this.getStats();
-      if (stats.success) {
-        callback(stats.data);
+      try {
+        const stats = await this.getStats();
+        if (stats && typeof stats === 'object') {
+          // Sanitize data before passing to callback
+          const sanitizedStats = this.sanitizeStatsData(stats);
+          callback(sanitizedStats);
+        }
+      } catch (error) {
+        console.error('Real-time update error:', sanitizeUserInput(error.message));
       }
     };
     
     updateData(); // Initial load
     return setInterval(updateData, interval);
+  }
+  
+  // Sanitize stats data to prevent XSS
+  sanitizeStatsData(data) {
+    if (!data || typeof data !== 'object') return data;
+    
+    const sanitized = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'string') {
+        sanitized[key] = sanitizeUserInput(value);
+      } else if (typeof value === 'number') {
+        sanitized[key] = value;
+      } else if (Array.isArray(value)) {
+        sanitized[key] = value.map(item => 
+          typeof item === 'string' ? sanitizeUserInput(item) : item
+        );
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
   }
 
   stopRealTimeUpdates(intervalId) {

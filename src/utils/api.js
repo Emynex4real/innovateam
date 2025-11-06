@@ -1,6 +1,16 @@
 import axios from 'axios';
 import debounce from 'lodash/debounce';
-import { apiSecurity } from './apiSecurity';
+import csrfProtection from './csrfProtection';
+
+// Simple security utility fallback
+const apiSecurity = {
+  addSecurityHeaders: (headers) => ({
+    ...headers,
+    'X-Requested-With': 'XMLHttpRequest',
+    'X-Client-Version': '1.0.0'
+  }),
+  sanitizeRequest: (data) => data
+};
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -14,9 +24,21 @@ const api = axios.create({
 });
 
 // Request interceptor for security
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   // Add security headers
   config.headers = apiSecurity.addSecurityHeaders(config.headers);
+  
+  // Add CSRF token for state-changing requests
+  if (['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase())) {
+    try {
+      const token = await csrfProtection.getToken();
+      if (token) {
+        config.headers['x-csrf-token'] = token;
+      }
+    } catch (error) {
+      console.warn('Failed to get CSRF token:', error);
+    }
+  }
   
   // Sanitize request data
   if (config.data && typeof config.data === 'object') {

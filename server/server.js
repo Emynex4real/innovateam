@@ -44,6 +44,9 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const { errorHandler } = require('./middleware/errorHandler');
+const { csrfProtection, csrfTokenRoute } = require('./middleware/csrf');
+const { middleware: ssrfMiddleware } = require('./middleware/ssrfProtection');
+const { xssProtection } = require('./middleware/xssProtection');
 const authRoutes = require('./routes/auth.routes');
 const { logger } = require('./utils/logger');
 const adminRoutes = require('./routes/admin.routes');
@@ -145,8 +148,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// Security middleware
-app.use(helmet());
+// Security middleware with CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.paystack.co"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.deepseek.com", "https://*.supabase.co"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
 
 // CORS configuration - Allow all origins temporarily
 const corsOptions = {
@@ -159,9 +178,49 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
-// Request parsing with increased limits
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// CSRF token endpoint
+app.get('/api/csrf-token', csrfTokenRoute);
+
+// Apply XSS protection to all routes
+app.use(xssProtection);
+
+// Apply SSRF protection to all API routes
+app.use('/api', ssrfMiddleware());
+
+// Apply CSRF protection to state-changing routes
+app.use('/api/auth', csrfProtection);
+app.use('/api/admin', csrfProtection);
+app.use('/api/profile', csrfProtection);
+app.use('/api/wallet', csrfProtection);
+app.use('/api/services', csrfProtection);
+app.use('/api/ai-examiner', csrfProtection);
+
+// Request parsing with increased limits and XSS protection
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    // Basic XSS detection in JSON payloads
+    const body = buf.toString();
+    if (/<script|javascript:|on\w+=/i.test(body)) {
+      const error = new Error('Potentially malicious content detected');
+      error.status = 400;
+      throw error;
+    }
+  }
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    // Basic XSS detection in URL-encoded payloads
+    const body = buf.toString();
+    if (/<script|javascript:|on\w+=/i.test(body)) {
+      const error = new Error('Potentially malicious content detected');
+      error.status = 400;
+      throw error;
+    }
+  }
+}));
 
 // Increase header size limits
 app.use((req, res, next) => {
@@ -204,7 +263,7 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working', timestamp: new Date().toISOString() });
 });
 
-// Use routes
+// Use routes (after CSRF middleware)
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);

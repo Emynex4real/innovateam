@@ -18,7 +18,7 @@ const mockUsers = [
   {
     id: '1',
     email: process.env.REACT_APP_ADMIN_EMAIL || 'admin@example.com',
-    password: process.env.REACT_APP_ADMIN_PASSWORD || 'Admin123!',
+    password: process.env.REACT_APP_ADMIN_PASSWORD || '', // Remove default password
     name: 'Admin User',
     role: 'admin',
     isAdmin: true,
@@ -27,6 +27,11 @@ const mockUsers = [
     updatedAt: new Date().toISOString()
   }
 ];
+
+// Validate that required environment variables are set
+if (!process.env.REACT_APP_ADMIN_EMAIL || !process.env.REACT_APP_ADMIN_PASSWORD) {
+  console.warn('WARNING: Admin credentials not properly configured in environment variables');
+}
 
 
 

@@ -1,40 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { requireAdmin } = require('../middleware/supabaseAuth');
+const { requireAdmin } = require('../middleware/authenticate');
 const adminController = require('../controllers/admin.controller');
 const { logger } = require('../utils/logger');
 
-// Simple admin middleware
-router.use(async (req, res, next) => {
-  const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'No token provided' });
-  }
-  
-  try {
-    const supabase = require('../supabaseClient');
-    const { data, error } = await supabase.auth.admin.getUser(token);
-    
-    if (error || !data.user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
-    }
-    
-    const userRole = data.user.user_metadata?.role || 'user';
-    
-    if (userRole !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
-    
-    req.user = {
-      id: data.user.id,
-      email: data.user.email,
-      role: userRole
-    };
-    next();
-  } catch (error) {
-    return res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
+// Apply admin authentication to all routes
+router.use(requireAdmin);
 
 // GET /api/admin/stats
 router.get('/stats', async (req, res) => {

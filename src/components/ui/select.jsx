@@ -1,6 +1,7 @@
 import * as React from "react"
 import { ChevronDown } from "lucide-react"
 import { cn } from "../../lib/utils"
+import { sanitizeUserInput, sanitizeAttribute } from "../../utils/xssProtection"
 
 // Simple Select component without Radix UI dependency
 const Select = ({ value, onValueChange, children, ...props }) => {
@@ -36,7 +37,7 @@ const SelectTrigger = React.forwardRef(({ className, children, value, onValueCha
         onClick={() => setIsOpen(!isOpen)}
         {...props}
       >
-        <span>{typeof selectedValue === 'string' ? selectedValue.replace(/[<>"'&]/g, '') : 'Select...'}</span>
+        <span>{typeof selectedValue === 'string' ? sanitizeUserInput(selectedValue) : 'Select...'}</span>
         <ChevronDown className="h-4 w-4 opacity-50" />
       </button>
       {isOpen && (
@@ -45,9 +46,10 @@ const SelectTrigger = React.forwardRef(({ className, children, value, onValueCha
             if (child.type === SelectContent) {
               return React.cloneElement(child, {
                 onSelect: (val) => {
-                  setSelectedValue(val)
-                  onValueChange?.(val)
-                  setIsOpen(false)
+                  const sanitizedVal = typeof val === 'string' ? sanitizeUserInput(val) : val;
+                  setSelectedValue(sanitizedVal);
+                  onValueChange?.(sanitizedVal);
+                  setIsOpen(false);
                 }
               })
             }
@@ -83,7 +85,7 @@ const SelectItem = React.forwardRef(({ className, children, value, onSelect, ...
     onClick={() => onSelect?.(value)}
     {...props}
   >
-    {typeof children === 'string' ? children.replace(/[<>"'&]/g, '') : children}
+    {typeof children === 'string' ? sanitizeUserInput(children) : children}
   </div>
 ))
 SelectItem.displayName = "SelectItem"

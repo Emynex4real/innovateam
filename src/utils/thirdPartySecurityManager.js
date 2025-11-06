@@ -146,12 +146,31 @@ class ThirdPartySecurityManager {
       throw new Error('Untrusted domain for health check');
     }
     
+    // Additional SSRF protection - validate URL structure
+    try {
+      const url = new URL(endpoint);
+      if (!['https:', 'http:'].includes(url.protocol)) {
+        throw new Error('Invalid protocol for health check');
+      }
+      
+      // Block private IP ranges
+      const hostname = url.hostname;
+      if (/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.)/.test(hostname)) {
+        if (!['localhost', '127.0.0.1'].includes(hostname)) {
+          throw new Error('Private IP addresses not allowed');
+        }
+      }
+    } catch (urlError) {
+      throw new Error('Invalid URL for health check: ' + urlError.message);
+    }
+    
     const startTime = Date.now();
     
     try {
       const response = await fetch(endpoint, {
         method: 'HEAD',
-        timeout: 5000
+        timeout: 5000,
+        redirect: 'manual' // Prevent following redirects
       });
 
       const responseTime = Date.now() - startTime;

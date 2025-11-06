@@ -1,26 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabaseClient');
-const { createClient } = require('@supabase/supabase-js');
+const { authenticate } = require('../middleware/authenticate');
 require('dotenv').config();
 
-// Middleware: Require valid Supabase JWT
-const requireAuth = async (req, res, next) => {
-  try {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader) return res.status(401).json({ success: false, message: 'No token provided' });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) return res.status(401).json({ success: false, message: 'Invalid token' });
-    req.user = user;
-    next();
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Auth error', error: err.message });
-  }
-};
-
 // GET /api/profile/me (get current user's profile)
-router.get('/me', requireAuth, async (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
   try {
     const { data: profile, error } = await supabase
       .from('users')
@@ -37,7 +22,7 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 // POST /api/profile (create user profile after auth signUp)
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const { name, phone_number } = req.body;
     // Only allow the authenticated user to create their own profile

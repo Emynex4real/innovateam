@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const walletController = require('../controllers/wallet.controller');
-const { requireAuth } = require('../middleware/supabaseAuth');
+const { authenticate } = require('../middleware/authenticate');
 
 // Apply authentication to all wallet routes
-router.use(requireAuth);
+router.use(authenticate);
 
 // Wallet routes
 router.get('/balance', walletController.getBalance);

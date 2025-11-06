@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/supabaseAuth');
+const { authenticate } = require('../middleware/authenticate');
 const TransactionService = require('../services/transaction.service');
 
-router.use(requireAuth);
+// Require authentication for all service routes
+router.use(authenticate);
 
 // JAMB Services
 router.post('/jamb/purchase', async (req, res) => {
