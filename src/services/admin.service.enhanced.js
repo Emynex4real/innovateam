@@ -1,13 +1,46 @@
 // Enhanced Admin API service with comprehensive website integration
-const ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'arewagate.com', 'api.arewagate.com'];
+const ALLOWED_HOSTS = [
+  'localhost', 
+  '127.0.0.1', 
+  process.env.REACT_APP_API_HOST,
+  window.location.hostname
+].filter(Boolean);
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-// Validate URL to prevent SSRF
-function validateUrl(url) {
+// Enhanced URL validation to prevent SSRF
+function validateUrl(targetUrl) {
   try {
-    const urlObj = new URL(url);
-    return ALLOWED_HOSTS.includes(urlObj.hostname);
-  } catch {
+    const urlObj = new URL(targetUrl);
+    
+    // Only allow HTTP/HTTPS
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return false;
+    }
+    
+    // Check against allowed hosts
+    const isAllowed = ALLOWED_HOSTS.some(host => 
+      urlObj.hostname === host || 
+      (host && urlObj.hostname.endsWith('.' + host))
+    );
+    
+    if (!isAllowed) {
+      console.warn('URL not in allowed hosts:', urlObj.hostname);
+      return false;
+    }
+    
+    // Block private IP ranges
+    const hostname = urlObj.hostname;
+    if (/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.)/.test(hostname)) {
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+        console.warn('Private IP blocked:', hostname);
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('URL validation error:', error);
     return false;
   }
 }

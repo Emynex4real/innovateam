@@ -12,7 +12,7 @@ async function testAdminEndpoints() {
     console.log('1. Testing /admin/stats...');
     const statsResponse = await axios.get(`${API_BASE_URL}/admin/stats`, {
       headers: {
-        'Authorization': 'Bearer test-token' // You'll need a real token
+        'Authorization': `Bearer ${process.env.TEST_TOKEN || ''}` // Use environment variable
       }
     });
     console.log('Stats response:', statsResponse.data);
@@ -22,7 +22,7 @@ async function testAdminEndpoints() {
     console.log('2. Testing /admin/users...');
     const usersResponse = await axios.get(`${API_BASE_URL}/admin/users`, {
       headers: {
-        'Authorization': 'Bearer test-token' // You'll need a real token
+        'Authorization': `Bearer ${process.env.TEST_TOKEN || ''}` // Use environment variable
       }
     });
     console.log('Users response:', usersResponse.data);
@@ -32,7 +32,7 @@ async function testAdminEndpoints() {
     console.log('3. Testing /admin/transactions...');
     const transactionsResponse = await axios.get(`${API_BASE_URL}/admin/transactions`, {
       headers: {
-        'Authorization': 'Bearer test-token' // You'll need a real token
+        'Authorization': `Bearer ${process.env.TEST_TOKEN || ''}` // Use environment variable
       }
     });
     console.log('Transactions response:', transactionsResponse.data);

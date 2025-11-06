@@ -9,7 +9,7 @@ import { Save, Database, Shield, Bell } from 'lucide-react';
 const SystemSettings = () => {
   const [settings, setSettings] = useState({
     siteName: 'JAMB Course Advisor',
-    apiKey: 'sk-****************************',
+    apiKey: process.env.REACT_APP_DEEPSEEK_API_KEY ? 'sk-****************************' : '',
     enableNotifications: true,
     enableAnalytics: true,
     maintenanceMode: false,
