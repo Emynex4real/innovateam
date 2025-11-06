@@ -21,7 +21,7 @@ export const AdminProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dashboardMetrics, setDashboardMetrics] = useState({
-    totalUsers: 0,
+    totalUsers: 0, 
     totalTransactions: 0,
     revenue: 0,
     totalServices: 0,
