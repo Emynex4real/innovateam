@@ -1,0 +1,12 @@
+[
+  {
+    "id": "admin_12345",
+    "name": "Admin User",
+    "email": "admin@example.com",
+    "phoneNumber": "1234567890",
+    "password": "$2a$10$Hbi5Pp8KBD2EUa8pBOhSmMWys1erFgoPjePPTFIWy2RNNsJoC",
+    "role": "admin",
+    "isAdmin": true,
+    "createdAt": "2025-07-22T17:00:00.000Z"
+  }
+]

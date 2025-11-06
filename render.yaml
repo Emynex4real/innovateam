@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: innovateam-api
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 5000 

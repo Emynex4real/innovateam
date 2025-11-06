@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Connection Test</title>
+</head>
+<body>
+    <h1>Backend Connection Test</h1>
+    <button onclick="testBackend()">Test Backend Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testBackend() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                // Test basic connection
+                const response = await fetch('https://innovateam-api.onrender.com/health');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <h3>✅ Backend is reachable!</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>Response: ${JSON.stringify(data)}</p>
+                `;
+                
+                // Test CORS with a simple POST
+                const corsTest = await fetch('https://innovateam-api.onrender.com/api/auth/login', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'https://innovateamm.vercel.app',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type, Authorization'
+                    }
+                });
+                
+                result.innerHTML += `
+                    <h3>CORS Test:</h3>
+                    <p>CORS Status: ${corsTest.status}</p>
+                    <p>CORS Headers: ${corsTest.headers.get('Access-Control-Allow-Origin')}</p>
+                `;
+                
+            } catch (error) {
+                result.innerHTML = `
+                    <h3>❌ Connection Failed</h3>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
