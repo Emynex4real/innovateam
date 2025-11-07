@@ -39,7 +39,7 @@ class SupabaseAdminService {
           name: profile?.full_name || user.user_metadata?.full_name || 'User',
           phone: profile?.phone || user.user_metadata?.phone || '',
           role: profile?.role || 'user',
-          status: user.email_confirmed_at ? 'active' : 'pending',
+          status: profile?.status || (user.email_confirmed_at ? 'active' : 'pending'),
           walletBalance: profile?.wallet_balance || 0,
           createdAt: user.created_at,
           lastSignIn: user.last_sign_in_at,
@@ -143,7 +143,7 @@ class SupabaseAdminService {
     }
   }
 
-  async updateUserStatus(userId, status) {
+  async updateUserStatus(userId, userStatus) {
     if (!supabaseAdmin) {
       throw new Error('Admin service not configured');
     }
@@ -151,11 +151,11 @@ class SupabaseAdminService {
     try {
       const { error } = await supabaseAdmin
         .from('user_profiles')
-        .upsert({ id: userId, status }, { onConflict: 'id' });
+        .upsert({ id: userId, status: userStatus }, { onConflict: 'id' });
 
       if (error) throw error;
 
-      return { success: true, message: `User status updated to ${status}` };
+      return { success: true, message: `User status updated to ${userStatus}` };
     } catch (error) {
       console.error('Update status error:', error);
       return { success: false, error: error.message };
@@ -178,6 +178,8 @@ class SupabaseAdminService {
           role: 'user',
           status: 'active'
         }, { onConflict: 'id' });
+        
+
 
       if (error) throw error;
 

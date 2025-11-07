@@ -3,9 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Users, DollarSign, Activity, TrendingUp, Eye, Edit, Ban, CheckCircle, Database } from 'lucide-react';
-import adminService from '../../services/admin.service';
+import supabaseAdminService from '../../services/supabaseAdmin.service';
 import { checkSupabaseUsers } from '../../utils/supabaseUserCheck';
 import { testRegistration, createProfileForExistingUser } from '../../utils/testSupabaseRegistration';
+import { testAddTransaction, testWalletFunding } from '../../utils/testTransaction';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
@@ -24,12 +25,14 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsResult, usersResult, transactionsResult, servicesResult] = await Promise.all([
-        adminService.getDashboardStats(),
-        adminService.getUsers(1, 5),
-        adminService.getTransactions(1, 5),
-        adminService.getServiceStats()
+      const [statsResult, usersResult, transactionsResult] = await Promise.all([
+        supabaseAdminService.getDashboardStats(),
+        supabaseAdminService.getAllUsers(),
+        supabaseAdminService.getAllTransactions()
       ]);
+      
+      // Mock services data for now
+      const servicesResult = { success: true, services: [] };
 
       if (statsResult.success) setStats(statsResult.stats);
       if (usersResult.success) setUsers(usersResult.users);
@@ -46,9 +49,9 @@ const AdminDashboard = () => {
     try {
       let result;
       if (action === 'role') {
-        result = await adminService.updateUserRole(userId, value);
+        result = await supabaseAdminService.updateUserRole(userId, value);
       } else if (action === 'status') {
-        result = await adminService.updateUserStatus(userId, value);
+        result = await supabaseAdminService.updateUserStatus(userId, value);
       }
 
       if (result.success) {
@@ -94,6 +97,30 @@ const AdminDashboard = () => {
       toast.error('Profile creation failed: ' + result.error);
     }
   };
+  
+  const testTransaction = async () => {
+    toast.loading('Testing transaction...');
+    const result = await testAddTransaction();
+    
+    if (result.success) {
+      toast.success('Transaction created! Check transactions table.');
+      setTimeout(() => loadDashboardData(), 2000);
+    } else {
+      toast.error('Transaction failed: ' + result.error);
+    }
+  };
+  
+  const testFunding = async () => {
+    toast.loading('Testing wallet funding...');
+    const result = await testWalletFunding();
+    
+    if (result.success) {
+      toast.success('Funding successful! Check transactions table.');
+      setTimeout(() => loadDashboardData(), 2000);
+    } else {
+      toast.error('Funding failed: ' + result.error);
+    }
+  };
 
   if (loading) {
     return (
@@ -127,6 +154,12 @@ const AdminDashboard = () => {
           </Button>
           <Button onClick={createExistingUserProfile} variant="outline">
             Create Profile for Existing User
+          </Button>
+          <Button onClick={testTransaction} variant="outline">
+            Test Transaction
+          </Button>
+          <Button onClick={testFunding} variant="outline">
+            Test Wallet Funding
           </Button>
         </div>
       </div>

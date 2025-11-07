@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import apiService from '../services/api.service';
 import WalletService from '../services/wallet.service';
+import supabaseWalletService from '../services/supabaseWallet.service';
 
 const WalletContext = createContext();
 
@@ -13,14 +14,31 @@ export const WalletProvider = ({ children }) => {
 
   const fetchWalletData = async () => {
     if (!isAuthenticated || !user?.id) {
-      setWalletBalance(0);
-      setTransactions([]);
+      // Load from localStorage for non-authenticated users
+      const localBalance = parseInt(localStorage.getItem('walletBalance') || '0');
+      const localTransactions = JSON.parse(localStorage.getItem('walletTransactions') || '[]');
+      setWalletBalance(localBalance);
+      setTransactions(localTransactions);
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      
+      // Try Supabase first
+      const [balanceResult, transactionsResult] = await Promise.all([
+        supabaseWalletService.getWalletBalance(user.id),
+        supabaseWalletService.getUserTransactions(user.id)
+      ]);
+      
+      if (balanceResult.success && transactionsResult.success) {
+        setWalletBalance(balanceResult.balance);
+        setTransactions(transactionsResult.transactions);
+        return;
+      }
+      
+      // Fallback to API
       const [walletData, transactionsData] = await Promise.all([
         apiService.get('/api/wallet/balance').catch(() => ({ balance: 0 })),
         apiService.get('/api/wallet/transactions').catch(() => ({ transactions: [] }))
@@ -43,21 +61,40 @@ export const WalletProvider = ({ children }) => {
     }
 
     try {
-      const result = await apiService.post('/api/wallet/fund', {
+      // Try Supabase first
+      const result = await supabaseWalletService.fundWallet(
+        user.id, 
+        user.email, 
+        amount, 
+        paymentMethod
+      );
+      
+      if (result.success) {
+        setWalletBalance(result.newBalance);
+        await fetchWalletData();
+        return {
+          success: true,
+          balance: result.newBalance,
+          transaction: result.transaction
+        };
+      }
+      
+      // Fallback to API
+      const apiResult = await apiService.post('/api/wallet/fund', {
         amount,
         paymentMethod,
         reference
       });
       
-      if (result.success) {
+      if (apiResult.success) {
         await fetchWalletData();
-        return result;
+        return apiResult;
       } else {
-        throw new Error(result.error || 'Funding failed');
+        throw new Error(apiResult.error || 'Funding failed');
       }
     } catch (error) {
-      // Fallback to mock for development
-      console.warn('Backend funding failed, using mock:', error.message);
+      // Final fallback to localStorage
+      console.warn('All funding methods failed, using localStorage:', error.message);
       const mockResult = {
         success: true,
         balance: walletBalance + amount,
@@ -65,14 +102,20 @@ export const WalletProvider = ({ children }) => {
           id: Date.now(),
           amount,
           type: 'credit',
-          label: 'Wallet Funding',
-          status: 'Successful',
-          date: new Date().toISOString()
+          description: 'Wallet Funding',
+          status: 'successful',
+          created_at: new Date().toISOString()
         }
       };
       
-      setWalletBalance(prev => prev + amount);
+      const newBalance = walletBalance + amount;
+      setWalletBalance(newBalance);
       setTransactions(prev => [mockResult.transaction, ...prev]);
+      
+      // Store in localStorage
+      localStorage.setItem('walletBalance', newBalance.toString());
+      localStorage.setItem('walletTransactions', JSON.stringify([mockResult.transaction, ...transactions]));
+      
       return mockResult;
     }
   };
@@ -95,11 +138,25 @@ export const WalletProvider = ({ children }) => {
     }
 
     try {
-      const result = await WalletService.processServicePayment(user.id, serviceData);
+      // Try Supabase first
+      const result = await supabaseWalletService.processServicePayment(
+        user.id,
+        user.email,
+        serviceData
+      );
+      
       if (result.success) {
-        await fetchWalletData(); // Refresh data
+        setWalletBalance(result.newBalance);
+        await fetchWalletData();
+        return result;
       }
-      return result;
+      
+      // Fallback to original service
+      const fallbackResult = await WalletService.processServicePayment(user.id, serviceData);
+      if (fallbackResult.success) {
+        await fetchWalletData();
+      }
+      return fallbackResult;
     } catch (error) {
       throw error;
     }
