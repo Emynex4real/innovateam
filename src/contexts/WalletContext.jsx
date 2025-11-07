@@ -3,6 +3,7 @@ import { useAuth } from '../App';
 import apiService from '../services/api.service';
 import WalletService from '../services/wallet.service';
 import supabaseWalletService from '../services/supabaseWallet.service';
+import cleanWalletService from '../services/cleanWallet.service';
 
 const WalletContext = createContext();
 
@@ -13,39 +14,54 @@ export const WalletProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const fetchWalletData = async () => {
-    if (!isAuthenticated || !user?.id) {
-      // Load from localStorage for non-authenticated users
-      const localBalance = parseInt(localStorage.getItem('walletBalance') || '0');
-      const localTransactions = JSON.parse(localStorage.getItem('walletTransactions') || '[]');
-      setWalletBalance(localBalance);
-      setTransactions(localTransactions);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       
-      // Try Supabase first
-      const [balanceResult, transactionsResult] = await Promise.all([
-        supabaseWalletService.getWalletBalance(user.id),
-        supabaseWalletService.getUserTransactions(user.id)
-      ]);
+      // Get balance from localStorage (updated by cleanWalletService)
+      const balance = await cleanWalletService.getBalance();
+      setWalletBalance(balance);
       
-      if (balanceResult.success && transactionsResult.success) {
-        setWalletBalance(balanceResult.balance);
-        setTransactions(transactionsResult.transactions);
-        return;
+      // Get transactions from Supabase for real data
+      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      console.log('🔍 Current user for transactions:', currentUser.email);
+      
+      if (currentUser.email) {
+        const simpleWalletService = (await import('../services/simpleWallet.service')).default;
+        const result = await simpleWalletService.getAllTransactions();
+        console.log('📊 All transactions:', result.transactions?.length);
+        
+        if (result.success) {
+          // Filter transactions for current user
+          const userTransactions = result.transactions
+            .filter(t => {
+              console.log('Comparing:', t.user_email, 'vs', currentUser.email);
+              return t.user_email === currentUser.email;
+            })
+            .map(t => ({
+              id: t.id,
+              label: t.description,
+              description: t.description,
+              amount: t.amount,
+              type: t.type,
+              category: t.type === 'credit' ? 'funding' : 'service',
+              status: 'completed',
+              date: t.created_at
+            }));
+          console.log('👤 User transactions found:', userTransactions.length);
+          setTransactions(userTransactions);
+          
+          // Calculate balance from transactions
+          const calculatedBalance = userTransactions.reduce((sum, t) => {
+            return t.type === 'credit' ? sum + t.amount : sum - t.amount;
+          }, 0);
+          console.log('💰 Calculated balance:', calculatedBalance);
+          
+          // Update localStorage balance to match Supabase
+          localStorage.setItem('wallet_balance', calculatedBalance.toString());
+          setWalletBalance(calculatedBalance);
+        }
       }
-      
-      // Fallback to API
-      const [walletData, transactionsData] = await Promise.all([
-        apiService.get('/api/wallet/balance').catch(() => ({ balance: 0 })),
-        apiService.get('/api/wallet/transactions').catch(() => ({ transactions: [] }))
-      ]);
-      
-      setWalletBalance(walletData.balance || 0);
-      setTransactions(transactionsData.transactions || []);
+
     } catch (error) {
       console.error('Failed to fetch wallet data:', error);
       setWalletBalance(0);
@@ -56,42 +72,26 @@ export const WalletProvider = ({ children }) => {
   };
 
   const fundWallet = async (amount, paymentMethod = 'card', reference = null) => {
-    if (!user?.id) {
+    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    
+    if (!currentUser.email) {
       throw new Error('User not authenticated');
     }
 
     try {
-      // Try Supabase first
-      const result = await supabaseWalletService.fundWallet(
-        user.id, 
-        user.email, 
-        amount, 
-        paymentMethod
-      );
+      // Use clean wallet service for direct Supabase integration
+      const result = await cleanWalletService.fundWallet(amount, paymentMethod);
       
       if (result.success) {
-        setWalletBalance(result.newBalance);
+        setWalletBalance(result.balance);
         await fetchWalletData();
         return {
           success: true,
-          balance: result.newBalance,
-          transaction: result.transaction
+          balance: result.balance
         };
       }
       
-      // Fallback to API
-      const apiResult = await apiService.post('/api/wallet/fund', {
-        amount,
-        paymentMethod,
-        reference
-      });
-      
-      if (apiResult.success) {
-        await fetchWalletData();
-        return apiResult;
-      } else {
-        throw new Error(apiResult.error || 'Funding failed');
-      }
+      throw new Error('Funding failed');
     } catch (error) {
       // Final fallback to localStorage
       console.warn('All funding methods failed, using localStorage:', error.message);
@@ -133,69 +133,68 @@ export const WalletProvider = ({ children }) => {
   };
 
   const processServicePayment = async (serviceData) => {
-    if (!user?.id) {
+    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    
+    if (!currentUser.email) {
       throw new Error('User not authenticated');
     }
 
     try {
-      // Try Supabase first
-      const result = await supabaseWalletService.processServicePayment(
-        user.id,
-        user.email,
-        serviceData
+      // Use clean wallet service for service payments
+      const result = await cleanWalletService.deductFromWallet(
+        serviceData.amount,
+        serviceData.description || serviceData.serviceName
       );
       
       if (result.success) {
-        setWalletBalance(result.newBalance);
+        setWalletBalance(result.balance);
         await fetchWalletData();
         return result;
       }
       
-      // Fallback to original service
-      const fallbackResult = await WalletService.processServicePayment(user.id, serviceData);
-      if (fallbackResult.success) {
-        await fetchWalletData();
-      }
-      return fallbackResult;
+      
+      throw new Error('Service payment failed');
     } catch (error) {
       throw error;
     }
   };
 
   const addTransaction = async (transactionData) => {
-    if (!user?.id) {
+    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    
+    if (!currentUser.email) {
       throw new Error('User not authenticated');
     }
 
     try {
-      const result = await apiService.post('/api/wallet/transaction', transactionData);
-      
-      if (result.success) {
-        await fetchWalletData();
-        return result;
+      if (transactionData.type === 'debit') {
+        const result = await cleanWalletService.deductFromWallet(
+          transactionData.amount,
+          transactionData.description || transactionData.label
+        );
+        
+        if (result.success) {
+          await fetchWalletData();
+          return { success: true, transaction: transactionData };
+        } else {
+          throw new Error(result.error || 'Transaction failed');
+        }
       } else {
-        throw new Error(result.error || 'Transaction failed');
+        // For credit transactions, use funding
+        const result = await cleanWalletService.fundWallet(
+          transactionData.amount,
+          'credit'
+        );
+        
+        if (result.success) {
+          await fetchWalletData();
+          return { success: true, transaction: transactionData };
+        } else {
+          throw new Error(result.error || 'Transaction failed');
+        }
       }
     } catch (error) {
-      // Fallback to mock for development
-      console.warn('Backend transaction failed, using mock:', error.message);
-      const mockTransaction = {
-        id: Date.now(),
-        ...transactionData,
-        date: new Date().toISOString()
-      };
-      
-      if (transactionData.type === 'debit') {
-        if (walletBalance < transactionData.amount) {
-          throw new Error('Insufficient balance');
-        }
-        setWalletBalance(prev => prev - transactionData.amount);
-      } else {
-        setWalletBalance(prev => prev + transactionData.amount);
-      }
-      
-      setTransactions(prev => [mockTransaction, ...prev]);
-      return { success: true, transaction: mockTransaction };
+      throw error;
     }
   };
 

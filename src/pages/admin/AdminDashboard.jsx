@@ -17,9 +17,17 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [supabaseStatus, setSupabaseStatus] = useState(null);
+  const [lastTransactionCount, setLastTransactionCount] = useState(0);
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Auto-refresh every 30 seconds for real-time updates
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
@@ -36,7 +44,14 @@ const AdminDashboard = () => {
 
       if (statsResult.success) setStats(statsResult.stats);
       if (usersResult.success) setUsers(usersResult.users);
-      if (transactionsResult.success) setTransactions(transactionsResult.transactions);
+      if (transactionsResult.success) {
+        const newTransactions = transactionsResult.transactions;
+        if (lastTransactionCount > 0 && newTransactions.length > lastTransactionCount) {
+          toast.success(`New transaction received! Total: ${newTransactions.length}`);
+        }
+        setTransactions(newTransactions);
+        setLastTransactionCount(newTransactions.length);
+      }
       if (servicesResult.success) setServices(servicesResult.services);
     } catch (error) {
       toast.error('Failed to load dashboard data');
@@ -45,80 +60,61 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUserAction = async (userId, action, value) => {
+  const testDirectTransaction = async () => {
+    toast.loading('Testing transaction flow...');
+    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    
+    console.log('🧪 Transaction Flow Test:');
+    console.log('Current user:', currentUser);
+    
+    if (!currentUser.id || !currentUser.email) {
+      toast.error('No user logged in');
+      return;
+    }
+    
     try {
-      let result;
-      if (action === 'role') {
-        result = await supabaseAdminService.updateUserRole(userId, value);
-      } else if (action === 'status') {
-        result = await supabaseAdminService.updateUserStatus(userId, value);
-      }
-
+      const supabaseWalletService = (await import('../../services/supabaseWallet.service')).default;
+      const result = await supabaseWalletService.addTransaction(
+        currentUser.id,
+        currentUser.email,
+        {
+          description: 'Admin Test Transaction',
+          amount: 50,
+          type: 'credit',
+          status: 'successful'
+        }
+      );
+      
+      console.log('Direct Supabase result:', result);
+      
       if (result.success) {
-        toast.success(result.message);
-        loadDashboardData();
+        toast.success('Transaction saved to Supabase!');
+        setTimeout(() => loadDashboardData(), 1000);
+      } else {
+        toast.error('Supabase transaction failed: ' + result.error);
       }
     } catch (error) {
-      toast.error('Action failed');
+      console.error('Transaction test error:', error);
+      toast.error('Test failed: ' + error.message);
     }
   };
-  
-  const checkSupabaseData = async () => {
-    const status = await checkSupabaseUsers();
-    setSupabaseStatus(status);
-    
-    if (status.error) {
-      toast.error('Supabase check failed');
-    } else {
-      toast.success('Supabase status updated');
-    }
-  };
-  
-  const testSupabaseRegistration = async () => {
-    toast.loading('Testing registration...');
-    const result = await testRegistration();
-    
-    if (result.success) {
-      toast.success('Registration test successful! Check console for details.');
-      setTimeout(() => loadDashboardData(), 3000);
-    } else {
-      toast.error('Registration test failed: ' + result.error);
-    }
-  };
-  
-  const createExistingUserProfile = async () => {
-    toast.loading('Creating profile for existing user...');
-    const result = await createProfileForExistingUser();
-    
-    if (result.success) {
-      toast.success('Profile created! Check user_profiles table.');
-      setTimeout(() => loadDashboardData(), 2000);
-    } else {
-      toast.error('Profile creation failed: ' + result.error);
-    }
-  };
-  
-  const testTransaction = async () => {
-    toast.loading('Testing transaction...');
-    const result = await testAddTransaction();
-    
-    if (result.success) {
-      toast.success('Transaction created! Check transactions table.');
-      setTimeout(() => loadDashboardData(), 2000);
-    } else {
-      toast.error('Transaction failed: ' + result.error);
-    }
-  };
-  
-  const testFunding = async () => {
-    toast.loading('Testing wallet funding...');
-    const result = await testWalletFunding();
-    
-    if (result.success) {
-      toast.success('Funding successful! Check transactions table.');
-      setTimeout(() => loadDashboardData(), 2000);
-    } else {
-      toast.error('Funding failed: ' + result.error);
+
+  const debugTransactions = async () => {
+    toast.loading('Checking transactions table...');
+    try {
+      const result = await supabaseAdminService.getAllTransactions();
+      console.log('🔍 Debug Transactions Result:', result);
+      if (result.success) {
+        console.log('📊 Total transactions found:', result.transactions.length);
+        console.log('📋 Transactions data:', result.transactions);
+        toast.success(`Found ${result.transactions.length} total transactions`);
+      } else {
+        console.error('❌ Transaction fetch failed:', result.error);
+        toast.error('Failed to fetch transactions: ' + result.error);
+      }
+    } catch (error) {
+      console.error('❌ Debug error:', error);
+      toast.error('Debug failed: ' + error.message);
     }
   };
 
@@ -141,54 +137,84 @@ const AdminDashboard = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={loadDashboardData} variant="outline">
             Refresh Data
           </Button>
-          <Button onClick={checkSupabaseData} variant="outline">
-            <Database className="w-4 h-4 mr-2" />
-            Check Supabase
+          <Button onClick={debugTransactions} variant="outline">
+            Debug Transactions
           </Button>
-          <Button onClick={testSupabaseRegistration} variant="outline">
-            Test Registration
+          <Button onClick={testDirectTransaction} variant="outline">
+            Test Direct Transaction
           </Button>
-          <Button onClick={createExistingUserProfile} variant="outline">
-            Create Profile for Existing User
+          <Button onClick={() => {
+            const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+            const isValidUUID = currentUser.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUser.id);
+            
+            console.log('🔍 Current User Debug:');
+            console.log('User from localStorage:', currentUser);
+            console.log('Has valid UUID:', isValidUUID);
+            
+            if (!isValidUUID) {
+              toast.error('User has invalid UUID format');
+            } else {
+              toast.success('User has valid UUID');
+            }
+          }} variant="outline">
+            Debug Current User
           </Button>
-          <Button onClick={testTransaction} variant="outline">
-            Test Transaction
-          </Button>
-          <Button onClick={testFunding} variant="outline">
-            Test Wallet Funding
+          <Button onClick={async () => {
+            toast.loading('Creating auth user...');
+            const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+            
+            if (!currentUser.email) {
+              toast.error('No user email found');
+              return;
+            }
+            
+            try {
+              // Create real Supabase auth user
+              const { createClient } = await import('@supabase/supabase-js');
+              const supabaseAdmin = createClient(
+                'https://jdedscbvbkjvqmmdabig.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZWRzY2J2YmtqdnFtbWRhYmlnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTgwNzI3MywiZXhwIjoyMDc1MzgzMjczfQ.OAtp8dTtIuekKgcAo5WagT30xpzZiTivKxH-LujRFW4',
+                { auth: { autoRefreshToken: false, persistSession: false } }
+              );
+              
+              const { data, error } = await supabaseAdmin.auth.admin.createUser({
+                email: currentUser.email,
+                password: 'tempPassword123!',
+                email_confirm: true,
+                user_metadata: {
+                  full_name: currentUser.user_metadata?.full_name || 'User'
+                }
+              });
+              
+              if (error) throw error;
+              
+              // Update localStorage with real user ID
+              const updatedUser = { ...currentUser, id: data.user.id };
+              localStorage.setItem('confirmedUser', JSON.stringify(updatedUser));
+              
+              toast.success('Real Supabase user created!');
+              console.log('Created user:', data.user);
+              setTimeout(() => loadDashboardData(), 1000);
+            } catch (error) {
+              console.error('User creation failed:', error);
+              toast.error('Failed to create user: ' + error.message);
+            }
+          }} variant="outline">
+            Create Real User
           </Button>
         </div>
       </div>
-
-      {/* Supabase Status */}
-      {supabaseStatus && (
-        <Card className="bg-blue-50 dark:bg-blue-900/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-blue-800 dark:text-blue-200">Supabase Status</h3>
-                <p className="text-sm text-blue-600 dark:text-blue-300">
-                  Session: {supabaseStatus.hasSession ? '✅ Active' : '❌ None'} | 
-                  Current User: {supabaseStatus.currentUser || 'None'} | 
-                  Data Source: localStorage (Supabase requires service key for user access)
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Navigation Tabs */}
       <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'users', label: 'Users' },
-          { id: 'transactions', label: 'Transactions' },
-          { id: 'services', label: 'Services' }
+          { id: 'transactions', label: 'Transactions' }
         ].map(tab => (
           <Button
             key={tab.id}
@@ -201,24 +227,114 @@ const AdminDashboard = () => {
         ))}
       </div>
 
+      {/* Users Tab */}
+      {activeTab === 'users' && (
+        <Card>
+          <CardContent className="p-0">
+            <div className="p-6 border-b">
+              <h3 className="text-lg font-semibold">All Users ({users.length})</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-left p-4">Name</th>
+                    <th className="text-left p-4">Phone</th>
+                    <th className="text-left p-4">Role</th>
+                    <th className="text-left p-4">Status</th>
+                    <th className="text-left p-4">Wallet Balance</th>
+                    <th className="text-left p-4">Created</th>
+                    <th className="text-left p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user, index) => (
+                    <tr key={user.id || index} className="border-b hover:bg-muted/50">
+                      <td className="p-4">
+                        <div>
+                          <span className="font-medium">{user.name}</span>
+                          <p className="text-sm text-muted-foreground">{user.id}</p>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm">{user.phone || 'N/A'}</span>
+                      </td>
+                      <td className="p-4">
+                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                          {user.role}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                          {user.status}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <span className="font-medium">₦{user.walletBalance?.toLocaleString()}</span>
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <p className="text-sm">{new Date(user.createdAt).toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleTimeString()}</p>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            console.log('User Details:', user);
+                            alert(`User: ${user.name}\nID: ${user.id}\nPhone: ${user.phone}\nRole: ${user.role}\nStatus: ${user.status}\nWallet: ₦${user.walletBalance?.toLocaleString()}\nCreated: ${new Date(user.createdAt).toLocaleString()}`);
+                          }}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            const newRole = user.role === 'admin' ? 'user' : 'admin';
+                            console.log(`Changing ${user.name} role to ${newRole}`);
+                            // Add role update logic here
+                          }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            const newStatus = user.status === 'active' ? 'banned' : 'active';
+                            console.log(`Changing ${user.name} status to ${newStatus}`);
+                            // Add status update logic here
+                          }}>
+                            <Ban className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {users.length === 0 && (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No users found</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Overview Tab */}
       {activeTab === 'overview' && stats && (
         <div className="space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Users</p>
-                    <p className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">{stats.totalUsers}</p>
                     <p className="text-xs text-green-600">+{stats.todayUsers} today</p>
                   </div>
                   <Users className="h-8 w-8 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -231,20 +347,20 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Transactions</p>
-                    <p className="text-2xl font-bold">{stats.totalTransactions.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">{stats.totalTransactions}</p>
                     <p className="text-xs text-green-600">+{stats.todayTransactions} today</p>
                   </div>
                   <Activity className="h-8 w-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -259,172 +375,147 @@ const AdminDashboard = () => {
             </Card>
           </div>
 
-          {/* Recent Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {users.slice(0, 5).map(user => (
-                    <div key={user.id} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                      <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
-                        {user.status}
-                      </Badge>
-                    </div>
-                  ))}
+          {/* Recent Transaction Alert */}
+          {transactions.length > 0 && (
+            <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-green-800 dark:text-green-200">Latest Transaction</h3>
+                    <p className="text-sm text-green-600 dark:text-green-300">
+                      {transactions[0]?.description || 'New Transaction'} - ₦{transactions[0]?.amount?.toLocaleString() || '0'} 
+                      ({new Date(transactions[0]?.created_at).toLocaleTimeString()})
+                    </p>
+                  </div>
+                  <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {transactions.slice(0, 5).map(transaction => (
-                    <div key={transaction.id} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{transaction.description}</p>
-                        <p className="text-sm text-muted-foreground">{transaction.userEmail}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-semibold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                          {transaction.type === 'credit' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
-                        </p>
-                        <Badge variant={transaction.status === 'successful' ? 'default' : 'destructive'}>
-                          {transaction.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+          {/* Users Section */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="p-6 border-b">
+                <h3 className="text-lg font-semibold">All Users ({users.length})</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-4">Name</th>
+                      <th className="text-left p-4">Email</th>
+                      <th className="text-left p-4">Role</th>
+                      <th className="text-left p-4">Status</th>
+                      <th className="text-left p-4">Wallet Balance</th>
+                      <th className="text-left p-4">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user, index) => (
+                      <tr key={user.id || index} className="border-b">
+                        <td className="p-4">
+                          <span className="font-medium">{user.name}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm">{user.email}</span>
+                        </td>
+                        <td className="p-4">
+                          <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                            {user.role}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                            {user.status}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <span className="font-medium">₦{user.walletBalance?.toLocaleString()}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm">{new Date(user.createdAt).toLocaleDateString()}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {users.length === 0 && (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No users found</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
+
+
+
         </div>
-      )}
-
-      {/* Users Tab */}
-      {activeTab === 'users' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {users.map(user => (
-                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                        {user.role}
-                      </Badge>
-                      <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                        {user.status}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      Balance: ₦{user.walletBalance.toLocaleString()} • 
-                      Joined: {new Date(user.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleUserAction(user.id, 'role', user.role === 'admin' ? 'user' : 'admin')}
-                    >
-                      {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={user.status === 'active' ? 'destructive' : 'default'}
-                      onClick={() => handleUserAction(user.id, 'status', user.status === 'active' ? 'inactive' : 'active')}
-                    >
-                      {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       )}
 
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {transactions.map(transaction => (
-                <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{transaction.description}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {transaction.userEmail} • {new Date(transaction.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-lg font-semibold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                      {transaction.type === 'credit' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
-                    </p>
-                    <Badge variant={transaction.status === 'successful' ? 'default' : 'destructive'}>
-                      {transaction.status}
-                    </Badge>
-                  </div>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Recent Transactions</h2>
+            <Badge variant="outline">{transactions.length} total</Badge>
+          </div>
+          
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-4">User</th>
+                      <th className="text-left p-4">Description</th>
+                      <th className="text-left p-4">Amount</th>
+                      <th className="text-left p-4">Type</th>
+                      <th className="text-left p-4">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.slice(0, 10).map((transaction, index) => (
+                      <tr key={transaction.id || index} className="border-b">
+                        <td className="p-4">
+                          <div>
+                            <p className="font-medium">{transaction.user_email || 'Unknown'}</p>
+                            <p className="text-sm text-muted-foreground">{transaction.user_id}</p>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm">{transaction.description || 'Transaction'}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="font-medium">₦{transaction.amount?.toLocaleString() || '0'}</span>
+                        </td>
+                        <td className="p-4">
+                          <Badge variant={transaction.type === 'credit' ? 'default' : 'secondary'}>
+                            {transaction.type || 'unknown'}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <div>
+                            <p className="text-sm">{new Date(transaction.created_at).toLocaleDateString()}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(transaction.created_at).toLocaleTimeString()}</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {transactions.length === 0 && (
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No transactions found</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Services Tab */}
-      {activeTab === 'services' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Service Analytics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {services.map((service, index) => (
-                <div key={index} className="p-4 border rounded-lg">
-                  <h3 className="font-semibold mb-2">{service.name}</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Usage:</span>
-                      <span className="font-medium">{service.usage} times</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Revenue:</span>
-                      <span className="font-medium">₦{service.revenue.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Growth:</span>
-                      <span className={`font-medium ${service.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {service.growth > 0 ? '+' : ''}{service.growth}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

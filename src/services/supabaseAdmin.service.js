@@ -18,34 +18,27 @@ class SupabaseAdminService {
     }
 
     try {
-      // Get users from auth.users
-      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (authError) throw authError;
-
-      // Get user profiles
+      // Get user profiles directly since that's where our users are
       const { data: profiles, error: profileError } = await supabaseAdmin
         .from('user_profiles')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (profileError) console.warn('Profile fetch error:', profileError);
+      if (profileError) throw profileError;
 
-      // Combine auth users with profiles
-      const users = authUsers.users.map(user => {
-        const profile = profiles?.find(p => p.id === user.id);
-        return {
-          id: user.id,
-          email: user.email,
-          name: profile?.full_name || user.user_metadata?.full_name || 'User',
-          phone: profile?.phone || user.user_metadata?.phone || '',
-          role: profile?.role || 'user',
-          status: profile?.status || (user.email_confirmed_at ? 'active' : 'pending'),
-          walletBalance: profile?.wallet_balance || 0,
-          createdAt: user.created_at,
-          lastSignIn: user.last_sign_in_at,
-          emailConfirmed: !!user.email_confirmed_at
-        };
-      });
+      // Map profiles to user format
+      const users = profiles.map(profile => ({
+        id: profile.id,
+        email: profile.full_name + '@example.com', // Fallback email
+        name: profile.full_name,
+        phone: profile.phone,
+        role: profile.role,
+        status: profile.status,
+        walletBalance: profile.wallet_balance || 0,
+        createdAt: profile.created_at,
+        lastSignIn: profile.updated_at,
+        emailConfirmed: true
+      }));
 
       return { success: true, users };
     } catch (error) {

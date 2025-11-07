@@ -30,6 +30,7 @@ import PinVending from './pages/jamb services/pin vending';
 import Reprinting from './pages/jamb services/reprinting';
 import EducationalSidebar from './components/EducationalSidebar';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import SimpleAdminDashboard from './pages/admin/SimpleAdminDashboard';
 import EmailConfirmation from './pages/email-confirmation';
 
 // Initialize Supabase with validation
@@ -142,8 +143,16 @@ const SupabaseAuthProvider = ({ children }) => {
         console.warn('Supabase not configured, using mock authentication');
         // Mock signup with delay
         await new Promise(resolve => setTimeout(resolve, 1000));
+        // Generate real UUID format for compatibility
+        const generateUUID = () => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
         const mockUser = { 
-          id: `mock-${Date.now()}`, 
+          id: generateUUID(), 
           email, 
           user_metadata: { 
             full_name: userData?.fullName,
@@ -180,8 +189,16 @@ const SupabaseAuthProvider = ({ children }) => {
 
       if (skipEmailConfirmation) {
         console.log('🚀 Development mode: Skipping email confirmation');
+        // Generate real UUID format for compatibility
+        const generateUUID = () => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
         const mockUser = {
-          id: `dev-${Date.now()}`,
+          id: generateUUID(),
           email,
           user_metadata: {
             full_name: userData?.fullName,
@@ -233,9 +250,17 @@ const SupabaseAuthProvider = ({ children }) => {
         localStorage.setItem('registrationName', userData?.fullName || '');
         localStorage.setItem('registrationPhone', userData?.phone || '');
         
+        // Generate real UUID format for compatibility
+        const generateUUID = () => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
         // Store user data locally for fallback
         const userData_local = {
-          id: `pending-${Date.now()}`,
+          id: generateUUID(),
           name: userData?.fullName,
           email: email,
           created_at: new Date().toISOString(),
@@ -250,7 +275,7 @@ const SupabaseAuthProvider = ({ children }) => {
         
         if (emailResult.success) {
           const pendingUser = {
-            id: `pending-${Date.now()}`,
+            id: generateUUID(),
             email,
             user_metadata: {
               full_name: userData?.fullName,
@@ -280,8 +305,16 @@ const SupabaseAuthProvider = ({ children }) => {
         console.warn('Supabase not configured, using mock authentication');
         // Mock signin with delay
         await new Promise(resolve => setTimeout(resolve, 1000));
+        // Generate real UUID format for compatibility
+        const generateUUID = () => {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
         const mockUser = { 
-          id: `mock-${Date.now()}`, 
+          id: generateUUID(), 
           email,
           user_metadata: { full_name: 'Demo User' }
         };
@@ -390,6 +423,7 @@ function App() {
             <Route path="/ai-examiner" element={<AIExaminer />} />
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/simple" element={<SimpleAdminDashboard />} />
             <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
             </Routes>
           </div>
