@@ -388,9 +388,11 @@ const Dashboard = () => {
                       <div className="flex gap-2 pt-2">
                         <Button
                           className="flex-1 bg-primary hover:bg-primary/90"
-                          onClick={() => handlePurchaseService(service)}
+                          asChild
                         >
-                          Purchase
+                          <Link to={service.link}>
+                            Purchase
+                          </Link>
                         </Button>
                         <Button
                           variant="outline"
