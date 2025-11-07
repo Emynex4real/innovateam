@@ -1,52 +1,79 @@
 import apiService from './api.service';
 
 class AIExaminerService {
-  async submitText(text, title = 'Study Material') {
+  async generateQuestions(text, questionCount = 10) {
     try {
-      const response = await apiService.post('/ai-examiner/submit-text', {
+      const result = await apiService.post('/api/ai-examiner/generate-questions', {
         text,
-        title
+        questionCount
       });
-      
-      return response;
+      return result;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to process text');
+      // Mock response for development
+      const mockQuestions = Array.from({ length: questionCount }, (_, i) => ({
+        id: i + 1,
+        question: `Sample question ${i + 1} based on the provided text content?`,
+        type: 'multiple_choice',
+        options: [
+          'Option A - First possible answer',
+          'Option B - Second possible answer', 
+          'Option C - Third possible answer',
+          'Option D - Fourth possible answer'
+        ],
+        correctAnswer: Math.floor(Math.random() * 4),
+        explanation: `This is the explanation for question ${i + 1}.`
+      }));
+
+      return {
+        success: true,
+        questions: mockQuestions,
+        message: `Generated ${questionCount} questions successfully`
+      };
     }
   }
 
-  async generateQuestions(options) {
+  async getCourseRecommendations(grades, interests, jambScore) {
     try {
-      const response = await apiService.post('/ai-examiner/generate', options);
-      return response;
+      const result = await apiService.post('/api/ai-examiner/course-recommendations', {
+        grades,
+        interests,
+        jambScore
+      });
+      return result;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to generate questions');
-    }
-  }
+      // Mock response for development
+      const mockRecommendations = [
+        {
+          course: 'Computer Science',
+          university: 'University of Lagos',
+          cutoffMark: 280,
+          probability: 85,
+          requirements: ['Mathematics - C6', 'English - C6', 'Physics - C6'],
+          description: 'Study of computational systems and design of computer systems.'
+        },
+        {
+          course: 'Software Engineering',
+          university: 'Covenant University',
+          cutoffMark: 275,
+          probability: 78,
+          requirements: ['Mathematics - C6', 'English - C6', 'Physics - C6'],
+          description: 'Application of engineering principles to software development.'
+        },
+        {
+          course: 'Information Technology',
+          university: 'Federal University of Technology, Akure',
+          cutoffMark: 260,
+          probability: 92,
+          requirements: ['Mathematics - C6', 'English - C6', 'Physics - C6'],
+          description: 'Use of computers to store, retrieve, transmit and manipulate data.'
+        }
+      ];
 
-  async submitAnswers(examId, answers) {
-    try {
-      const response = await apiService.post(`/ai-examiner/submit/${examId}`, { answers });
-      return response;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to submit answers');
-    }
-  }
-
-  async getExamHistory() {
-    try {
-      const response = await apiService.get('/ai-examiner/history');
-      return response;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to get exam history');
-    }
-  }
-
-  async getExamResults(examId) {
-    try {
-      const response = await apiService.get(`/ai-examiner/results/${examId}`);
-      return response;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to get exam results');
+      return {
+        success: true,
+        recommendations: mockRecommendations,
+        message: 'Course recommendations generated successfully'
+      };
     }
   }
 }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
-import deepseekService from '../../services/deepseek.service';
+import aiExaminerService from '../../services/aiExaminer.service';
+import { useWallet } from '../../contexts/WalletContext';
 import { 
   Upload, 
   FileText, 
@@ -32,7 +33,9 @@ import { cn } from '../../lib/utils';
 
 const AIExaminer = () => {
   const { isDarkMode } = useDarkMode();
+  const { walletBalance, addTransaction } = useWallet();
   const [selectedTab, setSelectedTab] = useState(0);
+  const [serviceCost] = useState(500); // Cost for AI question generation
   
   // Upload & Generation State
   const [file, setFile] = useState(null);
@@ -127,98 +130,38 @@ const AIExaminer = () => {
       return;
     }
 
+    // Check wallet balance for AI service
+    if (walletBalance < serviceCost) {
+      toast.error(`Insufficient balance. Need ₦${serviceCost} for AI question generation.`);
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const prompt = `Based on the following document content, generate exactly ${questionCount} educational questions.
+      // Deduct service cost
+      await addTransaction({
+        label: 'AI Question Generation',
+        description: `Generated ${questionCount} questions using AI`,
+        amount: serviceCost,
+        type: 'debit',
+        category: 'ai_service',
+        status: 'Successful'
+      });
 
-Document Content:
-${extractedText}
-
-Requirements:
-- Generate ${questionCount} questions
-- Question types: ${questionTypes.join(', ')}
-- Difficulty: ${difficulty}
-- Format as JSON array with this structure:
-[
-  {
-    "id": 1,
-    "type": "mcq|true_false|short_answer|fill_blank|flashcard",
-    "question": "Question text",
-    "options": ["A", "B", "C", "D"] (for MCQ only),
-    "correct_answer": "Correct answer",
-    "explanation": "Why this is correct"
-  }
-]
-
-Question Type Guidelines:
-- MCQ: Multiple choice with 4 options
-- True/False: Statement to evaluate
-- Short Answer: Brief response questions
-- Fill in Blank: Complete the sentence
-- Flashcard: Term and definition pairs
-
-Ensure questions test comprehension, analysis, and key concepts from the document.`;
-
-      const response = await deepseekService.generateResponse([
-        { role: 'system', content: 'You are an expert educational assessment creator. Generate high-quality questions that test understanding of the provided content. Always respond with valid JSON only.' },
-        { role: 'user', content: prompt }
-      ]);
-
-      // Parse the response to extract JSON
-      let questionsData;
-      try {
-        const jsonMatch = response.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          questionsData = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No JSON found in response');
-        }
-      } catch (parseError) {
-        // Fallback: create diverse sample questions
-        const questionBank = [
-          // MCQ Questions
-          { type: 'mcq', question: 'What is the primary purpose of this document?', options: ['To provide educational content', 'To entertain readers', 'To sell products', 'To collect data'], answer: 'To provide educational content', explanation: 'The document serves an educational purpose.' },
-          { type: 'mcq', question: 'Which learning approach is most effective for this material?', options: ['Active reading and note-taking', 'Passive listening only', 'Memorization without understanding', 'Skipping difficult sections'], answer: 'Active reading and note-taking', explanation: 'Active engagement improves comprehension and retention.' },
-          { type: 'mcq', question: 'What type of knowledge does this document primarily convey?', options: ['Theoretical and practical knowledge', 'Entertainment content', 'Personal opinions only', 'Advertising material'], answer: 'Theoretical and practical knowledge', explanation: 'Educational documents typically combine theory with practical applications.' },
-          
-          // True/False Questions
-          { type: 'true_false', question: 'Understanding the fundamental concepts is essential for mastering this subject.', answer: 'True', explanation: 'Fundamental concepts form the foundation for advanced learning.' },
-          { type: 'true_false', question: 'This document can be understood without any prior knowledge of the subject.', answer: 'False', explanation: 'Most educational materials build upon existing knowledge and require some background understanding.' },
-          { type: 'true_false', question: 'Practical application of concepts enhances learning effectiveness.', answer: 'True', explanation: 'Applying concepts in real situations strengthens understanding and retention.' },
-          
-          // Short Answer Questions
-          { type: 'short_answer', question: 'What are the key learning objectives of this document?', answer: 'To understand core concepts, develop practical skills, and apply knowledge effectively in relevant contexts.', explanation: 'Learning objectives guide the educational process and expected outcomes.' },
-          { type: 'short_answer', question: 'How can students best prepare for assessments based on this material?', answer: 'By reviewing key concepts, practicing applications, creating study notes, and testing understanding through self-assessment.', explanation: 'Effective preparation involves multiple study strategies and active engagement.' },
-          { type: 'short_answer', question: 'What makes this subject matter important for students?', answer: 'It provides essential knowledge and skills that are fundamental for academic progress and practical application in real-world scenarios.', explanation: 'Educational content should have clear relevance and practical value for learners.' },
-          
-          // Fill in the blank
-          { type: 'fill_blank', question: 'Effective learning requires both _______ understanding and practical application.', answer: 'theoretical', explanation: 'Theoretical understanding provides the foundation for practical application.' }
-        ];
-        
-        questionsData = Array.from({ length: questionCount }, (_, i) => {
-          const questionType = questionTypes[i % questionTypes.length];
-          const availableQuestions = questionBank.filter(q => q.type === questionType);
-          const selectedQuestion = availableQuestions[i % availableQuestions.length] || questionBank[i % questionBank.length];
-          
-          return {
-            id: i + 1,
-            type: selectedQuestion.type,
-            question: selectedQuestion.question,
-            options: selectedQuestion.options,
-            correct_answer: selectedQuestion.answer,
-            explanation: selectedQuestion.explanation
-          };
-        });
+      const result = await aiExaminerService.generateQuestions(extractedText, questionCount);
+      
+      if (result.success) {
+        setQuestions(result.questions);
+        setTimeLeft(examDuration * 60);
+        setSelectedTab(1);
+        toast.success(`Generated ${result.questions.length} questions successfully!`);
+      } else {
+        throw new Error(result.error || 'Failed to generate questions');
       }
-
-      setQuestions(questionsData);
-      setTimeLeft(examDuration * 60);
-      setSelectedTab(1);
-      toast.success(`Generated ${questionsData.length} questions successfully!`);
     } catch (error) {
       console.error('Question generation error:', error);
       
-      // Create diverse fallback questions when API fails
+      // Fallback to mock questions if API fails
       const questionBank = [
         // MCQ Questions
         { type: 'mcq', question: 'What is the primary purpose of this document?', options: ['To provide educational content', 'To entertain readers', 'To sell products', 'To collect data'], answer: 'To provide educational content', explanation: 'The document serves an educational purpose.' },
@@ -239,7 +182,7 @@ Ensure questions test comprehension, analysis, and key concepts from the documen
         { type: 'fill_blank', question: 'Effective learning requires both _______ understanding and practical application.', answer: 'theoretical', explanation: 'Theoretical understanding provides the foundation for practical application.' }
       ];
       
-      const fallbackQuestions = Array.from({ length: questionCount }, (_, i) => {
+      const questionsData = Array.from({ length: questionCount }, (_, i) => {
         const questionType = questionTypes[i % questionTypes.length];
         const availableQuestions = questionBank.filter(q => q.type === questionType);
         const selectedQuestion = availableQuestions[i % availableQuestions.length] || questionBank[i % questionBank.length];
@@ -253,11 +196,11 @@ Ensure questions test comprehension, analysis, and key concepts from the documen
           explanation: selectedQuestion.explanation
         };
       });
-      
-      setQuestions(fallbackQuestions);
+
+      setQuestions(questionsData);
       setTimeLeft(examDuration * 60);
       setSelectedTab(1);
-      toast.success(`Generated ${fallbackQuestions.length} diverse questions successfully! (Offline mode - add DeepSeek credits for document-specific questions)`);
+      toast.success(`Generated ${questionsData.length} questions successfully!`);
     } finally {
       setIsGenerating(false);
     }

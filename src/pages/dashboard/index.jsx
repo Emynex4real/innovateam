@@ -18,6 +18,9 @@ import { useDarkMode } from '../../contexts/DarkModeContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import { useWallet } from '../../contexts/WalletContext';
+import PaymentModal from '../../components/PaymentModal';
+import toast from 'react-hot-toast';
 import EducationalSidebar from '../../components/EducationalSidebar';
 
 // Import images directly
@@ -30,14 +33,10 @@ import placeholderImg from '../../assets/images/services/placeholder.svg';
 
 const Dashboard = () => {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { user } = useAuth();
   
-  // Mock data for now - will be replaced with Supabase data
-  const transactions = [];
-  const walletBalance = 0;
-  const getRecentTransactions = (limit) => [];
-  const getTransactionsByType = (type) => [];
-  const addTransaction = (transaction) => {};
+  const { walletBalance, transactions, getRecentTransactions, getTransactionsByType, addTransaction } = useWallet();
   const { isDarkMode } = useDarkMode();
 
   const stats = [
@@ -132,21 +131,33 @@ const Dashboard = () => {
 
   const toggleTransactions = () => setShowAllTransactions((prev) => !prev);
 
-  const handlePurchaseService = (service) => {
+  const handlePurchaseService = async (service) => {
     const amount = parseFloat(service.price.replace('₦', '').replace(',', ''));
     if (walletBalance < amount) {
-      alert('Insufficient balance');
+      toast.error('Insufficient balance. Please fund your wallet.');
+      setShowPaymentModal(true);
       return;
     }
-    addTransaction({
-      label: service.title,
-      description: `Purchased ${service.title}`,
-      amount: amount,
-      type: 'debit',
-      category: service.category,
-      status: 'Successful',
-      date: new Date().toISOString()
-    });
+    
+    try {
+      const result = await addTransaction({
+        label: service.title,
+        description: `Purchased ${service.title}`,
+        amount: amount,
+        type: 'debit',
+        category: service.category,
+        status: 'Successful',
+        date: new Date().toISOString()
+      });
+      
+      if (result.success) {
+        toast.success(`${service.title} purchased successfully!`);
+      } else {
+        toast.error('Purchase failed. Please try again.');
+      }
+    } catch (error) {
+      toast.error('Purchase failed. Please try again.');
+    }
   };
 
   return (
@@ -211,10 +222,11 @@ const Dashboard = () => {
                       Your current balance and recent activity
                     </CardDescription>
                   </div>
-                  <Button asChild className="bg-primary hover:bg-primary/90">
-                    <Link to="/dashboard/wallet">
-                      Fund Wallet
-                    </Link>
+                  <Button 
+                    onClick={() => setShowPaymentModal(true)}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Fund Wallet
                   </Button>
                 </div>
               </CardHeader>
@@ -412,6 +424,12 @@ const Dashboard = () => {
           </div>
         </div>
         </motion.div>
+        
+        <PaymentModal 
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => window.location.reload()}
+        />
       </div>
   );
 };

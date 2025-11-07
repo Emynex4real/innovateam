@@ -28,8 +28,9 @@ const EducationalSidebar = ({ children }) => {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   
-  const { user, profile, signOut } = useAuth();
-  const walletBalance = profile?.wallet_balance || 0;
+  const { user, signOut } = useAuth();
+  const walletBalance = 0; // Will be connected to wallet context
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email === 'admin@innovateam.com';
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const menuItems = [
@@ -103,7 +104,7 @@ const EducationalSidebar = ({ children }) => {
 
   // Add admin panel for admin users
   const finalMenuItems = [...menuItems];
-  if (profile?.role === 'admin') {
+  if (isAdmin) {
     finalMenuItems.push({
       id: 'admin-panel',
       label: 'Admin Panel',
@@ -224,7 +225,7 @@ const EducationalSidebar = ({ children }) => {
                       Profile Settings
                     </Link>
                     
-                    {profile?.role === 'admin' && (
+                    {isAdmin && (
                       <Link
                         to="/admin/dashboard"
                         className="block px-4 py-2 text-sm font-medium text-orange-600 hover:bg-accent"
