@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { DarkModeProvider } from './contexts/DarkModeContext';
+import { WalletProvider } from './contexts/WalletContext';
 import Home from './pages/Home';
 import Login from './pages/login';
 import Register from './pages/register';
@@ -15,6 +16,17 @@ import Wallet from './pages/wallet';
 import Transactions from './pages/transactions';
 import Support from './pages/support';
 import AIExaminer from './pages/ai examiner';
+import OLevelUploadExisting from './pages/jamb services/olevel upload';
+import WaecResultChecker from './pages/result checker/waec result checker';
+import NecoResultChecker from './pages/result checker/neco result checker';
+import NbaisResultChecker from './pages/result checker/nbais result checker';
+import NabtebResultChecker from './pages/result checker/nabteb result checker';
+import WaecGceChecker from './pages/result checker/waec gce';
+import AdmissionLetter from './pages/jamb services/admission letter';
+import OriginalResult from './pages/jamb services/original result';
+import PinVending from './pages/jamb services/pin vending';
+import Reprinting from './pages/jamb services/reprinting';
+import EducationalSidebar from './components/EducationalSidebar';
 
 // Initialize Supabase with validation
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -181,8 +193,9 @@ function App() {
   return (
     <DarkModeProvider>
       <SupabaseAuthProvider>
-        <div className="App">
-          <Routes>
+        <WalletProvider>
+          <div className="App">
+            <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -190,15 +203,33 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/course-advisor" element={<CourseAdvisor />} />
             <Route path="/question-generator" element={<QuestionGenerator />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<EducationalSidebar><Dashboard /></EducationalSidebar>} />
+            <Route path="/dashboard/profile" element={<EducationalSidebar><Profile /></EducationalSidebar>} />
+            <Route path="/dashboard/wallet" element={<EducationalSidebar><Wallet /></EducationalSidebar>} />
+            <Route path="/dashboard/transactions" element={<EducationalSidebar><Transactions /></EducationalSidebar>} />
+            <Route path="/dashboard/support" element={<EducationalSidebar><Support /></EducationalSidebar>} />
+            <Route path="/dashboard/ai-examiner" element={<EducationalSidebar><AIExaminer /></EducationalSidebar>} />
+            <Route path="/dashboard/course-advisor" element={<EducationalSidebar><CourseAdvisor /></EducationalSidebar>} />
+            <Route path="/dashboard/buy-olevel-upload" element={<EducationalSidebar><OLevelUploadExisting /></EducationalSidebar>} />
+            <Route path="/dashboard/buy-admission-letter" element={<EducationalSidebar><AdmissionLetter /></EducationalSidebar>} />
+            <Route path="/dashboard/buy-original-result" element={<EducationalSidebar><OriginalResult /></EducationalSidebar>} />
+            <Route path="/dashboard/buy-pin-vending" element={<EducationalSidebar><PinVending /></EducationalSidebar>} />
+            <Route path="/dashboard/reprinting-jamb-caps" element={<EducationalSidebar><Reprinting /></EducationalSidebar>} />
+            <Route path="/dashboard/scratch-card/waec-checker" element={<EducationalSidebar><WaecResultChecker /></EducationalSidebar>} />
+            <Route path="/dashboard/scratch-card/neco-checker" element={<EducationalSidebar><NecoResultChecker /></EducationalSidebar>} />
+            <Route path="/dashboard/scratch-card/nbais-checker" element={<EducationalSidebar><NbaisResultChecker /></EducationalSidebar>} />
+            <Route path="/dashboard/scratch-card/nabteb-checker" element={<EducationalSidebar><NabtebResultChecker /></EducationalSidebar>} />
+            <Route path="/dashboard/scratch-card/waec-gce" element={<EducationalSidebar><WaecGceChecker /></EducationalSidebar>} />
+            {/* Legacy routes for backward compatibility */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
             <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
-          </Routes>
-        </div>
+            </Routes>
+          </div>
+        </WalletProvider>
       </SupabaseAuthProvider>
     </DarkModeProvider>
   );

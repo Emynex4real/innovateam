@@ -150,7 +150,6 @@ const Dashboard = () => {
   };
 
   return (
-    <EducationalSidebar>
       <div className="min-h-screen bg-background p-6">
         <motion.div
           variants={containerVariants}
@@ -412,7 +411,6 @@ const Dashboard = () => {
         </div>
         </motion.div>
       </div>
-    </EducationalSidebar>
   );
 };
 
