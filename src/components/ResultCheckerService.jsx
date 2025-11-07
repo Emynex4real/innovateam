@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Badge } from '../../../components/ui/badge';
-import { useWallet } from '../../../contexts/WalletContext';
-import { resultCheckerService } from '../../../services/resultChecker.service';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Badge } from './ui/badge';
+import { useWallet } from '../contexts/WalletContext';
+import { resultCheckerService } from '../services/resultChecker.service';
 import toast from 'react-hot-toast';
 
-const WaecResultChecker = () => {
+const ResultCheckerService = ({ 
+  examType, 
+  title, 
+  price, 
+  description,
+  serialPrefix = 'RES'
+}) => {
   const [examNumber, setExamNumber] = useState('');
   const [examYear, setExamYear] = useState('2024');
   const [serial, setSerial] = useState('');
@@ -18,23 +24,21 @@ const WaecResultChecker = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const { walletBalance, addTransaction } = useWallet();
 
-  const CARD_PRICE = 3500;
-
   const handlePurchaseCard = async () => {
-    if (walletBalance < CARD_PRICE) {
+    if (walletBalance < price) {
       toast.error('Insufficient balance. Please fund your wallet.');
       return;
     }
 
     setPurchaseLoading(true);
     try {
-      const purchaseResult = await resultCheckerService.purchaseResultChecker('waec', { amount: CARD_PRICE });
+      const purchaseResult = await resultCheckerService.purchaseResultChecker(examType, { amount: price });
       
       if (purchaseResult.success) {
         await addTransaction({
-          label: 'WAEC Result Checker Card',
-          description: 'Purchased WAEC scratch card',
-          amount: CARD_PRICE,
+          label: `${title} Card`,
+          description: `Purchased ${examType.toUpperCase()} scratch card`,
+          amount: price,
           type: 'debit',
           category: 'education',
           status: 'Successful'
@@ -43,7 +47,7 @@ const WaecResultChecker = () => {
         const card = purchaseResult.cards[0];
         setSerial(card.serial);
         setPin(card.pin);
-        toast.success('WAEC card purchased successfully!');
+        toast.success(`${title} card purchased successfully!`);
       }
     } catch (error) {
       toast.error('Purchase failed. Please try again.');
@@ -61,7 +65,7 @@ const WaecResultChecker = () => {
     setLoading(true);
     try {
       const checkResult = await resultCheckerService.checkResult(
-        'waec', { examNumber, examYear, serial, pin }
+        examType, { examNumber, examYear, serial, pin }
       );
       
       if (checkResult.success) {
@@ -80,10 +84,8 @@ const WaecResultChecker = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold">WAEC Result Checker</h1>
-        <p className="text-muted-foreground mt-2">
-          Purchase scratch cards and check your WAEC results instantly
-        </p>
+        <h1 className="text-3xl font-bold">{title}</h1>
+        <p className="text-muted-foreground mt-2">{description}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -94,7 +96,7 @@ const WaecResultChecker = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center p-4 bg-primary/10 rounded-lg">
-              <p className="text-2xl font-bold text-primary">₦{CARD_PRICE.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-primary">₦{price.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground">Per Card</p>
             </div>
             
@@ -104,7 +106,7 @@ const WaecResultChecker = () => {
             
             <Button 
               onClick={handlePurchaseCard}
-              disabled={purchaseLoading || walletBalance < CARD_PRICE}
+              disabled={purchaseLoading || walletBalance < price}
               className="w-full"
             >
               {purchaseLoading ? 'Purchasing...' : 'Purchase Card'}
@@ -145,7 +147,7 @@ const WaecResultChecker = () => {
                 id="serial"
                 value={serial}
                 onChange={(e) => setSerial(e.target.value)}
-                placeholder="WAE-XXXX-XXXX-XXXX"
+                placeholder={`${serialPrefix}-XXXX-XXXX-XXXX`}
               />
             </div>
             
@@ -218,5 +220,4 @@ const WaecResultChecker = () => {
   );
 };
 
-export default WaecResultChecker;
-
+export default ResultCheckerService;

@@ -123,7 +123,15 @@ const Register = () => {
       });
       
       if (result.success) {
-        toast.success("Account created successfully! Please check your email to verify your account.");
+        // Check if we're in mock mode
+        const isMockMode = result.data?.user?.id?.startsWith('mock-');
+        if (isMockMode) {
+          toast.success("Demo account created successfully! You're now logged in.");
+          navigate("/dashboard");
+        } else {
+          toast.success("Account created successfully! Please check your email to verify your account.");
+          navigate("/login");
+        }
         setFormData({
           name: "",
           email: "",
@@ -132,7 +140,6 @@ const Register = () => {
           confirmPassword: "",
           agreeToTerms: false,
         });
-        navigate("/login");
       } else {
         const errorMessage = result.error || 'Failed to create account';
         setErrors({ submit: errorMessage });

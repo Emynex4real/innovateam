@@ -27,19 +27,28 @@ import OriginalResult from './pages/jamb services/original result';
 import PinVending from './pages/jamb services/pin vending';
 import Reprinting from './pages/jamb services/reprinting';
 import EducationalSidebar from './components/EducationalSidebar';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 // Initialize Supabase with validation
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-// Validate Supabase configuration
-if (process.env.NODE_ENV === 'production' && (!supabaseUrl || !supabaseAnonKey)) {
-  throw new Error('Supabase configuration required in production');
-}
+// Check if we have valid Supabase configuration
+const hasValidSupabaseConfig = supabaseUrl && 
+  supabaseAnonKey && 
+  supabaseUrl.startsWith('https://') && 
+  supabaseUrl.includes('.supabase.co') &&
+  !supabaseUrl.includes('your_supabase_url_here') &&
+  !supabaseAnonKey.includes('your_supabase_anon_key_here') &&
+  supabaseAnonKey.length > 20;
 
-const supabase = (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')) 
+const supabase = hasValidSupabaseConfig 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
+
+if (!supabase) {
+  console.warn('Supabase not configured properly. Using mock authentication mode.');
+}
 
 // Auth Context
 const AuthContext = createContext();
@@ -58,10 +67,7 @@ const SupabaseAuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!supabase) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('Authentication service unavailable');
-      }
-      console.warn('Supabase not configured, using mock auth');
+      console.warn('Supabase not configured, using mock authentication mode');
       setLoading(false);
       return;
     }
@@ -85,12 +91,19 @@ const SupabaseAuthProvider = ({ children }) => {
     setLoading(true);
     try {
       if (!supabase) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('Authentication service unavailable');
-        }
-        // Mock signup
+        console.warn('Supabase not configured, using mock authentication');
+        // Mock signup with delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-        return { success: true, data: { user: { email } } };
+        const mockUser = { 
+          id: `mock-${Date.now()}`, 
+          email, 
+          user_metadata: { 
+            full_name: userData?.fullName,
+            phone: userData?.phone 
+          }
+        };
+        setUser(mockUser);
+        return { success: true, data: { user: mockUser } };
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -107,7 +120,8 @@ const SupabaseAuthProvider = ({ children }) => {
       if (error) throw error;
       return { success: true, data };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('SignUp error:', error);
+      return { success: false, error: error.message || 'Failed to create account' };
     } finally {
       setLoading(false);
     }
@@ -117,12 +131,14 @@ const SupabaseAuthProvider = ({ children }) => {
     setLoading(true);
     try {
       if (!supabase) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('Authentication service unavailable');
-        }
-        // Mock signin
+        console.warn('Supabase not configured, using mock authentication');
+        // Mock signin with delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-        const mockUser = { email, id: 'mock-user' };
+        const mockUser = { 
+          id: `mock-${Date.now()}`, 
+          email,
+          user_metadata: { full_name: 'Demo User' }
+        };
         setUser(mockUser);
         return { success: true, data: { user: mockUser } };
       }
@@ -135,7 +151,8 @@ const SupabaseAuthProvider = ({ children }) => {
       if (error) throw error;
       return { success: true, data };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('SignIn error:', error);
+      return { success: false, error: error.message || 'Failed to sign in' };
     } finally {
       setLoading(false);
     }
@@ -144,9 +161,7 @@ const SupabaseAuthProvider = ({ children }) => {
   const signOut = async () => {
     try {
       if (!supabase) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('Authentication service unavailable');
-        }
+        console.warn('Supabase not configured, using mock authentication');
         setUser(null);
         return { success: true };
       }
@@ -155,16 +170,15 @@ const SupabaseAuthProvider = ({ children }) => {
       if (error) throw error;
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('SignOut error:', error);
+      return { success: false, error: error.message || 'Failed to sign out' };
     }
   };
 
   const resetPassword = async (email) => {
     try {
       if (!supabase) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('Authentication service unavailable');
-        }
+        console.warn('Supabase not configured, using mock authentication');
         return { success: true };
       }
 
@@ -172,7 +186,8 @@ const SupabaseAuthProvider = ({ children }) => {
       if (error) throw error;
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Reset password error:', error);
+      return { success: false, error: error.message || 'Failed to reset password' };
     }
   };
 
@@ -226,6 +241,8 @@ function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
             </Routes>
           </div>
