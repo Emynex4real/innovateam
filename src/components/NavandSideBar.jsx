@@ -1,7 +1,7 @@
 // src/components/NavandSideBar.jsx
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/SupabaseAuthContext";
+import { useAuth } from "../App";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import {
   BiGrid,
@@ -80,44 +80,12 @@ const NavandSideBar = ({ children }) => {
 
   const sidebarItems = [
     { path: "/dashboard", icon: <BiGrid />, label: "Dashboard" },
-    { path: "/dashboard/profile", icon: <BiUser />, label: "Profile" },
-    { path: "/dashboard/wallet", icon: <BiWallet />, label: "Wallet" },
-    {
-      path: "#",
-      icon: <BiCreditCard />,
-      label: "Scratch Cards",
-      subItems: [
-        { path: "/dashboard/scratch-card/waec-checker", label: "WAEC Result Checker" },
-        { path: "/dashboard/scratch-card/neco-checker", label: "NECO Result Checker" },
-        { path: "/dashboard/scratch-card/nbais-checker", label: "NBAIS Result Checker" },
-        { path: "/dashboard/scratch-card/nabteb-checker", label: "NABTEB Result Checker" },
-        { path: "/dashboard/scratch-card/waec-gce", label: "WAEC GCE" },
-      ],
-    },
-
-    {
-      path: "#",
-      icon: <BiBook />,
-      label: "JAMB Services",
-      subItems: [
-        { path: "/dashboard/buy-olevel-upload", label: "O-Level Upload" },
-        { path: "/dashboard/buy-admission-letter", label: "Admission Letter" },
-        { path: "/dashboard/buy-original-result", label: "Original Result" },
-        { path: "/dashboard/buy-pin-vending", label: "JAMB Pin Vending" },
-        { path: "/dashboard/reprinting-jamb-caps", label: "CAPS Printing" },
-      ],
-    },
-    { 
-      path: "#",
-      icon: <BiBrain />,
-      label: "AI Services",
-      subItems: [
-        { path: "/dashboard/ai-examiner", icon: <AiOutlineRobot />, label: "AI Examiner" },
-        { path: "/dashboard/course-advisor", icon: <AiOutlineRobot />, label: "Course Advisor AI" },
-      ],
-    },
-    { path: "/dashboard/transactions", icon: <BiListCheck />, label: "Transactions" },
-    { path: "/dashboard/support", icon: <BiSupport />, label: "Support" },
+    { path: "/profile", icon: <BiUser />, label: "Profile" },
+    { path: "/wallet", icon: <BiWallet />, label: "Wallet" },
+    { path: "/course-advisor", icon: <BiBrain />, label: "Course Advisor" },
+    { path: "/ai-examiner", icon: <AiOutlineRobot />, label: "AI Examiner" },
+    { path: "/transactions", icon: <BiListCheck />, label: "Transactions" },
+    { path: "/support", icon: <BiSupport />, label: "Support" },
     { path: "/login", icon: <BiLogOut />, label: "Logout", onClick: handleLogout },
   ];
 

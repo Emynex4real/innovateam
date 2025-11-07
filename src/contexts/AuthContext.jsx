@@ -3,7 +3,7 @@ import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import authService from '../services/auth.service';
 import Loading from '../components/Loading';
 import logger from '../utils/logger';
-import errorHandler from '../utils/errorHandler';
+import { errorHandler } from '../utils/errorHandler';
 
 const AuthContext = createContext(null);
 

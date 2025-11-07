@@ -113,7 +113,7 @@ export class SessionFingerprint {
       userAgent: navigator.userAgent,
       language: navigator.language,
       platform: navigator.platform,
-      screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+      screen: `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       canvas: canvas.toDataURL(),
       webgl: this.getWebGLFingerprint()

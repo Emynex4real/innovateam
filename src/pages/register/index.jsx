@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiUser, FiMail, FiPhone, FiLock, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi";
 import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 import { toast, Toaster } from "react-hot-toast";
-import { useAuth } from "../../contexts/SupabaseAuthContext";
+import { useAuth } from "../../App";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
