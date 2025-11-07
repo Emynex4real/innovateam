@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import Home from './pages/Home';
 import Login from './pages/login';
@@ -15,7 +16,20 @@ import Transactions from './pages/transactions';
 import Support from './pages/support';
 import AIExaminer from './pages/ai examiner';
 
-// Simple Auth Context
+// Initialize Supabase with validation
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+// Validate Supabase configuration
+if (process.env.NODE_ENV === 'production' && (!supabaseUrl || !supabaseAnonKey)) {
+  throw new Error('Supabase configuration required in production');
+}
+
+const supabase = (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')) 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+// Auth Context
 const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -26,16 +40,60 @@ export const useAuth = () => {
   return context;
 };
 
-const SimpleAuthProvider = ({ children }) => {
+const SupabaseAuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!supabase) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Authentication service unavailable');
+      }
+      console.warn('Supabase not configured, using mock auth');
+      setLoading(false);
+      return;
+    }
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signUp = async (email, password, userData) => {
     setLoading(true);
     try {
-      // Mock successful signup
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return { success: true, data: { user: { email } } };
+      if (!supabase) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Authentication service unavailable');
+        }
+        // Mock signup
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return { success: true, data: { user: { email } } };
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: userData?.fullName,
+            phone: userData?.phone
+          }
+        }
+      });
+      
+      if (error) throw error;
+      return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
     } finally {
@@ -46,10 +104,24 @@ const SimpleAuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockUser = { email, id: 'mock-user' };
-      setUser(mockUser);
-      return { success: true, data: { user: mockUser } };
+      if (!supabase) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Authentication service unavailable');
+        }
+        // Mock signin
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const mockUser = { email, id: 'mock-user' };
+        setUser(mockUser);
+        return { success: true, data: { user: mockUser } };
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      return { success: true, data };
     } catch (error) {
       return { success: false, error: error.message };
     } finally {
@@ -58,12 +130,38 @@ const SimpleAuthProvider = ({ children }) => {
   };
 
   const signOut = async () => {
-    setUser(null);
-    return { success: true };
+    try {
+      if (!supabase) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Authentication service unavailable');
+        }
+        setUser(null);
+        return { success: true };
+      }
+
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
   const resetPassword = async (email) => {
-    return { success: true };
+    try {
+      if (!supabase) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Authentication service unavailable');
+        }
+        return { success: true };
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
   const value = {
@@ -82,7 +180,7 @@ const SimpleAuthProvider = ({ children }) => {
 function App() {
   return (
     <DarkModeProvider>
-      <SimpleAuthProvider>
+      <SupabaseAuthProvider>
         <div className="App">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -101,7 +199,7 @@ function App() {
             <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
           </Routes>
         </div>
-      </SimpleAuthProvider>
+      </SupabaseAuthProvider>
     </DarkModeProvider>
   );
 }

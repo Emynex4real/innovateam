@@ -2,12 +2,46 @@ services:
   - type: web
     name: innovateam-api
     env: node
+    plan: free
     buildCommand: cd server && npm install
-    startCommand: cd server && node server.js
+    startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: JWT_SECRET
         generateValue: true
-      - key: PORT
-        value: 5000 
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://innovateam.vercel.app
+      - key: LOG_LEVEL
+        value: error
+    healthCheckPath: /health
+    
+  - type: web
+    name: innovateam-frontend
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_SUPABASE_URL
+        sync: false
+      - key: REACT_APP_SUPABASE_ANON_KEY
+        sync: false
+      - key: REACT_APP_DEEPSEEK_API_KEY
+        sync: false
+      - key: REACT_APP_API_URL
+        value: https://innovateam-api.onrender.com

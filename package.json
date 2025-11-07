@@ -26,12 +26,18 @@
     "web-vitals": "^5.1.0",
     "xss": "^1.0.15"
   },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "security-audit": "node scripts/final-security-audit.js"
+    "security-audit": "node scripts/final-security-audit.js",
+    "deploy-check": "node scripts/deploy-check.js",
+    "build:production": "npm run deploy-check && REACT_APP_ENV=production npm run build"
   },
   "eslintConfig": {
     "extends": [
