@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // Admin client with service role key - ONLY for admin functions
 const supabaseUrl = 'https://jdedscbvbkjvqmmdabig.supabase.co';
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZWRzY2J2YmtqdnFtbWRhYmlnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTgwNzI3MywiZXhwIjoyMDc1MzgzMjczfQ.OAtp8dTtIuekKgcAo5WagT30xpzZiTivKxH-LujRFW4';
+const supabaseServiceKey = process.env.REACT_APP_SUPABASE_SERVICE_KEY;
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
