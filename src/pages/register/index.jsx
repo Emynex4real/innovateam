@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUser, FiMail, FiPhone, FiLock, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi";
+import { FiUser, FiMail, FiPhone, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiSettings } from "react-icons/fi";
 import { FaGoogle, FaFacebook, FaTwitter } from "react-icons/fa";
 import { toast, Toaster } from "react-hot-toast";
 import { useAuth } from "../../App";
@@ -11,6 +11,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Checkbox } from "../../components/ui/checkbox";
+import { testSupabaseConnection, testSignup } from "../../utils/supabaseTest";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -30,6 +31,8 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   const getStrengthColor = (index, strength) => {
     if (index >= strength) return isDarkMode ? 'bg-gray-700' : 'bg-gray-200';
@@ -123,14 +126,16 @@ const Register = () => {
       });
       
       if (result.success) {
-        // Check if we're in mock mode
-        const isMockMode = result.data?.user?.id?.startsWith('mock-');
-        if (isMockMode) {
-          toast.success("Demo account created successfully! You're now logged in.");
-          navigate("/dashboard");
+        if (!result.needsEmailConfirmation) {
+          toast.success("Account created successfully! Welcome!");
+          navigate('/dashboard');
         } else {
-          toast.success("Account created successfully! Please check your email to verify your account.");
-          navigate("/login");
+          if (result.customEmail) {
+            toast.success("Account created! Please check the confirmation page for your email link.");
+          } else {
+            toast.success("Account created successfully! Please check your email to verify your account.");
+          }
+          navigate(`/email-confirmation?email=${encodeURIComponent(formData.email)}`);
         }
         setFormData({
           name: "",
@@ -148,6 +153,46 @@ const Register = () => {
     } catch (error) {
       setErrors({ submit: "Failed to create account. Please try again." });
       toast.error("Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setIsLoading(true);
+    try {
+      const result = await testSupabaseConnection();
+      setDebugInfo({
+        connectionTest: result,
+        timestamp: new Date().toISOString(),
+        url: process.env.REACT_APP_SUPABASE_URL,
+        hasKey: !!process.env.REACT_APP_SUPABASE_ANON_KEY
+      });
+      toast.success(result ? 'Connection successful!' : 'Connection failed!');
+    } catch (error) {
+      toast.error('Test failed: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestSignup = async () => {
+    if (!formData.email || !formData.password) {
+      toast.error('Please enter email and password first');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const result = await testSignup(formData.email, formData.password);
+      setDebugInfo(prev => ({
+        ...prev,
+        signupTest: result,
+        timestamp: new Date().toISOString()
+      }));
+      toast.success(result.success ? 'Test signup successful!' : 'Test signup failed!');
+    } catch (error) {
+      toast.error('Test failed: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -384,50 +429,107 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className={`w-full ${
-                  isDarkMode 
-                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
-                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
-                } transition-colors duration-200`}
-                onClick={() => toast.error('Google sign up coming soon!')}
-                disabled={isLoading}
-              >
-                <FaGoogle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className={`w-full ${
-                  isDarkMode 
-                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
-                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
-                } transition-colors duration-200`}
-                onClick={() => toast.error('Facebook sign up coming soon!')}
-                disabled={isLoading}
-              >
-                <FaFacebook className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className={`w-full ${
-                  isDarkMode 
-                    ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
-                    : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
-                } transition-colors duration-200`}
-                onClick={() => toast.error('Twitter sign up coming soon!')}
-                disabled={isLoading}
-              >
-                <FaTwitter className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
-              </Button>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`w-full ${
+                    isDarkMode 
+                      ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                      : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                  } transition-colors duration-200`}
+                  onClick={() => toast.error('Google sign up coming soon!')}
+                  disabled={isLoading}
+                >
+                  <FaGoogle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`w-full ${
+                    isDarkMode 
+                      ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                      : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                  } transition-colors duration-200`}
+                  onClick={() => toast.error('Facebook sign up coming soon!')}
+                  disabled={isLoading}
+                >
+                  <FaFacebook className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`w-full ${
+                    isDarkMode 
+                      ? 'border-gray-700 hover:bg-gray-800 hover:text-white' 
+                      : 'border-gray-200 hover:bg-gray-100 hover:text-gray-900'
+                  } transition-colors duration-200`}
+                  onClick={() => toast.error('Twitter sign up coming soon!')}
+                  disabled={isLoading}
+                >
+                  <FaTwitter className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+                </Button>
+              </div>
+              
+              {/* Debug Section */}
+              <div className="border-t pt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="w-full mb-2"
+                >
+                  <FiSettings className="w-4 h-4 mr-2" />
+                  {showDebug ? 'Hide' : 'Show'} Debug Info
+                </Button>
+                
+                {showDebug && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTestConnection}
+                        disabled={isLoading}
+                      >
+                        Test Connection
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleTestSignup}
+                        disabled={isLoading || !formData.email || !formData.password}
+                      >
+                        Test Signup
+                      </Button>
+                    </div>
+                    
+                    {debugInfo && (
+                      <div className={`p-3 rounded text-xs ${
+                        isDarkMode ? 'bg-gray-900 text-gray-300' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4">
+            <div className={`text-center text-xs p-2 rounded ${
+              isDarkMode ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-600'
+            }`}>
+              <strong>Mode:</strong> Email confirmation enabled with fallback system
+              <br />
+              <strong>Environment:</strong> {process.env.NODE_ENV || 'development'}
+            </div>
+            
             <p className={`text-center text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Already have an account?{" "}
               <Link 

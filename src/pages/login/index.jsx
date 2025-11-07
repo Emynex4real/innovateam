@@ -283,6 +283,18 @@ const Login = () => {
                 Sign up
               </Link>
             </p>
+            <p className={`text-center text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              <Link 
+                to="/admin/dashboard" 
+                className={`hover:underline ${
+                  isDarkMode 
+                    ? 'text-gray-400 hover:text-gray-300' 
+                    : 'text-gray-500 hover:text-gray-600'
+                }`}
+              >
+                Admin Access
+              </Link>
+            </p>
           </CardFooter>
         </Card>
       </motion.div>

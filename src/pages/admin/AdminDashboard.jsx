@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Users, DollarSign, Activity, TrendingUp, Eye, Edit, Ban, CheckCircle } from 'lucide-react';
+import { Users, DollarSign, Activity, TrendingUp, Eye, Edit, Ban, CheckCircle, Database } from 'lucide-react';
 import adminService from '../../services/admin.service';
+import { checkSupabaseUsers } from '../../utils/supabaseUserCheck';
+import { testRegistration, createProfileForExistingUser } from '../../utils/testSupabaseRegistration';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
@@ -13,6 +15,7 @@ const AdminDashboard = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [supabaseStatus, setSupabaseStatus] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -56,6 +59,41 @@ const AdminDashboard = () => {
       toast.error('Action failed');
     }
   };
+  
+  const checkSupabaseData = async () => {
+    const status = await checkSupabaseUsers();
+    setSupabaseStatus(status);
+    
+    if (status.error) {
+      toast.error('Supabase check failed');
+    } else {
+      toast.success('Supabase status updated');
+    }
+  };
+  
+  const testSupabaseRegistration = async () => {
+    toast.loading('Testing registration...');
+    const result = await testRegistration();
+    
+    if (result.success) {
+      toast.success('Registration test successful! Check console for details.');
+      setTimeout(() => loadDashboardData(), 3000);
+    } else {
+      toast.error('Registration test failed: ' + result.error);
+    }
+  };
+  
+  const createExistingUserProfile = async () => {
+    toast.loading('Creating profile for existing user...');
+    const result = await createProfileForExistingUser();
+    
+    if (result.success) {
+      toast.success('Profile created! Check user_profiles table.');
+      setTimeout(() => loadDashboardData(), 2000);
+    } else {
+      toast.error('Profile creation failed: ' + result.error);
+    }
+  };
 
   if (loading) {
     return (
@@ -76,10 +114,40 @@ const AdminDashboard = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button onClick={loadDashboardData} variant="outline">
-          Refresh Data
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={loadDashboardData} variant="outline">
+            Refresh Data
+          </Button>
+          <Button onClick={checkSupabaseData} variant="outline">
+            <Database className="w-4 h-4 mr-2" />
+            Check Supabase
+          </Button>
+          <Button onClick={testSupabaseRegistration} variant="outline">
+            Test Registration
+          </Button>
+          <Button onClick={createExistingUserProfile} variant="outline">
+            Create Profile for Existing User
+          </Button>
+        </div>
       </div>
+
+      {/* Supabase Status */}
+      {supabaseStatus && (
+        <Card className="bg-blue-50 dark:bg-blue-900/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-blue-800 dark:text-blue-200">Supabase Status</h3>
+                <p className="text-sm text-blue-600 dark:text-blue-300">
+                  Session: {supabaseStatus.hasSession ? '✅ Active' : '❌ None'} | 
+                  Current User: {supabaseStatus.currentUser || 'None'} | 
+                  Data Source: localStorage (Supabase requires service key for user access)
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Navigation Tabs */}
       <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
