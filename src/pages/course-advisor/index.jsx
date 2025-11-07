@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import NavBar from '../Home/navBar/index';
 import toast from 'react-hot-toast';
 import debounce from 'lodash/debounce';
 import deepseekService from '../../services/deepseek.service';
@@ -1083,6 +1084,7 @@ const CourseAdvisor = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <NavBar />
       {/* Compact Header */}
       <div className="bg-white dark:bg-slate-900 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './SupabaseAuthContext';
+import { useAuth } from '../App';
 import WalletService from '../services/wallet.service';
 
 const WalletContext = createContext();
