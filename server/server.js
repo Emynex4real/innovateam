@@ -80,18 +80,12 @@ if (missingVars.length > 0) {
 console.log('\n📋 Configuration:');
 console.log(`   - NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 console.log(`   - PORT: ${process.env.PORT}`);
-console.log(`   - SUPABASE_URL: ${process.env.SUPABASE_URL ? '***' : 'missing'}`);
+console.log(`   - SUPABASE_URL: ${process.env.SUPABASE_URL ? '*** (configured)' : 'missing'}`);
 console.log(`   - SUPABASE_KEY: ${process.env.SUPABASE_KEY ? '*** (present)' : 'missing'}`);
 console.log(`   - SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '*** (present)' : 'missing'}`);
 console.log(`   - JWT_SECRET: ${process.env.JWT_SECRET ? '*** (present)' : 'missing'}\n`);
 if (missingVars.length === 0) {
   console.log('✅ All required environment variables are present');
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔐 Supabase URL:', process.env.SUPABASE_URL);
-    console.log('🔑 Supabase Key:', process.env.SUPABASE_KEY ? '*** (present)' : 'missing');
-    console.log('🔑 Supabase Service Role Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '*** (present)' : 'missing');
-    console.log('🔑 JWT Secret:', process.env.JWT_SECRET ? '*** (present)' : 'missing');
-  }
 }
 
 // Initialize express app and server
@@ -167,9 +161,11 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS configuration - Allow all origins temporarily
+// CORS configuration - Secure origins
 const corsOptions = {
-  origin: true,
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.CORS_ORIGIN?.split(',') || false
+    : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'x-requested-with'],
