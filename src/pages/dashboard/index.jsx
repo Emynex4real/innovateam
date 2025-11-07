@@ -13,11 +13,12 @@ import {
   Users, 
   ArrowUpRight 
 } from 'lucide-react';
-import { useAuth } from '../../contexts/SupabaseAuthContext';
+import { useAuth } from '../../App';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import EducationalSidebar from '../../components/EducationalSidebar';
 
 // Import images directly
 import waecResultCheckerImg from '../../assets/images/services/waec-result-checker.jpg';
@@ -149,13 +150,14 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-8"
-      >
+    <EducationalSidebar>
+      <div className="min-h-screen bg-background p-6">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-8"
+        >
         {/* Header */}
         <div className="flex flex-col space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">
@@ -408,8 +410,9 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </EducationalSidebar>
   );
 };
 

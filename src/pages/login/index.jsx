@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/SupabaseAuthContext";
+import { useAuth } from "../../App";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft } from "react-icons/fi";

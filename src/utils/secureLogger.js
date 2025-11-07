@@ -1,5 +1,5 @@
 // Secure Logging System
-import { supabase } from '../services/supabase/client';
+import { supabase } from '../lib/supabase';
 
 class SecureLogger {
   constructor() {

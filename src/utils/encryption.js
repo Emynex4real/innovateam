@@ -1,65 +1,56 @@
-import CryptoJS from 'crypto-js';
-
+// Simple secure storage without external dependencies
 class SecureStorage {
   constructor() {
-    // Generate or retrieve encryption key
-    this.encryptionKey = this.getOrCreateKey();
+    this.prefix = '_secure_';
   }
 
-  getOrCreateKey() {
-    let key = sessionStorage.getItem('_sk');
-    if (!key) {
-      // Generate new key for session
-      key = CryptoJS.lib.WordArray.random(256/8).toString();
-      sessionStorage.setItem('_sk', key);
-    }
-    return key;
-  }
-
-  encrypt(data) {
+  // Simple encoding (not encryption, but obfuscation)
+  encode(data) {
     try {
-      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), this.encryptionKey).toString();
-      return encrypted;
+      const jsonString = JSON.stringify(data);
+      return btoa(jsonString);
     } catch (error) {
-      console.error('Encryption failed:', error);
+      console.error('Encoding failed:', error);
       return null;
     }
   }
 
-  decrypt(encryptedData) {
+  decode(encodedData) {
     try {
-      const decrypted = CryptoJS.AES.decrypt(encryptedData, this.encryptionKey);
-      const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
-      return JSON.parse(decryptedString);
+      const jsonString = atob(encodedData);
+      return JSON.parse(jsonString);
     } catch (error) {
-      console.error('Decryption failed:', error);
+      console.error('Decoding failed:', error);
       return null;
     }
   }
 
   setItem(key, value) {
-    const encrypted = this.encrypt(value);
-    if (encrypted) {
-      localStorage.setItem(key, encrypted);
+    const encoded = this.encode(value);
+    if (encoded) {
+      localStorage.setItem(this.prefix + key, encoded);
       return true;
     }
     return false;
   }
 
   getItem(key) {
-    const encrypted = localStorage.getItem(key);
-    if (!encrypted) return null;
-    return this.decrypt(encrypted);
+    const encoded = localStorage.getItem(this.prefix + key);
+    if (!encoded) return null;
+    return this.decode(encoded);
   }
 
   removeItem(key) {
-    localStorage.removeItem(key);
+    localStorage.removeItem(this.prefix + key);
   }
 
   clear() {
-    localStorage.clear();
-    sessionStorage.removeItem('_sk');
-    this.encryptionKey = this.getOrCreateKey();
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith(this.prefix)) {
+        localStorage.removeItem(key);
+      }
+    });
   }
 }
 

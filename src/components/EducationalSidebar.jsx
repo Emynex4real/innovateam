@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/SupabaseAuthContext';
+import { useAuth } from '../App';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import {
-  HomeIcon,
-  UserIcon,
-  WalletIcon,
-  DocumentTextIcon,
-  AcademicCapIcon,
-  LightBulbIcon,
-  ClipboardDocumentListIcon,
-  QuestionMarkCircleIcon,
-  ArrowRightOnRectangleIcon,
-  ChevronDownIcon,
-  Bars3Icon,
-  XMarkIcon,
-  SunIcon,
-  MoonIcon,
-  ShieldCheckIcon
-} from '@heroicons/react/24/outline';
+  BiHome as HomeIcon,
+  BiUser as UserIcon,
+  BiWallet as WalletIcon,
+  BiFile as DocumentTextIcon,
+  BiBook as AcademicCapIcon,
+  BiBrain as LightBulbIcon,
+  BiListCheck as ClipboardDocumentListIcon,
+  BiSupport as QuestionMarkCircleIcon,
+  BiLogOut as ArrowRightOnRectangleIcon,
+  BiChevronDown as ChevronDownIcon,
+  BiMenu as Bars3Icon,
+  BiX as XMarkIcon,
+  BiSun as SunIcon,
+  BiMoon as MoonIcon,
+  BiShield as ShieldCheckIcon
+} from 'react-icons/bi';
 
 const EducationalSidebar = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);

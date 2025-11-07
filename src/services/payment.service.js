@@ -5,19 +5,28 @@ import { secureLogger } from '../utils/secureLogger';
 class PaymentService {
   constructor() {
     this.paystackPublicKey = process.env.REACT_APP_PAYSTACK_PUBLIC_KEY;
+    this.isConfigured = false;
     
     if (!this.paystackPublicKey) {
-      throw new Error('Paystack public key not configured');
+      console.warn('Paystack public key not configured - payment features will be disabled');
+      return;
     }
     
     // Validate key format
     if (!this.paystackPublicKey.startsWith('pk_')) {
-      throw new Error('Invalid Paystack public key format');
+      console.warn('Invalid Paystack public key format - payment features will be disabled');
+      return;
     }
+    
+    this.isConfigured = true;
   }
 
   // Initialize Paystack payment
   async initializePayment({ amount, email, reference, metadata = {} }) {
+    if (!this.isConfigured) {
+      throw new Error('Payment service not configured');
+    }
+    
     try {
       logger.service('Initializing payment', { amount, email, reference });
       

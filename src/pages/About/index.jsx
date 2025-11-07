@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import NavBar from '../Home/navBar/index';
-import aboutus from '../../images/arewa_gate_about-2.jpg';
+// import aboutus from '../../images/arewa_gate_about-2.jpg';
 import { Link } from 'react-router-dom';
 
 const About = () => {
@@ -115,11 +115,9 @@ const About = () => {
             </div>
             <div className="relative">
               <Card className="overflow-hidden">
-                <img 
-                  src={aboutus} 
-                  alt="About InnovaTeam" 
-                  className="w-full h-auto object-cover"
-                />
+                <div className="w-full h-64 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                  <p className="text-muted-foreground">About InnovaTeam</p>
+                </div>
               </Card>
             </div>
           </div>
