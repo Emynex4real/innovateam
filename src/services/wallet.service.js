@@ -2,6 +2,7 @@
 import logger from '../utils/logger';
 import { SecurityUtils } from '../config/security.enhanced';
 import secureStorage from '../utils/encryption';
+import cleanWalletService from './cleanWallet.service';
 
 // Secure storage keys
 const WALLET_KEY = 'wallet_balance';
@@ -33,7 +34,7 @@ class WalletService {
 
   async getBalance() {
     logger.service('Getting wallet balance');
-    return getLocalWallet();
+    return await cleanWalletService.getBalance();
   }
 
   async fundWallet(amount, paymentMethod = 'card') {
@@ -49,30 +50,20 @@ class WalletService {
     
     logger.service('Funding wallet', { amount, paymentMethod: sanitizedMethod });
     
-    let balance = getLocalWallet();
     const validAmount = parseFloat(amount);
     
     if (validAmount > 1000000) {
       throw new Error('Amount exceeds maximum limit');
     }
     
-    balance += validAmount;
-    setLocalWallet(balance);
-    
-    const transactions = getLocalTransactions();
-    transactions.unshift({
-      id: SecurityUtils.generateSecureReference('FUND'),
-      label: 'Wallet Funded',
-      description: `Funded wallet via ${sanitizedMethod}`,
-      amount: validAmount,
-      type: 'credit',
-      category: 'funding',
-      status: 'completed',
-      date: new Date().toISOString()
-    });
-    setLocalTransactions(transactions);
-    logger.service('Wallet funded successfully');
-    return { success: true, balance };
+    try {
+      const result = await cleanWalletService.fundWallet(validAmount, sanitizedMethod);
+      logger.service('Wallet funded successfully');
+      return result;
+    } catch (error) {
+      logger.service('Wallet funding failed: ' + error.message);
+      throw error;
+    }
   }
 
   async deductFromWallet(amount, description) {
@@ -88,30 +79,16 @@ class WalletService {
     
     logger.service('Deducting from wallet', { amount, description: sanitizedDesc });
     
-    let balance = getLocalWallet();
     const validAmount = parseFloat(amount);
     
-    if (balance < validAmount) {
-      throw new Error(`Insufficient balance. Available: ₦${balance.toLocaleString()}, Required: ₦${validAmount.toLocaleString()}`);
+    try {
+      const result = await cleanWalletService.deductFromWallet(validAmount, sanitizedDesc);
+      logger.service('Wallet deduction successful');
+      return result;
+    } catch (error) {
+      logger.service('Wallet deduction failed: ' + error.message);
+      throw error;
     }
-    
-    balance -= validAmount;
-    setLocalWallet(balance);
-    
-    const transactions = getLocalTransactions();
-    transactions.unshift({
-      id: SecurityUtils.generateSecureReference('TXN'),
-      label: sanitizedDesc,
-      description: sanitizedDesc,
-      amount: validAmount,
-      type: 'debit',
-      category: 'purchase',
-      status: 'completed',
-      date: new Date().toISOString()
-    });
-    setLocalTransactions(transactions);
-    logger.service('Wallet deduction successful');
-    return { success: true, balance };
   }
 
   async getTransactions() {

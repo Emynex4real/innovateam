@@ -151,7 +151,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.deepseek.com", "https://*.supabase.co"],
+      connectSrc: ["'self'", "http://localhost:5000", "https://api.deepseek.com", "https://*.supabase.co"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],

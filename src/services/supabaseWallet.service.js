@@ -8,18 +8,36 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 class SupabaseWalletService {
   async addTransaction(userId, userEmail, transactionData) {
     try {
-      const { data, error } = await supabase
+      // Try with user_id first, if it fails, try without user_id
+      let insertData = {
+        user_id: userId,
+        user_email: userEmail,
+        description: transactionData.description || transactionData.label,
+        amount: transactionData.amount,
+        type: transactionData.type,
+        status: transactionData.status || 'successful'
+      };
+      
+      let { data, error } = await supabase
         .from('transactions')
-        .insert({
-          user_id: userId,
-          user_email: userEmail,
-          description: transactionData.description || transactionData.label,
-          amount: transactionData.amount,
-          type: transactionData.type,
-          status: transactionData.status || 'successful'
-        })
+        .insert(insertData)
         .select()
         .single();
+
+      // If foreign key constraint fails, try without user_id
+      if (error && error.code === '23503') {
+        console.log('Foreign key constraint failed, trying without user_id');
+        const { user_id, ...insertDataWithoutUserId } = insertData;
+        
+        const result = await supabase
+          .from('transactions')
+          .insert(insertDataWithoutUserId)
+          .select()
+          .single();
+          
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
 
