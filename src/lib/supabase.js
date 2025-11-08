@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://jdedscbvbkjvqmmdabig.supabase.co'
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_cVZ7KXM0lNdNfuUzVD-Hlw_E4yNzJJO'
 
 // Check if URL is valid
 const isValidUrl = (url) => {

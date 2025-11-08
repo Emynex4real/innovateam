@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
-import authService from '../services/auth.service';
+import supabaseAuthService from '../services/supabaseAuth.service';
 import Loading from '../components/Loading';
 import logger from '../utils/logger';
 import { errorHandler } from '../utils/errorHandler';
@@ -47,11 +47,10 @@ const AuthProvider = ({ children }) => {
   // Check authentication status
   const checkAuth = useCallback(async () => {
     try {
-      const token = authService.getToken();
-      const storedUser = authService.getUser();
-      const refreshToken = authService.getRefreshToken();
+      const token = supabaseAuthService.getToken();
+      const storedUser = supabaseAuthService.getUser();
 
-      if (!token || !refreshToken || !storedUser) {
+      if (!token || !storedUser) {
         clearAuthState();
         setIsLoading(false);
         return;
@@ -119,14 +118,12 @@ const AuthProvider = ({ children }) => {
       setAuthError(null);
       logger.auth('Login attempt started');
       
-      const result = await authService.login(credentials);
+      const result = await supabaseAuthService.login(credentials);
       
       if (result.success && result.user) {
         updateUserState(result.user);
         
-        if (rememberMe) {
-          authService.setRememberMe(true);
-        }
+        // Remember me handled by Supabase session
         
         logger.auth('Login successful');
         return { success: true };
@@ -148,7 +145,7 @@ const AuthProvider = ({ children }) => {
       setAuthError(null);
       logger.auth('Registration attempt started');
       
-      const result = await authService.register(userData);
+      const result = await supabaseAuthService.register(userData);
       
       if (result.success) {
         if (result.user) {
@@ -179,7 +176,7 @@ const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       logger.auth('Logout initiated');
-      await authService.logout();
+      await supabaseAuthService.logout();
       clearAuthState();
       logger.auth('Logout successful');
       return { success: true };
@@ -198,7 +195,7 @@ const AuthProvider = ({ children }) => {
       setAuthError(null);
       logger.auth('Forgot password request started');
       
-      const result = await authService.forgotPassword(email);
+      const result = await supabaseAuthService.forgotPassword(email);
       
       if (result.success) {
         logger.auth('Forgot password request successful');
@@ -221,7 +218,7 @@ const AuthProvider = ({ children }) => {
       setAuthError(null);
       logger.auth('Password reset attempt started');
       
-      const result = await authService.resetPassword(token, newPassword);
+      const result = await supabaseAuthService.resetPassword(token, newPassword);
       
       if (result.success) {
         logger.auth('Password reset successful');
@@ -244,7 +241,7 @@ const AuthProvider = ({ children }) => {
       setAuthError(null);
       logger.auth('Profile update attempt started');
       
-      const result = await authService.updateProfile(userData);
+      const result = await supabaseAuthService.updateProfile(userData);
       
       if (result.success && result.user) {
         updateUserState(result.user);

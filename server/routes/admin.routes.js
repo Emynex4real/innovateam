@@ -174,8 +174,29 @@ router.get('/system-info', (req, res) => {
   res.json({ success: true, data: systemInfo });
 });
 
+// GET /api/admin/transactions
+router.get('/transactions', async (req, res) => {
+  try {
+    const supabase = require('../supabaseClient');
+    
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Get transactions error:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+    
+    res.json({ success: true, transactions: transactions || [] });
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Transaction routes
-router.get('/transactions', adminController.getTransactions);
 router.put('/transactions/:id', adminController.updateTransaction);
 router.delete('/transactions/:id', adminController.deleteTransaction);
 
