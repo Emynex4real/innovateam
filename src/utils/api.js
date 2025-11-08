@@ -12,7 +12,7 @@ const apiSecurity = {
   sanitizeRequest: (data) => data
 };
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://innovateam-api.onrender.com';
 
 // Create axios instance with security enhancements
 const api = axios.create({

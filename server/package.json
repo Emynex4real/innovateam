@@ -4,7 +4,7 @@
   "description": "JAMB Advisor API",
   "main": "server.js",
   "scripts": {
-    "start": "node --max-http-header-size=32768 server.js",
+    "start": "node simple-server.js",
     "dev": "nodemon --max-http-header-size=32768 server.js",
     "test": "jest",
     "lint": "eslint ."
