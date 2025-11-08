@@ -32,10 +32,11 @@ import EducationalSidebar from './components/EducationalSidebar';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import SimpleAdminDashboard from './pages/admin/SimpleAdminDashboard';
 import EmailConfirmation from './pages/email-confirmation';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Initialize Supabase with validation
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_cVZ7KXM0lNdNfuUzVD-Hlw_E4yNzJJO';
 
 // Check if we have valid Supabase configuration
 const hasValidSupabaseConfig = supabaseUrl && 
@@ -301,34 +302,16 @@ const SupabaseAuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     setLoading(true);
     try {
-      if (!supabase) {
-        console.warn('Supabase not configured, using mock authentication');
-        // Mock signin with delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Generate real UUID format for compatibility
-        const generateUUID = () => {
-          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-          });
-        };
-        const mockUser = { 
-          id: generateUUID(), 
-          email,
-          user_metadata: { full_name: 'Demo User' }
-        };
-        setUser(mockUser);
-        return { success: true, data: { user: mockUser } };
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      // Import and use the secure authentication service
+      const supabaseAuthService = (await import('./services/supabaseAuth.service')).default;
+      const result = await supabaseAuthService.login({ email, password });
       
-      if (error) throw error;
-      return { success: true, data };
+      if (result.success) {
+        setUser(result.user);
+        return { success: true, data: { user: result.user } };
+      } else {
+        return { success: false, error: result.error };
+      }
     } catch (error) {
       console.error('SignIn error:', error);
       return { success: false, error: error.message || 'Failed to sign in' };
@@ -339,18 +322,32 @@ const SupabaseAuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
+      // Clear user state immediately
+      setUser(null);
+      
+      // Clear all localStorage auth data
+      localStorage.removeItem('confirmedUser');
+      localStorage.removeItem('wallet_balance');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userEmailMap');
+      
       if (!supabase) {
         console.warn('Supabase not configured, using mock authentication');
-        setUser(null);
         return { success: true };
       }
 
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.warn('Supabase signout error:', error);
+        // Still return success since we cleared local state
+      }
+      
       return { success: true };
     } catch (error) {
       console.error('SignOut error:', error);
-      return { success: false, error: error.message || 'Failed to sign out' };
+      // Even if there's an error, we cleared the local state
+      return { success: true };
     }
   };
 
@@ -398,23 +395,23 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/course-advisor" element={<CourseAdvisor />} />
             <Route path="/question-generator" element={<QuestionGenerator />} />
-            <Route path="/dashboard" element={<EducationalSidebar><Dashboard /></EducationalSidebar>} />
-            <Route path="/dashboard/profile" element={<EducationalSidebar><Profile /></EducationalSidebar>} />
-            <Route path="/dashboard/wallet" element={<EducationalSidebar><Wallet /></EducationalSidebar>} />
-            <Route path="/dashboard/transactions" element={<EducationalSidebar><Transactions /></EducationalSidebar>} />
-            <Route path="/dashboard/support" element={<EducationalSidebar><Support /></EducationalSidebar>} />
-            <Route path="/dashboard/ai-examiner" element={<EducationalSidebar><AIExaminer /></EducationalSidebar>} />
-            <Route path="/dashboard/course-advisor" element={<EducationalSidebar><CourseAdvisor /></EducationalSidebar>} />
-            <Route path="/dashboard/buy-olevel-upload" element={<EducationalSidebar><OLevelUploadExisting /></EducationalSidebar>} />
-            <Route path="/dashboard/buy-admission-letter" element={<EducationalSidebar><AdmissionLetter /></EducationalSidebar>} />
-            <Route path="/dashboard/buy-original-result" element={<EducationalSidebar><OriginalResult /></EducationalSidebar>} />
-            <Route path="/dashboard/buy-pin-vending" element={<EducationalSidebar><PinVending /></EducationalSidebar>} />
-            <Route path="/dashboard/reprinting-jamb-caps" element={<EducationalSidebar><Reprinting /></EducationalSidebar>} />
-            <Route path="/dashboard/scratch-card/waec-checker" element={<EducationalSidebar><WaecResultChecker /></EducationalSidebar>} />
-            <Route path="/dashboard/scratch-card/neco-checker" element={<EducationalSidebar><NecoResultChecker /></EducationalSidebar>} />
-            <Route path="/dashboard/scratch-card/nbais-checker" element={<EducationalSidebar><NbaisResultChecker /></EducationalSidebar>} />
-            <Route path="/dashboard/scratch-card/nabteb-checker" element={<EducationalSidebar><NabtebResultChecker /></EducationalSidebar>} />
-            <Route path="/dashboard/scratch-card/waec-gce" element={<EducationalSidebar><WaecGceChecker /></EducationalSidebar>} />
+            <Route path="/dashboard" element={<ProtectedRoute><EducationalSidebar><Dashboard /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/profile" element={<ProtectedRoute><EducationalSidebar><Profile /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/wallet" element={<ProtectedRoute><EducationalSidebar><Wallet /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/transactions" element={<ProtectedRoute><EducationalSidebar><Transactions /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/support" element={<ProtectedRoute><EducationalSidebar><Support /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/ai-examiner" element={<ProtectedRoute><EducationalSidebar><AIExaminer /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/course-advisor" element={<ProtectedRoute><EducationalSidebar><CourseAdvisor /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/buy-olevel-upload" element={<ProtectedRoute><EducationalSidebar><OLevelUploadExisting /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/buy-admission-letter" element={<ProtectedRoute><EducationalSidebar><AdmissionLetter /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/buy-original-result" element={<ProtectedRoute><EducationalSidebar><OriginalResult /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/buy-pin-vending" element={<ProtectedRoute><EducationalSidebar><PinVending /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/reprinting-jamb-caps" element={<ProtectedRoute><EducationalSidebar><Reprinting /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/scratch-card/waec-checker" element={<ProtectedRoute><EducationalSidebar><WaecResultChecker /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/scratch-card/neco-checker" element={<ProtectedRoute><EducationalSidebar><NecoResultChecker /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/scratch-card/nbais-checker" element={<ProtectedRoute><EducationalSidebar><NbaisResultChecker /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/scratch-card/nabteb-checker" element={<ProtectedRoute><EducationalSidebar><NabtebResultChecker /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/scratch-card/waec-gce" element={<ProtectedRoute><EducationalSidebar><WaecGceChecker /></EducationalSidebar></ProtectedRoute>} />
             {/* Legacy routes for backward compatibility */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/wallet" element={<Wallet />} />
@@ -422,8 +419,8 @@ function App() {
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
             {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/simple" element={<SimpleAdminDashboard />} />
+            <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/simple" element={<ProtectedRoute><SimpleAdminDashboard /></ProtectedRoute>} />
             <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
             </Routes>
           </div>

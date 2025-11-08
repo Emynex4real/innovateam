@@ -133,9 +133,23 @@ const EducationalSidebar = ({ children }) => {
   };
 
   const handleLogout = async () => {
-    const result = await signOut();
-    if (result.success) {
-      navigate('/login');
+    try {
+      const result = await signOut();
+      // Clear all auth-related localStorage
+      localStorage.removeItem('confirmedUser');
+      localStorage.removeItem('wallet_balance');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      
+      if (result.success) {
+        // Force navigation and page reload to ensure clean state
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force logout even if there's an error
+      localStorage.clear();
+      window.location.href = '/login';
     }
   };
 

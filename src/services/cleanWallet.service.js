@@ -17,11 +17,11 @@ class CleanWalletService {
       );
 
       if (result.success) {
-        // Update local balance
-        const currentBalance = parseFloat(localStorage.getItem('wallet_balance') || '0');
-        const newBalance = currentBalance + amount;
+        // Update local balance with the new balance from Supabase
+        const newBalance = result.newBalance || 0;
         localStorage.setItem('wallet_balance', newBalance.toString());
         
+        console.log(`✅ Wallet funded: +₦${amount}, New balance: ₦${newBalance}`);
         return { success: true, balance: newBalance };
       } else {
         throw new Error(result.error);
@@ -38,11 +38,6 @@ class CleanWalletService {
       throw new Error('No user logged in');
     }
 
-    const currentBalance = parseFloat(localStorage.getItem('wallet_balance') || '0');
-    if (currentBalance < amount) {
-      throw new Error(`Insufficient balance. Available: ₦${currentBalance.toLocaleString()}`);
-    }
-
     try {
       const result = await simpleWalletService.addTransaction(
         currentUser.email,
@@ -52,8 +47,8 @@ class CleanWalletService {
       );
 
       if (result.success) {
-        // Update local balance
-        const newBalance = currentBalance - amount;
+        // Update local balance with the new balance from Supabase
+        const newBalance = result.newBalance || 0;
         localStorage.setItem('wallet_balance', newBalance.toString());
         
         return { success: true, balance: newBalance };
@@ -66,6 +61,24 @@ class CleanWalletService {
   }
 
   async getBalance() {
+    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    
+    if (!currentUser.id) {
+      return parseFloat(localStorage.getItem('wallet_balance') || '0');
+    }
+
+    try {
+      // Get real balance from Supabase
+      const result = await simpleWalletService.getUserBalance(currentUser.id);
+      if (result.success) {
+        // Update localStorage with real balance
+        localStorage.setItem('wallet_balance', result.balance.toString());
+        return result.balance;
+      }
+    } catch (error) {
+      console.warn('Failed to get real balance, using localStorage:', error);
+    }
+    
     return parseFloat(localStorage.getItem('wallet_balance') || '0');
   }
 }

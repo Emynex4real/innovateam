@@ -259,6 +259,16 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working', timestamp: new Date().toISOString() });
 });
 
+// API health endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'API is healthy',
+    timestamp: new Date().toISOString(),
+    supabase: process.env.SUPABASE_URL ? 'configured' : 'missing'
+  });
+});
+
 // Use routes (after CSRF middleware)
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);

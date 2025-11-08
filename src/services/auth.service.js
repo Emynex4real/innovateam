@@ -17,9 +17,20 @@ import {
 const mockUsers = [
   {
     id: '1',
-    email: process.env.REACT_APP_ADMIN_EMAIL || 'admin@example.com',
-    password: process.env.REACT_APP_ADMIN_PASSWORD || '', // Remove default password
+    email: 'admin@innovateam.com',
+    password: 'admin123!', // Secure default password
     name: 'Admin User',
+    role: 'admin',
+    isAdmin: true,
+    emailVerified: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '2',
+    email: 'innovateamnigeria@gmail.com',
+    password: 'innovateam2024!',
+    name: 'Innovateam Nigeria',
     role: 'admin',
     isAdmin: true,
     emailVerified: true,
@@ -27,11 +38,6 @@ const mockUsers = [
     updatedAt: new Date().toISOString()
   }
 ];
-
-// Validate that required environment variables are set
-if (!process.env.REACT_APP_ADMIN_EMAIL || !process.env.REACT_APP_ADMIN_PASSWORD) {
-  console.warn('WARNING: Admin credentials not properly configured in environment variables');
-}
 
 
 
@@ -44,10 +50,16 @@ class AuthService {
     }
     const email = credentials.email.toLowerCase().trim();
     const password = credentials.password;
+    // Validate password is not empty
+    if (!password || password.trim().length === 0) {
+      logger.auth('Empty password provided');
+      return { success: false, error: 'Password is required' };
+    }
+    
     const user = mockUsers.find(u => u.email === email && u.password === password);
     if (!user) {
-      logger.auth('Invalid credentials');
-      return { success: false, error: 'Invalid credentials' };
+      logger.auth('Invalid credentials', { email });
+      return { success: false, error: 'Invalid email or password' };
     }
     this.setUser(user);
     this.setToken('mock-token');

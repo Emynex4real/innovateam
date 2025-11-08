@@ -83,8 +83,9 @@ export const WalletProvider = ({ children }) => {
       const result = await cleanWalletService.fundWallet(amount, paymentMethod);
       
       if (result.success) {
+        console.log('✅ Wallet funding successful, updating UI...');
         setWalletBalance(result.balance);
-        await fetchWalletData();
+        await fetchWalletData(); // Refresh data from Supabase
         return {
           success: true,
           balance: result.balance
@@ -93,30 +94,8 @@ export const WalletProvider = ({ children }) => {
       
       throw new Error('Funding failed');
     } catch (error) {
-      // Final fallback to localStorage
-      console.warn('All funding methods failed, using localStorage:', error.message);
-      const mockResult = {
-        success: true,
-        balance: walletBalance + amount,
-        transaction: {
-          id: Date.now(),
-          amount,
-          type: 'credit',
-          description: 'Wallet Funding',
-          status: 'successful',
-          created_at: new Date().toISOString()
-        }
-      };
-      
-      const newBalance = walletBalance + amount;
-      setWalletBalance(newBalance);
-      setTransactions(prev => [mockResult.transaction, ...prev]);
-      
-      // Store in localStorage
-      localStorage.setItem('walletBalance', newBalance.toString());
-      localStorage.setItem('walletTransactions', JSON.stringify([mockResult.transaction, ...transactions]));
-      
-      return mockResult;
+      console.error('❌ Wallet funding failed:', error.message);
+      throw error; // Don't use fallback, ensure Supabase integration works
     }
   };
 
