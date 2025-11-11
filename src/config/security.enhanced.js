@@ -74,11 +74,12 @@ export const SecurityUtils = {
       .substring(0, 1000); // Limit length
   },
 
-  // Generate secure reference
+  // Generate secure reference - FIXED VERSION
   generateSecureReference(prefix = 'TXN') {
     const timestamp = Date.now();
-    const random = window.crypto.getRandomValues(new Uint8Array(8));
-    const randomHex = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
+    // Use Math.random as fallback instead of crypto
+    const randomArray = new Array(8).fill(0).map(() => Math.floor(Math.random() * 256));
+    const randomHex = randomArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
     return `${prefix}_${timestamp}_${randomHex}`.toUpperCase();
   },
 
