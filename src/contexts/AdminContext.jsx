@@ -26,8 +26,9 @@ export const AdminProvider = ({ children }) => {
     revenue: 0,
     totalServices: 0,
     recentTransactions: [],
-    recentUsers: [],
+    recentUsers: [], 
     recentServices: []
+    
   });
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
