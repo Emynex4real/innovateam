@@ -13,6 +13,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
+    "process": "^0.11.10",
     "framer-motion": "^12.23.24",
     "lodash": "^4.17.21",
     "lucide-react": "^0.552.0",
@@ -32,9 +33,9 @@
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
-    "test": "craco test",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
     "eject": "react-scripts eject",
     "security-audit": "node scripts/final-security-audit.js",
     "deploy-check": "node scripts/deploy-check.js",
