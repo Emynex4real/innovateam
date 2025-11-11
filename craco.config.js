@@ -1,24 +1,23 @@
+const webpack = require('webpack');
+
 module.exports = {
   webpack: {
-    configure: {
-      resolve: {
-        fallback: {
-          "https": require.resolve("https-browserify"),
-          "http": require.resolve("stream-http"),
-          "stream": require.resolve("stream-browserify")
-        }
-      },
-      performance: {
-        hints: false,
-        maxEntrypointSize: 512000,
-        maxAssetSize: 512000
-      }
-    }
+    configure: (webpackConfig) => {
+      webpackConfig.resolve.fallback = {
+        ...webpackConfig.resolve.fallback,
+        crypto: false,
+        stream: false,
+        buffer: false,
+      };
+      
+      webpackConfig.plugins = [
+        ...webpackConfig.plugins,
+        new webpack.ProvidePlugin({
+          process: 'process/browser',
+        }),
+      ];
+      
+      return webpackConfig;
+    },
   },
-  devServer: {
-    port: 3000,
-    open: true,
-    historyApiFallback: true,
-    allowedHosts: 'all'
-  }
 };
