@@ -103,3 +103,4 @@ export const SecurityUtils = {
 };
 
 export default SecurityConfig;
+// Build fix - removed crypto dependencies
