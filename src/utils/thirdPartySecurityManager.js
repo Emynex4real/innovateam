@@ -1,5 +1,6 @@
 // Third-Party Integration Security Manager
 import { secureLogger } from './secureLogger';
+import CryptoJS from 'crypto-js';
 
 class ThirdPartySecurityManager {
   constructor() {
@@ -208,12 +209,7 @@ class ThirdPartySecurityManager {
   // Validate webhook signatures
   validateWebhookSignature(payload, signature, secret) {
     try {
-      const crypto = require('crypto');
-      const expectedSignature = crypto
-        .createHmac('sha512', secret)
-        .update(payload)
-        .digest('hex');
-
+      const expectedSignature = CryptoJS.HmacSHA512(payload, secret).toString();
       return signature === expectedSignature;
     } catch (error) {
       secureLogger.logError(error, {
