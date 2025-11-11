@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "crypto": ["utils/crypto-shim.js"]
+    }
+  },
+  "include": ["src"]
+}
