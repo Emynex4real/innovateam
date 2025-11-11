@@ -77,7 +77,7 @@ export const SecurityUtils = {
   // Generate secure reference
   generateSecureReference(prefix = 'TXN') {
     const timestamp = Date.now();
-    const random = crypto.getRandomValues(new Uint8Array(8));
+    const random = window.crypto.getRandomValues(new Uint8Array(8));
     const randomHex = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
     return `${prefix}_${timestamp}_${randomHex}`.toUpperCase();
   },
