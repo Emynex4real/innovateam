@@ -35,7 +35,7 @@ const AIExaminer = () => {
   const { isDarkMode } = useDarkMode();
   const { walletBalance, addTransaction } = useWallet();
   const [selectedTab, setSelectedTab] = useState(0);
-  const [serviceCost] = useState(500); // Cost for AI question generation
+  const [serviceCost] = useState(300); // Cost for AI question generation
   
   // Upload & Generation State
   const [file, setFile] = useState(null);
@@ -125,6 +125,11 @@ const AIExaminer = () => {
   };
 
   const generateQuestions = async () => {
+    console.log('🎯 Generate Questions clicked');
+    console.log('Wallet Balance:', walletBalance);
+    console.log('Service Cost:', serviceCost);
+    console.log('Extracted Text Length:', extractedText.length);
+    
     if (!extractedText.trim()) {
       toast.error('Please upload a document first');
       return;
@@ -132,13 +137,18 @@ const AIExaminer = () => {
 
     // Check wallet balance for AI service
     if (walletBalance < serviceCost) {
-      toast.error(`Insufficient balance. Need ₦${serviceCost} for AI question generation.`);
+      const message = `Insufficient Balance! You need ₦${serviceCost} to generate questions. Your current balance is ₦${walletBalance}. Please fund your wallet first.`;
+      toast.error(message, { duration: 5000 });
+      alert(message);
       return;
     }
 
     setIsGenerating(true);
+    console.log('✅ Starting question generation...');
+    
     try {
       // Deduct service cost
+      console.log('💰 Attempting to deduct ₦' + serviceCost);
       await addTransaction({
         label: 'AI Question Generation',
         description: `Generated ${questionCount} questions using AI`,
@@ -147,10 +157,14 @@ const AIExaminer = () => {
         category: 'ai_service',
         status: 'Successful'
       });
+      console.log('✅ Transaction successful');
 
+      console.log('🤖 Calling AI service...');
       const result = await aiExaminerService.generateQuestions(extractedText, questionCount);
+      console.log('AI Service Result:', result);
       
       if (result.success) {
+        console.log('✅ Questions generated:', result.questions.length);
         setQuestions(result.questions);
         setTimeLeft(examDuration * 60);
         setSelectedTab(1);
@@ -159,7 +173,7 @@ const AIExaminer = () => {
         throw new Error(result.error || 'Failed to generate questions');
       }
     } catch (error) {
-      console.error('Question generation error:', error);
+      console.error('❌ Question generation error:', error);
       
       // Fallback to mock questions if API fails
       const questionBank = [
