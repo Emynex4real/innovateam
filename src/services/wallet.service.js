@@ -1,7 +1,7 @@
 
 import logger from '../utils/logger';
 import { SecurityUtils } from '../config/security.enhanced';
-import secureStorage from '../utils/encryption';
+import secureStorage from '../utils/secureStorage';
 import cleanWalletService from './cleanWallet.service';
 
 // Secure storage keys
