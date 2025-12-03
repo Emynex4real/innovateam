@@ -34,7 +34,7 @@ class AIExaminerController {
 
       extractedText = extractedText.replace(/\s+/g, ' ').trim();
 
-      // LOW LIMIT FOR TESTING
+      // Lower limit for testing
       if (extractedText.length < 5) {
         return res.status(400).json({ success: false, message: 'Document text is too short.' });
       }
@@ -70,7 +70,6 @@ class AIExaminerController {
       const { text, title = 'Study Material' } = req.body;
       const userId = req.user?.sub || req.user?.id;
 
-      // LOW LIMIT FOR TESTING
       if (!text || text.length < 5) {
         return res.status(400).json({ success: false, message: 'Text too short (min 5 chars)' });
       }
@@ -98,9 +97,6 @@ class AIExaminerController {
     }
   }
 
-  // ... (generateQuestions and submitAnswers remain the same as before) ...
-  // Ensure you keep the rest of the class I gave you earlier!
-  
   // 3. Generate Questions
   async generateQuestions(req, res) {
     try {
@@ -115,7 +111,7 @@ class AIExaminerController {
         questionCount, difficulty, questionTypes
       });
 
-      // Process for DB (Ensure explanations exist)
+      // Process for DB
       const processedQuestions = questions.map(q => ({
         id: uuidv4(),
         ...q,
@@ -155,7 +151,7 @@ class AIExaminerController {
     }
   }
 
-  // 4. Submit & Grade
+  // 4. Submit & Grade (SMART GRADING FIX)
   async submitAnswers(req, res) {
     try {
       const { examId } = req.params;
@@ -171,7 +167,26 @@ class AIExaminerController {
         const userAns = answers[q.id];
         const correctAns = q.correct_answer || q.correctAnswer;
         
-        const isCorrect = String(userAns).toLowerCase().trim() === String(correctAns).toLowerCase().trim();
+        // SMART GRADING: Handle "B" vs "B. Option Text"
+        const cleanUser = String(userAns || "").trim().toLowerCase();
+        const cleanCorrect = String(correctAns || "").trim().toLowerCase();
+        let isCorrect = false;
+
+        // Direct match
+        if (cleanUser === cleanCorrect) {
+          isCorrect = true;
+        } 
+        // Partial match (User selected "A. Text" but answer is "A")
+        else if (cleanUser.length > 1 && cleanCorrect.length === 1 && 
+          (cleanUser.startsWith(cleanCorrect + ".") || cleanUser.startsWith(cleanCorrect + ")") || cleanUser.startsWith(cleanCorrect + " "))) {
+          isCorrect = true;
+        }
+        // Partial match (User selected "A", but answer is "A. Text")
+        else if (cleanCorrect.length > 1 && cleanUser.length === 1 && 
+          (cleanCorrect.startsWith(cleanUser + ".") || cleanCorrect.startsWith(cleanUser + ")") || cleanCorrect.startsWith(cleanUser + " "))) {
+          isCorrect = true;
+        }
+
         if (isCorrect) score++;
 
         return {
@@ -179,7 +194,7 @@ class AIExaminerController {
           question: q.question,
           userAnswer: userAns || "Skipped",
           correctAnswer: correctAns,
-          explanation: q.explanation, // This sends the solution back!
+          explanation: q.explanation, 
           isCorrect
         };
       });
@@ -201,7 +216,7 @@ class AIExaminerController {
           percentage,
           totalQuestions: allQuestions.length,
           grade: percentage >= 50 ? 'Pass' : 'Fail',
-          results // Frontend needs this
+          results 
         }
       });
 
