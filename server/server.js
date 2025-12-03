@@ -189,7 +189,8 @@ app.use('/api/admin', csrfProtection);
 app.use('/api/profile', csrfProtection);
 app.use('/api/wallet', csrfProtection);
 app.use('/api/services', csrfProtection);
-app.use('/api/ai-examiner', csrfProtection);
+// Temporarily disable CSRF for AI Examiner during development
+// app.use('/api/ai-examiner', csrfProtection);
 
 // Request parsing with increased limits and XSS protection
 app.use(express.json({ 

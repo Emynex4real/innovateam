@@ -824,39 +824,52 @@ const CourseAdvisor = () => {
 
   const handleRecommendationSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted!');
+    
     setEligibleCourses([]);
     setPreferredEligibility(null);
 
     // Validate inputs
     const selectedOlevelSubjects = Object.keys(olevelGrades).filter(subj => olevelGrades[subj]);
+    console.log('Selected O-Level subjects:', selectedOlevelSubjects.length);
+    
     if (selectedOlevelSubjects.length < 5) {
       toast.error('Please select grades for at least 5 O-Level subjects');
       return;
     }
 
     const score = parseInt(jambScore);
+    console.log('JAMB Score:', score);
+    
     if (isNaN(score) || score < 0 || score > 400) {
       toast.error('JAMB score must be between 0 and 400');
       return;
     }
 
+    console.log('UTME Subjects:', utmeSubjects);
     if (utmeSubjects.length !== 4) {
       toast.error('Please select exactly 4 UTME subjects including English Language');
       return;
     }
 
-    if (!interests.trim()) {
-      toast.error('Please enter your interests');
+    console.log('Interests:', interests);
+    const selectedInterests = interests.split(',').map(i => i.trim()).filter(Boolean);
+    console.log('Selected interests count:', selectedInterests.length);
+    
+    if (selectedInterests.length === 0) {
+      toast.error('Please select at least one interest');
       return;
     }
 
     setRecommendLoading(true);
+    console.log('Starting recommendation process...');
     
     try {
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       let eligibleCourses = [];
+      console.log('Checking eligibility for', Object.keys(FUTA_COURSES).length, 'courses');
       
       // Check eligibility for all courses with hybrid scoring
       for (const courseName of Object.keys(FUTA_COURSES)) {
@@ -868,6 +881,8 @@ const CourseAdvisor = () => {
           });
         }
       }
+      
+      console.log('Found', eligibleCourses.length, 'eligible courses');
 
       // Sort by score (highest first)
       eligibleCourses.sort((a, b) => b.score - a.score);
@@ -1083,10 +1098,10 @@ const CourseAdvisor = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <NavBar />
+    <div className="min-h-screen bg-background p-6">
+      
       {/* Compact Header */}
-      <div className="bg-white dark:bg-slate-900 border-b">
+      <div className="bg-white dark:bg-background border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1119,7 +1134,7 @@ const CourseAdvisor = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Tabs */}
         <div className="mb-8">
-          <div className="flex space-x-1 bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border">
+          <div className="flex space-x-1 bg-white dark:bg-background p-1 rounded-xl shadow-sm border">
             <Button
               variant={selectedIndex === 0 ? "default" : "ghost"}
               onClick={() => setSelectedIndex(0)}

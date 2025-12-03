@@ -1,82 +1,82 @@
-import apiService from './api.service';
+import api from './api.service';
 
-class AIExaminerService {
-  async generateQuestions(text, questionCount = 10) {
+const aiExaminerService = {
+  // 1. Upload File
+  uploadDocument: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const result = await apiService.post('/api/ai-examiner/generate-questions', {
-        text,
-        questionCount
-      });
-      return result;
+      // FIX: Return the WHOLE response, don't strip .data
+      const response = await api.post('/api/ai-examiner/upload', formData);
+      return response; 
     } catch (error) {
-      // Mock response for development
-      const mockQuestions = Array.from({ length: questionCount }, (_, i) => ({
-        id: i + 1,
-        question: `Sample question ${i + 1} based on the provided text content?`,
-        type: 'multiple_choice',
-        options: [
-          'Option A - First possible answer',
-          'Option B - Second possible answer', 
-          'Option C - Third possible answer',
-          'Option D - Fourth possible answer'
-        ],
-        correctAnswer: Math.floor(Math.random() * 4),
-        explanation: `This is the explanation for question ${i + 1}.`
-      }));
+      if (error.response && error.response.status === 404) {
+         const retry = await api.post('/ai-examiner/upload', formData);
+         return retry;
+      }
+      throw error.response?.data || error;
+    }
+  },
 
-      return {
-        success: true,
-        questions: mockQuestions,
-        message: `Generated ${questionCount} questions successfully`
-      };
+  // 2. Submit Text
+  submitText: async (text, title) => {
+    try {
+      // FIX: Return 'response', NOT 'response.data'
+      const response = await api.post('/api/ai-examiner/submit-text', { text, title });
+      return response;
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        const retry = await api.post('/ai-examiner/submit-text', { text, title });
+        return retry;
+      }
+      throw error.response?.data || error;
+    }
+  },
+
+  // 3. Generate Questions
+  generateQuestions: async (documentId, options) => {
+    try {
+      // FIX: Return 'response', NOT 'response.data'
+      const response = await api.post('/api/ai-examiner/generate', { documentId, ...options });
+      return response;
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        const retry = await api.post('/ai-examiner/generate', { documentId, ...options });
+        return retry;
+      }
+      throw error.response?.data || error;
+    }
+  },
+
+  // 4. Submit Answers
+  submitAnswers: async (examId, answers) => {
+    try {
+      // FIX: Return 'response', NOT 'response.data'
+      const response = await api.post(`/api/ai-examiner/submit/${examId}`, { answers });
+      return response;
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        const retry = await api.post(`/ai-examiner/submit/${examId}`, { answers });
+        return retry;
+      }
+      throw error.response?.data || error;
+    }
+  },
+  
+  // 5. History
+  getExamHistory: async () => {
+    try {
+      const response = await api.get('/api/ai-examiner/history');
+      return response;
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        const retry = await api.get('/ai-examiner/history');
+        return retry;
+      }
+      throw error.response?.data || error;
     }
   }
+};
 
-  async getCourseRecommendations(grades, interests, jambScore) {
-    try {
-      const result = await apiService.post('/api/ai-examiner/course-recommendations', {
-        grades,
-        interests,
-        jambScore
-      });
-      return result;
-    } catch (error) {
-      // Mock response for development
-      const mockRecommendations = [
-        {
-          course: 'Computer Science',
-          university: 'University of Lagos',
-          cutoffMark: 280,
-          probability: 85,
-          requirements: ['Mathematics - C6', 'English - C6', 'Physics - C6'],
-          description: 'Study of computational systems and design of computer systems.'
-        },
-        {
-          course: 'Software Engineering',
-          university: 'Covenant University',
-          cutoffMark: 275,
-          probability: 78,
-          requirements: ['Mathematics - C6', 'English - C6', 'Physics - C6'],
-          description: 'Application of engineering principles to software development.'
-        },
-        {
-          course: 'Information Technology',
-          university: 'Federal University of Technology, Akure',
-          cutoffMark: 260,
-          probability: 92,
-          requirements: ['Mathematics - C6', 'English - C6', 'Physics - C6'],
-          description: 'Use of computers to store, retrieve, transmit and manipulate data.'
-        }
-      ];
-
-      return {
-        success: true,
-        recommendations: mockRecommendations,
-        message: 'Course recommendations generated successfully'
-      };
-    }
-  }
-}
-
-const aiExaminerService = new AIExaminerService();
 export default aiExaminerService;
