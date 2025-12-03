@@ -1,7 +1,5 @@
-
-
 /**
- * API Service with backend integration
+ * API Service with backend integration (Fixed for File Uploads)
  */
 class ApiService {
   constructor() {
@@ -24,12 +22,29 @@ class ApiService {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('auth_token');
     
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
-    };
+    // 1. Get Authentication Token
+    let token = localStorage.getItem('auth_token');
+    if (!token) {
+      const supabaseSession = localStorage.getItem('sb-jdedscbvbkjvqmmdabig-auth-token');
+      if (supabaseSession) {
+        try {
+          const sessionData = JSON.parse(supabaseSession);
+          token = sessionData.access_token;
+        } catch (e) {
+          console.warn('Failed to parse Supabase session');
+        }
+      }
+    }
+    
+    // 2. Prepare Headers
+    const headers = { ...options.headers };
+
+    // FIX: Only set JSON content type if we are NOT sending a file (FormData)
+    // The browser sets the correct boundary header for FormData automatically.
+    if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;
@@ -48,8 +63,16 @@ class ApiService {
         headers
       });
 
+      // 3. Handle Response
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Try to parse the error message from the server if possible
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) errorMessage = errorData.message;
+        } catch (e) { /* ignore JSON parse error on error responses */ }
+        
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -63,17 +86,24 @@ class ApiService {
     return this.request(endpoint, { method: 'GET' });
   }
 
-  async post(endpoint, data) {
+  // FIX: Updated to accept options and handle FormData correctly
+  async post(endpoint, data, options = {}) {
+    const isFormData = data instanceof FormData;
     return this.request(endpoint, {
       method: 'POST',
-      body: JSON.stringify(data)
+      // FIX: Do not stringify FormData
+      body: isFormData ? data : JSON.stringify(data),
+      ...options
     });
   }
 
-  async put(endpoint, data) {
+  // FIX: Updated to accept options and handle FormData correctly
+  async put(endpoint, data, options = {}) {
+    const isFormData = data instanceof FormData;
     return this.request(endpoint, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: isFormData ? data : JSON.stringify(data),
+      ...options
     });
   }
 

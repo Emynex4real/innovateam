@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
+import { Toaster } from 'react-hot-toast'; // ✅ FIXED: Added this import
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { sendConfirmationEmail } from './services/emailService';
@@ -17,7 +18,7 @@ import Profile from './pages/profile';
 import Wallet from './pages/wallet';
 import Transactions from './pages/transactions';
 import Support from './pages/support';
-import AIExaminer from './pages/ai examiner';
+import AIExaminer from './pages/ai examiner'; // Ensure folder name matches exactly in your project
 import OLevelUploadExisting from './pages/jamb services/olevel upload';
 import WaecResultChecker from './pages/result checker/waec result checker';
 import NecoResultChecker from './pages/result checker/neco result checker';
@@ -386,6 +387,9 @@ function App() {
       <SupabaseAuthProvider>
         <WalletProvider>
           <div className="App">
+            {/* ✅ FIXED: Added Toaster here so alerts show up! */}
+            <Toaster position="top-right" /> 
+            
             <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />

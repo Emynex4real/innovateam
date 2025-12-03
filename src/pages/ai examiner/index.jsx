@@ -1,821 +1,601 @@
 import React, { useState, useEffect } from 'react';
-import { useDarkMode } from '../../contexts/DarkModeContext';
 import toast from 'react-hot-toast';
 import aiExaminerService from '../../services/aiExaminer.service';
 import { useWallet } from '../../contexts/WalletContext';
 import { 
-  Upload, 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  Trophy,
-  BarChart3,
-  Download,
-  Play,
-  Pause,
-  RotateCcw,
-  Brain,
-  Target,
-  Zap,
-  BookOpen,
-  Settings,
-  Eye,
-  EyeOff
+  Upload, FileText, Clock, CheckCircle, Trophy, BarChart3, 
+  RotateCcw, Brain, ChevronRight, Loader2, AlertCircle, XCircle, 
+  Sparkles, GraduationCap, ChevronLeft, Calendar
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Textarea } from '../../components/ui/textarea';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Textarea } from '../../components/ui/textarea';
-import { Separator } from '../../components/ui/separator';
 import { cn } from '../../lib/utils';
 
 const AIExaminer = () => {
-  const { isDarkMode } = useDarkMode();
   const { walletBalance, addTransaction } = useWallet();
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [serviceCost] = useState(300); // Cost for AI question generation
   
-  // Upload & Generation State
+  // Steps: 0=Input, 1=Config, 2=Exam, 3=Results
+  const [step, setStep] = useState(0);
+  const [inputType, setInputType] = useState('file'); // 'file' or 'text'
+  const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('');
+  
+  // Data State
   const [file, setFile] = useState(null);
-  const [documentTitle, setDocumentTitle] = useState('');
   const [extractedText, setExtractedText] = useState('');
-  const [questionCount, setQuestionCount] = useState(10);
-  const [questionTypes, setQuestionTypes] = useState(['mcq']);
-  const [examDuration, setExamDuration] = useState(30);
-  const [difficulty, setDifficulty] = useState('medium');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [documentId, setDocumentId] = useState(null);
+  const [documentTitle, setDocumentTitle] = useState('');
+  
+  // Config State
+  const [examConfig, setExamConfig] = useState({
+    questionCount: 10,
+    difficulty: 'medium',
+    duration: 30,
+    questionTypes: ['multiple-choice', 'true-false']
+  });
   
   // Exam State
+  const [examId, setExamId] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [isExamActive, setIsExamActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [examStarted, setExamStarted] = useState(false);
-  const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState(null);
 
-  // Timer Effect
+  // Timer
   useEffect(() => {
-    let interval;
-    if (isExamActive && timeLeft > 0) {
-      interval = setInterval(() => {
+    if (step === 2 && timeLeft > 0) {
+      const timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            handleSubmitExam();
+            handleSubmit();
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
+      return () => clearInterval(timer);
     }
-    return () => clearInterval(interval);
-  }, [isExamActive, timeLeft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, timeLeft]);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2,'0')}:${(s % 60).toString().padStart(2,'0')}`;
 
-  const handleFileUpload = async (e) => {
-    const selectedFile = e.target.files[0];
+  // 1. Handle File Upload
+  const handleUpload = async (e) => {
+    const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
-
-    const allowedTypes = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(selectedFile.type)) {
-      toast.error('Please upload PDF, TXT, or DOCX files only');
-      return;
-    }
-
-    if (selectedFile.size > 15 * 1024 * 1024) {
-      toast.error('File size must be less than 15MB');
-      return;
-    }
 
     setFile(selectedFile);
     setDocumentTitle(selectedFile.name.split('.')[0]);
-    
-    // Extract text from file
+    setLoading(true);
+    setLoadingText('Scanning document...');
+
     try {
-      let text = '';
-      if (selectedFile.type === 'text/plain') {
-        text = await selectedFile.text();
-      } else {
-        // For PDF/DOCX, show a message about limited support
-        text = `Document uploaded: ${selectedFile.name}\n\nNote: For best results, please upload plain text (.txt) files. PDF and DOCX files have limited text extraction support.\n\nSample content for demonstration purposes.`;
+      const res = await aiExaminerService.uploadDocument(selectedFile);
+      if (res.success) {
+        setDocumentId(res.data.documentId);
+        toast.success("Document ready!");
+        setStep(1); // Go to config
       }
-      
-      // Filter out XML/binary content
-      const cleanText = text.replace(/<[^>]*>/g, '').replace(/[^\w\s.,!?;:-]/g, ' ').replace(/\s+/g, ' ').trim();
-      
-      if (cleanText.length < 50) {
-        // If extracted text is too short or corrupted, use sample content
-        setExtractedText(`Sample educational content about ${selectedFile.name.split('.')[0]}. This document contains important information about various topics including concepts, principles, and practical applications. Students should understand the fundamental ideas presented and be able to apply them in different contexts.`);
-      } else {
-        setExtractedText(cleanText);
-      }
-      
-      toast.success('File uploaded successfully!');
-    } catch (error) {
-      toast.error('Failed to extract text from file');
-    }
-  };
-
-  const generateQuestions = async () => {
-    console.log('🎯 Generate Questions clicked');
-    console.log('Wallet Balance:', walletBalance);
-    console.log('Service Cost:', serviceCost);
-    console.log('Extracted Text Length:', extractedText.length);
-    
-    if (!extractedText.trim()) {
-      toast.error('Please upload a document first');
-      return;
-    }
-
-    // Check wallet balance for AI service
-    if (walletBalance < serviceCost) {
-      const message = `Insufficient Balance! You need ₦${serviceCost} to generate questions. Your current balance is ₦${walletBalance}. Please fund your wallet first.`;
-      toast.error(message, { duration: 5000 });
-      alert(message);
-      return;
-    }
-
-    setIsGenerating(true);
-    console.log('✅ Starting question generation...');
-    
-    try {
-      // Deduct service cost
-      console.log('💰 Attempting to deduct ₦' + serviceCost);
-      await addTransaction({
-        label: 'AI Question Generation',
-        description: `Generated ${questionCount} questions using AI`,
-        amount: serviceCost,
-        type: 'debit',
-        category: 'ai_service',
-        status: 'Successful'
-      });
-      console.log('✅ Transaction successful');
-
-      console.log('🤖 Calling AI service...');
-      const result = await aiExaminerService.generateQuestions(extractedText, questionCount);
-      console.log('AI Service Result:', result);
-      
-      if (result.success) {
-        console.log('✅ Questions generated:', result.questions.length);
-        setQuestions(result.questions);
-        setTimeLeft(examDuration * 60);
-        setSelectedTab(1);
-        toast.success(`Generated ${result.questions.length} questions successfully!`);
-      } else {
-        throw new Error(result.error || 'Failed to generate questions');
-      }
-    } catch (error) {
-      console.error('❌ Question generation error:', error);
-      
-      // Fallback to mock questions if API fails
-      const questionBank = [
-        // MCQ Questions
-        { type: 'mcq', question: 'What is the primary purpose of this document?', options: ['To provide educational content', 'To entertain readers', 'To sell products', 'To collect data'], answer: 'To provide educational content', explanation: 'The document serves an educational purpose.' },
-        { type: 'mcq', question: 'Which learning approach is most effective for this material?', options: ['Active reading and note-taking', 'Passive listening only', 'Memorization without understanding', 'Skipping difficult sections'], answer: 'Active reading and note-taking', explanation: 'Active engagement improves comprehension and retention.' },
-        { type: 'mcq', question: 'What type of knowledge does this document primarily convey?', options: ['Theoretical and practical knowledge', 'Entertainment content', 'Personal opinions only', 'Advertising material'], answer: 'Theoretical and practical knowledge', explanation: 'Educational documents typically combine theory with practical applications.' },
-        
-        // True/False Questions
-        { type: 'true_false', question: 'Understanding the fundamental concepts is essential for mastering this subject.', answer: 'True', explanation: 'Fundamental concepts form the foundation for advanced learning.' },
-        { type: 'true_false', question: 'This document can be understood without any prior knowledge of the subject.', answer: 'False', explanation: 'Most educational materials build upon existing knowledge and require some background understanding.' },
-        { type: 'true_false', question: 'Practical application of concepts enhances learning effectiveness.', answer: 'True', explanation: 'Applying concepts in real situations strengthens understanding and retention.' },
-        
-        // Short Answer Questions
-        { type: 'short_answer', question: 'What are the key learning objectives of this document?', answer: 'To understand core concepts, develop practical skills, and apply knowledge effectively in relevant contexts.', explanation: 'Learning objectives guide the educational process and expected outcomes.' },
-        { type: 'short_answer', question: 'How can students best prepare for assessments based on this material?', answer: 'By reviewing key concepts, practicing applications, creating study notes, and testing understanding through self-assessment.', explanation: 'Effective preparation involves multiple study strategies and active engagement.' },
-        { type: 'short_answer', question: 'What makes this subject matter important for students?', answer: 'It provides essential knowledge and skills that are fundamental for academic progress and practical application in real-world scenarios.', explanation: 'Educational content should have clear relevance and practical value for learners.' },
-        
-        // Fill in the blank
-        { type: 'fill_blank', question: 'Effective learning requires both _______ understanding and practical application.', answer: 'theoretical', explanation: 'Theoretical understanding provides the foundation for practical application.' }
-      ];
-      
-      const questionsData = Array.from({ length: questionCount }, (_, i) => {
-        const questionType = questionTypes[i % questionTypes.length];
-        const availableQuestions = questionBank.filter(q => q.type === questionType);
-        const selectedQuestion = availableQuestions[i % availableQuestions.length] || questionBank[i % questionBank.length];
-        
-        return {
-          id: i + 1,
-          type: selectedQuestion.type,
-          question: selectedQuestion.question,
-          options: selectedQuestion.options,
-          correct_answer: selectedQuestion.answer,
-          explanation: selectedQuestion.explanation
-        };
-      });
-
-      setQuestions(questionsData);
-      setTimeLeft(examDuration * 60);
-      setSelectedTab(1);
-      toast.success(`Generated ${questionsData.length} questions successfully!`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not read file. Try pasting text.");
+      setFile(null);
     } finally {
-      setIsGenerating(false);
+      setLoading(false);
     }
   };
 
-  const startExam = () => {
-    setIsExamActive(true);
-    setExamStarted(true);
-    setCurrentQuestion(0);
-    setAnswers({});
-    setShowResults(false);
-    toast.success('Exam started! Good luck!');
-  };
-
-  const handleAnswer = (questionId, answer) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
-  };
-
-  const handleSubmitExam = () => {
-    setIsExamActive(false);
+  // 1b. Handle Text Paste
+  const handleTextSubmit = async () => {
+    if (!extractedText || extractedText.length < 10) return toast.error("Text is too short.");
     
-    // Calculate results
-    let score = 0;
-    const totalQuestions = questions.length;
-    const questionResults = questions.map(q => {
-      const userAnswer = answers[q.id];
-      const isCorrect = userAnswer && userAnswer.toLowerCase().trim() === q.correct_answer.toLowerCase().trim();
-      if (isCorrect) score++;
-      
-      return {
-        ...q,
-        userAnswer,
-        isCorrect,
-        points: isCorrect ? 1 : 0
-      };
-    });
-
-    const percentage = Math.round((score / totalQuestions) * 100);
-    const grade = percentage >= 90 ? 'A' : percentage >= 80 ? 'B' : percentage >= 70 ? 'C' : percentage >= 60 ? 'D' : 'F';
-
-    setResults({
-      score,
-      totalQuestions,
-      percentage,
-      grade,
-      questionResults,
-      timeTaken: (examDuration * 60) - timeLeft
-    });
-
-    setShowResults(true);
-    setSelectedTab(2);
-    toast.success('Exam submitted successfully!');
-  };
-
-  const resetExam = () => {
-    setIsExamActive(false);
-    setExamStarted(false);
-    setCurrentQuestion(0);
-    setAnswers({});
-    setShowResults(false);
-    setTimeLeft(examDuration * 60);
-  };
-
-  const exportResults = () => {
-    if (!results) return;
+    setLoading(true);
+    setLoadingText('Analyzing text...');
     
-    const dataStr = JSON.stringify(results, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    const link = document.createElement('a');
-    link.href = dataUri;
-    link.download = `exam_results_${documentTitle}.json`;
-    link.click();
+    try {
+      const res = await aiExaminerService.submitText(extractedText, documentTitle || 'Study Notes');
+      if (res.success) {
+        setDocumentId(res.data.documentId);
+        setStep(1);
+      }
+    } catch (err) {
+      toast.error("Failed to process text.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderUploadTab = () => (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-      <div className="xl:col-span-2 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5 text-blue-600" />
-              Document Upload
-            </CardTitle>
-            <CardDescription>
-              Upload your study material to generate AI-powered questions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* File Upload */}
-            <div className="space-y-2">
-              <Label>Upload Document</Label>
-              <div className={cn(
-                "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-                "hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10",
-                file ? "border-green-400 bg-green-50/50 dark:bg-green-900/10" : "border-muted-foreground/25"
-              )}>
-                <input
-                  type="file"
-                  onChange={handleFileUpload}
-                  accept=".pdf,.txt,.docx"
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <div className="space-y-4">
-                    <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
-                      <Upload className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {file ? file.name : 'Click to upload or drag and drop'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        PDF, TXT, DOCX up to 15MB
-                      </p>
-                    </div>
-                  </div>
-                </label>
-              </div>
-            </div>
+  // 2. Generate Exam
+  const handleGenerate = async () => {
+    if (walletBalance < 300) return toast.error("Insufficient balance (₦300 needed)");
+    
+    setLoading(true);
+    setLoadingText('AI is crafting your exam...');
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Document Title</Label>
-                <Input
-                  id="title"
-                  value={documentTitle}
-                  onChange={(e) => setDocumentTitle(e.target.value)}
-                  placeholder="Enter document title"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="difficulty">Difficulty Level</Label>
-                <select
-                  id="difficulty"
-                  value={difficulty}
-                  onChange={(e) => setDifficulty(e.target.value)}
-                  className="w-full p-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
-            </div>
+    try {
+      const res = await aiExaminerService.generateQuestions(documentId, {
+        ...examConfig,
+        subject: documentTitle
+      });
 
-            <Separator />
+      if (res.success) {
+        await addTransaction({
+          label: 'AI Exam Generation',
+          amount: 300,
+          type: 'debit',
+          category: 'ai_service',
+          status: 'Successful'
+        });
 
-            {/* Question Settings */}
-            <div className="space-y-4">
-              <Label className="text-base font-semibold">Question Settings</Label>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="count">Number of Questions</Label>
-                  <select
-                    id="count"
-                    value={questionCount}
-                    onChange={(e) => setQuestionCount(Number(e.target.value))}
-                    className="w-full p-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={5}>5 Questions</option>
-                    <option value={10}>10 Questions</option>
-                    <option value={20}>20 Questions</option>
-                    <option value={50}>50 Questions</option>
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Exam Duration (minutes)</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={examDuration}
-                    onChange={(e) => setExamDuration(Number(e.target.value))}
-                    min="5"
-                    max="180"
-                  />
-                </div>
-              </div>
+        const formattedQs = res.data.questions.map((q, i) => ({
+          ...q,
+          id: q.id || `q-${i}`,
+          options: q.options ? [...q.options].sort(() => Math.random() - 0.5) : [] 
+        }));
 
-              <div className="space-y-2">
-                <Label>Question Types</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {[
-                    { id: 'mcq', label: 'Multiple Choice' },
-                    { id: 'true_false', label: 'True/False' },
-                    { id: 'short_answer', label: 'Short Answer' },
-                    { id: 'fill_blank', label: 'Fill in the Gap' },
-                    { id: 'flashcard', label: 'Flash Cards' }
-                  ].map(type => (
-                    <label key={type.id} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={questionTypes.includes(type.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setQuestionTypes([...questionTypes, type.id]);
-                          } else {
-                            setQuestionTypes(questionTypes.filter(t => t !== type.id));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm">{type.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={generateQuestions}
-              disabled={isGenerating || !extractedText.trim()}
-              className="w-full h-12 text-base font-semibold"
-              size="lg"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generating Questions...
-                </>
-              ) : (
-                <>
-                  <Brain className="h-4 w-4 mr-2" />
-                  Generate AI Questions
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-orange-600" />
-              Quick Setup
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center py-8">
-              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-semibold mb-2">Ready to Start?</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Upload your document to begin generating questions
-              </p>
-              <div className="space-y-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>AI-powered question generation</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Multiple question types</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Instant grading & feedback</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
-  const renderExamTab = () => {
-    if (questions.length === 0) {
-      return (
-        <Card>
-          <CardContent className="text-center py-12">
-            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Questions Generated</h3>
-            <p className="text-muted-foreground">Generate questions first to start the exam</p>
-          </CardContent>
-        </Card>
-      );
+        setQuestions(formattedQs);
+        setExamId(res.data.examId);
+        setTimeLeft(examConfig.duration * 60);
+        setStep(2); // Start Exam
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Generation failed.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!examStarted) {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-600" />
-              Ready to Start Exam
-            </CardTitle>
-            <CardDescription>
-              {questions.length} questions • {examDuration} minutes • {difficulty} difficulty
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{questions.length}</div>
-                <div className="text-sm text-muted-foreground">Questions</div>
-              </div>
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{examDuration}</div>
-                <div className="text-sm text-muted-foreground">Minutes</div>
-              </div>
-              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600 capitalize">{difficulty}</div>
-                <div className="text-sm text-muted-foreground">Difficulty</div>
-              </div>
-            </div>
-            
-            <Button onClick={startExam} className="w-full h-12 text-base font-semibold" size="lg">
-              <Play className="h-4 w-4 mr-2" />
-              Start Exam
-            </Button>
-          </CardContent>
-        </Card>
-      );
+  // 3. Submit Exam
+  const handleSubmit = async () => {
+    setLoading(true);
+    setLoadingText('Grading your answers...');
+    try {
+      const res = await aiExaminerService.submitAnswers(examId, answers);
+      if (res.success) {
+        setResults(res.data);
+        setStep(3); // Show Results
+        toast.success("Grading Complete!");
+      }
+    } catch (err) {
+      toast.error("Submission failed.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const question = questions[currentQuestion];
-    if (!question) return null;
+  // -- RENDERERS --
 
+  if (loading) {
     return (
-      <div className="space-y-6">
-        {/* Timer & Progress */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-blue-600" />
-                  <span className="font-mono text-lg font-semibold">{formatTime(timeLeft)}</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Question {currentQuestion + 1} of {questions.length}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsExamActive(!isExamActive)}>
-                  {isExamActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleSubmitExam}>
-                  Submit Exam
-                </Button>
-              </div>
-            </div>
-            <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Question */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {currentQuestion + 1}. {question.question}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {question.type === 'mcq' && question.options && (
-              <div className="space-y-2">
-                {question.options.map((option, idx) => (
-                  <label key={idx} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={`question-${question.id}`}
-                      value={option}
-                      checked={answers[question.id] === option}
-                      onChange={(e) => handleAnswer(question.id, e.target.value)}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>{option}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {question.type === 'true_false' && (
-              <div className="space-y-2">
-                {['True', 'False'].map(option => (
-                  <label key={option} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={`question-${question.id}`}
-                      value={option}
-                      checked={answers[question.id] === option}
-                      onChange={(e) => handleAnswer(question.id, e.target.value)}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>{option}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {(question.type === 'short_answer' || question.type === 'fill_blank') && (
-              <Textarea
-                value={answers[question.id] || ''}
-                onChange={(e) => handleAnswer(question.id, e.target.value)}
-                placeholder="Enter your answer..."
-                rows={3}
-              />
-            )}
-
-            <div className="flex justify-between pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
-                disabled={currentQuestion === 0}
-              >
-                Previous
-              </Button>
-              <Button
-                onClick={() => setCurrentQuestion(Math.min(questions.length - 1, currentQuestion + 1))}
-                disabled={currentQuestion === questions.length - 1}
-              >
-                Next
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50/50 backdrop-blur-sm z-50 fixed inset-0">
+        <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center max-w-sm w-full mx-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
+            <Loader2 className="h-12 w-12 text-blue-600 animate-spin relative z-10" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mt-6 text-center">{loadingText}</h3>
+          <p className="text-gray-500 text-sm mt-2 text-center">This won't take long.</p>
+        </div>
       </div>
     );
-  };
-
-  const renderResultsTab = () => {
-    if (!results) {
-      return (
-        <Card>
-          <CardContent className="text-center py-12">
-            <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Results Yet</h3>
-            <p className="text-muted-foreground">Complete an exam to see your results</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        {/* Results Summary */}
-        <Card className="border-green-200 dark:border-green-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-600" />
-              Exam Results
-            </CardTitle>
-            <CardDescription>
-              {documentTitle} • {new Date().toLocaleDateString()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{results.score}</div>
-                <div className="text-sm text-muted-foreground">Correct</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{results.percentage}%</div>
-                <div className="text-sm text-muted-foreground">Score</div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{results.grade}</div>
-                <div className="text-sm text-muted-foreground">Grade</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">{formatTime(results.timeTaken)}</div>
-                <div className="text-sm text-muted-foreground">Time</div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={exportResults} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export Results
-              </Button>
-              <Button onClick={resetExam} variant="outline">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Retake Exam
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Question Review */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Question Review</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {results.questionResults.map((q, idx) => (
-              <div key={q.id} className={cn(
-                "p-4 rounded-lg border",
-                q.isCorrect ? "border-green-200 bg-green-50/50 dark:bg-green-900/10" : "border-red-200 bg-red-50/50 dark:bg-red-900/10"
-              )}>
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold",
-                    q.isCorrect ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                  )}>
-                    {q.isCorrect ? '✓' : '✗'}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium mb-2">{idx + 1}. {q.question}</h4>
-                    <div className="space-y-1 text-sm">
-                      <div>
-                        <span className="font-medium">Your answer: </span>
-                        <span className={q.isCorrect ? "text-green-600" : "text-red-600"}>
-                          {q.userAnswer || 'No answer'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Correct answer: </span>
-                        <span className="text-green-600">{q.correct_answer}</span>
-                      </div>
-                      <div className="text-muted-foreground">{q.explanation}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Compact Header */}
-      <div className="bg-white dark:bg-slate-900 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <Brain className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Examiner</h1>
-                <p className="text-sm text-muted-foreground">Intelligent question generation and assessment</p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800 p-6 font-sans">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-3">
+            <div className="bg-white dark:bg-gray-800 p-2.5 rounded-xl shadow-sm border">
+              <Brain className="h-6 w-6 text-blue-600" />
             </div>
-            <div className="hidden md:flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Brain className="h-3 w-3" />
-                <span>AI-Powered</span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Target className="h-3 w-3" />
-                <span>Auto-Grading</span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Zap className="h-3 w-3" />
-                <span>Instant Results</span>
-              </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">AI Examiner</h1>
+              <p className="text-xs text-gray-500 font-medium">Study Companion</p>
             </div>
           </div>
+          {step > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => { 
+                if(window.confirm('Are you sure you want to quit?')) {
+                  setStep(0); setFile(null); setExtractedText(''); setResults(null); 
+                }
+              }}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+            >
+              <XCircle className="h-4 w-4 mr-2" /> Quit Exam
+            </Button>
+          )}
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
-        <div className="mb-8">
-          <div className="flex space-x-1 bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border">
-            <Button
-              variant={selectedTab === 0 ? "default" : "ghost"}
-              onClick={() => setSelectedTab(0)}
-              className="flex-1 justify-center"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload & Generate
-            </Button>
-            <Button
-              variant={selectedTab === 1 ? "default" : "ghost"}
-              onClick={() => setSelectedTab(1)}
-              className="flex-1 justify-center"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Take Exam
-            </Button>
-            <Button
-              variant={selectedTab === 2 ? "default" : "ghost"}
-              onClick={() => setSelectedTab(2)}
-              className="flex-1 justify-center"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Results
-            </Button>
+        {/* STEP 0: MODERN INPUT */}
+        {step === 0 && (
+          <div className="max-w-xl mx-auto mt-12 animate-in fade-in zoom-in duration-300">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3">
+                What are we studying today?
+              </h2>
+              <p className="text-gray-500">Upload your material and let AI test your knowledge.</p>
+            </div>
+
+            <Card className="border-0 shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
+              {/* Toggle Switch */}
+              <div className="flex border-b">
+                <button
+                  onClick={() => setInputType('file')}
+                  className={cn(
+                    "flex-1 py-4 text-sm font-medium transition-colors relative",
+                    inputType === 'file' ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:bg-gray-50"
+                  )}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Upload className="h-4 w-4" /> Upload Document
+                  </div>
+                  {inputType === 'file' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
+                </button>
+                <button
+                  onClick={() => setInputType('text')}
+                  className={cn(
+                    "flex-1 py-4 text-sm font-medium transition-colors relative",
+                    inputType === 'text' ? "text-blue-600 bg-blue-50/50" : "text-gray-500 hover:bg-gray-50"
+                  )}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <FileText className="h-4 w-4" /> Paste Text
+                  </div>
+                  {inputType === 'text' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
+                </button>
+              </div>
+
+              <CardContent className="p-8">
+                {inputType === 'file' ? (
+                  <div className="space-y-6">
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer group relative">
+                      <input 
+                        type="file" 
+                        onChange={handleUpload}
+                        accept=".pdf,.docx,.txt"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <div className="bg-blue-100 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <Upload className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Drop your file here</h3>
+                      <p className="text-sm text-gray-500 mt-1">PDF or DOCX (Max 15MB)</p>
+                      <Button variant="outline" className="mt-6 pointer-events-none">Browse Files</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Title</Label>
+                      <Input 
+                        placeholder="e.g. Biology Chapter 1" 
+                        value={documentTitle}
+                        onChange={e => setDocumentTitle(e.target.value)}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Content</Label>
+                      <Textarea 
+                        placeholder="Paste your lecture notes, article, or textbook content here..." 
+                        className="min-h-[250px] resize-none p-4 leading-relaxed"
+                        value={extractedText}
+                        onChange={e => setExtractedText(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={handleTextSubmit} size="lg" className="w-full h-12 text-base font-medium">
+                      Analyze Text <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        )}
 
-        {/* Tab Content */}
-        {selectedTab === 0 && renderUploadTab()}
-        {selectedTab === 1 && renderExamTab()}
-        {selectedTab === 2 && renderResultsTab()}
+        {/* STEP 1: CONFIGURATION */}
+        {step === 1 && (
+          <div className="max-w-2xl mx-auto mt-8 animate-in slide-in-from-right-8 duration-300">
+            <Button variant="ghost" className="mb-4 pl-0 hover:bg-transparent" onClick={() => setStep(0)}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Back
+            </Button>
+            
+            <Card className="border-0 shadow-xl overflow-hidden">
+              <div className="h-2 bg-blue-600 w-full" />
+              <CardHeader>
+                <CardTitle className="text-2xl">Configure Exam</CardTitle>
+                <p className="text-gray-500">Customize your testing experience for <strong>{documentTitle || 'your document'}</strong>.</p>
+              </CardHeader>
+              <CardContent className="p-8 space-y-8">
+                
+                {/* Difficulty Selector */}
+                <div className="space-y-3">
+                  <Label className="text-base">Difficulty Level</Label>
+                  <div className="grid grid-cols-3 gap-4">
+                    {['easy', 'medium', 'hard'].map((level) => (
+                      <div 
+                        key={level}
+                        onClick={() => setExamConfig({...examConfig, difficulty: level})}
+                        className={cn(
+                          "cursor-pointer rounded-xl p-4 border-2 transition-all text-center",
+                          examConfig.difficulty === level 
+                            ? "border-blue-600 bg-blue-50/50" 
+                            : "border-transparent bg-gray-100 hover:bg-gray-200"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-3 h-3 rounded-full mx-auto mb-2",
+                          level === 'easy' ? 'bg-green-500' : level === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                        )} />
+                        <span className="font-semibold capitalize text-gray-700">{level}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sliders/Inputs */}
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <Label className="flex justify-between">
+                      <span>Questions</span>
+                      <span className="font-bold text-blue-600">{examConfig.questionCount}</span>
+                    </Label>
+                    <input 
+                      type="range" 
+                      min="5" max="30" step="5"
+                      value={examConfig.questionCount}
+                      onChange={(e) => setExamConfig({...examConfig, questionCount: Number(e.target.value)})}
+                      className="w-full accent-blue-600 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>5</span>
+                      <span>30</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label className="flex justify-between">
+                      <span>Duration</span>
+                      <span className="font-bold text-blue-600">{examConfig.duration}m</span>
+                    </Label>
+                    <input 
+                      type="range" 
+                      min="5" max="60" step="5"
+                      value={examConfig.duration}
+                      onChange={(e) => setExamConfig({...examConfig, duration: Number(e.target.value)})}
+                      className="w-full accent-blue-600 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>5m</span>
+                      <span>60m</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <div className="bg-yellow-100 p-1.5 rounded-md">
+                      <Sparkles className="h-4 w-4 text-yellow-600" />
+                    </div>
+                    <span>Cost: <strong>₦300</strong></span>
+                  </div>
+                  <Button onClick={handleGenerate} size="lg" className="px-8 shadow-lg shadow-blue-500/20">
+                    Start Exam
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* STEP 2: EXAM INTERFACE */}
+        {step === 2 && questions.length > 0 && (
+          <div className="max-w-3xl mx-auto mt-4 animate-in fade-in duration-500">
+            {/* Progress Header */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border mb-6 flex items-center justify-between sticky top-4 z-20">
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold text-lg",
+                  timeLeft < 60 ? "bg-red-100 text-red-600 animate-pulse" : "bg-blue-50 text-blue-600"
+                )}>
+                  <Clock className="h-5 w-5" /> {formatTime(timeLeft)}
+                </div>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">Question</span>
+                <span className="text-lg font-bold text-gray-800">
+                  {currentQIndex + 1} <span className="text-gray-300">/ {questions.length}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Question Card */}
+            <Card className="min-h-[400px] border-0 shadow-xl overflow-hidden relative">
+              <div 
+                className="absolute top-0 left-0 h-1.5 bg-blue-600 transition-all duration-500" 
+                style={{ width: `${((currentQIndex + 1) / questions.length) * 100}%` }}
+              />
+              
+              <CardContent className="p-8 md:p-10">
+                <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-8 leading-relaxed">
+                  {questions[currentQIndex].question}
+                </h3>
+
+                <div className="space-y-4">
+                  {questions[currentQIndex].options?.map((opt, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => setAnswers({...answers, [questions[currentQIndex].id]: opt})}
+                      className={cn(
+                        "group p-5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 relative overflow-hidden",
+                        answers[questions[currentQIndex].id] === opt 
+                          ? "border-blue-600 bg-blue-50/50 shadow-md" 
+                          : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+                        answers[questions[currentQIndex].id] === opt ? "border-blue-600 bg-blue-600 text-white" : "border-gray-300 text-gray-400 group-hover:border-gray-400"
+                      )}>
+                        {String.fromCharCode(65 + idx)}
+                      </div>
+                      <span className={cn(
+                        "text-lg font-medium",
+                        answers[questions[currentQIndex].id] === opt ? "text-blue-900" : "text-gray-600"
+                      )}>{opt}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+
+              <div className="p-6 bg-gray-50 border-t flex justify-between items-center">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setCurrentQIndex(i => Math.max(0, i-1))}
+                  disabled={currentQIndex === 0}
+                  className="text-gray-500 hover:text-gray-900"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" /> Previous
+                </Button>
+                
+                {currentQIndex === questions.length - 1 ? (
+                  <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700 px-8 shadow-lg shadow-green-500/20">
+                    Submit Exam
+                  </Button>
+                ) : (
+                  <Button onClick={() => setCurrentQIndex(i => i+1)} className="px-8">
+                    Next Question <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* STEP 3: RESULTS */}
+        {step === 3 && results && (
+          <div className="max-w-4xl mx-auto mt-8 animate-in zoom-in-95 duration-500">
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              {/* Score Card */}
+              <Card className={cn("md:col-span-2 border-0 shadow-xl overflow-hidden relative", 
+                results.grade === 'Pass' ? "bg-gradient-to-br from-green-600 to-emerald-800 text-white" : "bg-gradient-to-br from-red-600 to-rose-800 text-white"
+              )}>
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center h-full relative z-10">
+                  <div className="bg-white/20 p-4 rounded-full mb-4 backdrop-blur-md">
+                    <Trophy className="h-12 w-12 text-white" />
+                  </div>
+                  <h2 className="text-4xl font-black mb-2">{results.score} / {results.totalQuestions}</h2>
+                  <p className="text-white/80 text-lg font-medium mb-6">
+                    {results.grade === 'Pass' ? 'Excellent Work!' : 'Keep Practicing!'}
+                  </p>
+                  
+                  <div className="flex gap-4">
+                    <div className="bg-black/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+                      <span className="block text-xs opacity-70 uppercase tracking-wider">Percentage</span>
+                      <span className="font-mono text-xl font-bold">{results.percentage}%</span>
+                    </div>
+                    <div className="bg-black/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+                      <span className="block text-xs opacity-70 uppercase tracking-wider">Time</span>
+                      <span className="font-mono text-xl font-bold">{formatTime(results.timeTaken)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+                
+                {/* Background Pattern */}
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-black/10 rounded-full blur-3xl"></div>
+              </Card>
+
+              {/* Actions Card */}
+              <Card className="flex flex-col justify-center p-6 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-blue-600" /> Next Steps
+                </h3>
+                <div className="space-y-3">
+                  <Button onClick={() => { setStep(0); setFile(null); setResults(null); }} className="w-full" variant="outline">
+                    <RotateCcw className="mr-2 h-4 w-4"/> New Exam
+                  </Button>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                    <Calendar className="mr-2 h-4 w-4"/> Schedule Retake
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Detailed Review */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-8 w-1 bg-blue-600 rounded-full"></div>
+                <h3 className="text-xl font-bold text-gray-800">Detailed Solutions</h3>
+              </div>
+
+              {results.results.map((r, idx) => (
+                <Card key={idx} className={cn(
+                  "border-0 shadow-sm transition-all hover:shadow-md",
+                  !r.isCorrect && "ring-1 ring-red-100 bg-red-50/10"
+                )}>
+                  <CardContent className="p-6">
+                    <div className="flex gap-4">
+                      <div className={cn(
+                        "h-8 w-8 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 mt-1",
+                        r.isCorrect ? "bg-green-500" : "bg-red-500"
+                      )}>
+                        {r.isCorrect ? <CheckCircle className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                      </div>
+                      
+                      <div className="flex-1 space-y-4">
+                        <p className="font-semibold text-lg text-gray-900">{r.question}</p>
+                        
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className={cn(
+                            "p-3 rounded-lg border",
+                            r.isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"
+                          )}>
+                            <span className="text-xs font-bold uppercase block mb-1 opacity-60">You Selected</span>
+                            <span className={cn("font-medium", r.isCorrect ? "text-green-700" : "text-red-700")}>
+                              {r.userAnswer}
+                            </span>
+                          </div>
+                          
+                          {!r.isCorrect && (
+                            <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
+                              <span className="text-xs font-bold uppercase block mb-1 opacity-60 text-blue-600">Correct Answer</span>
+                              <span className="font-medium text-blue-800">
+                                {r.correctAnswer}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-xl text-sm">
+                          <div className="flex items-center gap-2 mb-2 text-gray-900 dark:text-white font-semibold">
+                            <Brain className="h-4 w-4 text-purple-600" />
+                            <span>Explanation</span>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                            {r.explanation}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
