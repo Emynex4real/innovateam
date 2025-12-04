@@ -34,7 +34,7 @@ const AIExaminer = () => {
     questionCount: 10,
     difficulty: 'medium',
     duration: 30,
-    questionTypes: ['multiple-choice', 'true-false']
+    questionTypes: ['multiple-choice']
   });
   
   // Exam State
@@ -307,6 +307,31 @@ const AIExaminer = () => {
                   </div>
                 </div>
 
+                <div className="space-y-3">
+                  <Label>Question Types</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { value: 'multiple-choice', label: 'Multiple Choice' },
+                      { value: 'true-false', label: 'True/False' },
+                      { value: 'fill-in-blank', label: 'Fill in Blank' },
+                      { value: 'flashcard', label: 'Flashcards' }
+                    ].map((type) => (
+                      <div 
+                        key={type.value}
+                        onClick={() => {
+                          const types = examConfig.questionTypes.includes(type.value)
+                            ? examConfig.questionTypes.filter(t => t !== type.value)
+                            : [...examConfig.questionTypes, type.value];
+                          if (types.length > 0) setExamConfig({...examConfig, questionTypes: types});
+                        }}
+                        className={cn("cursor-pointer rounded-lg p-3 border-2 text-center text-sm transition-all", examConfig.questionTypes.includes(type.value) ? "border-blue-600 bg-blue-50 text-blue-700 font-semibold" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300")}
+                      >
+                        {type.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-4">
                     <Label className="flex justify-between"><span>Questions</span><span className="font-bold text-blue-600">{examConfig.questionCount}</span></Label>
@@ -348,21 +373,43 @@ const AIExaminer = () => {
             <Card className="min-h-[400px] border-0 shadow-xl overflow-hidden relative">
               <div className="absolute top-0 left-0 h-1.5 bg-blue-600 transition-all duration-500" style={{ width: `${((currentQIndex + 1) / questions.length) * 100}%` }} />
               <CardContent className="p-8 md:p-10">
-                <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-8 leading-relaxed">{questions[currentQIndex].question}</h3>
-                <div className="space-y-4">
-                  {questions[currentQIndex].options?.map((opt, idx) => (
-                    <div 
-                      key={idx}
-                      onClick={() => setAnswers({...answers, [questions[currentQIndex].id]: opt})}
-                      className={cn("group p-5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 relative overflow-hidden", answers[questions[currentQIndex].id] === opt ? "border-blue-600 bg-blue-50/50 shadow-md" : "border-gray-100 hover:border-gray-300 hover:bg-gray-50")}
-                    >
-                      <div className={cn("w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors", answers[questions[currentQIndex].id] === opt ? "border-blue-600 bg-blue-600 text-white" : "border-gray-300 text-gray-400 group-hover:border-gray-400")}>
-                        {String.fromCharCode(65 + idx)}
-                      </div>
-                      <span className={cn("text-lg font-medium", answers[questions[currentQIndex].id] === opt ? "text-blue-900" : "text-gray-600")}>{opt}</span>
-                    </div>
-                  ))}
+                <div className="mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    {questions[currentQIndex].type?.replace('-', ' ') || 'Multiple Choice'}
+                  </span>
                 </div>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-8 leading-relaxed">{questions[currentQIndex].question}</h3>
+                
+                {/* Multiple Choice & True/False */}
+                {questions[currentQIndex].options && (
+                  <div className="space-y-4">
+                    {questions[currentQIndex].options.map((opt, idx) => (
+                      <div 
+                        key={idx}
+                        onClick={() => setAnswers({...answers, [questions[currentQIndex].id]: opt})}
+                        className={cn("group p-5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 relative overflow-hidden", answers[questions[currentQIndex].id] === opt ? "border-blue-600 bg-blue-50/50 shadow-md" : "border-gray-100 hover:border-gray-300 hover:bg-gray-50")}
+                      >
+                        <div className={cn("w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors", answers[questions[currentQIndex].id] === opt ? "border-blue-600 bg-blue-600 text-white" : "border-gray-300 text-gray-400 group-hover:border-gray-400")}>
+                          {String.fromCharCode(65 + idx)}
+                        </div>
+                        <span className={cn("text-lg font-medium", answers[questions[currentQIndex].id] === opt ? "text-blue-900" : "text-gray-600")}>{opt}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Fill in Blank & Flashcard */}
+                {!questions[currentQIndex].options && (
+                  <div className="space-y-4">
+                    <Label>Your Answer</Label>
+                    <Input 
+                      placeholder="Type your answer here..."
+                      value={answers[questions[currentQIndex].id] || ''}
+                      onChange={(e) => setAnswers({...answers, [questions[currentQIndex].id]: e.target.value})}
+                      className="text-lg p-4"
+                    />
+                  </div>
+                )}
               </CardContent>
               <div className="p-6 bg-gray-50 border-t flex justify-between items-center">
                 <Button variant="ghost" onClick={() => setCurrentQIndex(i => Math.max(0, i-1))} disabled={currentQIndex === 0} className="text-gray-500 hover:text-gray-900"><ChevronLeft className="h-4 w-4 mr-2" /> Previous</Button>
