@@ -50,7 +50,8 @@ class ApiService {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+    // Skip CSRF for AI Examiner endpoints (temporarily disabled on backend)
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method) && !endpoint.includes('/ai-examiner')) {
       const csrfToken = await this.getCSRFToken();
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
@@ -58,10 +59,18 @@ class ApiService {
     }
 
     try {
+      // Add timeout support
+      const timeout = options.timeout || 30000; // Default 30 seconds
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
       const response = await fetch(url, {
         ...options,
-        headers
+        headers,
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       // 3. Handle Response
       if (!response.ok) {
