@@ -4,14 +4,11 @@ const fs = require('fs');
 
 // Check if dotenv has already been loaded
 if (!process.env.LOADED_DOTENV) {
-  try {
-    const dotenv = require('dotenv');
-    const envPath = path.join(__dirname, '.env');
+  const dotenv = require('dotenv');
+  const envPath = path.join(__dirname, '.env');
+  
+  if (fs.existsSync(envPath)) {
     console.log(`📁 Loading environment variables from: ${envPath}`);
-    const envFileExists = fs.existsSync(envPath);
-    if (!envFileExists) {
-      throw new Error(`.env file not found at ${envPath}`);
-    }
     const envConfig = dotenv.parse(fs.readFileSync(envPath));
     for (const key in envConfig) {
       if (!(key in process.env)) {
@@ -20,11 +17,9 @@ if (!process.env.LOADED_DOTENV) {
     }
     process.env.LOADED_DOTENV = 'true';
     console.log(`✅ Loaded ${Object.keys(envConfig).length} environment variables from .env`);
-  } catch (error) {
-    console.error('❌ Failed to load environment variables:');
-    console.error('   Error:', error.message);
-    console.error('   Stack:', error.stack);
-    process.exit(1);
+  } else {
+    console.log('ℹ️ No .env file found, using environment variables from system');
+    process.env.LOADED_DOTENV = 'true';
   }
 } else {
   console.log('ℹ️ Environment variables already loaded');
