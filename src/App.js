@@ -109,11 +109,24 @@ const SupabaseAuthProvider = ({ children }) => {
           data: {
             full_name: userData?.fullName,
             phone: userData?.phone
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
       
       if (error) throw error;
+      
+      // Store real Supabase user data
+      if (data.user) {
+        const userToStore = {
+          id: data.user.id,
+          email: data.user.email,
+          name: userData?.fullName,
+          user_metadata: data.user.user_metadata,
+          email_confirmed_at: data.user.email_confirmed_at
+        };
+        localStorage.setItem('confirmedUser', JSON.stringify(userToStore));
+      }
       
       return { success: true, data, needsEmailConfirmation: !data.user?.email_confirmed_at };
     } catch (error) {
