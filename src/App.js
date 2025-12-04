@@ -120,11 +120,6 @@ const SupabaseAuthProvider = ({ children }) => {
       
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
-        // If email is confirmed, redirect to dashboard
-        if (session.user.email_confirmed_at) {
-          console.log('Email confirmed, redirecting to dashboard');
-          setTimeout(() => window.location.href = '/dashboard', 1000);
-        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       } else {
