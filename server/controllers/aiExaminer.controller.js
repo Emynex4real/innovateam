@@ -6,64 +6,57 @@ const mammoth = require('mammoth');
 
 class AIExaminerController {
 
-  // 1. Handle File Upload (Fast response)
+  // 1. Handle File Upload
   async uploadDocument(req, res) {
     try {
       const userId = req.user?.sub || req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
       if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
 
-      const documentId = uuidv4();
+      let extractedText = '';
       const buffer = req.file.buffer;
       const mimeType = req.file.mimetype;
 
-      if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(mimeType)) {
+      if (mimeType === 'application/pdf') {
+        const data = await pdfParse(buffer);
+        extractedText = data.text;
+      } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const result = await mammoth.extractRawText({ buffer });
+        extractedText = result.value;
+      } else if (mimeType === 'text/plain') {
+        extractedText = buffer.toString('utf-8');
+      } else {
         return res.status(400).json({ success: false, message: 'Unsupported file type' });
       }
 
-      // Respond immediately
-      res.json({
-        success: true,
-        data: { documentId, filename: req.file.originalname, status: 'processing' },
-        message: 'File uploaded, processing...'
+      extractedText = extractedText.replace(/\s+/g, ' ').trim();
+
+      if (extractedText.length < 5) {
+        return res.status(400).json({ success: false, message: 'Could not extract text' });
+      }
+
+      const documentId = uuidv4();
+      const { error } = await supabase.from('ai_documents').insert({
+        id: documentId,
+        user_id: userId,
+        filename: req.file.originalname,
+        content: extractedText,
+        file_size: req.file.size,
+        mime_type: mimeType,
+        created_at: new Date().toISOString()
       });
 
-      // Process async
-      setImmediate(async () => {
-        try {
-          let extractedText = '';
-          
-          if (mimeType === 'application/pdf') {
-            const data = await pdfParse(buffer);
-            extractedText = data.text;
-          } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-            const result = await mammoth.extractRawText({ buffer });
-            extractedText = result.value;
-          } else {
-            extractedText = buffer.toString('utf-8');
-          }
+      if (error) throw error;
 
-          extractedText = extractedText.replace(/\s+/g, ' ').trim();
-
-          if (extractedText.length >= 5) {
-            await supabase.from('ai_documents').insert({
-              id: documentId,
-              user_id: userId,
-              filename: req.file.originalname,
-              content: extractedText,
-              file_size: req.file.size,
-              mime_type: mimeType,
-              created_at: new Date().toISOString()
-            });
-          }
-        } catch (error) {
-          console.error('Async processing error:', error);
-        }
+      res.json({
+        success: true,
+        data: { documentId, filename: req.file.originalname, preview: extractedText.substring(0, 100) },
+        message: 'Document processed successfully'
       });
 
     } catch (error) {
       console.error('Upload error:', error);
-      res.status(500).json({ success: false, message: 'Upload failed' });
+      res.status(500).json({ success: false, message: error.message || 'Failed to process document' });
     }
   }
 
@@ -74,7 +67,7 @@ class AIExaminerController {
       const userId = req.user?.sub || req.user?.id;
 
       if (!text || text.length < 5) {
-        return res.status(400).json({ success: false, message: 'Text too short (min 5 chars)' });
+        return res.status(400).json({ success: false, message: 'Text too short' });
       }
 
       const documentId = uuidv4();
