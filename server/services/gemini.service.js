@@ -40,17 +40,37 @@ class GeminiService {
       return 'Multiple choice';
     }).join(', ');
 
-    const promptText = `You are an expert educator. Generate exactly ${questionCount} exam questions.
-    DIFFICULTY: ${difficulty}
-    QUESTION TYPES: ${typeInstructions}
-    Distribute questions evenly across the selected types.
-    TEXT: ${text.substring(0, 30000)}
-    
-    OUTPUT: Valid JSON Array only. No Markdown.
-    Format: [{"type":"multiple-choice","question":"...","options":["A","B","C","D"],"correct_answer":"A","explanation":"..."}]
-    For true-false: {"type":"true-false","question":"...","options":["True","False"],"correct_answer":"True","explanation":"..."}
-    For fill-in-blank: {"type":"fill-in-blank","question":"The capital of France is ___","correct_answer":"Paris","explanation":"..."}
-    For flashcard: {"type":"flashcard","question":"What is photosynthesis?","correct_answer":"Process by which plants...","explanation":"..."}`;
+    const questionsPerType = Math.ceil(questionCount / questionTypes.length);
+    const typeExamples = questionTypes.map(type => {
+      if (type === 'multiple-choice') return `{"type":"multiple-choice","question":"What is X?","options":["A","B","C","D"],"correct_answer":"A","explanation":"..."}`;
+      if (type === 'true-false') return `{"type":"true-false","question":"Statement is correct?","options":["True","False"],"correct_answer":"True","explanation":"..."}`;
+      if (type === 'fill-in-blank') return `{"type":"fill-in-blank","question":"The capital is ___","correct_answer":"Paris","explanation":"..."}`;
+      if (type === 'flashcard') return `{"type":"flashcard","question":"Define X?","correct_answer":"X is...","explanation":"..."}`;
+    }).join(',\n');
+
+    const promptText = `Generate exactly ${questionCount} exam questions from this text.
+
+REQUIREMENTS:
+- Difficulty: ${difficulty}
+- Question types to use: ${questionTypes.join(', ')}
+- Generate approximately ${questionsPerType} questions for EACH type
+- Mix the question types in the output
+
+TEXT:
+${text.substring(0, 30000)}
+
+OUTPUT FORMAT (Valid JSON Array ONLY, no markdown):
+[
+${typeExamples}
+]
+
+IMPORTANT:
+- For multiple-choice: Include 4 options ["A","B","C","D"]
+- For true-false: Include options ["True","False"]
+- For fill-in-blank: No options, just correct_answer
+- For flashcard: No options, just correct_answer
+- MUST include "type" field for each question
+- Generate ${questionCount} questions total`;}
 
     const isModern = modelName.includes("1.5");
     
