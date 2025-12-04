@@ -128,6 +128,12 @@ class AIExaminerController {
       });
 
       const frontendQuestions = processedQuestions.map(q => {
+        // For flashcards, send the correct_answer so it can be revealed
+        if (q.type === 'flashcard') {
+          const { explanation, ...rest } = q;
+          return rest;
+        }
+        // For other types, hide correct_answer and explanation
         const { correct_answer, explanation, ...rest } = q;
         return rest;
       });
@@ -155,24 +161,41 @@ class AIExaminerController {
       const allQuestions = JSON.parse(exam.questions);
       let score = 0;
 
-      const results = allQuestions.map(q => {
+      const results = await Promise.all(allQuestions.map(async (q) => {
         const userAns = answers[q.id];
         const correctAns = q.correct_answer || q.correctAnswer;
+        const questionType = q.type || 'multiple-choice';
         
         const cleanUser = String(userAns || "").trim().toLowerCase();
         const cleanCorrect = String(correctAns || "").trim().toLowerCase();
         let isCorrect = false;
+        let feedback = '';
+        let issues = [];
 
-        if (cleanUser === cleanCorrect) {
-          isCorrect = true;
-        } 
-        else if (cleanUser.length > 1 && cleanCorrect.length === 1 && 
-          (cleanUser.startsWith(cleanCorrect + ".") || cleanUser.startsWith(cleanCorrect + ")") || cleanUser.startsWith(cleanCorrect + " "))) {
-          isCorrect = true;
+        // For flashcard, use self-assessment
+        if (questionType === 'flashcard') {
+          isCorrect = userAns === 'correct';
+          feedback = isCorrect ? 'Great! You knew this concept.' : 'Review this concept again.';
         }
-        else if (cleanCorrect.length > 1 && cleanUser.length === 1 && 
-          (cleanCorrect.startsWith(cleanUser + ".") || cleanCorrect.startsWith(cleanUser + ")") || cleanCorrect.startsWith(cleanUser + " "))) {
-          isCorrect = true;
+        // For fill-in-blank, use AI validation
+        else if (questionType === 'fill-in-blank' && userAns) {
+          const validation = await geminiService.validateAnswer(userAns, correctAns, q.question);
+          isCorrect = validation.isCorrect;
+          feedback = validation.feedback;
+          issues = validation.issues || [];
+        } else {
+          // Standard matching for multiple-choice and true-false
+          if (cleanUser === cleanCorrect) {
+            isCorrect = true;
+          } 
+          else if (cleanUser.length > 1 && cleanCorrect.length === 1 && 
+            (cleanUser.startsWith(cleanCorrect + ".") || cleanUser.startsWith(cleanCorrect + ")") || cleanUser.startsWith(cleanCorrect + " "))) {
+            isCorrect = true;
+          }
+          else if (cleanCorrect.length > 1 && cleanUser.length === 1 && 
+            (cleanCorrect.startsWith(cleanUser + ".") || cleanCorrect.startsWith(cleanUser + ")") || cleanCorrect.startsWith(cleanUser + " "))) {
+            isCorrect = true;
+          }
         }
 
         if (isCorrect) score++;
@@ -182,10 +205,12 @@ class AIExaminerController {
           question: q.question,
           userAnswer: userAns || "Skipped",
           correctAnswer: correctAns,
-          explanation: q.explanation, 
+          explanation: q.explanation,
+          feedback: feedback || (isCorrect && issues.length > 0 ? `Correct! Note: ${issues.join(', ')}` : ''),
+          issues: issues,
           isCorrect
         };
-      });
+      }));
 
       const percentage = Math.round((score / allQuestions.length) * 100);
 
