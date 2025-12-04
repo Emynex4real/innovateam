@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../config/supabase';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import logger from '../utils/logger';
 import { storeUserData } from '../utils/authStorage';
-
-const supabase = createClient(
-  'https://jdedscbvbkjvqmmdabig.supabase.co',
-  'sb_publishable_cVZ7KXM0lNdNfuUzVD-Hlw_E4yNzJJO'
-);
 
 // Existing admin users for backward compatibility
 const adminUsers = [
