@@ -44,6 +44,7 @@ const AIExaminer = () => {
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [results, setResults] = useState(null);
+  const [flashcardRevealed, setFlashcardRevealed] = useState({});
 
   // Timer Logic
   useEffect(() => {
@@ -75,6 +76,7 @@ const AIExaminer = () => {
     setCurrentQIndex(0); // Reset index to start
     setDocumentId(null);
     setDocumentTitle('');
+    setFlashcardRevealed({});
   };
 
   const handleUpload = async (e) => {
@@ -398,16 +400,64 @@ const AIExaminer = () => {
                   </div>
                 )}
                 
-                {/* Fill in Blank & Flashcard */}
-                {!questions[currentQIndex].options && (
+                {/* Fill in Blank */}
+                {(!questions[currentQIndex].options || questions[currentQIndex].options.length === 0) && questions[currentQIndex].type === 'fill-in-blank' && (
                   <div className="space-y-4">
-                    <Label>Your Answer</Label>
-                    <Input 
+                    <Label className="text-base font-semibold text-gray-700">Your Answer</Label>
+                    <Textarea 
                       placeholder="Type your answer here..."
                       value={answers[questions[currentQIndex].id] || ''}
                       onChange={(e) => setAnswers({...answers, [questions[currentQIndex].id]: e.target.value})}
-                      className="text-lg p-4"
+                      className="text-lg p-4 min-h-[100px] resize-none"
                     />
+                    <p className="text-sm text-gray-500 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      AI will check your answer for meaning, even if spelling differs
+                    </p>
+                  </div>
+                )}
+                
+                {/* Flashcard */}
+                {(!questions[currentQIndex].options || questions[currentQIndex].options.length === 0) && questions[currentQIndex].type === 'flashcard' && (
+                  <div className="space-y-6">
+                    {!flashcardRevealed[questions[currentQIndex].id] ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 mb-6">Think about the answer, then reveal it</p>
+                        <Button 
+                          onClick={() => setFlashcardRevealed({...flashcardRevealed, [questions[currentQIndex].id]: true})}
+                          size="lg"
+                          className="px-8"
+                        >
+                          <Sparkles className="mr-2 h-5 w-5" /> Reveal Answer
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border-2 border-blue-200">
+                          <Label className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2 block">Answer</Label>
+                          <p className="text-lg font-semibold text-gray-800 leading-relaxed">{questions[currentQIndex].correct_answer}</p>
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-base font-semibold text-gray-700">Did you get it right?</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Button
+                              variant={answers[questions[currentQIndex].id] === 'correct' ? 'default' : 'outline'}
+                              onClick={() => setAnswers({...answers, [questions[currentQIndex].id]: 'correct'})}
+                              className={cn("h-14", answers[questions[currentQIndex].id] === 'correct' && "bg-green-600 hover:bg-green-700")}
+                            >
+                              <CheckCircle className="mr-2 h-5 w-5" /> Yes, I knew it!
+                            </Button>
+                            <Button
+                              variant={answers[questions[currentQIndex].id] === 'incorrect' ? 'default' : 'outline'}
+                              onClick={() => setAnswers({...answers, [questions[currentQIndex].id]: 'incorrect'})}
+                              className={cn("h-14", answers[questions[currentQIndex].id] === 'incorrect' && "bg-red-600 hover:bg-red-700")}
+                            >
+                              <XCircle className="mr-2 h-5 w-5" /> No, I didn't
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -473,6 +523,24 @@ const AIExaminer = () => {
                           <div className="flex items-center gap-2 mb-2 text-gray-900 dark:text-white font-semibold"><Brain className="h-4 w-4 text-purple-600" /><span>Explanation</span></div>
                           <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{r.explanation}</p>
                         </div>
+                        {r.feedback && (
+                          <div className={cn("p-4 rounded-xl text-sm border-l-4", r.isCorrect && r.issues?.length > 0 ? "bg-yellow-50 border-yellow-500" : "bg-blue-50 border-blue-500")}>
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className={cn("h-4 w-4 mt-0.5 flex-shrink-0", r.isCorrect && r.issues?.length > 0 ? "text-yellow-600" : "text-blue-600")} />
+                              <div>
+                                <p className="font-semibold text-gray-900 mb-1">AI Feedback</p>
+                                <p className="text-gray-700">{r.feedback}</p>
+                                {r.issues && r.issues.length > 0 && (
+                                  <ul className="mt-2 space-y-1">
+                                    {r.issues.map((issue, i) => (
+                                      <li key={i} className="text-sm text-gray-600">• {issue}</li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>

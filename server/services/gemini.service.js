@@ -44,8 +44,8 @@ class GeminiService {
     const typeExamples = questionTypes.map(type => {
       if (type === 'multiple-choice') return `{"type":"multiple-choice","question":"What is X?","options":["A","B","C","D"],"correct_answer":"A","explanation":"..."}`;
       if (type === 'true-false') return `{"type":"true-false","question":"Statement is correct?","options":["True","False"],"correct_answer":"True","explanation":"..."}`;
-      if (type === 'fill-in-blank') return `{"type":"fill-in-blank","question":"The capital is ___","correct_answer":"Paris","explanation":"..."}`;
-      if (type === 'flashcard') return `{"type":"flashcard","question":"Define X?","correct_answer":"X is...","explanation":"..."}`;
+      if (type === 'fill-in-blank') return `{"type":"fill-in-blank","question":"The process of ___ involves...","correct_answer":"photosynthesis","explanation":"..."}`;
+      if (type === 'flashcard') return `{"type":"flashcard","question":"What is photosynthesis?","correct_answer":"The process by which plants convert light energy into chemical energy","explanation":"Key concept for understanding plant biology"}`;
     }).join(',\n');
 
     const promptText = `Generate exactly ${questionCount} exam questions from this text.
@@ -67,8 +67,10 @@ ${typeExamples}
 IMPORTANT:
 - For multiple-choice: Include 4 options ["A","B","C","D"]
 - For true-false: Include options ["True","False"]
-- For fill-in-blank: No options, just correct_answer
-- For flashcard: No options, just correct_answer
+- For fill-in-blank: No options, just correct_answer (short answer expected)
+- For flashcard: No options, just correct_answer (detailed explanation for learning)
+  * Flashcards should ask "What is...", "Define...", "Explain..." questions
+  * Answers should be comprehensive explanations to teach the concept
 - MUST include "type" field for each question
 - Generate ${questionCount} questions total`;
 
@@ -105,6 +107,51 @@ IMPORTANT:
     } catch (error) {
       console.error('AI Service Error:', error);
       throw new Error(`AI Generation Failed: ${error.message}`);
+    }
+  }
+
+  async validateAnswer(userAnswer, correctAnswer, question) {
+    const modelName = await this.getValidModel();
+    const url = `${this.baseUrl}/${modelName}:generateContent?key=${this.apiKey}`;
+
+    const prompt = `Compare these two answers and determine if they are semantically equivalent:
+
+Question: ${question}
+Correct Answer: ${correctAnswer}
+User's Answer: ${userAnswer}
+
+Analyze if the user's answer is correct despite spelling errors, grammar issues, or different wording.
+
+Respond in JSON format:
+{
+  "isCorrect": true/false,
+  "feedback": "Brief feedback message",
+  "issues": ["spelling error in 'word'", "grammar issue"] or []
+}
+
+IMPORTANT: Return ONLY valid JSON, no markdown.`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 500 }
+        })
+      });
+
+      if (!response.ok) throw new Error('AI validation failed');
+
+      const data = await response.json();
+      let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('Empty AI response');
+
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(text);
+    } catch (error) {
+      console.error('Validation error:', error);
+      return { isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(), feedback: '', issues: [] };
     }
   }
 }
