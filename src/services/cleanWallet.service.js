@@ -4,8 +4,11 @@ class CleanWalletService {
   async fundWallet(amount, paymentMethod = 'card') {
     const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
     
+    console.log('🔍 Funding wallet - Current user:', currentUser);
+    
     if (!currentUser.email) {
-      throw new Error('No user logged in');
+      console.error('❌ No email found in localStorage. User object:', currentUser);
+      throw new Error('User not authenticated. Please log in again.');
     }
 
     try {
@@ -32,8 +35,11 @@ class CleanWalletService {
   async deductFromWallet(amount, description) {
     const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
     
+    console.log('🔍 Deducting from wallet - Current user:', currentUser);
+    
     if (!currentUser.email) {
-      throw new Error('No user logged in');
+      console.error('❌ No email found in localStorage. User object:', currentUser);
+      throw new Error('User not authenticated. Please log in again.');
     }
 
     try {
