@@ -59,14 +59,15 @@ class ApiService {
     }
 
     try {
-      // Add timeout support
-      const timeout = options.timeout || 30000; // Default 30 seconds
+      // Add timeout support - longer for file uploads
+      const timeout = options.timeout || (options.body instanceof FormData ? 120000 : 30000); // 2 min for files, 30s for others
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       const response = await fetch(url, {
-        ...options,
+        method: options.method,
         headers,
+        body: options.body,
         signal: controller.signal
       });
       
