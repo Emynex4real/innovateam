@@ -7,10 +7,15 @@ const aiExaminerService = {
     formData.append('file', file);
 
     try {
-      // FIX: Return the WHOLE response, don't strip .data
-      const response = await api.post('/api/ai-examiner/upload', formData);
+      console.log('Uploading file:', file.name);
+      const response = await api.post('/api/ai-examiner/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000 // 60 second timeout
+      });
+      console.log('Upload response:', response);
       return response; 
     } catch (error) {
+      console.error('Upload error:', error);
       if (error.response && error.response.status === 404) {
          const retry = await api.post('/ai-examiner/upload', formData);
          return retry;
