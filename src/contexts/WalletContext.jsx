@@ -12,9 +12,13 @@ export const WalletProvider = ({ children }) => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   const fetchWalletData = async () => {
+    if (isFetching) return;
+    
     try {
+      setIsFetching(true);
       setLoading(true);
       
       // Get balance from localStorage (updated by cleanWalletService)
@@ -68,6 +72,7 @@ export const WalletProvider = ({ children }) => {
       setTransactions([]);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
@@ -186,15 +191,8 @@ export const WalletProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchWalletData();
-    }
-  }, [isAuthenticated]);
-
-  // Also fetch on mount regardless of auth status for localStorage data
-  useEffect(() => {
     fetchWalletData();
-  }, []);
+  }, [isAuthenticated]);
 
 
   
