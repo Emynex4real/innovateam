@@ -7,13 +7,8 @@ import { useDarkMode } from '../../contexts/DarkModeContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import toast from 'react-hot-toast';
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../../config/supabase';
 import { confirmEmail, sendConfirmationEmail } from '../../services/emailService';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 const EmailConfirmation = () => {
   const navigate = useNavigate();
