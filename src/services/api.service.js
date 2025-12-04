@@ -60,7 +60,7 @@ class ApiService {
 
     try {
       // Add timeout support - longer for file uploads
-      const timeout = options.timeout || (options.body instanceof FormData ? 120000 : 30000); // 2 min for files, 30s for others
+      const timeout = options.timeout || (options.body instanceof FormData ? 300000 : 30000); // 5 min for files, 30s for others
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
