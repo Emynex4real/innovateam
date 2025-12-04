@@ -44,11 +44,12 @@ class SupabaseAuthService {
 
       if (authError) throw authError;
 
-      // Create user profile (without email column)
+      // Create user profile with email
       const { error: profileError } = await supabase
         .from('user_profiles')
         .insert({
           id: authData.user.id,
+          email: userData.email,
           full_name: userData.name,
           wallet_balance: 0,
           role: 'user',
@@ -59,10 +60,7 @@ class SupabaseAuthService {
         console.warn('Profile creation failed:', profileError);
       }
 
-      // Store email mapping in localStorage for now
-      const emailMap = JSON.parse(localStorage.getItem('userEmailMap') || '{}');
-      emailMap[authData.user.id] = userData.email;
-      localStorage.setItem('userEmailMap', JSON.stringify(emailMap));
+      // Email is now stored in user_profiles table
 
       logger.auth('Registration successful');
       return { 
