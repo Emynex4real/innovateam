@@ -70,7 +70,7 @@ IMPORTANT:
 - For fill-in-blank: No options, just correct_answer
 - For flashcard: No options, just correct_answer
 - MUST include "type" field for each question
-- Generate ${questionCount} questions total`;}
+- Generate ${questionCount} questions total`;
 
     const isModern = modelName.includes("1.5");
     
