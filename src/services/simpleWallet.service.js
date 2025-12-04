@@ -1,10 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Use only publishable key for browser safety
-const supabase = createClient(
-  'https://jdedscbvbkjvqmmdabig.supabase.co',
-  'sb_publishable_cVZ7KXM0lNdNfuUzVD-Hlw_E4yNzJJO'
-);
+import supabase from '../config/supabase';
 
 class SimpleWalletService {
   async addTransaction(userEmail, amount, description, type = 'credit') {
