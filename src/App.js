@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
-import { Toaster } from 'react-hot-toast'; // ✅ FIXED: Added this import
+import { Toaster } from 'react-hot-toast';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { sendConfirmationEmail } from './services/emailService';
@@ -37,16 +36,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import supabase from './config/supabase';
 
-// Always use the configured Supabase client
-const hasValidSupabaseConfig = true;
-
-console.log('🔍 Supabase Configuration Check:');
-console.log('URL:', supabaseUrl);
-console.log('Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
-console.log('Service Key:', 'Present');
-
 console.log('✅ Supabase configured and ready');
-console.log('Supabase URL:', supabase.supabaseUrl);
 
 // Auth Context
 const AuthContext = createContext();
@@ -175,11 +165,6 @@ const SupabaseAuthProvider = ({ children }) => {
 
   const resetPassword = async (email) => {
     try {
-      if (!supabase) {
-        console.warn('Supabase not configured, using mock authentication');
-        return { success: true };
-      }
-
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
       return { success: true };

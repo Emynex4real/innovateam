@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = 'https://jdedscbvbkjvqmmdabig.supabase.co';
-const supabaseAnonKey = 'sb_publishable_cVZ7KXM0lNdNfuUzVD-Hlw_E4yNzJJO';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import supabase from '../config/supabase';
 
 class SupabaseWalletService {
   async addTransaction(userId, userEmail, transactionData) {

@@ -1,10 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../config/supabase';
 import apiService from './api.service';
 import supabaseAdminService from './supabaseAdmin.service';
-
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 class AdminService {
   async getDashboardStats() {
