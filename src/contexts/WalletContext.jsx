@@ -21,49 +21,41 @@ export const WalletProvider = ({ children }) => {
       setIsFetching(true);
       setLoading(true);
       
-      // Get balance from localStorage (updated by cleanWalletService)
-      const balance = await cleanWalletService.getBalance();
-      setWalletBalance(balance);
-      
-      // Get transactions from Supabase for real data
       const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-      console.log('🔍 Current user for transactions:', currentUser.email);
       
-      if (currentUser.email) {
-        const simpleWalletService = (await import('../services/simpleWallet.service')).default;
-        const result = await simpleWalletService.getAllTransactions();
-        console.log('📊 All transactions:', result.transactions?.length);
+      if (!currentUser.id) {
+        console.warn('No user ID found');
+        return;
+      }
+      
+      const simpleWalletService = (await import('../services/simpleWallet.service')).default;
+      
+      // Get user balance from Supabase user_profiles table
+      const balanceResult = await simpleWalletService.getUserBalance(currentUser.id);
+      if (balanceResult.success) {
+        setWalletBalance(balanceResult.balance);
+      }
+      
+      // Get user transactions from Supabase
+      const result = await simpleWalletService.getAllTransactions();
+      
+      if (result.success) {
+        // Filter transactions for current user by user_id (more reliable than email)
+        const userTransactions = result.transactions
+          .filter(t => t.user_id === currentUser.id)
+          .map(t => ({
+            id: t.id,
+            label: t.description,
+            description: t.description,
+            amount: t.amount,
+            type: t.type,
+            category: t.type === 'credit' ? 'funding' : 'service',
+            status: 'completed',
+            date: t.created_at
+          }));
         
-        if (result.success) {
-          // Filter transactions for current user
-          const userTransactions = result.transactions
-            .filter(t => {
-              console.log('Comparing:', t.user_email, 'vs', currentUser.email);
-              return t.user_email === currentUser.email;
-            })
-            .map(t => ({
-              id: t.id,
-              label: t.description,
-              description: t.description,
-              amount: t.amount,
-              type: t.type,
-              category: t.type === 'credit' ? 'funding' : 'service',
-              status: 'completed',
-              date: t.created_at
-            }));
-          console.log('👤 User transactions found:', userTransactions.length);
-          setTransactions(userTransactions);
-          
-          // Calculate balance from transactions
-          const calculatedBalance = userTransactions.reduce((sum, t) => {
-            return t.type === 'credit' ? sum + t.amount : sum - t.amount;
-          }, 0);
-          console.log('💰 Calculated balance:', calculatedBalance);
-          
-          // Update localStorage balance to match Supabase
-          localStorage.setItem('wallet_balance', calculatedBalance.toString());
-          setWalletBalance(calculatedBalance);
-        }
+        setTransactions(userTransactions);
+        console.log('✅ Loaded', userTransactions.length, 'transactions from Supabase');
       }
 
     } catch (error) {
