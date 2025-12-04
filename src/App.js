@@ -150,10 +150,12 @@ const SupabaseAuthProvider = ({ children }) => {
         };
         const mockUser = { 
           id: generateUUID(), 
-          email, 
+          email: email,
+          name: userData?.fullName,
           user_metadata: { 
             full_name: userData?.fullName,
-            phone: userData?.phone 
+            phone: userData?.phone,
+            email: email
           },
           email_confirmed_at: skipEmailConfirmation ? new Date().toISOString() : null
         };
@@ -196,10 +198,12 @@ const SupabaseAuthProvider = ({ children }) => {
         };
         const mockUser = {
           id: generateUUID(),
-          email,
+          email: email,
+          name: userData?.fullName,
           user_metadata: {
             full_name: userData?.fullName,
-            phone: userData?.phone
+            phone: userData?.phone,
+            email: email
           },
           email_confirmed_at: new Date().toISOString()
         };
@@ -273,10 +277,12 @@ const SupabaseAuthProvider = ({ children }) => {
         if (emailResult.success) {
           const pendingUser = {
             id: generateUUID(),
-            email,
+            email: email,
+            name: userData?.fullName,
             user_metadata: {
               full_name: userData?.fullName,
-              phone: userData?.phone
+              phone: userData?.phone,
+              email: email
             },
             email_confirmed_at: null,
             confirmation_token: confirmationToken

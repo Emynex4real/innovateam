@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import logger from '../utils/logger';
+import { storeUserData } from '../utils/authStorage';
 
 const supabase = createClient(
   'https://jdedscbvbkjvqmmdabig.supabase.co',
@@ -183,14 +184,7 @@ class SupabaseAuthService {
   }
 
   setUser(user) {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
-      localStorage.setItem('confirmedUser', JSON.stringify(user));
-      return true;
-    } catch (error) {
-      logger.auth('Failed to store user', error);
-      return false;
-    }
+    return storeUserData(user);
   }
 
   setToken(token) {
