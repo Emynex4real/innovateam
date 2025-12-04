@@ -428,7 +428,7 @@ const Dashboard = () => {
         <PaymentModal 
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
-          onSuccess={() => window.location.reload()}
+          onSuccess={() => setShowPaymentModal(false)}
         />
       </div>
   );
