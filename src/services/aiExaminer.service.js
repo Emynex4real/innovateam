@@ -9,7 +9,7 @@ const aiExaminerService = {
     try {
       console.log('Uploading file:', file.name);
       const response = await api.post('/api/ai-examiner/upload', formData, {
-        timeout: 60000 // 60 second timeout
+        timeout: 300000 // 5 minute timeout for large files
       });
       console.log('Upload response:', response);
       return response; 
