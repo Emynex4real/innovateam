@@ -1,6 +1,8 @@
 import axios from 'axios';
+import supabase from '../config/supabase';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const USE_SUPABASE_DIRECT = !process.env.REACT_APP_API_URL; // Use Supabase if no backend URL
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('jamb_auth_token');
@@ -17,11 +19,30 @@ export class AIQuestionsService {
   }
 
   static async getQuestionBanks() {
+    if (USE_SUPABASE_DIRECT) {
+      const { data, error } = await supabase
+        .from('question_banks')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    }
     const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks`, { headers: getAuthHeaders() });
     return response.data;
   }
 
   static async getQuestionsByBank(bankId) {
+    if (USE_SUPABASE_DIRECT) {
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('bank_id', bankId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    }
     const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks/${bankId}/questions`, { headers: getAuthHeaders() });
     return response.data;
   }
