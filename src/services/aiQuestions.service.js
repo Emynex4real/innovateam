@@ -4,8 +4,11 @@ import supabase from '../config/supabase';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const USE_SUPABASE_DIRECT = !process.env.REACT_APP_API_URL; // Use Supabase if no backend URL
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('jamb_auth_token');
+const getAuthHeaders = async () => {
+  // Get Supabase session token
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` })
@@ -14,7 +17,8 @@ const getAuthHeaders = () => {
 
 export class AIQuestionsService {
   static async generateQuestions(data) {
-    const response = await axios.post(`${API_BASE_URL}/api/admin/ai-questions/generate`, data, { headers: getAuthHeaders() });
+    const headers = await getAuthHeaders();
+    const response = await axios.post(`${API_BASE_URL}/api/admin/ai-questions/generate`, data, { headers });
     return response.data;
   }
 
@@ -28,7 +32,8 @@ export class AIQuestionsService {
       if (error) throw error;
       return { success: true, data: data || [] };
     }
-    const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks`, { headers: getAuthHeaders() });
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks`, { headers });
     return response.data;
   }
 
@@ -43,37 +48,106 @@ export class AIQuestionsService {
       if (error) throw error;
       return { success: true, data: data || [] };
     }
-    const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks/${bankId}/questions`, { headers: getAuthHeaders() });
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks/${bankId}/questions`, { headers });
     return response.data;
   }
 
   static async updateQuestion(id, data) {
-    const response = await axios.put(`${API_BASE_URL}/api/admin/ai-questions/questions/${id}`, data, { headers: getAuthHeaders() });
+    if (USE_SUPABASE_DIRECT) {
+      const { error } = await supabase
+        .from('questions')
+        .update(data)
+        .eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+    const headers = await getAuthHeaders();
+    const response = await axios.put(`${API_BASE_URL}/api/admin/ai-questions/questions/${id}`, data, { headers });
     return response.data;
   }
 
   static async deleteQuestion(id) {
-    const response = await axios.delete(`${API_BASE_URL}/api/admin/ai-questions/questions/${id}`, { headers: getAuthHeaders() });
+    if (USE_SUPABASE_DIRECT) {
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+    const headers = await getAuthHeaders();
+    const response = await axios.delete(`${API_BASE_URL}/api/admin/ai-questions/questions/${id}`, { headers });
     return response.data;
   }
 
   static async deleteQuestionBank(id) {
-    const response = await axios.delete(`${API_BASE_URL}/api/admin/ai-questions/banks/${id}`, { headers: getAuthHeaders() });
+    if (USE_SUPABASE_DIRECT) {
+      const { error } = await supabase
+        .from('question_banks')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+    const headers = await getAuthHeaders();
+    const response = await axios.delete(`${API_BASE_URL}/api/admin/ai-questions/banks/${id}`, { headers });
     return response.data;
   }
 
   static async bulkDeleteQuestions(questionIds) {
-    const response = await axios.post(`${API_BASE_URL}/api/admin/ai-questions/questions/bulk-delete`, { questionIds }, { headers: getAuthHeaders() });
+    if (USE_SUPABASE_DIRECT) {
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .in('id', questionIds);
+      if (error) throw error;
+      return { success: true };
+    }
+    const headers = await getAuthHeaders();
+    const response = await axios.post(`${API_BASE_URL}/api/admin/ai-questions/questions/bulk-delete`, { questionIds }, { headers });
     return response.data;
   }
 
   static async toggleQuestionStatus(id) {
-    const response = await axios.patch(`${API_BASE_URL}/api/admin/ai-questions/questions/${id}/toggle`, {}, { headers: getAuthHeaders() });
+    if (USE_SUPABASE_DIRECT) {
+      const { data: question } = await supabase
+        .from('questions')
+        .select('is_active')
+        .eq('id', id)
+        .single();
+      
+      const { error } = await supabase
+        .from('questions')
+        .update({ is_active: !question.is_active })
+        .eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    }
+    const headers = await getAuthHeaders();
+    const response = await axios.patch(`${API_BASE_URL}/api/admin/ai-questions/questions/${id}/toggle`, {}, { headers });
     return response.data;
   }
 
   static async getQuestionStats() {
-    const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/stats`, { headers: getAuthHeaders() });
+    if (USE_SUPABASE_DIRECT) {
+      const [banksResult, questionsResult] = await Promise.all([
+        supabase.from('question_banks').select('id', { count: 'exact', head: true }),
+        supabase.from('questions').select('id', { count: 'exact', head: true })
+      ]);
+      
+      return {
+        success: true,
+        data: {
+          totalBanks: banksResult.count || 0,
+          totalQuestions: questionsResult.count || 0,
+          totalUsage: 0,
+          correctAnswers: 0
+        }
+      };
+    }
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/stats`, { headers });
     return response.data;
   }
 }
