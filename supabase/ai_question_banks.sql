@@ -55,6 +55,15 @@ ALTER TABLE question_banks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE question_usage ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Admins can manage question banks" ON question_banks;
+DROP POLICY IF EXISTS "Admins can manage questions" ON questions;
+DROP POLICY IF EXISTS "Users can view active questions" ON questions;
+DROP POLICY IF EXISTS "Users can view active question banks" ON question_banks;
+DROP POLICY IF EXISTS "Users can track their question usage" ON question_usage;
+DROP POLICY IF EXISTS "Users can view their usage" ON question_usage;
+DROP POLICY IF EXISTS "Admins can view all usage" ON question_usage;
+
 -- Admin can do everything
 CREATE POLICY "Admins can manage question banks" ON question_banks
   FOR ALL USING (
@@ -93,6 +102,10 @@ CREATE POLICY "Admins can view all usage" ON question_usage
       SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin'
     )
   );
+
+-- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS update_question_banks_updated_at ON question_banks;
+DROP TRIGGER IF EXISTS update_questions_updated_at ON questions;
 
 -- Trigger to update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()

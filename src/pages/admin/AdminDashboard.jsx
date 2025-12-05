@@ -6,6 +6,7 @@ import { Users, DollarSign, Activity, TrendingUp, Eye, Edit, Ban, CheckCircle, D
 import directSupabaseService from '../../services/directSupabase.service';
 import UserDetailModal from '../../components/UserDetailModal';
 import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
+import AIQuestions from './AIQuestions';
 import { checkSupabaseUsers } from '../../utils/supabaseUserCheck';
 import { testRegistration, createProfileForExistingUser } from '../../utils/testSupabaseRegistration';
 import { testAddTransaction, testWalletFunding } from '../../utils/testTransaction';
@@ -26,13 +27,6 @@ const AdminDashboardContent = () => {
 
   useEffect(() => {
     loadDashboardData();
-    
-    // Auto-refresh every 30 seconds for real-time updates
-    const interval = setInterval(() => {
-      loadDashboardData();
-    }, 30000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
@@ -449,7 +443,8 @@ const AdminDashboardContent = () => {
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'users', label: 'Users' },
-          { id: 'transactions', label: 'Transactions' }
+          { id: 'transactions', label: 'Transactions' },
+          { id: 'ai-questions', label: '🤖 AI Questions' }
         ].map(tab => (
           <Button
             key={tab.id}
@@ -589,6 +584,11 @@ const AdminDashboardContent = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* AI Questions Tab */}
+      {activeTab === 'ai-questions' && (
+        <AIQuestions />
       )}
 
       {/* Transactions Tab */}

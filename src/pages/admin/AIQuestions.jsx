@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../../components/ui/badge';
 import { AIQuestionsService } from '../../services/aiQuestions.service';
 import { Plus, Trash2, Edit, Eye, EyeOff, Download, Upload } from 'lucide-react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 
 const AIQuestions = () => {
   const [activeTab, setActiveTab] = useState('generate');
@@ -208,33 +208,28 @@ const AIQuestions = () => {
               </div>
               <div>
                 <Label>Difficulty</Label>
-                <Select value={generateForm.difficulty} onValueChange={(val) => setGenerateForm({ ...generateForm, difficulty: val })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="easy">Easy</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="hard">Hard</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select 
+                  value={generateForm.difficulty} 
+                  onChange={(e) => setGenerateForm({ ...generateForm, difficulty: e.target.value })}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
               </div>
               <div>
                 <Label>Question Types</Label>
-                <Select 
+                <select 
                   value={generateForm.questionTypes[0]} 
-                  onValueChange={(val) => setGenerateForm({ ...generateForm, questionTypes: [val] })}
+                  onChange={(e) => setGenerateForm({ ...generateForm, questionTypes: [e.target.value] })}
+                  className="w-full p-2 border rounded-md"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
-                    <SelectItem value="true-false">True/False</SelectItem>
-                    <SelectItem value="fill-in-blank">Fill in Blank</SelectItem>
-                    <SelectItem value="flashcard">Flashcard</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="multiple-choice">Multiple Choice</option>
+                  <option value="true-false">True/False</option>
+                  <option value="fill-in-blank">Fill in Blank</option>
+                  <option value="flashcard">Flashcard</option>
+                </select>
               </div>
             </div>
 
@@ -390,11 +385,18 @@ const AIQuestions = () => {
                     <p className="font-semibold mb-2">{idx + 1}. {q.question}</p>
                     {q.options && (
                       <div className="ml-4 space-y-1 text-sm">
-                        {JSON.parse(q.options).map((opt, i) => (
-                          <div key={i} className={opt === q.correct_answer ? 'text-green-600 font-semibold' : ''}>
-                            {opt} {opt === q.correct_answer && '✓'}
-                          </div>
-                        ))}
+                        {(() => {
+                          try {
+                            const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+                            return Array.isArray(options) ? options.map((opt, i) => (
+                              <div key={i} className={opt === q.correct_answer ? 'text-green-600 font-semibold' : ''}>
+                                {opt} {opt === q.correct_answer && '✓'}
+                              </div>
+                            )) : null;
+                          } catch (e) {
+                            return <div className="text-red-500">Invalid options format</div>;
+                          }
+                        })()}
                       </div>
                     )}
                     {!q.options && (
