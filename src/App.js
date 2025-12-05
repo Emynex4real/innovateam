@@ -33,6 +33,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import SimpleAdminDashboard from './pages/admin/SimpleAdminDashboard';
 import EmailConfirmation from './pages/email-confirmation';
 import ProtectedRoute from './components/ProtectedRoute';
+import PracticeQuestions from './pages/student/PracticeQuestions';
 
 import supabase from './config/supabase';
 
@@ -235,6 +236,7 @@ function App() {
             <Route path="/dashboard/scratch-card/nbais-checker" element={<ProtectedRoute><EducationalSidebar><NbaisResultChecker /></EducationalSidebar></ProtectedRoute>} />
             <Route path="/dashboard/scratch-card/nabteb-checker" element={<ProtectedRoute><EducationalSidebar><NabtebResultChecker /></EducationalSidebar></ProtectedRoute>} />
             <Route path="/dashboard/scratch-card/waec-gce" element={<ProtectedRoute><EducationalSidebar><WaecGceChecker /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/practice-questions" element={<ProtectedRoute><EducationalSidebar><PracticeQuestions /></EducationalSidebar></ProtectedRoute>} />
             {/* Legacy routes for backward compatibility */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/wallet" element={<Wallet />} />
@@ -242,8 +244,8 @@ function App() {
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
             {/* Admin Routes */}
+            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/simple" element={<ProtectedRoute><SimpleAdminDashboard /></ProtectedRoute>} />
             <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
             </Routes>
           </div>

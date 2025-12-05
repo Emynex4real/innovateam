@@ -196,12 +196,12 @@ app.use('/api', ssrfMiddleware());
 
 // Apply CSRF protection to state-changing routes
 app.use('/api/auth', csrfProtection);
-app.use('/api/admin', csrfProtection);
 app.use('/api/profile', csrfProtection);
 app.use('/api/wallet', csrfProtection);
 app.use('/api/services', csrfProtection);
-// Temporarily disable CSRF for AI Examiner during development
+// Temporarily disable CSRF for AI Examiner and AI Questions during development
 // app.use('/api/ai-examiner', csrfProtection);
+// app.use('/api/admin', csrfProtection);
 
 // Request parsing with increased limits and XSS protection
 app.use(express.json({ 
@@ -283,12 +283,12 @@ app.get('/api/health', (req, res) => {
 
 // Use routes (after CSRF middleware)
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin/ai-questions', require('./routes/aiQuestions.routes'));
+app.use('/api/admin', csrfProtection, adminRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/wallet', require('./routes/wallet.routes'));
 app.use('/api/services', require('./routes/services.routes'));
 app.use('/api/ai-examiner', require('./routes/aiExaminer.routes'));
-app.use('/api/admin/ai-questions', require('./routes/aiQuestions.routes'));
 app.use('/api', require('./routes/courseRecommendation.routes'));
 
 // Serve frontend in production

@@ -62,8 +62,7 @@ exports.getQuestionBanks = async (req, res) => {
       .from('question_banks')
       .select(`
         *,
-        questions:questions(count),
-        creator:users!question_banks_created_by_fkey(full_name, email)
+        questions:questions(count)
       `)
       .order('created_at', { ascending: false });
 
@@ -72,7 +71,7 @@ exports.getQuestionBanks = async (req, res) => {
     const banks = data.map(bank => ({
       ...bank,
       questionCount: bank.questions[0]?.count || 0,
-      creatorName: bank.creator?.full_name || bank.creator?.email || 'Unknown'
+      creatorName: 'Admin'
     }));
 
     res.json({ success: true, data: banks });
