@@ -13,6 +13,7 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import ThemeToggle from '../../components/ui/theme-toggle';
 import { Menu, X } from 'lucide-react';
+import AIQuestions from './AIQuestions';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -51,6 +52,7 @@ const AdminPanel = () => {
     { id: 'dashboard', name: 'Dashboard', icon: '📊' },
     { id: 'users', name: 'User Management', icon: '👥' },
     { id: 'transactions', name: 'Transactions', icon: '💳' },
+    { id: 'ai-questions', name: 'AI Questions', icon: '🤖' },
     { id: 'courses', name: 'Course Management', icon: '📚' },
     { id: 'analytics', name: 'Analytics', icon: '📈' },
     { id: 'settings', name: 'System Settings', icon: '⚙️' },
@@ -545,6 +547,9 @@ const AdminPanel = () => {
             </div>
           </div>
         );
+        
+      case 'ai-questions':
+        return <AIQuestions />;
         
       case 'settings': 
         return (
