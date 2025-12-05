@@ -39,7 +39,7 @@ const AIQuestions = () => {
       const result = await AIQuestionsService.getQuestionBanks();
       if (result.success) setBanks(result.data);
     } catch (error) {
-      toast.error('Failed to load question banks');
+      console.error('Failed to load question banks:', error);
     }
   };
 
