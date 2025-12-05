@@ -5,14 +5,29 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const USE_SUPABASE_DIRECT = !process.env.REACT_APP_API_URL; // Use Supabase if no backend URL
 
 const getAuthHeaders = async () => {
-  // Get Supabase session token
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` })
-  };
+  try {
+    // Get Supabase session token
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Failed to get session:', error);
+      return { 'Content-Type': 'application/json' };
+    }
+    
+    const token = session?.access_token;
+    
+    if (!token) {
+      console.warn('No access token found in session');
+    }
+    
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` })
+    };
+  } catch (error) {
+    console.error('Error getting auth headers:', error);
+    return { 'Content-Type': 'application/json' };
+  }
 };
 
 export class AIQuestionsService {
