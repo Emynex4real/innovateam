@@ -67,9 +67,35 @@ const PracticeQuestions = () => {
     });
   };
 
-  const loadWalletBalance = () => {
-    const balance = parseInt(localStorage.getItem('wallet_balance') || '0');
-    setWalletBalance(balance);
+  const loadWalletBalance = async () => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      if (!currentUser.id) return;
+      
+      // Import supabase
+      const supabase = (await import('../../config/supabase')).default;
+      
+      // Get balance from Supabase
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('wallet_balance')
+        .eq('id', currentUser.id)
+        .single();
+      
+      if (!error && data) {
+        const balance = data.wallet_balance || 0;
+        setWalletBalance(balance);
+        localStorage.setItem('wallet_balance', balance.toString());
+      } else {
+        // Fallback to localStorage
+        const balance = parseInt(localStorage.getItem('wallet_balance') || '0');
+        setWalletBalance(balance);
+      }
+    } catch (error) {
+      console.error('Failed to load wallet balance:', error);
+      const balance = parseInt(localStorage.getItem('wallet_balance') || '0');
+      setWalletBalance(balance);
+    }
   };
 
   const saveUserStats = (newStats) => {
