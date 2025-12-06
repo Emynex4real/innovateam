@@ -3,7 +3,7 @@ import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { 
   Trophy, Crown, Target, ChevronUp, Filter, Info, X, 
-  Award, Zap, BookOpen 
+  Award, Zap, BookOpen, Flame, Calendar, Clock, Star
 } from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import supabase from '../../config/supabase';
@@ -91,6 +91,17 @@ const Leaderboard = () => {
         const correctAnswers = filteredHistory.reduce((sum, s) => sum + s.correctAnswers, 0);
         const totalSessions = filteredHistory.length;
         const averageScore = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+        const level = Math.floor(totalQuestions / 50) + 1;
+        
+        // Calculate streak
+        const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
+        let streak = 0;
+        for (let i = 0; i < sortedHistory.length; i++) {
+          const sessionDate = new Date(sortedHistory[i].date).toDateString();
+          const expectedDate = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toDateString();
+          if (sessionDate === expectedDate) streak++;
+          else break;
+        }
 
         const points = (correctAnswers * 10) + (totalSessions * 50) + (averageScore * 2);
 
@@ -102,6 +113,8 @@ const Leaderboard = () => {
           totalSessions,
           averageScore,
           points,
+          level,
+          streak,
           isCurrentUser: profile.id === currentUser.id
         };
       });
@@ -192,12 +205,11 @@ const Leaderboard = () => {
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <div className="flex items-center gap-2">
+              <Trophy className="w-7 h-7 text-yellow-500" />
               <h1 className="text-2xl font-bold mb-1">Leaderboard</h1>
-              
-              {/* --- INFO BUTTON ADDED HERE --- */}
               <button 
                 onClick={() => setShowRules(true)}
                 className="text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
@@ -205,25 +217,43 @@ const Leaderboard = () => {
                 <Info className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-gray-500 text-sm">See who's leading the charts this season.</p>
+            <p className="text-gray-500 text-sm">Compete with other students and climb the ranks!</p>
           </div>
 
           <div className="bg-white dark:bg-gray-900 p-1 rounded-lg border border-gray-100 dark:border-gray-800 flex shadow-sm">
-             {['all', 'month', 'week'].map((t) => (
+             {['all', 'week', 'month'].map((t) => (
                <button
                  key={t}
                  onClick={() => setTimeframe(t)}
-                 className={`px-6 py-2 rounded-md text-sm font-medium capitalize transition-all ${
+                 className={`px-6 py-2 rounded-md text-sm font-medium capitalize transition-all flex items-center gap-2 ${
                    timeframe === t 
                      ? 'bg-green-600 text-white shadow-md' 
                      : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'
                  }`}
                >
+                 {t === 'week' && <Clock className="w-4 h-4" />}
+                 {t === 'month' && <Calendar className="w-4 h-4" />}
+                 {t === 'all' && <Star className="w-4 h-4" />}
                  {t === 'all' ? 'All Time' : t}
                </button>
              ))}
           </div>
         </div>
+
+        {/* Rewards Banner */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+                <Crown className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900 dark:text-white">Weekly & Monthly Champions</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Top performers get special rewards! Keep practicing to win.</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Top 3 Podium */}
         {leaderboard.length > 0 ? (
@@ -274,9 +304,17 @@ const Leaderboard = () => {
                              )}
                            </p>
                            <p className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
-                             <span>{user.totalSessions} Sessions</span>
+                             <span className="flex items-center gap-1">
+                               <Target className="w-3 h-3" />
+                               Lv {user.level}
+                             </span>
                              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                             <span>{user.averageScore}% Accuracy</span>
+                             <span className="flex items-center gap-1">
+                               <Flame className="w-3 h-3 text-orange-500" />
+                               {user.streak}d
+                             </span>
+                             <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                             <span>{user.averageScore}%</span>
                            </p>
                         </div>
                      </div>

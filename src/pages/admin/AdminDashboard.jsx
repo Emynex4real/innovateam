@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Users, DollarSign, Activity, TrendingUp, Eye, Edit, Ban, CheckCircle, Database, Moon, Sun } from 'lucide-react';
+import { Users, DollarSign, Activity, TrendingUp, Eye, Edit, Ban, CheckCircle, Database, Moon, Sun, Search, Wallet, Download, Trophy } from 'lucide-react';
 import directSupabaseService from '../../services/directSupabase.service';
 import UserDetailModal from '../../components/UserDetailModal';
 import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 import AIQuestions from './AIQuestions';
-import { checkSupabaseUsers } from '../../utils/supabaseUserCheck';
-import { testRegistration, createProfileForExistingUser } from '../../utils/testSupabaseRegistration';
-import { testAddTransaction, testWalletFunding } from '../../utils/testTransaction';
+
 import toast from 'react-hot-toast';
 
 const AdminDashboardContent = () => {
@@ -24,6 +22,11 @@ const AdminDashboardContent = () => {
   const [lastTransactionCount, setLastTransactionCount] = useState(0);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [transactionSearch, setTransactionSearch] = useState('');
+  const [walletModalUser, setWalletModalUser] = useState(null);
+  const [walletAmount, setWalletAmount] = useState('');
+  const [walletType, setWalletType] = useState('credit');
 
   useEffect(() => {
     loadDashboardData();
@@ -59,63 +62,82 @@ const AdminDashboardContent = () => {
     }
   };
 
-  const testDirectTransaction = async () => {
-    toast.loading('Testing transaction flow...');
-    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-    
-    console.log('🧪 Transaction Flow Test:');
-    console.log('Current user:', currentUser);
-    
-    if (!currentUser.id || !currentUser.email) {
-      toast.error('No user logged in');
+  const handleWalletUpdate = async () => {
+    if (!walletModalUser || !walletAmount) return;
+    const amount = parseFloat(walletAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Invalid amount');
       return;
     }
-    
+
+    const loadingToast = toast.loading('Updating wallet...');
     try {
-      const supabaseWalletService = (await import('../../services/supabaseWallet.service')).default;
-      const result = await supabaseWalletService.addTransaction(
-        currentUser.id,
-        currentUser.email,
-        {
-          description: 'Admin Test Transaction',
-          amount: 50,
-          type: 'credit',
-          status: 'successful'
-        }
-      );
-      
-      console.log('Direct Supabase result:', result);
-      
-      if (result.success) {
-        toast.success('Transaction saved to Supabase!');
-        setTimeout(() => loadDashboardData(), 1000);
-      } else {
-        toast.error('Supabase transaction failed: ' + result.error);
+      const supabase = (await import('../../config/supabase')).default;
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('wallet_balance')
+        .eq('id', walletModalUser.id)
+        .single();
+
+      const currentBalance = profile?.wallet_balance || 0;
+      const newBalance = walletType === 'credit' ? currentBalance + amount : currentBalance - amount;
+
+      if (newBalance < 0) {
+        toast.dismiss(loadingToast);
+        toast.error('Insufficient balance for debit');
+        return;
       }
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ wallet_balance: newBalance })
+        .eq('id', walletModalUser.id);
+
+      if (error) throw error;
+
+      await supabase.from('transactions').insert({
+        user_id: walletModalUser.id,
+        amount: amount,
+        type: walletType,
+        status: 'successful',
+        description: `Admin ${walletType} - Manual adjustment`
+      });
+
+      toast.dismiss(loadingToast);
+      toast.success(`₦${amount} ${walletType}ed successfully`);
+      setWalletModalUser(null);
+      setWalletAmount('');
+      await loadDashboardData();
     } catch (error) {
-      console.error('Transaction test error:', error);
-      toast.error('Test failed: ' + error.message);
+      toast.dismiss(loadingToast);
+      toast.error('Failed: ' + error.message);
     }
   };
 
-  const debugTransactions = async () => {
-    toast.loading('Checking transactions table...');
-    try {
-      const result = await directSupabaseService.getAllTransactions();
-      console.log('🔍 Debug Transactions Result:', result);
-      if (result.success) {
-        console.log('📊 Total transactions found:', result.transactions.length);
-        console.log('📋 Transactions data:', result.transactions);
-        toast.success(`Found ${result.transactions.length} total transactions`);
-      } else {
-        console.error('❌ Transaction fetch failed:', result.error);
-        toast.error('Failed to fetch transactions: ' + result.error);
-      }
-    } catch (error) {
-      console.error('❌ Debug error:', error);
-      toast.error('Debug failed: ' + error.message);
-    }
+  const exportToCSV = (data, filename) => {
+    const csv = data.map(row => Object.values(row).join(',')).join('\n');
+    const header = Object.keys(data[0]).join(',');
+    const blob = new Blob([header + '\n' + csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    toast.success('Exported successfully');
   };
+
+  const filteredUsers = users.filter(user => 
+    user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    user.id?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    user.phone?.includes(userSearch)
+  );
+
+  const filteredTransactions = transactions.filter(tx => 
+    tx.id?.toLowerCase().includes(transactionSearch.toLowerCase()) ||
+    tx.description?.toLowerCase().includes(transactionSearch.toLowerCase())
+  );
+
+
 
   if (loading) {
     return (
@@ -139,299 +161,12 @@ const AdminDashboardContent = () => {
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Admin Dashboard</h1>
-        <div className="flex gap-1 flex-wrap max-w-full overflow-x-auto pb-2">
+        <div className="flex gap-2">
           <Button onClick={toggleTheme} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           <Button onClick={loadDashboardData} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
             Refresh Data
-          </Button>
-          <Button onClick={debugTransactions} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Debug Transactions
-          </Button>
-          <Button onClick={testDirectTransaction} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Test Direct Transaction
-          </Button>
-          <Button onClick={async () => {
-            toast.loading('Testing service purchase...');
-            try {
-              // First check current balance
-              const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-              const directSupabaseService = (await import('../../services/directSupabase.service')).default;
-              const { data: userProfile } = await directSupabaseService.supabase
-                .from('user_profiles')
-                .select('wallet_balance')
-                .eq('id', currentUser.id)
-                .single();
-              
-              const currentBalance = userProfile?.wallet_balance || 0;
-              console.log('Current balance before purchase:', currentBalance);
-              
-              if (currentBalance < 3500) {
-                toast.error(`Insufficient balance: ₦${currentBalance}. Use 'Fix Balance' first.`);
-                return;
-              }
-              
-              const simpleWalletService = (await import('../../services/simpleWallet.service')).default;
-              const result = await simpleWalletService.addTransaction(
-                currentUser.email,
-                3500,
-                'Test WAEC Result Checker Purchase',
-                'debit'
-              );
-              
-              if (result.success) {
-                toast.success(`Service purchased! New balance: ₦${result.newBalance}`);
-                localStorage.setItem('wallet_balance', result.newBalance.toString());
-                setTimeout(() => loadDashboardData(), 1000);
-              } else {
-                toast.error('Purchase failed: ' + result.error);
-              }
-            } catch (error) {
-              toast.error('Test failed: ' + error.message);
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Test Service Purchase
-          </Button>
-          <Button onClick={async () => {
-            const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-            const isValidUUID = currentUser.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUser.id);
-            
-            console.log('🔍 Current User Debug:');
-            console.log('User from localStorage:', currentUser);
-            console.log('Has valid UUID:', isValidUUID);
-            
-            // Also check their balance from Supabase
-            if (currentUser.id) {
-              try {
-                const directSupabaseService = (await import('../../services/directSupabase.service')).default;
-                const { data: userProfile } = await directSupabaseService.supabase
-                  .from('user_profiles')
-                  .select('wallet_balance')
-                  .eq('id', currentUser.id)
-                  .single();
-                
-                console.log('💰 Real balance from Supabase:', userProfile?.wallet_balance || 0);
-                toast.success(`User: ${currentUser.name}, Balance: ₦${userProfile?.wallet_balance || 0}`);
-              } catch (error) {
-                console.error('Balance check failed:', error);
-                toast.error('User valid but balance check failed');
-              }
-            } else {
-              toast.error('No valid user found');
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Debug Current User
-          </Button>
-          <Button onClick={async () => {
-            toast.loading('Testing connection...');
-            try {
-              const { testNewSupabaseKeys } = await import('../../utils/testNewKeys');
-              const result = await testNewSupabaseKeys();
-              
-              if (result.success) {
-                toast.success('Connection working!');
-                setTimeout(() => loadDashboardData(), 1000);
-              } else {
-                toast.error('Connection failed: ' + result.error);
-              }
-            } catch (error) {
-              toast.error('Test failed: ' + error.message);
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Test Connection
-          </Button>
-          <Button onClick={async () => {
-            // Check current user first
-            const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-            console.log('👤 Current user before switch:', currentUser);
-            
-            // Set the user with balance as current user for testing
-            const testUser = {
-              id: 'e98d12a8-0047-41ee-9d84-ab872959efe4',
-              email: 'adeejidi@gmail.com',
-              name: 'Hei Mafon'
-            };
-            localStorage.setItem('confirmedUser', JSON.stringify(testUser));
-            localStorage.setItem('wallet_balance', '99850'); // Set current Supabase balance
-            
-            // Verify the switch worked
-            const newUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-            console.log('👤 User after switch:', newUser);
-            
-            toast.success(`Switched to ${testUser.name} with ₦99,850 balance!`);
-            setTimeout(() => loadDashboardData(), 500);
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Switch to Rich User
-          </Button>
-          <Button onClick={async () => {
-            toast.loading('Testing wallet funding...');
-            try {
-              const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-              if (!currentUser.id) {
-                toast.error('No user logged in');
-                return;
-              }
-
-              console.log('💰 Current user for funding:', currentUser);
-              
-              // Check current balance first
-              const directSupabaseService = (await import('../../services/directSupabase.service')).default;
-              const { data: userProfile } = await directSupabaseService.supabase
-                .from('user_profiles')
-                .select('wallet_balance, full_name')
-                .eq('id', currentUser.id)
-                .single();
-              
-              console.log('💰 Current balance before funding:', userProfile?.wallet_balance);
-              
-              // Test wallet funding with cleanWalletService
-              const cleanWalletService = (await import('../../services/cleanWallet.service')).default;
-              const result = await cleanWalletService.fundWallet(5000, 'test-topup');
-              
-              if (result.success) {
-                toast.success(`Wallet funded for ${userProfile?.full_name}! Added ₦5,000. New balance: ₦${result.balance}`);
-                setTimeout(() => loadDashboardData(), 1000);
-              } else {
-                toast.error('Funding failed: ' + result.error);
-              }
-            } catch (error) {
-              console.error('Funding error:', error);
-              toast.error('Funding failed: ' + error.message);
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Test Wallet Funding
-          </Button>
-          <Button onClick={() => {
-            const credentials = [
-              'innovateamnigeria@gmail.com / innovateam2024!',
-              'adeejidi@gmail.com / mafon123!'
-            ];
-            console.log('🔑 Valid login credentials:');
-            credentials.forEach(cred => console.log('  - ' + cred));
-            toast.success('Check console for login credentials');
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Show Login Info
-          </Button>
-          <Button onClick={async () => {
-            toast.loading('Testing user registration...');
-            try {
-              const timestamp = Date.now();
-              const supabaseAuthService = (await import('../../services/supabaseAuth.service')).default;
-              const result = await supabaseAuthService.register({
-                email: `testuser${timestamp}@gmail.com`,
-                password: 'testuser123!',
-                name: `Test User ${timestamp}`
-              });
-              
-              if (result.success) {
-                toast.success(`User registered! ${result.user.name}`);
-                console.log('✅ New user created:', result.user);
-                console.log('✅ Check Supabase user_profiles table for the new user');
-                setTimeout(() => loadDashboardData(), 2000);
-              } else {
-                toast.error('Registration failed: ' + result.error);
-                console.error('❌ Registration error:', result.error);
-              }
-            } catch (error) {
-              toast.error('Registration failed: ' + error.message);
-              console.error('❌ Registration exception:', error);
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Test Registration
-          </Button>
-          <Button onClick={async () => {
-            toast.loading('Checking Supabase for new users...');
-            try {
-              const directSupabaseService = (await import('../../services/directSupabase.service')).default;
-              const { data: profiles, error } = await directSupabaseService.supabase
-                .from('user_profiles')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(5);
-              
-              if (error) {
-                toast.error('Failed to check users: ' + error.message);
-              } else {
-                console.log('👥 Recent users in Supabase:');
-                profiles.forEach((profile, index) => {
-                  console.log(`  ${index + 1}. ${profile.full_name} (${profile.id}) - ${profile.created_at}`);
-                });
-                toast.success(`Found ${profiles.length} users. Check console for details.`);
-              }
-            } catch (error) {
-              toast.error('Check failed: ' + error.message);
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Check Supabase Users
-          </Button>
-          <Button onClick={async () => {
-            toast.loading('Testing login security...');
-            try {
-              // Test the actual App.js signIn function that the login page uses
-              const { useAuth } = await import('../../App');
-              
-              // Simulate what happens when someone tries to login with fake credentials
-              const testCredentials = [
-                { email: 'fake@example.com', password: 'fakepass', desc: 'Fake account' },
-                { email: 'test@test.com', password: 'wrongpass', desc: 'Wrong credentials' },
-                { email: '', password: 'test', desc: 'Empty email' }
-              ];
-              
-              let allPassed = true;
-              
-              for (const cred of testCredentials) {
-                // Import the signIn function directly
-                const supabaseAuthService = (await import('../../services/supabaseAuth.service')).default;
-                const result = await supabaseAuthService.login(cred);
-                
-                if (result.success) {
-                  console.log(`❌ Security FAILED: ${cred.desc} was allowed to login`);
-                  allPassed = false;
-                } else {
-                  console.log(`✅ Security PASSED: ${cred.desc} was rejected - ${result.error}`);
-                }
-              }
-              
-              if (allPassed) {
-                toast.success('🔒 Security PASSED - All fake logins rejected!');
-              } else {
-                toast.error('🚨 Security FAILED - Some fake logins succeeded!');
-              }
-            } catch (error) {
-              toast.success('🔒 Security PASSED - Login system secure: ' + error.message);
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Test Login Security
-          </Button>
-          <Button onClick={async () => {
-            toast.loading('Testing logout...');
-            try {
-              console.log('🚪 Before logout - localStorage:', {
-                confirmedUser: localStorage.getItem('confirmedUser'),
-                authToken: localStorage.getItem('auth_token'),
-                user: localStorage.getItem('user')
-              });
-              
-              // Clear all auth data
-              localStorage.removeItem('confirmedUser');
-              localStorage.removeItem('wallet_balance');
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user');
-              
-              console.log('🚪 After logout - localStorage cleared');
-              
-              toast.success('Logout test completed! Try refreshing - should redirect to login');
-              
-              // Force page reload to test route protection
-              setTimeout(() => {
-                window.location.reload();
-              }, 2000);
-            } catch (error) {
-              toast.error('Logout test failed: ' + error.message);
-            }
-          }} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Test Logout
           </Button>
         </div>
       </div>
@@ -444,6 +179,7 @@ const AdminDashboardContent = () => {
           { id: 'overview', label: 'Overview' },
           { id: 'users', label: 'Users' },
           { id: 'transactions', label: 'Transactions' },
+          { id: 'leaderboard', label: '🏆 Leaderboard' },
           { id: 'ai-questions', label: '🤖 AI Questions' }
         ].map(tab => (
           <Button
@@ -519,7 +255,22 @@ const AdminDashboardContent = () => {
         <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
           <CardContent className="p-0">
             <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>All Users ({users.length})</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>All Users ({filteredUsers.length})</h3>
+                <Button onClick={() => exportToCSV(users.map(u => ({name: u.name, phone: u.phone, balance: u.walletBalance, created: u.createdAt})), 'users.csv')} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" /> Export
+                </Button>
+              </div>
+              <div className="relative">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                <input
+                  type="text"
+                  placeholder="Search by name, ID, or phone..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                />
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -535,7 +286,7 @@ const AdminDashboardContent = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user, index) => (
+                  {filteredUsers.map((user, index) => (
                     <tr key={user.id || index} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
                       <td className="p-4">
                         <div>
@@ -602,8 +353,12 @@ const AdminDashboardContent = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <Edit className="h-4 w-4" />
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setWalletModalUser(user)}
+                          >
+                            <Wallet className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -611,6 +366,145 @@ const AdminDashboardContent = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Leaderboard Tab */}
+      {activeTab === 'leaderboard' && (
+        <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Student Leaderboard</h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Track top performers for rewards</p>
+                </div>
+                <Button onClick={() => {
+                  const data = users.map(u => {
+                    try {
+                      const stats = JSON.parse(localStorage.getItem(`practice_stats_${u.id}`) || '{}');
+                      const history = JSON.parse(localStorage.getItem(`practice_history_${u.id}`) || '[]');
+                      const totalCorrect = stats.totalCorrect || 0;
+                      const totalQuestions = stats.totalQuestions || 0;
+                      const averageScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+                      const points = (totalCorrect * 10) + (history.length * 50) + (averageScore * 2);
+                      return { name: u.name, points, sessions: history.length, score: averageScore };
+                    } catch { return null; }
+                  }).filter(Boolean);
+                  const csv = data.map(r => Object.values(r).join(',')).join('\n');
+                  const blob = new Blob(['Name,Points,Sessions,Score\n' + csv], { type: 'text/csv' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'leaderboard.csv';
+                  a.click();
+                  toast.success('Exported successfully');
+                }} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" /> Export
+                </Button>
+              </div>
+              
+              {(() => {
+                const leaderboardData = users.map(user => {
+                  try {
+                    const stats = JSON.parse(localStorage.getItem(`practice_stats_${user.id}`) || '{}');
+                    const history = JSON.parse(localStorage.getItem(`practice_history_${user.id}`) || '[]');
+                    const totalCorrect = stats.totalCorrect || 0;
+                    const totalQuestions = stats.totalQuestions || 0;
+                    const averageScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+                    const level = Math.floor(totalQuestions / 50) + 1;
+                    
+                    // Calculate streak
+                    const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    let streak = 0;
+                    for (let i = 0; i < sortedHistory.length; i++) {
+                      const sessionDate = new Date(sortedHistory[i].date).toDateString();
+                      const expectedDate = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toDateString();
+                      if (sessionDate === expectedDate) streak++;
+                      else break;
+                    }
+                    
+                    const points = (totalCorrect * 10) + (history.length * 50) + (averageScore * 2);
+                    return {
+                      ...user,
+                      totalSessions: history.length,
+                      averageScore,
+                      points,
+                      totalQuestions,
+                      level,
+                      streak
+                    };
+                  } catch {
+                    return { ...user, totalSessions: 0, averageScore: 0, points: 0, totalQuestions: 0, level: 1, streak: 0 };
+                  }
+                }).filter(u => u.totalSessions > 0).sort((a, b) => b.points - a.points);
+
+                return leaderboardData.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Trophy className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+                    <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No practice data available yet</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className={isDark ? 'bg-gray-700' : 'bg-gray-100'}>
+                        <tr>
+                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Rank</th>
+                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Student</th>
+                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Level</th>
+                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Streak</th>
+                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Points</th>
+                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Avg Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leaderboardData.map((student, index) => (
+                          <tr key={student.id} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                            <td className="p-4">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                                index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                                index === 1 ? 'bg-gray-100 text-gray-700' :
+                                index === 2 ? 'bg-orange-100 text-orange-700' :
+                                isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div>
+                                <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{student.name}</p>
+                                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{student.totalSessions} sessions</p>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
+                                Level {student.level}
+                              </Badge>
+                            </td>
+                            <td className="p-4">
+                              <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-semibold">
+                                🔥 {student.streak} days
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className={`font-bold text-lg ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                                {student.points.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className={`font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                                {student.averageScore}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           </CardContent>
         </Card>
@@ -626,7 +520,22 @@ const AdminDashboardContent = () => {
         <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
           <CardContent className="p-0">
             <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Recent Transactions ({transactions.length})</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Recent Transactions ({filteredTransactions.length})</h3>
+                <Button onClick={() => exportToCSV(transactions.map(t => ({id: t.id, amount: t.amount, type: t.type, status: t.status, date: t.created_at})), 'transactions.csv')} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" /> Export
+                </Button>
+              </div>
+              <div className="relative">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                <input
+                  type="text"
+                  placeholder="Search by ID or description..."
+                  value={transactionSearch}
+                  onChange={(e) => setTransactionSearch(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                />
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -641,7 +550,7 @@ const AdminDashboardContent = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map((transaction, index) => (
+                  {filteredTransactions.map((transaction, index) => (
                     <tr key={transaction.id || index} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
                       <td className={`p-4 font-mono text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{transaction.id}</td>
                       <td className={`p-4 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>₦{transaction.amount}</td>
@@ -678,6 +587,62 @@ const AdminDashboardContent = () => {
         }}
         isDark={isDark}
       />
+
+      {/* Wallet Management Modal */}
+      {walletModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className={`rounded-lg p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+            <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Manage Wallet - {walletModalUser.name}
+            </h3>
+            <p className={`text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              Current Balance: <span className="font-bold text-green-600">₦{walletModalUser.walletBalance}</span>
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Type</label>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setWalletType('credit')}
+                    variant={walletType === 'credit' ? 'default' : 'outline'}
+                    className={walletType === 'credit' ? 'bg-green-600 hover:bg-green-700' : ''}
+                  >
+                    Credit
+                  </Button>
+                  <Button
+                    onClick={() => setWalletType('debit')}
+                    variant={walletType === 'debit' ? 'default' : 'outline'}
+                    className={walletType === 'debit' ? 'bg-red-600 hover:bg-red-700' : ''}
+                  >
+                    Debit
+                  </Button>
+                </div>
+              </div>
+              
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Amount</label>
+                <input
+                  type="number"
+                  value={walletAmount}
+                  onChange={(e) => setWalletAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button onClick={handleWalletUpdate} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                Update Wallet
+              </Button>
+              <Button onClick={() => { setWalletModalUser(null); setWalletAmount(''); }} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
