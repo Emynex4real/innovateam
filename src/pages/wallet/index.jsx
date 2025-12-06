@@ -220,9 +220,10 @@ const Wallet = () => {
                 onClick={() => setShowFundModal(true)}
                 className="w-full"
                 size="lg"
+                disabled
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Fund Wallet
+                Fund Wallet (Disabled)
               </Button>
               
               <div className="p-4 bg-muted/50 rounded-lg">
@@ -234,6 +235,7 @@ const Wallet = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickFund(preset)}
+                      disabled
                     >
                       ₦{preset.toLocaleString()}
                     </Button>
@@ -418,7 +420,7 @@ const Wallet = () => {
                         />
                         <label htmlFor="test" className="flex items-center space-x-2 cursor-pointer">
                           <RefreshCw className="h-4 w-4" />
-                          <span>Test Funding (Demo)</span>
+                          <span>Test Funding (Instant - No Approval)</span>
                         </label>
                       </div>
                     </div>
@@ -440,10 +442,10 @@ const Wallet = () => {
                     <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                       <div className="flex items-center space-x-2 mb-2">
                         <AlertCircle className="h-4 w-4 text-yellow-600" />
-                        <span className="text-sm font-medium text-yellow-800">Demo Mode</span>
+                        <span className="text-sm font-medium text-yellow-800">Demo Mode - Instant Credit</span>
                       </div>
                       <p className="text-sm text-yellow-700">
-                        This will instantly add funds to your wallet for testing purposes. No actual payment will be processed.
+                        This instantly adds funds for testing. No payment processed. Different from "Request Test Credit" which requires admin approval.
                       </p>
                     </div>
                   )}
