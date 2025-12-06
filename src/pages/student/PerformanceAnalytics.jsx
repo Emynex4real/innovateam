@@ -43,21 +43,36 @@ const CircularProgress = ({ percentage, size = 120 }) => {
   );
 };
 
+const QUESTIONS_PER_LEVEL = 50;
+
 const PerformanceAnalytics = () => {
   const { isDarkMode: isDark } = useDarkMode();
   const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
     loadAnalytics();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadAnalytics = () => {
     // 1. Get Current User
-    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    let currentUser = {};
+    try {
+      currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    } catch (error) {
+      console.error('Failed to parse user data:', error);
+      currentUser = {};
+    }
     if (!currentUser.id) return;
 
     // 2. Get Data from LocalStorage
-    const practiceHistory = JSON.parse(localStorage.getItem(`practice_history_${currentUser.id}`) || '[]');
+    let practiceHistory = [];
+    try {
+      practiceHistory = JSON.parse(localStorage.getItem(`practice_history_${currentUser.id}`) || '[]');
+    } catch (error) {
+      console.error('Failed to parse practice history:', error);
+      practiceHistory = [];
+    }
     
     // 3. FULL LOGIC RESTORED HERE
     const totalSessions = practiceHistory.length;
@@ -68,15 +83,29 @@ const PerformanceAnalytics = () => {
     const averageScore = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const averageTime = totalSessions > 0 ? Math.round(totalTime / totalSessions) : 0;
 
-    // Streak Logic
-    const today = new Date().toDateString();
-    const lastSessionDate = practiceHistory.length > 0 ? new Date(practiceHistory[practiceHistory.length - 1].date).toDateString() : null;
-    // Simple check: if last session was today or yesterday, streak is alive (simplified)
-    const streak = lastSessionDate === today ? 1 : 0; 
+    // Streak Logic - Calculate consecutive days (unique dates only)
+    let streak = 0;
+    if (practiceHistory.length > 0) {
+      const uniqueDates = [...new Set(practiceHistory.map(s => new Date(s.date).toDateString()))]
+        .sort((a, b) => new Date(b) - new Date(a));
+      
+      const today = new Date().setHours(0, 0, 0, 0);
+      let expectedDate = today;
+      
+      for (const dateStr of uniqueDates) {
+        const sessionDate = new Date(dateStr).setHours(0, 0, 0, 0);
+        if (sessionDate === expectedDate) {
+          streak++;
+          expectedDate -= 24 * 60 * 60 * 1000;
+        } else if (sessionDate < expectedDate) {
+          break;
+        }
+      }
+    } 
 
     // Level Logic
-    const level = Math.floor(correctAnswers / 50) + 1;
-    const nextLevelProgress = ((correctAnswers % 50) / 50) * 100;
+    const level = Math.floor(correctAnswers / QUESTIONS_PER_LEVEL) + 1;
+    const nextLevelProgress = ((correctAnswers % QUESTIONS_PER_LEVEL) / QUESTIONS_PER_LEVEL) * 100;
 
     // Subject Performance Logic
     const subjectStats = {};
@@ -94,7 +123,7 @@ const PerformanceAnalytics = () => {
     })).sort((a, b) => b.accuracy - a.accuracy);
 
     // Recent Sessions (Newest First)
-    const recentSessions = [...practiceHistory].reverse().slice(0, 5).map(s => ({
+    const recentSessions = practiceHistory.slice(-5).reverse().map(s => ({
       bankName: s.bankName,
       date: s.date,
       score: s.percentage,

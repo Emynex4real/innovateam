@@ -13,6 +13,16 @@ import simpleWalletService from '../../services/simpleWallet.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
+// Helper function to safely get current user from localStorage
+const getCurrentUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+  } catch (error) {
+    console.error('Failed to parse current user:', error);
+    return {};
+  }
+};
+
 const PracticeQuestions = () => {
   const { isDarkMode: isDark } = useDarkMode();
   const [view, setView] = useState('banks'); // 'banks', 'practice', 'results'
@@ -67,8 +77,14 @@ const PracticeQuestions = () => {
   };
 
   const loadUserStats = () => {
-    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-    const stats = JSON.parse(localStorage.getItem(`practice_stats_${currentUser.id}`) || '{}');
+    const currentUser = getCurrentUser();
+    let stats = {};
+    try {
+      stats = JSON.parse(localStorage.getItem(`practice_stats_${currentUser.id}`) || '{}');
+    } catch (error) {
+      console.error('Failed to parse user stats:', error);
+      stats = {};
+    }
     const today = new Date().toDateString();
     
     if (stats.lastPracticeDate !== today) {
@@ -84,7 +100,7 @@ const PracticeQuestions = () => {
 
   const loadWalletBalance = async () => {
     try {
-      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      const currentUser = getCurrentUser();
       if (!currentUser.id) return;
       
       const supabase = (await import('../../config/supabase')).default;
@@ -96,16 +112,19 @@ const PracticeQuestions = () => {
       
       if (!error && data) {
         setWalletBalance(data.wallet_balance || 0);
+        // Note: Supabase is the source of truth; localStorage is fallback only
       } else {
+        // Fallback to localStorage if Supabase fails (offline mode)
         setWalletBalance(parseInt(localStorage.getItem('wallet_balance') || '0'));
       }
     } catch (error) {
-      console.error(error);
+      console.error('Failed to load wallet balance:', error);
+      toast.error('Failed to load wallet balance');
     }
   };
 
   const saveUserStats = (newStats) => {
-    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    const currentUser = getCurrentUser();
     const today = new Date().toDateString();
     localStorage.setItem(`practice_stats_${currentUser.id}`, JSON.stringify({
       ...newStats,
@@ -127,7 +146,12 @@ const PracticeQuestions = () => {
 
     try {
       setLoading(true);
-      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      const currentUser = getCurrentUser();
+      
+      if (!currentUser.id) {
+        toast.error('User session expired. Please log in again.');
+        return;
+      }
       
       const result = await simpleWalletService.addTransaction(
         currentUser.email,
@@ -212,8 +236,14 @@ const PracticeQuestions = () => {
     }
     
     // Save history logic
-    const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-    const history = JSON.parse(localStorage.getItem(`practice_history_${currentUser.id}`) || '[]');
+    const currentUser = getCurrentUser();
+    let history = [];
+    try {
+      history = JSON.parse(localStorage.getItem(`practice_history_${currentUser.id}`) || '[]');
+    } catch (error) {
+      console.error('Failed to parse practice history:', error);
+      history = [];
+    }
     
     history.push({
       date: new Date().toISOString(),
@@ -243,9 +273,12 @@ const PracticeQuestions = () => {
   const calculateScore = () => {
     let correct = 0;
     questions.forEach(q => {
-      if (userAnswers[q.id] === q.correct_answer) correct++;
+      const userAns = String(userAnswers[q.id] || '').trim();
+      const correctAns = String(q.correct_answer || '').trim();
+      if (userAns === correctAns) correct++;
     });
-    return { correct, total: questions.length, percentage: Math.round((correct / questions.length) * 100) };
+    const percentage = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
+    return { correct, total: questions.length, percentage };
   };
 
   const formatTime = (seconds) => {
@@ -459,7 +492,16 @@ const PracticeQuestions = () => {
   const renderPracticeView = () => {
     if (!questions.length) return null;
     const q = questions[currentQuestionIndex];
-    const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options || [];
+    let options = [];
+    if (typeof q.options === 'string') {
+      try {
+        options = JSON.parse(q.options);
+      } catch {
+        options = [];
+      }
+    } else {
+      options = q.options || [];
+    }
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
     return (
@@ -538,8 +580,8 @@ const PracticeQuestions = () => {
     const passed = score.percentage >= 60;
 
     return (
-      <div className="max-w-2xl mx-auto py-12 text-center">
-        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+      <div className="max-w-4xl mx-auto py-12">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center mb-8">
            <div className={`inline-flex p-4 rounded-full mb-6 ${passed ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
               <Trophy className="w-12 h-12" />
            </div>
@@ -566,6 +608,65 @@ const PracticeQuestions = () => {
                 <RotateCcw className="w-4 h-4 mr-2" /> Retry
               </Button>
            </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-xl font-bold mb-4">Review Your Answers</h3>
+          {questions.map((q, index) => {
+            const userAnswer = userAnswers[q.id];
+            const userAns = String(userAnswer || '').trim();
+            const correctAns = String(q.correct_answer || '').trim();
+            const isCorrect = userAns === correctAns;
+            let options = [];
+            if (typeof q.options === 'string') {
+              try { options = JSON.parse(q.options); } catch { options = []; }
+            } else {
+              options = q.options || [];
+            }
+
+            return (
+              <motion.div key={q.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}
+                className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                    {isCorrect ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase">Question {index + 1}</span>
+                      <Badge className={isCorrect ? 'bg-green-100 text-green-700 border-0' : 'bg-red-100 text-red-700 border-0'}>
+                        {isCorrect ? 'Correct' : 'Incorrect'}
+                      </Badge>
+                    </div>
+                    <p className="font-bold text-lg mb-4">{q.question}</p>
+                    <div className="space-y-2 mb-4">
+                      {options.map((opt, idx) => {
+                        const optTrimmed = String(opt || '').trim();
+                        const isUserAnswer = userAns === optTrimmed;
+                        const isCorrectAnswer = correctAns === optTrimmed;
+                        return (
+                          <div key={idx} className={`p-3 rounded-lg border-2 flex items-center gap-3 ${isCorrectAnswer ? 'border-green-500 bg-green-50 dark:bg-green-900/10' : isUserAnswer ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isCorrectAnswer ? 'bg-green-500 text-white' : isUserAnswer ? 'bg-red-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                              {String.fromCharCode(65 + idx)}
+                            </div>
+                            <span className={`flex-1 text-sm ${isCorrectAnswer || isUserAnswer ? 'font-semibold' : ''}`}>{opt}</span>
+                            {isCorrectAnswer && <CheckCircle className="w-5 h-5 text-green-600" />}
+                            {isUserAnswer && !isCorrectAnswer && <XCircle className="w-5 h-5 text-red-600" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {q.explanation && (
+                      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
+                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-2">Explanation</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">{q.explanation}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     );
