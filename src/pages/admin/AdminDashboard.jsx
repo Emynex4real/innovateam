@@ -27,10 +27,85 @@ const AdminDashboardContent = () => {
   const [walletModalUser, setWalletModalUser] = useState(null);
   const [walletAmount, setWalletAmount] = useState('');
   const [walletType, setWalletType] = useState('credit');
+  const [creditRequests, setCreditRequests] = useState([]);
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+    if (activeTab === 'credit-requests') {
+      loadCreditRequests();
+    }
+  }, [activeTab]);
+
+  const loadCreditRequests = async () => {
+    try {
+      const supabase = (await import('../../config/supabase')).default;
+      const { data, error } = await supabase
+        .from('credit_requests')
+        .select(`
+          *,
+          user_profiles!credit_requests_user_id_fkey(full_name, email)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setCreditRequests(data || []);
+    } catch (error) {
+      console.error('Failed to load credit requests:', error);
+      toast.error('Failed to load credit requests');
+    }
+  };
+
+  const handleCreditRequest = async (requestId, action) => {
+    const loadingToast = toast.loading(`${action === 'approve' ? 'Approving' : 'Rejecting'} request...`);
+    try {
+      const supabase = (await import('../../config/supabase')).default;
+      const request = creditRequests.find(r => r.id === requestId);
+      
+      if (action === 'approve') {
+        // Update wallet balance
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('wallet_balance')
+          .eq('id', request.user_id)
+          .single();
+        
+        const newBalance = (profile?.wallet_balance || 0) + request.amount;
+        
+        await supabase
+          .from('user_profiles')
+          .update({ wallet_balance: newBalance })
+          .eq('id', request.user_id);
+        
+        // Create transaction
+        await supabase.from('transactions').insert({
+          user_id: request.user_id,
+          amount: request.amount,
+          type: 'credit',
+          status: 'successful',
+          description: 'Beta test credit - Admin approved'
+        });
+      }
+      
+      // Update request status
+      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      await supabase
+        .from('credit_requests')
+        .update({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          approved_by: currentUser.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+      
+      toast.dismiss(loadingToast);
+      toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      await loadCreditRequests();
+      await loadDashboardData();
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Failed: ' + error.message);
+    }
+  };
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -179,6 +254,7 @@ const AdminDashboardContent = () => {
           { id: 'overview', label: 'Overview' },
           { id: 'users', label: 'Users' },
           { id: 'transactions', label: 'Transactions' },
+          { id: 'credit-requests', label: '🎁 Credit Requests' },
           { id: 'leaderboard', label: '🏆 Leaderboard' },
           { id: 'ai-questions', label: '🤖 AI Questions' }
         ].map(tab => (
@@ -366,6 +442,91 @@ const AdminDashboardContent = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Credit Requests Tab */}
+      {activeTab === 'credit-requests' && (
+        <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
+          <CardContent className="p-0">
+            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Test Credit Requests ({creditRequests.filter(r => r.status === 'pending').length} pending)</h3>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Approve or reject beta testing credit requests</p>
+            </div>
+            <div className="overflow-x-auto">
+              {creditRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No credit requests yet</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead className={isDark ? 'bg-gray-700' : 'bg-gray-100'}>
+                    <tr>
+                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Student</th>
+                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Amount</th>
+                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
+                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Requested</th>
+                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {creditRequests.map((request) => (
+                      <tr key={request.id} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                        <td className="p-4">
+                          <div>
+                            <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                              {request.user_profiles?.full_name || 'Unknown'}
+                            </p>
+                            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {request.user_profiles?.email}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                            ₦{request.amount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <Badge className={
+                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            request.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }>
+                            {request.status}
+                          </Badge>
+                        </td>
+                        <td className={`p-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {new Date(request.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="p-4">
+                          {request.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleCreditRequest(request.id, 'approve')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCreditRequest(request.id, 'reject')}
+                                className="border-red-600 text-red-600 hover:bg-red-50"
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </CardContent>
         </Card>
