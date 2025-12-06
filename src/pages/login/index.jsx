@@ -184,15 +184,15 @@ const Login = () => {
                     Remember me
                   </Label>
                 </div>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="text-primary-color hover:text-primary-color/80"
-                  onClick={handleForgotPassword}
-                  disabled={loading}
-                >
-                  Forgot password?
-                </Button>
+                <Link to="/forgot-password">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-primary-color hover:text-primary-color/80"
+                  >
+                    Forgot password?
+                  </Button>
+                </Link>
               </div>
 
               <Button

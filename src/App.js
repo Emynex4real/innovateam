@@ -5,6 +5,7 @@ import { DarkModeProvider } from './contexts/DarkModeContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { sendConfirmationEmail } from './services/emailService';
 import adminService from './services/admin.service';
+import emailService from './services/email/emailService';
 import Home from './pages/Home';
 import Login from './pages/login';
 import Register from './pages/register';
@@ -37,6 +38,8 @@ import AdminProtectedRoute from './components/AdminProtectedRoute';
 import PracticeQuestions from './pages/student/PracticeQuestions';
 import PerformanceAnalytics from './pages/student/PerformanceAnalytics';
 import Leaderboard from './pages/student/Leaderboard';
+import ForgotPassword from './pages/forgot-password';
+import ResetPassword from './pages/reset-password';
 
 import supabase from './config/supabase';
 
@@ -130,6 +133,9 @@ const SupabaseAuthProvider = ({ children }) => {
           email_confirmed_at: data.user.email_confirmed_at
         };
         localStorage.setItem('confirmedUser', JSON.stringify(userToStore));
+        
+        // Send welcome email
+        emailService.sendWelcomeEmail(email, userData?.fullName || email.split('@')[0]);
       }
       
       return { success: true, data, needsEmailConfirmation: !data.user?.email_confirmed_at };
@@ -217,6 +223,8 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/email-confirmation" element={<EmailConfirmation />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />

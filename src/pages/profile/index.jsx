@@ -6,7 +6,8 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-import { User, Mail, Phone, MapPin, Edit2, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit2, Save, Eye, EyeOff, Camera, Upload } from 'lucide-react';
+import supabase from '../../config/supabase';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
@@ -24,6 +25,8 @@ const Profile = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -36,8 +39,49 @@ const Profile = () => {
         newPassword: '',
         confirmPassword: '',
       });
+      setAvatarUrl(user?.user_metadata?.avatar_url || '');
     }
   }, [user]);
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast.success('Avatar updated successfully!');
+    } catch (error) {
+      toast.error('Failed to upload avatar: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,12 +98,28 @@ const Profile = () => {
     }
     setLoading(true);
     try {
-      // Mock update for demo - in real app this would update Supabase
-      toast.success('Profile updated successfully! (Demo mode)');
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: formData.name,
+          phone: formData.phone,
+          address: formData.address
+        }
+      });
+
+      if (error) throw error;
+
+      await supabase.from('user_profiles').upsert({
+        id: user.id,
+        full_name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        updated_at: new Date().toISOString()
+      });
+
       toast.success('Profile updated successfully!');
       setIsEditing(false);
     } catch (err) {
-      toast.error('Failed to update profile');
+      toast.error('Failed to update profile: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -67,8 +127,12 @@ const Profile = () => {
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
-    if (!formData.currentPassword || !formData.newPassword) {
-      toast.error('Please fill in all password fields');
+    if (!formData.newPassword) {
+      toast.error('Please enter new password');
+      return;
+    }
+    if (formData.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
       return;
     }
     if (formData.newPassword !== formData.confirmPassword) {
@@ -77,8 +141,12 @@ const Profile = () => {
     }
     setLoading(true);
     try {
-      // Mock password change for demo
-      toast.success('Password changed successfully! (Demo mode)');
+      const { error } = await supabase.auth.updateUser({
+        password: formData.newPassword
+      });
+
+      if (error) throw error;
+
       toast.success('Password changed successfully!');
       setFormData(prev => ({
         ...prev,
@@ -88,7 +156,7 @@ const Profile = () => {
       }));
       setShowChangePassword(false);
     } catch (err) {
-      toast.error('Failed to change password');
+      toast.error('Failed to change password: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -113,8 +181,29 @@ const Profile = () => {
           className="text-center space-y-4"
         >
           <div className="flex justify-center mb-4">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <User className="h-12 w-12 text-primary" />
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border-4 border-white shadow-lg">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="h-16 w-16 text-primary" />
+                )}
+              </div>
+              <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg">
+                {uploading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera className="h-5 w-5 text-white" />
+                )}
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+                disabled={uploading}
+              />
             </div>
           </div>
           <h1 className="text-4xl font-bold tracking-tight">Profile Settings</h1>
@@ -231,28 +320,7 @@ const Profile = () => {
 
               {showChangePassword && (
                 <div className="space-y-4 p-4 border rounded-lg">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        name="currentPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        value={formData.currentPassword}
-                        onChange={handleChange}
-                        placeholder="Enter current password"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-2 top-1/2 -translate-y-1/2"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
+
 
                   <div className="space-y-2">
                     <Label htmlFor="newPassword">New Password</Label>

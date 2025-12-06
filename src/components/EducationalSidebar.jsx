@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import supabase from '../config/supabase';
+import NotificationCenter from './NotificationCenter';
 import {
   BiHome as HomeIcon,
   BiUser as UserIcon,
@@ -208,6 +209,8 @@ const EducationalSidebar = ({ children }) => {
           </div>
 
           <div className="flex items-center space-x-3">
+            <NotificationCenter />
+            
             <button
               onClick={toggleDarkMode}
               className="p-2 rounded-md hover:bg-accent"

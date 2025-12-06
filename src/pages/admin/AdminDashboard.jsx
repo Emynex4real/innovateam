@@ -9,6 +9,7 @@ import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 import AIQuestions from './AIQuestions';
 
 import toast from 'react-hot-toast';
+import emailService from '../../services/email/emailService';
 
 const AdminDashboardContent = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -114,6 +115,24 @@ const AdminDashboardContent = () => {
           approved_at: new Date().toISOString()
         })
         .eq('id', requestId);
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        user_id: request.user_id,
+        title: action === 'approve' ? '✅ Credit Request Approved!' : '❌ Credit Request Rejected',
+        message: action === 'approve' 
+          ? `Your test credit request of ₦${request.amount.toLocaleString()} has been approved and added to your wallet.`
+          : 'Your test credit request has been rejected. Please contact support for more information.',
+        type: action === 'approve' ? 'success' : 'error'
+      });
+      
+      // Send email notification
+      emailService.sendCreditApprovalEmail(
+        request.user_profiles?.email,
+        request.user_profiles?.full_name || 'User',
+        request.amount,
+        action === 'approve'
+      );
       
       toast.dismiss(loadingToast);
       toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
