@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import supabase from '../config/supabase';
 import {
   BiHome as HomeIcon,
   BiUser as UserIcon,
@@ -24,14 +25,27 @@ const EducationalSidebar = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   
   const { user, signOut } = useAuth();
   const walletBalance = 0; // Will be connected to wallet context
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email === 'admin@innovateam.com';
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      setIsAdmin(data?.role === 'admin');
+    };
+    checkAdminStatus();
+  }, [user]);
 
   const menuItems = [
     {
@@ -276,22 +290,23 @@ const EducationalSidebar = ({ children }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
-        <div className="p-4 h-full overflow-y-auto">
-          {/* Wallet Balance */}
-          <div className="mb-6 p-3 rounded-lg bg-primary/10 border border-primary/20">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">
-                Wallet Balance
-              </span>
-              <WalletIcon className="h-4 w-4 text-primary" />
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto p-4 pb-20">
+            {/* Wallet Balance */}
+            <div className="mb-6 p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Wallet Balance
+                </span>
+                <WalletIcon className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-lg font-bold text-primary mt-1">
+                ₦{(walletBalance || 0).toLocaleString()}
+              </p>
             </div>
-            <p className="text-lg font-bold text-primary mt-1">
-              ₦{(walletBalance || 0).toLocaleString()}
-            </p>
-          </div>
 
-          {/* Navigation Menu */}
-          <nav className="space-y-1">
+            {/* Navigation Menu */}
+            <nav className="space-y-1">
             {finalMenuItems.map((item) => {
               const isActive = isActiveItem(item);
               const isExpanded = expandedGroups[item.id];
@@ -355,9 +370,10 @@ const EducationalSidebar = ({ children }) => {
               );
             })}
           </nav>
+          </div>
 
           {/* Logout Button */}
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="border-t border-border p-4 bg-background">
             <button
               onClick={handleLogout}
               className="w-full flex items-center p-3 rounded-lg transition-colors text-destructive hover:bg-destructive/10"
