@@ -7,8 +7,9 @@ import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Badge } from '../../components/ui/badge';
 import { AIQuestionsService } from '../../services/aiQuestions.service';
-import { Plus, Trash2, Edit, Eye, EyeOff, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, Edit, Eye, EyeOff, Download, Upload, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { diagnoseQuestionBank } from '../../utils/questionBankDiagnostic';
 
 const AIQuestions = () => {
   const [activeTab, setActiveTab] = useState('generate');
@@ -37,10 +38,19 @@ const AIQuestions = () => {
   const loadBanks = async () => {
     try {
       setLoading(true);
+      console.log('Loading question banks...');
       const result = await AIQuestionsService.getQuestionBanks();
-      if (result.success) setBanks(result.data);
+      console.log('Question banks result:', result);
+      if (result.success) {
+        setBanks(result.data || []);
+        toast.success(`Loaded ${result.data?.length || 0} question banks`);
+      } else {
+        toast.error('Failed to load question banks');
+      }
     } catch (error) {
       console.error('Failed to load question banks:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to load question banks';
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -48,10 +58,15 @@ const AIQuestions = () => {
 
   const loadStats = async () => {
     try {
+      console.log('Loading question stats...');
       const result = await AIQuestionsService.getQuestionStats();
-      if (result.success) setStats(result.data);
+      console.log('Question stats result:', result);
+      if (result.success) {
+        setStats(result.data);
+      }
     } catch (error) {
       console.error('Failed to load stats:', error);
+      // Don't show error toast for stats as it's not critical
     }
   };
 
@@ -79,7 +94,16 @@ const AIQuestions = () => {
 
     try {
       setLoading(true);
-      const result = await AIQuestionsService.generateQuestions(generateForm);
+      toast.loading('Generating questions... This may take 30-60 seconds');
+      
+      const result = await Promise.race([
+        AIQuestionsService.generateQuestions(generateForm),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout - try with shorter text')), 60000)
+        )
+      ]);
+      
+      toast.dismiss();
       if (result.success) {
         toast.success(`Generated ${result.questions.length} questions successfully!`);
         setGenerateForm({ ...generateForm, text: '' });
@@ -87,7 +111,9 @@ const AIQuestions = () => {
         loadStats();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to generate questions');
+      toast.dismiss();
+      console.error('Generate error:', error);
+      toast.error(error.message || error.response?.data?.message || 'Failed to generate questions');
     } finally {
       setLoading(false);
     }
@@ -440,10 +466,33 @@ const AIQuestions = () => {
     </div>
   );
 
+  const runDiagnostic = async () => {
+    toast.loading('Running diagnostic...');
+    try {
+      const results = await diagnoseQuestionBank();
+      toast.dismiss();
+      
+      const allGood = results.auth && results.admin && results.tables && results.api;
+      if (allGood) {
+        toast.success('All systems operational!');
+      } else {
+        toast.error('Issues found. Check browser console for details.');
+      }
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Diagnostic failed. Check console.');
+      console.error('Diagnostic error:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">AI Question Management</h1>
+        <Button variant="outline" onClick={runDiagnostic}>
+          <AlertCircle className="w-4 h-4 mr-2" />
+          Run Diagnostic
+        </Button>
       </div>
 
       <div className="flex gap-2 border-b">

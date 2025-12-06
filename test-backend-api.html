@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Question Bank API</title>
+    <style>
+        body { font-family: Arial; padding: 20px; max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Question Bank API Tester</h1>
+    
+    <div class="section">
+        <h3>Step 1: Get Your Token</h3>
+        <p>Open your app, login, then open browser console and run:</p>
+        <pre>localStorage.getItem('supabase.auth.token')</pre>
+        <p>Or check Application → Local Storage → supabase.auth.token</p>
+        <input type="text" id="token" placeholder="Paste your token here" style="width: 100%; padding: 8px;">
+    </div>
+
+    <div class="section">
+        <h3>Step 2: Test API Endpoints</h3>
+        <button onclick="testHealth()">Test Server Health</button>
+        <button onclick="testBanks()">Test Get Banks</button>
+        <button onclick="testStats()">Test Get Stats</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+        }
+
+        async function testHealth() {
+            log('Testing server health...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                log(`✅ Server is running: ${JSON.stringify(data)}`, 'success');
+            } catch (error) {
+                log(`❌ Server not reachable: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBanks() {
+            const token = document.getElementById('token').value.trim();
+            if (!token) {
+                log('❌ Please enter your token first', 'error');
+                return;
+            }
+
+            log('Testing get banks endpoint...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/api/admin/ai-questions/banks`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`Status: ${response.status} ${response.statusText}`, 'info');
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Success! Banks: ${data.data?.length || 0}`, 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                } else {
+                    log(`❌ Error: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Request failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStats() {
+            const token = document.getElementById('token').value.trim();
+            if (!token) {
+                log('❌ Please enter your token first', 'error');
+                return;
+            }
+
+            log('Testing get stats endpoint...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/api/admin/ai-questions/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`Status: ${response.status} ${response.statusText}`, 'info');
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Success!`, 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                } else {
+                    log(`❌ Error: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Request failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

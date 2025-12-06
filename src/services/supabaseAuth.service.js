@@ -3,23 +3,8 @@ import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import logger from '../utils/logger';
 import { storeUserData } from '../utils/authStorage';
 
-// Existing admin users for backward compatibility
-const adminUsers = [
-  {
-    id: 'ea0cd6e4-336a-4d05-be79-39887185fe4b',
-    email: 'innovateamnigeria@gmail.com',
-    password: 'innovateam2024!',
-    name: 'Innovateam Nigeria',
-    role: 'admin'
-  },
-  {
-    id: 'e98d12a8-0047-41ee-9d84-ab872959efe4',
-    email: 'adeejidi@gmail.com',
-    password: 'mafon123!',
-    name: 'Hei Mafon',
-    role: 'admin'
-  }
-];
+// Admin users are now managed through Supabase auth + user_profiles.role
+// No hardcoded passwords for security
 
 class SupabaseAuthService {
   async register(userData) {
@@ -90,36 +75,7 @@ class SupabaseAuthService {
         throw new Error('Password cannot be empty');
       }
 
-      // First try admin users (backward compatibility)
-      const adminUser = adminUsers.find(u => 
-        u.email === email && u.password === password
-      );
-      
-      if (adminUser) {
-        // Get profile from Supabase
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', adminUser.id)
-          .single();
-
-        const user = {
-          id: adminUser.id,
-          email: adminUser.email,
-          name: profile?.full_name || adminUser.name,
-          role: 'admin',
-          isAdmin: true,
-          walletBalance: profile?.wallet_balance || 0
-        };
-
-        this.setUser(user);
-        this.setToken('admin-token-' + adminUser.id);
-        
-        logger.auth('Admin login successful');
-        return { success: true, user };
-      }
-      
-      // Try Supabase auth for new users
+      // Use Supabase auth for all users (including admins)
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password

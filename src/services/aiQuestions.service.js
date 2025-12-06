@@ -2,7 +2,7 @@ import axios from 'axios';
 import supabase from '../config/supabase';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const USE_SUPABASE_DIRECT = !process.env.REACT_APP_API_URL; // Use Supabase if no backend URL
+const USE_SUPABASE_DIRECT = true; // Always use Supabase direct for now
 
 const getAuthHeaders = async () => {
   try {
@@ -38,43 +38,52 @@ export class AIQuestionsService {
   }
 
   static async getQuestionBanks() {
-    if (USE_SUPABASE_DIRECT) {
-      // Get banks with question count
-      const { data: banks, error } = await supabase
-        .from('question_banks')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Get question counts for each bank
-      const banksWithCounts = await Promise.all(
-        (banks || []).map(async (bank) => {
-          const { count } = await supabase
-            .from('questions')
-            .select('*', { count: 'exact', head: true })
-            .eq('bank_id', bank.id);
-          
-          // Get creator name
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('full_name')
-            .eq('id', bank.created_by)
-            .single();
-          
-          return {
-            ...bank,
-            questionCount: count || 0,
-            creatorName: profile?.full_name || 'Admin'
-          };
-        })
-      );
-      
-      return { success: true, data: banksWithCounts };
+    try {
+      if (USE_SUPABASE_DIRECT) {
+        // Get banks with question count
+        const { data: banks, error } = await supabase
+          .from('question_banks')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Supabase error fetching banks:', error);
+          throw error;
+        }
+        
+        // Get question counts for each bank
+        const banksWithCounts = await Promise.all(
+          (banks || []).map(async (bank) => {
+            const { count } = await supabase
+              .from('questions')
+              .select('*', { count: 'exact', head: true })
+              .eq('bank_id', bank.id);
+            
+            // Get creator name
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('full_name')
+              .eq('id', bank.created_by)
+              .single();
+            
+            return {
+              ...bank,
+              questionCount: count || 0,
+              creatorName: profile?.full_name || 'Admin'
+            };
+          })
+        );
+        
+        return { success: true, data: banksWithCounts };
+      }
+      const headers = await getAuthHeaders();
+      console.log('Fetching question banks from API...');
+      const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks`, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('Error in getQuestionBanks:', error.response?.data || error.message);
+      throw error;
     }
-    const headers = await getAuthHeaders();
-    const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks`, { headers });
-    return response.data;
   }
 
   static async getQuestionsByBank(bankId) {

@@ -58,18 +58,52 @@ const authenticate = async (req, res, next) => {
 
 // Admin-only middleware
 const requireAdmin = async (req, res, next) => {
-  // First authenticate the user
-  await authenticate(req, res, (err) => {
-    if (err) return;
+  try {
+    const authHeader = req.headers.authorization;
     
-    // Temporarily allow all authenticated users for AI Questions (development only)
-    if (req.user) {
-      console.log('✅ User authenticated:', req.user.email, 'Role:', req.user.role, 'IsAdmin:', req.user.isAdmin);
-      return next();
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        code: 'NO_TOKEN'
+      });
     }
+
+    const token = authHeader.split(' ')[1];
     
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token format',
+        code: 'INVALID_TOKEN_FORMAT'
+      });
+    }
+
+    // Verify token with Supabase
+    const { data, error } = await supabase.auth.getUser(token);
+    
+    if (error || !data.user) {
+      console.error('❌ Token verification failed:', error?.message || 'No user data');
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired token',
+        code: 'INVALID_TOKEN'
+      });
+    }
+
+    // Add user info to request
+    req.user = {
+      id: data.user.id,
+      email: data.user.email,
+      role: data.user.user_metadata?.role || 'user',
+      isAdmin: data.user.user_metadata?.role === 'admin',
+      metadata: data.user.user_metadata
+    };
+
+    console.log('✅ User authenticated:', req.user.email, 'Role:', req.user.role, 'IsAdmin:', req.user.isAdmin);
+
     // Check if user is admin
-    if (!req.user || !req.user.isAdmin) {
+    if (!req.user.isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Admin access required',
@@ -78,7 +112,14 @@ const requireAdmin = async (req, res, next) => {
     }
     
     next();
-  });
+  } catch (error) {
+    console.error('Admin authentication error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication service error',
+      code: 'AUTH_SERVICE_ERROR'
+    });
+  }
 };
 
 // Optional authentication (doesn't fail if no token)
