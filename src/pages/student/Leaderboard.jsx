@@ -32,17 +32,34 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('all');
   const [currentUserRank, setCurrentUserRank] = useState(null);
-  const [showRules, setShowRules] = useState(false); // <--- Added State for Rules Modal
+  const [showRules, setShowRules] = useState(false);
+  const [error, setError] = useState(null);
 
   // --- Data Loading Logic ---
   useEffect(() => {
     loadLeaderboard();
   }, [timeframe]);
 
+  // Keyboard accessibility for modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showRules) setShowRules(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showRules]);
+
   const loadLeaderboard = async () => {
     try {
       setLoading(true);
-      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      setError(null);
+      let currentUser = {};
+      try {
+        currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      } catch (error) {
+        console.warn('Failed to parse current user:', error);
+        currentUser = {};
+      }
       
       const { data: profiles, error } = await supabase
         .from('user_profiles')
@@ -52,15 +69,21 @@ const Leaderboard = () => {
       if (error) throw error;
 
       const userScores = profiles.map(profile => {
-        const history = JSON.parse(localStorage.getItem(`practice_history_${profile.id}`) || '[]');
+        let history = [];
+        try {
+          history = JSON.parse(localStorage.getItem(`practice_history_${profile.id}`) || '[]');
+        } catch (error) {
+          console.warn(`Failed to parse history for user ${profile.id}:`, error);
+          history = [];
+        }
         
         let filteredHistory = history;
         const now = new Date();
         if (timeframe === 'week') {
-          const weekAgo = new Date(now.setDate(now.getDate() - 7));
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           filteredHistory = history.filter(s => new Date(s.date) >= weekAgo);
         } else if (timeframe === 'month') {
-          const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+          const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
           filteredHistory = history.filter(s => new Date(s.date) >= monthAgo);
         }
 
@@ -93,6 +116,7 @@ const Leaderboard = () => {
 
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
+      setError('Failed to load leaderboard. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -146,6 +170,19 @@ const Leaderboard = () => {
     return (
       <div className={`min-h-screen p-8 flex items-center justify-center ${isDark ? 'bg-gray-950' : 'bg-gray-50'}`}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`min-h-screen p-8 flex items-center justify-center ${isDark ? 'bg-gray-950' : 'bg-gray-50'}`}>
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button onClick={loadLeaderboard} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
