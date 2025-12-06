@@ -21,8 +21,8 @@ const initSentry = (app) => {
         environment: process.env.NODE_ENV || 'development',
         tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
         integrations: [
-          new Sentry.Integrations.Http({ tracing: true }),
-          new Sentry.Integrations.Express({ app }),
+          Sentry.httpIntegration(),
+          Sentry.expressIntegration({ app }),
         ],
         beforeSend(event, hint) {
           if (event.request) {
