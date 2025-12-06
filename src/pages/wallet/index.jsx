@@ -7,7 +7,8 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
-import { CreditCard, Wallet as WalletIcon, TrendingUp, TrendingDown, X, Plus, RefreshCw, Clock, ArrowUpRight, ArrowDownLeft, AlertCircle } from 'lucide-react';
+import { CreditCard, Wallet as WalletIcon, TrendingUp, TrendingDown, X, Plus, RefreshCw, Clock, ArrowUpRight, ArrowDownLeft, AlertCircle, Gift } from 'lucide-react';
+import supabase from '../../config/supabase';
 import { TransactionUtils } from '../../services/wallet.service.enhanced';
 import toast from 'react-hot-toast';
 
@@ -16,8 +17,58 @@ const Wallet = () => {
   const [showFundModal, setShowFundModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [creditRequest, setCreditRequest] = useState(null);
+  const [requestLoading, setRequestLoading] = useState(false);
   const { user } = useAuth();
   const { walletBalance, transactions, fundWallet, loading: walletLoading, fetchWalletData } = useWallet();
+
+  useEffect(() => {
+    checkCreditRequest();
+  }, [user]);
+
+  const checkCreditRequest = async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('credit_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!error && data) {
+        setCreditRequest(data);
+      }
+    } catch (error) {
+      console.log('No credit request found');
+    }
+  };
+
+  const requestTestCredit = async () => {
+    if (!user?.id) return;
+    setRequestLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('credit_requests')
+        .insert({
+          user_id: user.id,
+          amount: 5000,
+          reason: 'Beta testing request',
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setCreditRequest(data);
+      toast.success('Test credit requested! Admin will approve shortly.');
+    } catch (error) {
+      toast.error('Failed to request credit: ' + error.message);
+    } finally {
+      setRequestLoading(false);
+    }
+  };
 
   const handleFundWallet = async () => {
     if (!TransactionUtils.validateAmount(amount)) {
@@ -199,6 +250,43 @@ const Wallet = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Test Credit Request - BETA ONLY */}
+              {process.env.REACT_APP_ENABLE_TEST_CREDITS === 'true' && (
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                <div className="flex items-start space-x-3">
+                  <Gift className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium text-purple-900 mb-1">Beta Testing Credit</p>
+                    <p className="text-sm text-purple-700 mb-3">
+                      Request ₦5,000 test credit to explore all features during beta testing.
+                    </p>
+                    {!creditRequest ? (
+                      <Button
+                        onClick={requestTestCredit}
+                        disabled={requestLoading}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        {requestLoading ? 'Requesting...' : 'Request Test Credit'}
+                      </Button>
+                    ) : creditRequest.status === 'pending' ? (
+                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                        ⏳ Request Pending
+                      </Badge>
+                    ) : creditRequest.status === 'approved' ? (
+                      <Badge className="bg-green-100 text-green-800 border-green-300">
+                        ✓ Approved - ₦{creditRequest.amount}
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-red-100 text-red-800 border-red-300">
+                        ✗ Request Rejected
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+              )}
             </CardContent>
           </Card>
 
