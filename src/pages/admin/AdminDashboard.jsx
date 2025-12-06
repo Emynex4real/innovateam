@@ -547,7 +547,37 @@ const AdminDashboardContent = () => {
                         <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{user.phone || 'N/A'}</span>
                       </td>
                       <td className="p-4">
-                        <Badge className={`${isDark ? 'bg-blue-900 text-blue-200 border-blue-700' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{user.role || 'user'}</Badge>
+                        <button
+                          onClick={async () => {
+                            const newRole = user.role === 'admin' ? 'user' : 'admin';
+                            if (!window.confirm(`Change ${user.name}'s role to ${newRole}?`)) return;
+                            
+                            const loadingToast = toast.loading('Updating role...');
+                            try {
+                              const supabase = (await import('../../config/supabase')).default;
+                              const { error } = await supabase
+                                .from('user_profiles')
+                                .update({ role: newRole })
+                                .eq('id', user.id);
+                              
+                              if (error) throw error;
+                              toast.dismiss(loadingToast);
+                              toast.success(`${user.name} is now ${newRole}`);
+                              await loadDashboardData();
+                            } catch (error) {
+                              toast.dismiss(loadingToast);
+                              toast.error('Failed: ' + error.message);
+                              console.error('Role update error:', error);
+                            }
+                          }}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                            user.role === 'admin'
+                              ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-200'
+                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200'
+                          }`}
+                        >
+                          {user.role || 'user'} ↻
+                        </button>
                       </td>
                       <td className="p-4">
                         <Badge className={user.status === 'active' ? (isDark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800') : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800')}>
