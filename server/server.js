@@ -289,6 +289,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/wallet', require('./routes/wallet.routes'));
 app.use('/api/services', require('./routes/services.routes'));
 app.use('/api/ai-examiner', require('./routes/aiExaminer.routes'));
+app.use('/api/email', require('./routes/email.routes'));
 app.use('/api', require('./routes/courseRecommendation.routes'));
 
 // Serve frontend in production
