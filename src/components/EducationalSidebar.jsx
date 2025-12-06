@@ -86,7 +86,9 @@ const EducationalSidebar = ({ children }) => {
       children: [
         { label: 'AI Examiner', path: '/dashboard/ai-examiner' },
         { label: 'Course Advisor (AI)', path: '/dashboard/course-advisor' },
-        { label: 'Practice Questions', path: '/dashboard/practice-questions' }
+        { label: 'Practice Questions', path: '/dashboard/practice-questions' },
+        { label: 'Performance Analytics', path: '/dashboard/analytics' },
+        { label: 'Leaderboard', path: '/dashboard/leaderboard' }
       ]
     },
     {

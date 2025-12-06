@@ -34,6 +34,8 @@ import SimpleAdminDashboard from './pages/admin/SimpleAdminDashboard';
 import EmailConfirmation from './pages/email-confirmation';
 import ProtectedRoute from './components/ProtectedRoute';
 import PracticeQuestions from './pages/student/PracticeQuestions';
+import PerformanceAnalytics from './pages/student/PerformanceAnalytics';
+import Leaderboard from './pages/student/Leaderboard';
 
 import supabase from './config/supabase';
 
@@ -237,6 +239,8 @@ function App() {
             <Route path="/dashboard/scratch-card/nabteb-checker" element={<ProtectedRoute><EducationalSidebar><NabtebResultChecker /></EducationalSidebar></ProtectedRoute>} />
             <Route path="/dashboard/scratch-card/waec-gce" element={<ProtectedRoute><EducationalSidebar><WaecGceChecker /></EducationalSidebar></ProtectedRoute>} />
             <Route path="/dashboard/practice-questions" element={<ProtectedRoute><EducationalSidebar><PracticeQuestions /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/analytics" element={<ProtectedRoute><EducationalSidebar><PerformanceAnalytics /></EducationalSidebar></ProtectedRoute>} />
+            <Route path="/dashboard/leaderboard" element={<ProtectedRoute><EducationalSidebar><Leaderboard /></EducationalSidebar></ProtectedRoute>} />
             {/* Legacy routes for backward compatibility */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/wallet" element={<Wallet />} />
