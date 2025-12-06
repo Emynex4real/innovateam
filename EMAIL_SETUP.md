@@ -1,122 +1,213 @@
 # Email Notifications Setup Guide
 
-## ✅ What's Implemented
+## What We Built
+Email notifications for:
+- ✅ Welcome emails (new users)
+- ✅ Transaction confirmations (credit/debit)
+- ✅ Credit approval/rejection (admin actions)
+- ✅ Password reset links
+- ✅ Low balance alerts
 
-Email notifications are now integrated for:
-1. **Welcome Email** - Sent when user registers
-2. **Transaction Emails** - Sent for credit/debit transactions
-3. **Credit Approval/Rejection** - Sent when admin approves/rejects test credit
-4. **Password Reset** - Sent when user requests password reset
-5. **Low Balance Alert** - Sent when wallet balance is low
+## Setup Steps (3 minutes)
 
-## 🚀 Setup Instructions
+### 1. Create Free Resend Account
+1. Go to https://resend.com/signup
+2. Sign up with email (FREE - 3,000 emails/month, no credit card)
+3. Verify your email address
 
-### Step 1: Get Resend API Key (FREE)
+### 2. Get API Key
+1. Go to https://resend.com/api-keys
+2. Click "Create API Key"
+3. Name it: "InnovaTeam Production"
+4. Copy the key (starts with `re_`)
 
-1. Go to [resend.com](https://resend.com)
-2. Sign up for free account (no credit card required)
-3. Verify your email
-4. Go to API Keys section
-5. Create a new API key
-6. Copy the key (starts with `re_`)
-
-### Step 2: Add API Key to .env
-
+### 3. Add API Key to Environment
 Open `.env` file and replace:
 ```
 REACT_APP_RESEND_API_KEY=your_resend_api_key_here
 ```
+With your actual API key from Resend.
 
-With your actual key:
-```
-REACT_APP_RESEND_API_KEY=re_abc123xyz...
-```
+### 4. Test It Works
+1. Restart your dev server: `npm start`
+2. Register a new account
+3. Check your email inbox
+4. You should receive a welcome email!
 
-### Step 3: Restart Development Server
+## Email Templates
 
-```bash
-npm start
-```
+### 1. Welcome Email
+**Sent when**: User registers
+**Contains**:
+- Welcome message
+- Getting started guide
+- Feature highlights
 
-## 📧 Email Templates
+### 2. Transaction Email
+**Sent when**: Wallet credit/debit
+**Contains**:
+- Amount and type
+- Transaction status
+- Description and date
 
-All emails are professionally designed with:
-- Responsive HTML layout
-- Brand colors (green theme)
-- Clear call-to-action buttons
-- Transaction details tables
-- Mobile-friendly design
+### 3. Credit Approval Email
+**Sent when**: Admin approves/rejects test credit
+**Contains**:
+- Approval status
+- Amount credited
+- Next steps
 
-## 🎯 When Emails Are Sent
+### 4. Password Reset Email
+**Sent when**: User requests password reset
+**Contains**:
+- Reset link (expires in 1 hour)
+- Security notice
 
-| Event | Email Type | Trigger |
-|-------|-----------|---------|
-| User Registration | Welcome Email | Automatic on signup |
-| Credit Approval | Approval Email | Admin clicks "Approve" |
-| Credit Rejection | Rejection Email | Admin clicks "Reject" |
-| Password Reset | Reset Link Email | User clicks "Forgot Password" |
-| Low Balance | Alert Email | Manual trigger (can be automated) |
-| Transaction | Confirmation Email | Can be added to wallet operations |
+### 5. Low Balance Alert
+**Sent when**: Wallet balance is low
+**Contains**:
+- Current balance
+- Fund wallet button
 
-## 🔧 Customization
+## Production Setup
 
-### Change Sender Email
+### Before Deploying:
 
-In `src/services/email/emailService.js`, update:
+#### 1. Verify Your Domain (Important!)
+By default, emails come from `onboarding@resend.dev`. To use your own domain:
+
+1. Go to https://resend.com/domains
+2. Click "Add Domain"
+3. Enter your domain (e.g., `innovateam.com`)
+4. Add DNS records (Resend provides them)
+5. Wait for verification (5-10 minutes)
+
+#### 2. Update FROM Email
+Once domain is verified, update `src/services/email/emailService.js`:
 ```javascript
-const FROM_EMAIL = 'InnovaTeam <onboarding@resend.dev>';
+const FROM_EMAIL = 'InnovaTeam <noreply@innovateam.com>';
 ```
 
-To your verified domain:
-```javascript
-const FROM_EMAIL = 'InnovaTeam <noreply@yourdomain.com>';
+#### 3. Environment Variables for Production
+Add to Vercel/Netlify:
+```
+REACT_APP_RESEND_API_KEY=re_your_actual_key
+REACT_APP_URL=https://innovateam.com
 ```
 
-### Add More Email Types
+## Testing Emails
 
-Add new functions to `emailService.js`:
+### Test Welcome Email:
+1. Register new account
+2. Check email inbox (including spam)
+
+### Test Transaction Email:
+1. Admin credits your wallet
+2. Check email for transaction confirmation
+
+### Test Credit Approval:
+1. Request test credit
+2. Admin approves
+3. Check email for approval notification
+
+## Email Deliverability
+
+### ✅ Best Practices:
+- Use verified domain (not resend.dev)
+- Add SPF, DKIM, DMARC records
+- Avoid spam trigger words
+- Include unsubscribe link (for marketing emails)
+
+### 🚫 Avoid:
+- Sending too many emails too fast
+- Using ALL CAPS in subject
+- Too many exclamation marks!!!
+- Misleading subject lines
+
+## Cost
+
+### Free Tier:
+- 3,000 emails/month
+- 100 emails/day
+- All features included
+
+### Paid Plans (If You Grow):
+- $20/month for 50K emails
+- $80/month for 500K emails
+- Only pay if you exceed free tier
+
+## Monitoring
+
+### Resend Dashboard Shows:
+- Emails sent/delivered/bounced
+- Open rates (if tracking enabled)
+- Click rates
+- Bounce reasons
+
+### Check Status:
+https://resend.com/emails
+
+## Troubleshooting
+
+### "Email not received"
+1. Check spam folder
+2. Verify API key is correct
+3. Check Resend dashboard for errors
+4. Ensure email address is valid
+
+### "Invalid API key"
+1. Copy key again from Resend
+2. Make sure no extra spaces
+3. Restart dev server after updating .env
+
+### "Rate limit exceeded"
+1. Free tier: 100 emails/day
+2. Wait 24 hours or upgrade plan
+3. Check for email loops in code
+
+## Email Service Code
+
+Located in: `src/services/email/emailService.js`
+
+### Add New Email Type:
 ```javascript
-async sendCustomEmail(userEmail, subject, htmlContent) {
-  // Your custom email logic
+async sendCustomEmail(userEmail, data) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: 'Your Subject',
+      html: `<div>Your HTML content</div>`
+    });
+    
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email error:', error);
+    return { success: false, error: error.message };
+  }
 }
 ```
 
-## 📊 Free Tier Limits
+## Integration Points
 
-- **3,000 emails/month** - FREE
-- No credit card required
-- Perfect for MVP/beta testing
-- Upgrade available if needed
+### Current Integrations:
+1. **Registration** (App.js) → Welcome email
+2. **Credit Approval** (AdminDashboard.jsx) → Approval email
+3. **Password Reset** (ForgotPassword page) → Reset email
 
-## ✅ Testing
+### Future Integrations:
+- Transaction emails (add to wallet service)
+- Low balance alerts (add to wallet context)
+- Weekly summary emails
+- Achievement notifications
 
-1. Register a new user → Check for welcome email
-2. Admin approves credit → Check for approval email
-3. Request password reset → Check for reset email
+## Support
 
-## 🐛 Troubleshooting
+- Docs: https://resend.com/docs
+- Dashboard: https://resend.com/
+- Status: https://status.resend.com/
 
-**Emails not sending?**
-- Check API key is correct in `.env`
-- Restart dev server after adding key
-- Check browser console for errors
-- Verify email address is valid
+---
 
-**Emails going to spam?**
-- Use Resend's default domain for testing
-- For production, verify your own domain
-- Add SPF/DKIM records (Resend provides these)
-
-## 🚀 Production Deployment
-
-1. Add `REACT_APP_RESEND_API_KEY` to your hosting environment variables
-2. Verify your domain in Resend dashboard
-3. Update `FROM_EMAIL` to use your domain
-4. Test all email flows before launch
-
-## 📝 Notes
-
-- Emails are sent asynchronously (non-blocking)
-- Failed emails are logged to console
-- No user-facing errors if email fails
-- Consider adding email queue for high volume
+**You're all set!** Emails will be sent automatically. 📧
