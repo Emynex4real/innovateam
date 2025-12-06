@@ -197,11 +197,7 @@ const Login = () => {
 
               <Button
                 type="submit"
-                className={`w-full ${
-                  isDarkMode 
-                    ? 'bg-primary-color hover:bg-primary-color/90 text-white' 
-                    : 'bg-primary-color hover:bg-primary-color/90 text-white'
-                } font-semibold py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-color/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 {loading ? (
@@ -281,18 +277,6 @@ const Login = () => {
                 }`}
               >
                 Sign up
-              </Link>
-            </p>
-            <p className={`text-center text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              <Link 
-                to="/admin/dashboard" 
-                className={`hover:underline ${
-                  isDarkMode 
-                    ? 'text-gray-400 hover:text-gray-300' 
-                    : 'text-gray-500 hover:text-gray-600'
-                }`}
-              >
-                Admin Access
               </Link>
             </p>
           </CardFooter>
