@@ -1,10 +1,14 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM_EMAIL = 'InnovaTeam <onboarding@resend.dev>';
 
 class EmailService {
   async sendWelcomeEmail(userEmail, userName) {
+    if (!resend) {
+      console.log('Email service disabled - RESEND_API_KEY not configured');
+      return { success: false, error: 'Email service not configured' };
+    }
     try {
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
@@ -40,6 +44,7 @@ class EmailService {
   }
 
   async sendTransactionEmail(userEmail, userName, transaction) {
+    if (!resend) return { success: false, error: 'Email service not configured' };
     const isCredit = transaction.type === 'credit';
     try {
       const { data, error } = await resend.emails.send({
@@ -95,6 +100,7 @@ class EmailService {
   }
 
   async sendCreditApprovalEmail(userEmail, userName, amount, approved) {
+    if (!resend) return { success: false, error: 'Email service not configured' };
     try {
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
@@ -140,6 +146,7 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(userEmail, resetLink) {
+    if (!resend) return { success: false, error: 'Email service not configured' };
     try {
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,
@@ -177,6 +184,7 @@ class EmailService {
   }
 
   async sendLowBalanceAlert(userEmail, userName, balance) {
+    if (!resend) return { success: false, error: 'Email service not configured' };
     try {
       const { data, error } = await resend.emails.send({
         from: FROM_EMAIL,

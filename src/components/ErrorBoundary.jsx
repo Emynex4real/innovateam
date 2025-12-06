@@ -1,69 +1,63 @@
-import React, { Component } from 'react';
-import { toast } from 'react-toastify';
+import React from 'react';
+import * as Sentry from '@sentry/react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { Button } from './ui/button';
 
-class ErrorBoundary extends Component {
+class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null
-    };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    this.setState({
-      error: error,
-      errorInfo: errorInfo
-    });
-
-    // Log the error to your error reporting service
-    console.error('Error caught by ErrorBoundary:', error, errorInfo);
-    toast.error('An unexpected error occurred. Our team has been notified.');
-    
-    // Here you would typically send to your error reporting service
-    // Example: Sentry.captureException(error);
+    console.error('Error caught by boundary:', error, errorInfo);
+    Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } });
   }
-
-  handleReset = () => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null
-    });
-  };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md w-full space-y-8">
-            <div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Something went wrong
-              </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
-                We apologize for the inconvenience. Please try again later.
-              </p>
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-red-100 rounded-full">
+                <AlertTriangle className="h-12 w-12 text-red-600" />
+              </div>
             </div>
+            
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Oops! Something went wrong</h1>
+            <p className="text-gray-600 mb-6">
+              We've been notified and are working on a fix. Please try refreshing the page.
+            </p>
+            
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <div className="rounded-md bg-red-50 p-4 mt-4">
-                <pre className="text-sm text-red-700 whitespace-pre-wrap">
+              <div className="mb-6 p-4 bg-gray-100 rounded-lg text-left">
+                <p className="text-xs font-mono text-red-600 break-all">
                   {this.state.error.toString()}
-                </pre>
+                </p>
               </div>
             )}
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={this.handleReset}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            
+            <div className="flex gap-3">
+              <Button
+                onClick={() => window.location.reload()}
+                className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                Try Again
-              </button>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Page
+              </Button>
+              <Button
+                onClick={() => window.location.href = '/'}
+                variant="outline"
+                className="flex-1"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Go Home
+              </Button>
             </div>
           </div>
         </div>
@@ -74,4 +68,13 @@ class ErrorBoundary extends Component {
   }
 }
 
-export default ErrorBoundary;
+export default Sentry.withErrorBoundary(ErrorBoundary, {
+  fallback: ({ error, resetError }) => (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Application Error</h1>
+        <Button onClick={resetError}>Try Again</Button>
+      </div>
+    </div>
+  ),
+});
