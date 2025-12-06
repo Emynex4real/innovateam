@@ -39,21 +39,27 @@ const initSentry = (app) => {
     } catch (error) {
       console.log('⚠️ Sentry initialization failed:', error.message);
       sentryEnabled = false;
+      Sentry = null;
     }
   } else {
     console.log('ℹ️ Sentry disabled - no DSN configured');
+    sentryEnabled = false;
   }
 };
 
 const getSentryHandlers = () => {
-  if (!sentryEnabled || !Sentry) {
+  if (!sentryEnabled || !Sentry || !Sentry.Handlers) {
     return {
       requestHandler: () => (req, res, next) => next(),
       tracingHandler: () => (req, res, next) => next(),
       errorHandler: () => (err, req, res, next) => next(err)
     };
   }
-  return Sentry.Handlers;
+  return {
+    requestHandler: () => Sentry.Handlers.requestHandler(),
+    tracingHandler: () => Sentry.Handlers.tracingHandler(),
+    errorHandler: () => Sentry.Handlers.errorHandler()
+  };
 };
 
 module.exports = { Sentry, initSentry, getSentryHandlers, sentryEnabled };
