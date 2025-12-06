@@ -88,8 +88,8 @@ if (missingVars.length === 0) {
 const app = express();
 initSentry(app);
 const sentryHandlers = getSentryHandlers();
-app.use(sentryHandlers.requestHandler());
-app.use(sentryHandlers.tracingHandler());
+app.use(sentryHandlers.requestHandler);
+app.use(sentryHandlers.tracingHandler);
 const server = http.createServer(app);
 server.maxHeadersSize = 16384; // Increase max header size to 16KB
 
@@ -319,7 +319,7 @@ if (process.env.NODE_ENV === 'production') {
 
 
 // Sentry error handler (must be before other error handlers)
-app.use(sentryHandlers.errorHandler());
+app.use(sentryHandlers.errorHandler);
 
 // Error handling
 app.use(errorHandler);
