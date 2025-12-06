@@ -47,7 +47,7 @@ const { logger } = require('./utils/logger');
 const adminRoutes = require('./routes/admin.routes');
 const profileRoutes = require('./routes/profile.routes');
 const http = require('http');
-const { Sentry, initSentry } = require('./config/sentry');
+const { Sentry, initSentry, getSentryHandlers } = require('./config/sentry');
 
 // Verify required environment variables
 const requiredEnvVars = [
@@ -87,8 +87,9 @@ if (missingVars.length === 0) {
 // Initialize express app and server
 const app = express();
 initSentry(app);
-app.use(Sentry.Handlers.requestHandler());
-app.use(Sentry.Handlers.tracingHandler());
+const sentryHandlers = getSentryHandlers();
+app.use(sentryHandlers.requestHandler());
+app.use(sentryHandlers.tracingHandler());
 const server = http.createServer(app);
 server.maxHeadersSize = 16384; // Increase max header size to 16KB
 
@@ -318,7 +319,7 @@ if (process.env.NODE_ENV === 'production') {
 
 
 // Sentry error handler (must be before other error handlers)
-app.use(Sentry.Handlers.errorHandler());
+app.use(sentryHandlers.errorHandler());
 
 // Error handling
 app.use(errorHandler);
