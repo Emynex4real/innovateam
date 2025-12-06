@@ -11,7 +11,18 @@ import {
   TrendingUp, 
   Activity, 
   Users, 
-  ArrowUpRight 
+  ArrowUpRight,
+  Brain,
+  Trophy,
+  BarChart3,
+  BookOpen,
+  Zap,
+  Award,
+  Flame,
+  Target,
+  AlertCircle,
+  X,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useDarkMode } from '../../contexts/DarkModeContext';
@@ -34,10 +45,49 @@ import placeholderImg from '../../assets/images/services/placeholder.svg';
 const Dashboard = () => {
   const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showLowBalanceAlert, setShowLowBalanceAlert] = useState(true);
   const { user } = useAuth();
   
   const { walletBalance, transactions, getRecentTransactions, getTransactionsByType, addTransaction } = useWallet();
   const { isDarkMode } = useDarkMode();
+
+  // Get practice stats from localStorage
+  const getPracticeStats = () => {
+    try {
+      const stats = JSON.parse(localStorage.getItem(`practice_stats_${user?.id}`) || '{}');
+      const history = JSON.parse(localStorage.getItem(`practice_history_${user?.id}`) || '[]');
+      
+      // Calculate streak
+      const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
+      let streak = 0;
+      const today = new Date().toDateString();
+      
+      for (let i = 0; i < sortedHistory.length; i++) {
+        const sessionDate = new Date(sortedHistory[i].date).toDateString();
+        const expectedDate = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toDateString();
+        if (sessionDate === expectedDate || (i === 0 && sessionDate === today)) {
+          streak++;
+        } else break;
+      }
+      
+      const totalQuestions = stats.totalQuestions || 0;
+      const level = Math.floor(totalQuestions / 50) + 1;
+      const progress = (totalQuestions % 50) / 50 * 100;
+      
+      return {
+        totalSessions: history.length,
+        averageScore: stats.averageScore || 0,
+        streak,
+        level,
+        progress,
+        totalQuestions
+      };
+    } catch {
+      return { totalSessions: 0, averageScore: 0, streak: 0, level: 1, progress: 0, totalQuestions: 0 };
+    }
+  };
+
+  const practiceStats = getPracticeStats();
 
   const stats = [
     {
@@ -178,6 +228,29 @@ const Dashboard = () => {
           </p>
         </div>
 
+        {/* Low Balance Alert */}
+        {walletBalance < 5000 && showLowBalanceAlert && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-orange-900 dark:text-orange-200">Low Balance Warning</h3>
+                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                    Your wallet balance is low (₦{walletBalance.toLocaleString()}). Fund your wallet to continue using services.
+                  </p>
+                  <Button onClick={() => setShowPaymentModal(true)} size="sm" className="mt-2 bg-orange-600 hover:bg-orange-700">
+                    Fund Wallet Now
+                  </Button>
+                </div>
+              </div>
+              <button onClick={() => setShowLowBalanceAlert(false)} className="text-orange-600 hover:text-orange-800">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => {
@@ -207,6 +280,99 @@ const Dashboard = () => {
               </motion.div>
             );
           })}
+        </div>
+
+        {/* Quick Actions & Progress */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <motion.div variants={cardVariants} className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  Quick Actions
+                </CardTitle>
+                <CardDescription>Access your learning tools</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Link to="/dashboard/practice-questions">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
+                      <BookOpen className="h-5 w-5" />
+                      <span className="text-xs font-medium">Practice</span>
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard/course-advisor">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
+                      <Brain className="h-5 w-5" />
+                      <span className="text-xs font-medium">AI Advisor</span>
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard/leaderboard">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
+                      <Trophy className="h-5 w-5" />
+                      <span className="text-xs font-medium">Leaderboard</span>
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard/analytics">
+                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
+                      <BarChart3 className="h-5 w-5" />
+                      <span className="text-xs font-medium">Analytics</span>
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Progress Widget */}
+          <motion.div variants={cardVariants}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  Your Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Target className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">Level {practiceStats.level}</p>
+                      <p className="text-xs text-muted-foreground">{practiceStats.totalQuestions} questions</p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">Progress to Level {practiceStats.level + 1}</span>
+                    <span className="font-medium">{Math.round(practiceStats.progress)}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-primary transition-all" style={{ width: `${practiceStats.progress}%` }} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    <div>
+                      <p className="text-lg font-bold">{practiceStats.streak}</p>
+                      <p className="text-xs text-muted-foreground">Day Streak</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                    <div>
+                      <p className="text-lg font-bold">{practiceStats.averageScore}%</p>
+                      <p className="text-xs text-muted-foreground">Avg Score</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
         {/* Main Content Grid */}
@@ -267,12 +433,15 @@ const Dashboard = () => {
             </Card>
           </motion.div>
 
-          {/* Recent Transactions */}
+          {/* Recent Activity Timeline */}
           <motion.div variants={cardVariants} className="lg:col-span-3">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Recent Activity</CardTitle>
+                  <div>
+                    <CardTitle>Recent Activity</CardTitle>
+                    <CardDescription>Your transaction timeline</CardDescription>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -291,46 +460,59 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="relative space-y-4">
                   {recentTransactions.length === 0 ? (
                     <p className="text-center text-sm text-muted-foreground py-4">
                       No recent transactions
                     </p>
                   ) : (
-                    (showAllTransactions ? recentTransactions : recentTransactions.slice(0, 3)).map(
-                      (transaction) => (
-                        <motion.div
-                          key={transaction.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex items-center justify-between space-x-4"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                    <>
+                      {/* Timeline line */}
+                      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+                      
+                      {(showAllTransactions ? recentTransactions : recentTransactions.slice(0, 3)).map(
+                        (transaction, index) => (
+                          <motion.div
+                            key={transaction.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="relative flex items-start gap-4 pl-10"
+                          >
+                            {/* Timeline dot */}
+                            <div className={`absolute left-0 h-8 w-8 rounded-full flex items-center justify-center border-2 border-background ${
                               transaction.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
                             }`}>
                               {transaction.type === 'credit' ? '+' : '-'}
                             </div>
-                            <div>
-                              <p className="text-sm font-medium">{transaction.label}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(transaction.date).toLocaleDateString()}
-                              </p>
+                            
+                            <div className="flex-1 bg-muted/50 rounded-lg p-3 hover:bg-muted transition-colors">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{transaction.label}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(transaction.date).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className={`text-sm font-bold ${
+                                    transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    {transaction.type === 'credit' ? '+' : '-'}₦{Number(transaction.amount || 0).toLocaleString()}
+                                  </p>
+                                  <Badge variant="secondary" className="text-xs mt-1">
+                                    {transaction.status || 'Completed'}
+                                  </Badge>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-sm font-medium ${
-                              transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {transaction.type === 'credit' ? '+' : '-'}₦{Number(transaction.amount || 0).toLocaleString()}
-                            </p>
-                            <Badge variant="secondary" className="text-xs">
-                              {transaction.status || 'Completed'}
-                            </Badge>
-                          </div>
-                        </motion.div>
-                      )
-                    )
+                          </motion.div>
+                        )
+                      )}
+                    </>
                   )}
                 </div>
               </CardContent>
