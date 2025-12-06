@@ -39,13 +39,38 @@ export class AIQuestionsService {
 
   static async getQuestionBanks() {
     if (USE_SUPABASE_DIRECT) {
-      const { data, error } = await supabase
+      // Get banks with question count
+      const { data: banks, error } = await supabase
         .from('question_banks')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return { success: true, data: data || [] };
+      
+      // Get question counts for each bank
+      const banksWithCounts = await Promise.all(
+        (banks || []).map(async (bank) => {
+          const { count } = await supabase
+            .from('questions')
+            .select('*', { count: 'exact', head: true })
+            .eq('bank_id', bank.id);
+          
+          // Get creator name
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('full_name')
+            .eq('id', bank.created_by)
+            .single();
+          
+          return {
+            ...bank,
+            questionCount: count || 0,
+            creatorName: profile?.full_name || 'Admin'
+          };
+        })
+      );
+      
+      return { success: true, data: banksWithCounts };
     }
     const headers = await getAuthHeaders();
     const response = await axios.get(`${API_BASE_URL}/api/admin/ai-questions/banks`, { headers });

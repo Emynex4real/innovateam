@@ -36,10 +36,13 @@ const AIQuestions = () => {
 
   const loadBanks = async () => {
     try {
+      setLoading(true);
       const result = await AIQuestionsService.getQuestionBanks();
       if (result.success) setBanks(result.data);
     } catch (error) {
       console.error('Failed to load question banks:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -280,8 +283,25 @@ const AIQuestions = () => {
         <Button onClick={loadBanks}>Refresh</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {banks.map((bank) => (
+      {loading && banks.length === 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-10 bg-gray-300 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {banks.map((bank) => (
           <Card key={bank.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -320,9 +340,10 @@ const AIQuestions = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+        </div>
+      )}
 
-      {banks.length === 0 && (
+      {!loading && banks.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           No question banks yet. Generate some questions to get started!
         </div>
