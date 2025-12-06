@@ -41,17 +41,35 @@ const AdminDashboardContent = () => {
       const supabase = (await import('../../config/supabase')).default;
       const { data, error } = await supabase
         .from('credit_requests')
-        .select(`
-          *,
-          user_profiles!credit_requests_user_id_fkey(full_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      setCreditRequests(data || []);
+      if (error) {
+        console.error('Credit requests error:', error);
+        setCreditRequests([]);
+        return;
+      }
+      
+      // Fetch user details separately
+      const requestsWithUsers = await Promise.all(
+        (data || []).map(async (request) => {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('full_name, email')
+            .eq('id', request.user_id)
+            .single();
+          
+          return {
+            ...request,
+            user_profiles: profile
+          };
+        })
+      );
+      
+      setCreditRequests(requestsWithUsers);
     } catch (error) {
       console.error('Failed to load credit requests:', error);
-      toast.error('Failed to load credit requests');
+      setCreditRequests([]);
     }
   };
 
@@ -458,7 +476,7 @@ const AdminDashboardContent = () => {
             <div className="overflow-x-auto">
               {creditRequests.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No credit requests yet</p>
+                  <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No credit requests yet. Run CREDIT_REQUESTS_TABLE.sql first.</p>
                 </div>
               ) : (
                 <table className="w-full">

@@ -25,15 +25,9 @@ ALTER TABLE credit_requests ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own requests" ON credit_requests
   FOR SELECT USING (auth.uid() = user_id);
 
--- Policy: Users can create their own requests (only if they don't have one already)
+-- Policy: Users can create their own requests
 CREATE POLICY "Users can create own requests" ON credit_requests
-  FOR INSERT WITH CHECK (
-    auth.uid() = user_id AND
-    NOT EXISTS (
-      SELECT 1 FROM credit_requests 
-      WHERE user_id = auth.uid()
-    )
-  );
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Policy: Admins can view all requests
 CREATE POLICY "Admins can view all requests" ON credit_requests
