@@ -33,6 +33,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import SimpleAdminDashboard from './pages/admin/SimpleAdminDashboard';
 import EmailConfirmation from './pages/email-confirmation';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
 import PracticeQuestions from './pages/student/PracticeQuestions';
 import PerformanceAnalytics from './pages/student/PerformanceAnalytics';
 import Leaderboard from './pages/student/Leaderboard';
@@ -248,8 +249,8 @@ function App() {
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
             {/* Admin Routes */}
-            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+            <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
             <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
             </Routes>
           </div>
