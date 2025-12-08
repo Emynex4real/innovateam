@@ -59,29 +59,18 @@ class ApiService {
     }
 
     try {
-      // Add timeout support - longer for file uploads
-      const timeout = options.timeout || (options.body instanceof FormData ? 300000 : 30000); // 5 min for files, 30s for others
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-
       const response = await fetch(url, {
         method: options.method,
         headers,
-        body: options.body,
-        signal: controller.signal
+        body: options.body
       });
-      
-      clearTimeout(timeoutId);
 
-      // 3. Handle Response
       if (!response.ok) {
-        // Try to parse the error message from the server if possible
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errorData = await response.json();
           if (errorData.message) errorMessage = errorData.message;
-        } catch (e) { /* ignore JSON parse error on error responses */ }
-        
+        } catch (e) { /* ignore */ }
         throw new Error(errorMessage);
       }
 

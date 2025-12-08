@@ -90,14 +90,18 @@ const AIExaminer = () => {
 
     try {
       const res = await aiExaminerService.uploadDocument(selectedFile);
-      if (res.success) {
+      console.log('📥 Upload result:', res);
+      
+      if (res && res.success) {
         setDocumentId(res.data.documentId);
         toast.success("Document ready!");
         setStep(1);
+      } else {
+        toast.error(res?.message || "Upload failed");
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Could not read file. Try pasting text.");
+      console.error('❌ Upload error:', err);
+      toast.error(err.message || "Could not read file. Try pasting text.");
       setFile(null);
     } finally {
       setLoading(false);
@@ -112,12 +116,18 @@ const AIExaminer = () => {
     
     try {
       const res = await aiExaminerService.submitText(extractedText, documentTitle || 'Study Notes');
-      if (res.success) {
+      console.log('📥 Text submit result:', res);
+      
+      if (res && res.success) {
         setDocumentId(res.data.documentId);
+        toast.success("Text ready!");
         setStep(1);
+      } else {
+        toast.error(res?.message || "Text submission failed");
       }
     } catch (err) {
-      toast.error("Failed to process text.");
+      console.error('❌ Text submit error:', err);
+      toast.error(err.message || "Failed to process text.");
     } finally {
       setLoading(false);
     }

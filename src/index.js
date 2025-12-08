@@ -4,10 +4,11 @@ import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
-import { initSentry } from "./config/sentry";
+// import { initSentry } from "./config/sentry";
 import ErrorBoundary from "./components/ErrorBoundary";
 
-initSentry();
+// TEMPORARILY DISABLED - Sentry is blocking fetch requests
+// initSentry();
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(

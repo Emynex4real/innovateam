@@ -7,64 +7,58 @@ const aiExaminerService = {
     formData.append('file', file);
 
     try {
-      console.log('Uploading file:', file.name);
+      console.log('📤 Uploading file:', file.name);
       const response = await api.post('/api/ai-examiner/upload', formData, {
-        timeout: 300000 // 5 minute timeout for large files
+        timeout: 300000
       });
-      console.log('Upload response:', response);
-      return response; 
+      console.log('✅ Upload response:', response);
+      return response;
     } catch (error) {
-      console.error('Upload error:', error);
-      if (error.response && error.response.status === 404) {
-         const retry = await api.post('/ai-examiner/upload', formData);
-         return retry;
-      }
-      throw error.response?.data || error;
+      console.error('❌ Upload error:', error);
+      throw error;
     }
   },
 
   // 2. Submit Text
   submitText: async (text, title) => {
     try {
-      // FIX: Return 'response', NOT 'response.data'
+      console.log('📝 Submitting text:', title);
+      console.log('📝 Text length:', text.length);
       const response = await api.post('/api/ai-examiner/submit-text', { text, title });
+      console.log('✅ Text submit response:', response);
+      console.log('✅ Response success:', response?.success);
+      console.log('✅ Response data:', response?.data);
       return response;
     } catch (error) {
-      if (error.response && error.response.status === 404) {
-        const retry = await api.post('/ai-examiner/submit-text', { text, title });
-        return retry;
-      }
-      throw error.response?.data || error;
+      console.error('❌ Text submit error:', error);
+      console.error('❌ Error details:', error.message, error.stack);
+      throw error;
     }
   },
 
   // 3. Generate Questions
   generateQuestions: async (documentId, options) => {
     try {
-      // FIX: Return 'response', NOT 'response.data'
+      console.log('🤖 Generating questions for:', documentId);
       const response = await api.post('/api/ai-examiner/generate', { documentId, ...options });
+      console.log('✅ Generate response:', response);
       return response;
     } catch (error) {
-      if (error.response && error.response.status === 404) {
-        const retry = await api.post('/ai-examiner/generate', { documentId, ...options });
-        return retry;
-      }
-      throw error.response?.data || error;
+      console.error('❌ Generate error:', error);
+      throw error;
     }
   },
 
   // 4. Submit Answers
   submitAnswers: async (examId, answers) => {
     try {
-      // FIX: Return 'response', NOT 'response.data'
+      console.log('📊 Submitting answers for exam:', examId);
       const response = await api.post(`/api/ai-examiner/submit/${examId}`, { answers });
+      console.log('✅ Submit response:', response);
       return response;
     } catch (error) {
-      if (error.response && error.response.status === 404) {
-        const retry = await api.post(`/ai-examiner/submit/${examId}`, { answers });
-        return retry;
-      }
-      throw error.response?.data || error;
+      console.error('❌ Submit error:', error);
+      throw error;
     }
   },
   

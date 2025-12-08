@@ -9,7 +9,7 @@ class AIExaminerController {
   // 1. Handle File Upload
   async uploadDocument(req, res) {
     try {
-      const userId = req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
       if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
 
@@ -63,32 +63,39 @@ class AIExaminerController {
   // 2. Handle Pasted Text
   async submitText(req, res) {
     try {
+      console.log('📝 submitText called');
       const { text, title = 'Study Material' } = req.body;
-      const userId = req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
+      console.log('👤 User ID:', userId);
 
       if (!text || text.length < 5) {
         return res.status(400).json({ success: false, message: 'Text too short' });
       }
 
       const documentId = uuidv4();
+      
       const { error } = await supabase.from('ai_documents').insert({
         id: documentId,
         user_id: userId,
         filename: title,
         content: text,
         file_size: text.length,
-        mime_type: 'text/plain',
-        created_at: new Date().toISOString()
+        mime_type: 'text/plain'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+      }
 
+      console.log('✅ Document inserted');
       res.json({
         success: true,
         data: { documentId, filename: title },
         message: 'Text submitted successfully'
       });
     } catch (error) {
+      console.error('❌ Error:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -97,7 +104,7 @@ class AIExaminerController {
   async generateQuestions(req, res) {
     try {
       const { documentId, questionCount, difficulty, questionTypes } = req.body;
-      const userId = req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
 
       const { data: doc } = await supabase.from('ai_documents').select('*').eq('id', documentId).single();
       if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
@@ -241,7 +248,7 @@ class AIExaminerController {
   // 5. Get Exam History
   async getExamHistory(req, res) {
     try {
-      const userId = req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
       const { data: exams, error } = await supabase
@@ -265,7 +272,7 @@ class AIExaminerController {
   async getExamResults(req, res) {
     try {
       const { examId } = req.params;
-      const userId = req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
       const { data: exam, error } = await supabase
