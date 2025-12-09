@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import simpleWalletService from '../../services/simpleWallet.service';
+import practiceSessionService from '../../services/practiceSession.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -311,7 +312,7 @@ const PracticeQuestions = () => {
     }
   };
 
-  const completePractice = () => {
+  const completePractice = async () => {
     clearExamState();
     const isUnlocked = isBankUnlocked(selectedBank.id);
     const score = calculateScore();
@@ -324,7 +325,21 @@ const PracticeQuestions = () => {
       saveUserStats(newStats);
     }
     
-    // Save history logic
+    // Save to database for leaderboard
+    const sessionData = {
+      bankId: selectedBank.id,
+      bankName: selectedBank.name,
+      subject: selectedBank.subject,
+      totalQuestions: questions.length,
+      correctAnswers: score.correct,
+      timeSpent: timer,
+      percentage: score.percentage
+    };
+    
+    // Save to Supabase
+    await practiceSessionService.savePracticeSession(sessionData);
+    
+    // Also save to localStorage as backup
     const currentUser = getCurrentUser();
     let history = [];
     try {
@@ -336,13 +351,7 @@ const PracticeQuestions = () => {
     
     history.push({
       date: new Date().toISOString(),
-      bankId: selectedBank.id,
-      bankName: selectedBank.name,
-      subject: selectedBank.subject,
-      totalQuestions: questions.length,
-      correctAnswers: score.correct,
-      timeSpent: timer,
-      percentage: score.percentage
+      ...sessionData
     });
     
     localStorage.setItem(`practice_history_${currentUser.id}`, JSON.stringify(history));

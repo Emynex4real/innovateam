@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import supabase from '../../config/supabase';
+import practiceSessionService from '../../services/practiceSession.service';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Helper Components ---
@@ -53,79 +54,32 @@ const Leaderboard = () => {
     try {
       setLoading(true);
       setError(null);
-      let currentUser = {};
-      try {
-        currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-      } catch (error) {
-        console.warn('Failed to parse current user:', error);
-        currentUser = {};
-      }
+
+      const result = await practiceSessionService.getLeaderboard(timeframe, 100);
       
-      const { data: profiles, error } = await supabase
-        .from('user_profiles')
-        .select('id, full_name, email')
-        .limit(100);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
-      if (error) throw error;
-
-      const userScores = profiles.map(profile => {
-        let history = [];
-        try {
-          history = JSON.parse(localStorage.getItem(`practice_history_${profile.id}`) || '[]');
-        } catch (error) {
-          console.warn(`Failed to parse history for user ${profile.id}:`, error);
-          history = [];
-        }
-        
-        let filteredHistory = history;
-        const now = new Date();
-        if (timeframe === 'week') {
-          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          filteredHistory = history.filter(s => new Date(s.date) >= weekAgo);
-        } else if (timeframe === 'month') {
-          const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-          filteredHistory = history.filter(s => new Date(s.date) >= monthAgo);
-        }
-
-        const totalQuestions = filteredHistory.reduce((sum, s) => sum + s.totalQuestions, 0);
-        const correctAnswers = filteredHistory.reduce((sum, s) => sum + s.correctAnswers, 0);
-        const totalSessions = filteredHistory.length;
-        const averageScore = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-        const level = Math.floor(totalQuestions / 50) + 1;
-        
-        // Calculate streak
-        const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
-        let streak = 0;
-        for (let i = 0; i < sortedHistory.length; i++) {
-          const sessionDate = new Date(sortedHistory[i].date).toDateString();
-          const expectedDate = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toDateString();
-          if (sessionDate === expectedDate) streak++;
-          else break;
-        }
-
-        const points = (correctAnswers * 10) + (totalSessions * 50) + (averageScore * 2);
-
-        return {
-          id: profile.id,
-          name: profile.full_name || profile.email?.split('@')[0] || 'Anonymous',
-          totalQuestions,
-          correctAnswers,
-          totalSessions,
-          averageScore,
-          points,
-          level,
-          streak,
-          isCurrentUser: profile.id === currentUser.id
-        };
-      });
-
-      const sortedScores = userScores
+      // Filter out users with 0 points and map to expected format
+      const formattedData = result.data
         .filter(u => u.points > 0)
-        .sort((a, b) => b.points - a.points)
-        .map((user, index) => ({ ...user, rank: index + 1 }));
+        .map(user => ({
+          id: user.user_id,
+          name: user.name || 'Anonymous',
+          totalQuestions: user.total_questions || 0,
+          correctAnswers: user.correct_answers || 0,
+          totalSessions: user.total_sessions || 0,
+          averageScore: user.average_score || 0,
+          points: user.points || 0,
+          level: user.level || 1,
+          streak: user.streak || 0,
+          rank: user.rank,
+          isCurrentUser: user.isCurrentUser
+        }));
 
-      setLeaderboard(sortedScores);
-      setCurrentUserRank(sortedScores.find(u => u.isCurrentUser));
+      setLeaderboard(formattedData);
+      setCurrentUserRank(formattedData.find(u => u.isCurrentUser));
 
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
