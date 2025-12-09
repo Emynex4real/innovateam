@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Star, Users, Award, Zap, Target, BookOpen, MessageCircle, Play, TrendingUp, Brain, Sparkles, Sun, Moon, Menu, X, Search, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
-import { useAuth } from '../../contexts/SupabaseAuthContext';
+import { useAuth } from '../../App';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
