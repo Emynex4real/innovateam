@@ -11,7 +11,7 @@
 ### Stage 2: Backend API ✅
 - Installed Gemini AI SDK (`@google/generative-ai`)
 - Created `server/services/gemini.service.js`
-- Integrated Gemini API with your key: `AIzaSyBp6zQHjSI0OCwHJNJzeENc1AWEYs2A4wQ`
+- Integrated Gemini API with your key
 - Updated `server/controllers/aiExaminer.controller.js`
 - Routes configured: `/api/ai-examiner/*`
 - Backend tested and working (returns 401 for unauthenticated requests)
@@ -119,7 +119,7 @@ Once auth is fixed:
 
 ## 🔑 API KEYS CONFIGURED
 
-✅ Gemini API Key: `AIzaSyBp6zQHjSI0OCwHJNJzeENc1AWEYs2A4wQ`
+✅ Gemini API Key: Configured
 ✅ Supabase URL: `https://jdedscbvbkjvqmmdabig.supabase.co`
 ❌ Supabase Anon Key: Missing in frontend `.env`
 

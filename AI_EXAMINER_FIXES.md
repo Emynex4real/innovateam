@@ -104,7 +104,7 @@ npm install pdf-parse mammoth
 ---
 
 ### Issue 4: GEMINI_API_KEY is Set (Good!)
-✅ Your `.env` file has `GEMINI_API_KEY=AIzaSyDSLu6vt64YNgis_c3LNuJ6XvBHkNUOImI`
+✅ Your `.env` file has `GEMINI_API_KEY` configured
 
 ---
 

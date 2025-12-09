@@ -159,7 +159,7 @@ Body: {
 ## Troubleshooting
 
 ### Issue: "GEMINI_API_KEY not found"
-**Solution:** Check `server/.env` has `GEMINI_API_KEY=AIzaSyBp6zQHjSI0OCwHJNJzeENc1AWEYs2A4wQ`
+**Solution:** Check `server/.env` has `GEMINI_API_KEY` configured
 
 ### Issue: Questions not generating
 **Solution:** 
