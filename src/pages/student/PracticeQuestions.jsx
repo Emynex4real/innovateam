@@ -12,6 +12,7 @@ import { useDarkMode } from '../../contexts/DarkModeContext';
 import simpleWalletService from '../../services/simpleWallet.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 // Helper function to safely get current user from localStorage
 const getCurrentUser = () => {
@@ -39,6 +40,8 @@ const PracticeQuestions = () => {
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [subjects, setSubjects] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [pendingExamState, setPendingExamState] = useState(null);
 
   const FREE_QUESTIONS_LIMIT = 5;
   const UNLOCK_PRICE = 300;
@@ -47,6 +50,7 @@ const PracticeQuestions = () => {
     loadBanks();
     loadUserStats();
     loadWalletBalance();
+    restoreExamState();
   }, []);
 
   useEffect(() => {
@@ -56,6 +60,84 @@ const PracticeQuestions = () => {
     }
     return () => clearInterval(interval);
   }, [view, practiceComplete]);
+
+  // Save exam state on changes
+  useEffect(() => {
+    if (view === 'practice' && questions.length > 0) {
+      saveExamState();
+    }
+  }, [currentQuestionIndex, userAnswers, timer, view]);
+
+  // Warn before leaving during exam
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (view === 'practice' && !practiceComplete) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [view, practiceComplete]);
+
+  // --- Exam State Persistence ---
+
+  const saveExamState = () => {
+    const currentUser = getCurrentUser();
+    const examState = {
+      selectedBank,
+      questions,
+      currentQuestionIndex,
+      userAnswers,
+      timer,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(`exam_state_${currentUser.id}`, JSON.stringify(examState));
+  };
+
+  const restoreExamState = () => {
+    const currentUser = getCurrentUser();
+    const saved = localStorage.getItem(`exam_state_${currentUser.id}`);
+    if (!saved) return;
+
+    try {
+      const examState = JSON.parse(saved);
+      const hourAgo = Date.now() - (60 * 60 * 1000);
+      
+      if (examState.timestamp > hourAgo && examState.questions?.length > 0) {
+        setPendingExamState(examState);
+        setShowRestoreDialog(true);
+      } else {
+        clearExamState();
+      }
+    } catch (error) {
+      console.error('Failed to restore exam state:', error);
+      clearExamState();
+    }
+  };
+
+  const handleRestoreConfirm = () => {
+    if (pendingExamState) {
+      setSelectedBank(pendingExamState.selectedBank);
+      setQuestions(pendingExamState.questions);
+      setCurrentQuestionIndex(pendingExamState.currentQuestionIndex);
+      setUserAnswers(pendingExamState.userAnswers);
+      setTimer(pendingExamState.timer);
+      setView('practice');
+      toast.success('Exam restored!');
+      setPendingExamState(null);
+    }
+  };
+
+  const handleRestoreCancel = () => {
+    clearExamState();
+    setPendingExamState(null);
+  };
+
+  const clearExamState = () => {
+    const currentUser = getCurrentUser();
+    localStorage.removeItem(`exam_state_${currentUser.id}`);
+  };
 
   // --- Logic Functions ---
 
@@ -215,6 +297,12 @@ const PracticeQuestions = () => {
     setUserAnswers({ ...userAnswers, [currentQuestion.id]: answer });
   };
 
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -224,6 +312,7 @@ const PracticeQuestions = () => {
   };
 
   const completePractice = () => {
+    clearExamState();
     const isUnlocked = isBankUnlocked(selectedBank.id);
     const score = calculateScore();
     
@@ -560,7 +649,15 @@ const PracticeQuestions = () => {
               })}
            </div>
 
-           <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+           <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800 flex justify-between">
+              <Button 
+                onClick={handlePrevious}
+                disabled={currentQuestionIndex === 0}
+                variant="outline"
+                className="px-8 py-6 rounded-xl font-bold text-lg"
+              >
+                <ArrowRight className="w-5 h-5 mr-2 rotate-180" /> Previous
+              </Button>
               <Button 
                 onClick={handleNext}
                 disabled={!userAnswers[q.id]}
@@ -674,6 +771,20 @@ const PracticeQuestions = () => {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} p-4 md:p-8`}>
+      <ConfirmDialog
+        isOpen={showRestoreDialog}
+        onClose={() => {
+          setShowRestoreDialog(false);
+          handleRestoreCancel();
+        }}
+        onConfirm={handleRestoreConfirm}
+        title="Continue Your Exam?"
+        message="You have an unfinished exam. Would you like to continue where you left off?"
+        confirmText="Continue Exam"
+        cancelText="Start Fresh"
+        type="info"
+      />
+      
       {view === 'banks' && renderBanksView()}
       {view === 'practice' && renderPracticeView()}
       {view === 'results' && renderResultsView()}

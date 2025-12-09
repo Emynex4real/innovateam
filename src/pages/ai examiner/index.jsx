@@ -13,6 +13,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { cn } from '../../lib/utils';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 const AIExaminer = () => {
   const { walletBalance, addTransaction } = useWallet();
@@ -45,6 +46,9 @@ const AIExaminer = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [results, setResults] = useState(null);
   const [flashcardRevealed, setFlashcardRevealed] = useState({});
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [pendingExamState, setPendingExamState] = useState(null);
 
   // Timer Logic
   useEffect(() => {
@@ -63,17 +67,117 @@ const AIExaminer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, timeLeft]);
 
+  // Save exam state on changes
+  useEffect(() => {
+    if (step === 2 && questions.length > 0) {
+      saveExamState();
+    }
+  }, [currentQIndex, answers, timeLeft, step]);
+
+  // Warn before leaving during exam
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (step === 2) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [step]);
+
+  // Restore exam state on mount
+  useEffect(() => {
+    restoreExamState();
+  }, []);
+
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2,'0')}:${(s % 60).toString().padStart(2,'0')}`;
+
+  // --- Exam State Persistence ---
+  const getCurrentUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+    } catch (error) {
+      console.error('Failed to parse current user:', error);
+      return {};
+    }
+  };
+
+  const saveExamState = () => {
+    const currentUser = getCurrentUser();
+    const examState = {
+      examId,
+      documentId,
+      documentTitle,
+      examConfig,
+      questions,
+      currentQIndex,
+      answers,
+      timeLeft,
+      flashcardRevealed,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(`ai_exam_state_${currentUser.id}`, JSON.stringify(examState));
+  };
+
+  const restoreExamState = () => {
+    const currentUser = getCurrentUser();
+    const saved = localStorage.getItem(`ai_exam_state_${currentUser.id}`);
+    if (!saved) return;
+
+    try {
+      const examState = JSON.parse(saved);
+      const hourAgo = Date.now() - (60 * 60 * 1000);
+      
+      if (examState.timestamp > hourAgo && examState.questions?.length > 0) {
+        setPendingExamState(examState);
+        setShowRestoreDialog(true);
+      } else {
+        clearExamState();
+      }
+    } catch (error) {
+      console.error('Failed to restore exam state:', error);
+      clearExamState();
+    }
+  };
+
+  const clearExamState = () => {
+    const currentUser = getCurrentUser();
+    localStorage.removeItem(`ai_exam_state_${currentUser.id}`);
+  };
+
+  const handleRestoreConfirm = () => {
+    if (pendingExamState) {
+      setExamId(pendingExamState.examId);
+      setDocumentId(pendingExamState.documentId);
+      setDocumentTitle(pendingExamState.documentTitle);
+      setExamConfig(pendingExamState.examConfig);
+      setQuestions(pendingExamState.questions);
+      setCurrentQIndex(pendingExamState.currentQIndex);
+      setAnswers(pendingExamState.answers);
+      setTimeLeft(pendingExamState.timeLeft);
+      setFlashcardRevealed(pendingExamState.flashcardRevealed || {});
+      setStep(2);
+      toast.success('Exam restored!');
+      setPendingExamState(null);
+    }
+  };
+
+  const handleRestoreCancel = () => {
+    clearExamState();
+    setPendingExamState(null);
+  };
 
   // RESET FUNCTION (Fixes the retake bug)
   const resetExamSession = () => {
+    clearExamState();
     setStep(0);
     setFile(null);
     setExtractedText('');
     setResults(null);
     setQuestions([]);
     setAnswers({});
-    setCurrentQIndex(0); // Reset index to start
+    setCurrentQIndex(0);
     setDocumentId(null);
     setDocumentTitle('');
     setFlashcardRevealed({});
@@ -175,6 +279,7 @@ const AIExaminer = () => {
   };
 
   const handleSubmit = async () => {
+    clearExamState();
     setLoading(true);
     setLoadingText('Grading your answers...');
     try {
@@ -204,6 +309,31 @@ const AIExaminer = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 font-sans">
+      <ConfirmDialog
+        isOpen={showRestoreDialog}
+        onClose={() => {
+          setShowRestoreDialog(false);
+          handleRestoreCancel();
+        }}
+        onConfirm={handleRestoreConfirm}
+        title="Continue Your Exam?"
+        message="You have an unfinished AI exam. Would you like to continue where you left off?"
+        confirmText="Continue Exam"
+        cancelText="Start Fresh"
+        type="info"
+      />
+
+      <ConfirmDialog
+        isOpen={showQuitDialog}
+        onClose={() => setShowQuitDialog(false)}
+        onConfirm={resetExamSession}
+        title="Quit Exam?"
+        message="Are you sure you want to quit? Your progress will be lost."
+        confirmText="Yes, Quit"
+        cancelText="Continue Exam"
+        type="warning"
+      />
+
       <div className="max-w-4xl mx-auto">
         
         {/* Header */}
@@ -221,9 +351,7 @@ const AIExaminer = () => {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => { 
-                if(window.confirm('Are you sure you want to quit?')) resetExamSession();
-              }}
+              onClick={() => setShowQuitDialog(true)}
               className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
             >
               <XCircle className="h-4 w-4 mr-2" /> Quit Exam
@@ -472,7 +600,9 @@ const AIExaminer = () => {
                 )}
               </CardContent>
               <div className="p-6 bg-gray-50 border-t flex justify-between items-center">
-                <Button variant="ghost" onClick={() => setCurrentQIndex(i => Math.max(0, i-1))} disabled={currentQIndex === 0} className="text-gray-500 hover:text-gray-900"><ChevronLeft className="h-4 w-4 mr-2" /> Previous</Button>
+                <Button variant="ghost" onClick={() => setCurrentQIndex(i => Math.max(0, i-1))} disabled={currentQIndex === 0} className="text-gray-500 hover:text-gray-900">
+                  <ChevronLeft className="h-4 w-4 mr-2" /> Previous
+                </Button>
                 {currentQIndex === questions.length - 1 ? (
                   <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700 px-8 shadow-lg shadow-green-500/20">Submit Exam</Button>
                 ) : (
