@@ -1,5 +1,6 @@
 /**
- * API Service with backend integration (Fixed for File Uploads)
+ * API Service with backend integration
+ * Features: Auth injection, File Upload support, Better Error Handling
  */
 class ApiService {
   constructor() {
@@ -24,8 +25,10 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     
     // 1. Get Authentication Token
+    // Checks for standard auth_token first, then falls back to Supabase session
     let token = localStorage.getItem('auth_token');
     if (!token) {
+      // Note: This key is specific to your Supabase project
       const supabaseSession = localStorage.getItem('sb-jdedscbvbkjvqmmdabig-auth-token');
       if (supabaseSession) {
         try {
@@ -40,8 +43,9 @@ class ApiService {
     // 2. Prepare Headers
     const headers = { ...options.headers };
 
-    // FIX: Only set JSON content type if we are NOT sending a file (FormData)
-    // The browser sets the correct boundary header for FormData automatically.
+    // HANDLE FILE UPLOADS:
+    // Only set 'Content-Type': 'application/json' if we are NOT sending FormData.
+    // When sending FormData (files), the browser automatically sets the Content-Type to 'multipart/form-data' with the correct boundary.
     if (!(options.body instanceof FormData) && !headers['Content-Type']) {
       headers['Content-Type'] = 'application/json';
     }
@@ -50,7 +54,8 @@ class ApiService {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    // Skip CSRF for AI Examiner endpoints (temporarily disabled on backend)
+    // 3. CSRF Protection
+    // Skip CSRF for AI Examiner endpoints if necessary, or for non-mutating requests
     if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method) && !endpoint.includes('/ai-examiner')) {
       const csrfToken = await this.getCSRFToken();
       if (csrfToken) {
@@ -65,18 +70,23 @@ class ApiService {
         body: options.body
       });
 
+      // 4. Unified Error Handling
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errorData = await response.json();
-          if (errorData.message) errorMessage = errorData.message;
-        } catch (e) { /* ignore */ }
+          // Try to extract the specific message from the backend
+          errorMessage = errorData.message || errorData.error || errorData.details || errorMessage;
+        } catch (e) { 
+          // If response isn't JSON, use the default status text
+        }
         throw new Error(errorMessage);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      // Log the error for debugging, but re-throw it so the UI handles it
+      console.error(`API Request failed for ${endpoint}:`, error);
       throw error;
     }
   }
@@ -85,18 +95,16 @@ class ApiService {
     return this.request(endpoint, { method: 'GET' });
   }
 
-  // FIX: Updated to accept options and handle FormData correctly
   async post(endpoint, data, options = {}) {
     const isFormData = data instanceof FormData;
     return this.request(endpoint, {
       method: 'POST',
-      // FIX: Do not stringify FormData
+      // If it's FormData, pass it directly. If it's an object, stringify it.
       body: isFormData ? data : JSON.stringify(data),
       ...options
     });
   }
 
-  // FIX: Updated to accept options and handle FormData correctly
   async put(endpoint, data, options = {}) {
     const isFormData = data instanceof FormData;
     return this.request(endpoint, {
