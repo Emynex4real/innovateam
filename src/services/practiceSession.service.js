@@ -13,6 +13,23 @@ class PracticeSessionService {
         throw new Error('User not authenticated');
       }
 
+      // Check if this is the first attempt for this bank
+      const { data: existingSessions, error: checkError } = await supabase
+        .from('practice_sessions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('bank_id', sessionData.bankId)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      const isFirstAttempt = !existingSessions || existingSessions.length === 0;
+      
+      // Calculate points ONLY for first attempt
+      const pointsAwarded = isFirstAttempt 
+        ? (sessionData.correctAnswers * 10) + 50 + (sessionData.percentage * 2)
+        : 0;
+
       const { data, error } = await supabase
         .from('practice_sessions')
         .insert([{
@@ -23,15 +40,30 @@ class PracticeSessionService {
           total_questions: sessionData.totalQuestions,
           correct_answers: sessionData.correctAnswers,
           time_spent: sessionData.timeSpent,
-          percentage: sessionData.percentage
+          percentage: sessionData.percentage,
+          is_first_attempt: isFirstAttempt,
+          points_awarded: pointsAwarded
         }])
         .select()
         .single();
 
       if (error) throw error;
 
-      logger.info('Practice session saved', { sessionId: data.id });
-      return { success: true, data };
+      logger.info('Practice session saved', { 
+        sessionId: data.id, 
+        isFirstAttempt, 
+        pointsAwarded 
+      });
+      
+      return { 
+        success: true, 
+        data,
+        isFirstAttempt,
+        pointsAwarded,
+        message: isFirstAttempt 
+          ? `Great! You earned ${pointsAwarded} points!` 
+          : 'Practice completed! (No points for retakes)'
+      };
     } catch (error) {
       logger.error('Failed to save practice session', error);
       return { success: false, error: error.message };

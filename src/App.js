@@ -31,7 +31,6 @@ import PinVending from './pages/jamb services/pin vending';
 import Reprinting from './pages/jamb services/reprinting';
 import EducationalSidebar from './components/EducationalSidebar';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import SimpleAdminDashboard from './pages/admin/SimpleAdminDashboard';
 import EmailConfirmation from './pages/email-confirmation';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';

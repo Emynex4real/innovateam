@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
   correct_answers INTEGER NOT NULL DEFAULT 0,
   time_spent INTEGER NOT NULL DEFAULT 0,
   percentage INTEGER NOT NULL DEFAULT 0,
+  is_first_attempt BOOLEAN DEFAULT true,
+  points_awarded INTEGER DEFAULT 0,
   completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -17,6 +19,7 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
 CREATE INDEX IF NOT EXISTS idx_practice_sessions_user_id ON practice_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_practice_sessions_completed_at ON practice_sessions(completed_at);
 CREATE INDEX IF NOT EXISTS idx_practice_sessions_user_completed ON practice_sessions(user_id, completed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_practice_sessions_user_bank ON practice_sessions(user_id, bank_id);
 
 -- RLS Policies
 ALTER TABLE practice_sessions ENABLE ROW LEVEL SECURITY;
@@ -36,20 +39,19 @@ CREATE POLICY "Users can update own practice sessions"
   ON practice_sessions FOR UPDATE
   USING (auth.uid() = user_id);
 
--- Leaderboard View for optimized queries
+-- Leaderboard View for optimized queries (ONLY first attempts count)
 CREATE OR REPLACE VIEW leaderboard_stats AS
 SELECT 
   u.id as user_id,
   COALESCE(up.full_name, u.email) as name,
   COUNT(ps.id) as total_sessions,
+  COUNT(DISTINCT ps.bank_id) as unique_exams_attempted,
   COALESCE(SUM(ps.total_questions), 0) as total_questions,
   COALESCE(SUM(ps.correct_answers), 0) as correct_answers,
   COALESCE(AVG(ps.percentage), 0)::INTEGER as average_score,
   COALESCE(SUM(ps.time_spent), 0) as total_time_spent,
-  -- Points calculation: (correct * 10) + (sessions * 50) + (avg_score * 2)
-  (COALESCE(SUM(ps.correct_answers), 0) * 10 + 
-   COUNT(ps.id) * 50 + 
-   COALESCE(AVG(ps.percentage), 0)::INTEGER * 2)::INTEGER as points,
+  -- Points: ONLY from first attempts
+  COALESCE(SUM(ps.points_awarded), 0)::INTEGER as points,
   -- Level calculation: total_questions / 50 + 1
   (COALESCE(SUM(ps.total_questions), 0) / 50 + 1)::INTEGER as level,
   MAX(ps.completed_at) as last_practice_date
@@ -58,36 +60,34 @@ LEFT JOIN user_profiles up ON u.id = up.id
 LEFT JOIN practice_sessions ps ON u.id = ps.user_id
 GROUP BY u.id, up.full_name, u.email;
 
--- Weekly leaderboard view
+-- Weekly leaderboard view (ONLY first attempts count)
 CREATE OR REPLACE VIEW leaderboard_weekly AS
 SELECT 
   u.id as user_id,
   COALESCE(up.full_name, u.email) as name,
   COUNT(ps.id) as total_sessions,
+  COUNT(DISTINCT ps.bank_id) as unique_exams_attempted,
   COALESCE(SUM(ps.total_questions), 0) as total_questions,
   COALESCE(SUM(ps.correct_answers), 0) as correct_answers,
   COALESCE(AVG(ps.percentage), 0)::INTEGER as average_score,
-  (COALESCE(SUM(ps.correct_answers), 0) * 10 + 
-   COUNT(ps.id) * 50 + 
-   COALESCE(AVG(ps.percentage), 0)::INTEGER * 2)::INTEGER as points
+  COALESCE(SUM(ps.points_awarded), 0)::INTEGER as points
 FROM auth.users u
 LEFT JOIN user_profiles up ON u.id = up.id
 LEFT JOIN practice_sessions ps ON u.id = ps.user_id 
   AND ps.completed_at >= NOW() - INTERVAL '7 days'
 GROUP BY u.id, up.full_name, u.email;
 
--- Monthly leaderboard view
+-- Monthly leaderboard view (ONLY first attempts count)
 CREATE OR REPLACE VIEW leaderboard_monthly AS
 SELECT 
   u.id as user_id,
   COALESCE(up.full_name, u.email) as name,
   COUNT(ps.id) as total_sessions,
+  COUNT(DISTINCT ps.bank_id) as unique_exams_attempted,
   COALESCE(SUM(ps.total_questions), 0) as total_questions,
   COALESCE(SUM(ps.correct_answers), 0) as correct_answers,
   COALESCE(AVG(ps.percentage), 0)::INTEGER as average_score,
-  (COALESCE(SUM(ps.correct_answers), 0) * 10 + 
-   COUNT(ps.id) * 50 + 
-   COALESCE(AVG(ps.percentage), 0)::INTEGER * 2)::INTEGER as points
+  COALESCE(SUM(ps.points_awarded), 0)::INTEGER as points
 FROM auth.users u
 LEFT JOIN user_profiles up ON u.id = up.id
 LEFT JOIN practice_sessions ps ON u.id = ps.user_id 

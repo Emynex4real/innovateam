@@ -1,21 +1,36 @@
+// server/controllers/aiQuestions.controller.js
+
 const supabase = require('../supabaseClient');
 const geminiService = require('../services/gemini.service');
 
-// Generate questions from text
+// ==========================================
+// 1. GENERATE QUESTIONS (Improved & Safe)
+// ==========================================
 exports.generateQuestions = async (req, res) => {
   try {
     const { text, questionCount = 10, difficulty = 'medium', questionTypes = ['multiple-choice'], bankName, subject } = req.body;
     
+    // 1. Validation
     if (!text || text.length < 10) {
       return res.status(400).json({ success: false, message: 'Text is required and must be at least 10 characters' });
     }
 
-    // Generate questions using Gemini
+    console.log(`🤖 Generating ${questionCount} questions [${difficulty}]...`);
+
+    // 2. Generate questions using Gemini Service
+    // This calls the "cleanAndParseJSON" version we fixed earlier
     const questions = await geminiService.generateQuestions(text, { questionCount, difficulty, questionTypes });
 
-    // Create question bank if name provided
+    if (!questions || !Array.isArray(questions)) {
+      throw new Error("AI Service returned invalid data structure (not an array)");
+    }
+
+    console.log(`✅ AI generated ${questions.length} questions. Saving to DB...`);
+
+    // 3. Create question bank if name provided
     let bankId = null;
     if (bankName) {
+      // A. Create Bank
       const { data: bank, error: bankError } = await supabase
         .from('question_banks')
         .insert([{
@@ -27,33 +42,54 @@ exports.generateQuestions = async (req, res) => {
         .select()
         .single();
 
-      if (bankError) throw bankError;
+      if (bankError) {
+        console.error('❌ Bank creation error:', bankError);
+        throw new Error(`Failed to create question bank: ${bankError.message}`);
+      }
       bankId = bank.id;
 
-      // Insert questions into database
+      // B. Format questions for Supabase
+      // We map the AI data to exactly match your Supabase table columns
       const questionsToInsert = questions.map(q => ({
         bank_id: bankId,
         type: q.type,
         question: q.question,
-        options: q.options || null,
+        // Ensure options is always an array or null (never undefined)
+        options: Array.isArray(q.options) ? q.options : null, 
         correct_answer: q.correct_answer,
-        explanation: q.explanation || '',
-        difficulty
+        explanation: q.explanation || 'No explanation provided.',
+        difficulty: difficulty,
+        is_active: true
       }));
 
+      // C. Bulk Insert Questions
       const { error: questionsError } = await supabase
         .from('questions')
         .insert(questionsToInsert);
 
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        console.error('❌ Questions insert error:', questionsError);
+        // Clean up: Delete the empty bank so we don't have clutter
+        await supabase.from('question_banks').delete().eq('id', bankId);
+        throw new Error(`Failed to save questions: ${questionsError.message}`);
+      }
     }
 
+    // Success!
     res.json({ success: true, questions, bankId });
+
   } catch (error) {
-    console.error('Generate questions error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Generate Controller Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Internal Server Error' 
+    });
   }
 };
+
+// ==========================================
+// 2. OTHER CRUD FUNCTIONS (Unchanged)
+// ==========================================
 
 // Get all question banks
 exports.getQuestionBanks = async (req, res) => {
@@ -144,6 +180,9 @@ exports.deleteQuestionBank = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Note: If you have foreign key constraints set to CASCADE in Supabase, 
+    // deleting the bank will automatically delete the questions. 
+    // If not, you might need to delete questions first.
     const { error } = await supabase
       .from('question_banks')
       .delete()
@@ -176,9 +215,9 @@ exports.getQuestionStats = async (req, res) => {
         'flashcard': questions?.filter(q => q.type === 'flashcard').length || 0
       },
       byDifficulty: {
-        easy: questions?.filter(q => q.difficulty === 'easy').length || 0,
-        medium: questions?.filter(q => q.difficulty === 'medium').length || 0,
-        hard: questions?.filter(q => q.difficulty === 'hard').length || 0
+        'easy': questions?.filter(q => q.difficulty === 'easy').length || 0,
+        'medium': questions?.filter(q => q.difficulty === 'medium').length || 0,
+        'hard': questions?.filter(q => q.difficulty === 'hard').length || 0
       }
     };
 
@@ -221,6 +260,10 @@ exports.toggleQuestionStatus = async (req, res) => {
       .select('is_active')
       .eq('id', id)
       .single();
+
+    if (!question) {
+       return res.status(404).json({ success: false, message: 'Question not found' });
+    }
 
     const { data, error } = await supabase
       .from('questions')

@@ -70,6 +70,7 @@ const Leaderboard = () => {
           totalQuestions: user.total_questions || 0,
           correctAnswers: user.correct_answers || 0,
           totalSessions: user.total_sessions || 0,
+          uniqueExams: user.unique_exams_attempted || 0,
           averageScore: user.average_score || 0,
           points: user.points || 0,
           level: user.level || 1,
@@ -268,7 +269,10 @@ const Leaderboard = () => {
                                {user.streak}d
                              </span>
                              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                             <span>{user.averageScore}%</span>
+                             <span className="flex items-center gap-1">
+                               <BookOpen className="w-3 h-3" />
+                               {user.uniqueExams} exams
+                             </span>
                            </p>
                         </div>
                      </div>

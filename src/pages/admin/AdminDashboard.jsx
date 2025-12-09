@@ -7,6 +7,7 @@ import directSupabaseService from '../../services/directSupabase.service';
 import UserDetailModal from '../../components/UserDetailModal';
 import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 import AIQuestions from './AIQuestions';
+import AdminLeaderboard from './AdminLeaderboard';
 
 import toast from 'react-hot-toast';
 import emailService from '../../services/email/emailService';
@@ -292,7 +293,7 @@ const AdminDashboardContent = () => {
           { id: 'users', label: 'Users' },
           { id: 'transactions', label: 'Transactions' },
           { id: 'credit-requests', label: '🎁 Credit Requests' },
-          { id: 'leaderboard', label: '🏆 Leaderboard' },
+          { id: 'leaderboard', label: '🏆 Leaderboard Management' },
           { id: 'ai-questions', label: '🤖 AI Questions' }
         ].map(tab => (
           <Button
@@ -569,8 +570,13 @@ const AdminDashboardContent = () => {
         </Card>
       )}
 
-      {/* Leaderboard Tab */}
+      {/* Leaderboard Management Tab */}
       {activeTab === 'leaderboard' && (
+        <AdminLeaderboard />
+      )}
+
+      {/* Old Leaderboard Tab (backup) */}
+      {activeTab === 'leaderboard-old' && (
         <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
           <CardContent className="p-6">
             <div className="space-y-6">

@@ -92,14 +92,20 @@ const AIQuestions = () => {
       return;
     }
 
+    // Default to 10 if empty/invalid
+    const finalForm = {
+        ...generateForm,
+        questionCount: generateForm.questionCount || 10
+    };
+
     try {
       setLoading(true);
       toast.loading('Generating questions... This may take 30-60 seconds');
       
       const result = await Promise.race([
-        AIQuestionsService.generateQuestions(generateForm),
+        AIQuestionsService.generateQuestions(finalForm),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout - try with shorter text')), 60000)
+          setTimeout(() => reject(new Error('Request timeout - try with shorter text')), 90000) // Increased timeout to 90s
         )
       ]);
       
@@ -227,12 +233,17 @@ const AIQuestions = () => {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label>Question Count</Label>
+                {/* FIX: Handle NaN/Empty values safely */}
                 <Input
                   type="number"
                   min="1"
                   max="50"
-                  value={generateForm.questionCount}
-                  onChange={(e) => setGenerateForm({ ...generateForm, questionCount: parseInt(e.target.value) })}
+                  value={generateForm.questionCount || ''}
+                  onChange={(e) => setGenerateForm({ 
+                    ...generateForm, 
+                    questionCount: e.target.value ? parseInt(e.target.value) : '' 
+                  })}
+                  placeholder="10"
                 />
               </div>
               <div>

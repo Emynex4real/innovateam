@@ -22,6 +22,7 @@ const aiExaminerRoutes = require('./routes/aiExaminer.routes');
 const aiQuestionsRoutes = require('./routes/aiQuestions.routes');
 const emailRoutes = require('./routes/email.routes');
 const courseRecommendationRoutes = require('./routes/courseRecommendation.routes');
+const leaderboardRoutes = require('./routes/leaderboard.routes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -277,6 +278,7 @@ app.use('/api/admin/ai-questions', aiQuestionsRoutes);
 // Other routes
 app.use('/api/email', emailRoutes);
 app.use('/api', courseRecommendationRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', csrfProtection, adminRoutes);
 
 // ============================================

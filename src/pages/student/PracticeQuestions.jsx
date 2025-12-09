@@ -336,8 +336,20 @@ const PracticeQuestions = () => {
       percentage: score.percentage
     };
     
-    // Save to Supabase
-    await practiceSessionService.savePracticeSession(sessionData);
+    // Save to Supabase and get feedback
+    const result = await practiceSessionService.savePracticeSession(sessionData);
+    
+    // Show appropriate message
+    if (result.success) {
+      if (result.isFirstAttempt) {
+        toast.success(`🎉 ${result.message}`, { duration: 4000 });
+      } else {
+        toast(`📝 ${result.message}`, { 
+          icon: '💡',
+          duration: 3000 
+        });
+      }
+    }
     
     // Also save to localStorage as backup
     const currentUser = getCurrentUser();
@@ -358,12 +370,12 @@ const PracticeQuestions = () => {
     setPracticeComplete(true);
     setView('results');
 
-    if (score.percentage >= 70) {
+    if (score.percentage >= 70 && result.isFirstAttempt) {
       confetti({
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#22c55e', '#16a34a', '#4ade80'] // Green confetti to match theme
+        colors: ['#22c55e', '#16a34a', '#4ade80']
       });
     }
   };
