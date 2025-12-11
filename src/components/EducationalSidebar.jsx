@@ -67,32 +67,32 @@ const EducationalSidebar = ({ children }) => {
       icon: WalletIcon,
       path: '/dashboard/wallet'
     },
-    {
-      id: 'scratch-cards',
-      label: 'Result Checkers',
-      icon: DocumentTextIcon,
-      isGroup: true,
-      children: [
-        { label: 'WAEC Checker', path: '/dashboard/scratch-card/waec-checker' },
-        { label: 'NECO Checker', path: '/dashboard/scratch-card/neco-checker' },
-        { label: 'NBAIS Checker', path: '/dashboard/scratch-card/nbais-checker' },
-        { label: 'NABTEB Checker', path: '/dashboard/scratch-card/nabteb-checker' },
-        { label: 'WAEC GCE', path: '/dashboard/scratch-card/waec-gce' }
-      ]
-    },
-    {
-      id: 'jamb-services',
-      label: 'JAMB Services',
-      icon: AcademicCapIcon,
-      isGroup: true,
-      children: [
-        { label: 'O-Level Upload', path: '/dashboard/buy-olevel-upload' },
-        { label: 'Admission Letter', path: '/dashboard/buy-admission-letter' },
-        { label: 'Original Result', path: '/dashboard/buy-original-result' },
-        { label: 'Pin Vending', path: '/dashboard/buy-pin-vending' },
-        { label: 'CAPS Printing', path: '/dashboard/reprinting-jamb-caps' }
-      ]
-    },
+    // {
+    //   id: 'scratch-cards',
+    //   label: 'Result Checkers',
+    //   icon: DocumentTextIcon,
+    //   isGroup: true,
+    //   children: [
+    //     { label: 'WAEC Checker', path: '/dashboard/scratch-card/waec-checker' },
+    //     { label: 'NECO Checker', path: '/dashboard/scratch-card/neco-checker' },
+    //     { label: 'NBAIS Checker', path: '/dashboard/scratch-card/nbais-checker' },
+    //     { label: 'NABTEB Checker', path: '/dashboard/scratch-card/nabteb-checker' },
+    //     { label: 'WAEC GCE', path: '/dashboard/scratch-card/waec-gce' }
+    //   ]
+    // },
+    // {
+    //   id: 'jamb-services',
+    //   label: 'JAMB Services',
+    //   icon: AcademicCapIcon,
+    //   isGroup: true,
+    //   children: [
+    //     { label: 'O-Level Upload', path: '/dashboard/buy-olevel-upload' },
+    //     { label: 'Admission Letter', path: '/dashboard/buy-admission-letter' },
+    //     { label: 'Original Result', path: '/dashboard/buy-original-result' },
+    //     { label: 'Pin Vending', path: '/dashboard/buy-pin-vending' },
+    //     { label: 'CAPS Printing', path: '/dashboard/reprinting-jamb-caps' }
+    //   ]
+    // },
     {
       id: 'ai-services',
       label: 'AI Services',
