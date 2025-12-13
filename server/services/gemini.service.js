@@ -1,201 +1,130 @@
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 class GeminiService {
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY;
-    if (!this.apiKey) console.error('⚠️ GEMINI_API_KEY not found in environment variables');
-    this.baseUrl = "https://generativelanguage.googleapis.com/v1beta";
+    if (!this.apiKey) console.error('⚠️ GEMINI_API_KEY not found');
+    this.genAI = new GoogleGenerativeAI(this.apiKey);
+    this.cachedModelName = null;
   }
 
   /**
-   * Selects the best available model (Flash 1.5 is prioritized for speed/cost)
+   * 🔍 DYNAMIC MODEL FINDER (The Fix)
+   * This uses the exact logic from your successful test script.
    */
-  async getValidModel() {
+  async getBestModelName() {
+    if (this.cachedModelName) return this.cachedModelName;
+
+    console.log("🔍 Auto-detecting best available Gemini model...");
+    
     try {
-      const response = await fetch(`${this.baseUrl}/models?key=${this.apiKey}`);
+      // 1. Ask Google what models you have access to
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
       const data = await response.json();
       
-      if (!data.models) {
-        return "models/gemini-1.5-flash"; 
-      }
+      if (!data.models) throw new Error("No models returned from Google API");
 
-      const viable = data.models.filter(m => m.supportedGenerationMethods?.includes("generateContent"));
+      const models = data.models;
+
+      // 2. Priority Search: Look for '2.5-flash', then '1.5-flash', then any 'flash'
+      let chosen = models.find(m => m.name.includes('gemini-2.5-flash'));
+      if (!chosen) chosen = models.find(m => m.name.includes('gemini-1.5-flash'));
+      if (!chosen) chosen = models.find(m => m.name.includes('flash'));
+      if (!chosen) chosen = models.find(m => m.name.includes('gemini-pro'));
       
-      // Priority: Flash 1.5 -> Pro 1.5 -> Any
-      let chosen = viable.find(m => m.name.includes("gemini-1.5-flash"));
-      if (!chosen) chosen = viable.find(m => m.name.includes("gemini-1.5-pro"));
-      if (!chosen) chosen = viable[0];
+      // Fallback to the first available model if nothing matches
+      if (!chosen) chosen = models[0];
 
-      return chosen ? chosen.name : "models/gemini-1.5-flash";
+      // 3. Clean the name (remove "models/" prefix)
+      this.cachedModelName = chosen.name.replace("models/", "");
+      
+      console.log(`✅ Selected Model: ${this.cachedModelName}`);
+      return this.cachedModelName;
+
     } catch (error) {
-      return "models/gemini-1.5-flash"; 
+      console.error("❌ Model Discovery Failed:", error.message);
+      // Fallback hardcoded if discovery fails (network issue)
+      return "gemini-2.5-flash"; 
     }
   }
 
-  /**
-   * ROBUST JSON CLEANER
-   * Fixes "Bad control character", "SyntaxError", and "500 Internal Server Error" crashes.
-   */
+  getDomainInstructions(subject) {
+    const s = subject.toLowerCase();
+    if (s.includes('english')) return `DOMAIN: JAMB USE OF ENGLISH. Include Lexis, Structure, Oral English.`;
+    if (['physics', 'chemistry', 'math'].some(x => s.includes(x))) return `DOMAIN: SCIENCES. 40% Calculations.`;
+    return `DOMAIN: GENERAL ACADEMIC.`;
+  }
+
   cleanAndParseJSON(text) {
-    if (!text) throw new Error("Empty response from AI");
-
-    // 1. Remove Markdown code blocks
     let cleaned = text.replace(/```json/g, '').replace(/```/g, '');
-
-    // 2. Extract strictly the Array [...] part
     const firstBracket = cleaned.indexOf('[');
     const lastBracket = cleaned.lastIndexOf(']');
-    
-    if (firstBracket === -1 || lastBracket === -1) {
-      if (cleaned.trim().startsWith('{')) return [JSON.parse(cleaned)];
-      throw new Error("AI did not return a valid JSON structure.");
-    }
-
+    if (firstBracket === -1) return cleaned.trim().startsWith('{') ? [JSON.parse(cleaned)] : [];
     cleaned = cleaned.substring(firstBracket, lastBracket + 1);
+    try { return JSON.parse(cleaned); } catch (e) { return []; }
+  }
 
-    // 3. Attempt Standard Parse
-    try {
-      return JSON.parse(cleaned);
-    } catch (e) {
-      console.warn("⚠️ Standard JSON parse failed. Attempting strict cleanup...");
+  async generateQuestions(params) {
+    const { subject, topic, difficulty = 'hard', totalQuestions = 45 } = params;
+    
+    // "STUDENT SAVER" BATCHING (5 questions per batch)
+    const BATCH_SIZE = 5; 
+    const batchesNeeded = Math.ceil(totalQuestions / BATCH_SIZE);
+    let allQuestions = [];
+
+    // 1. Resolve the correct model name
+    const modelName = await this.getBestModelName();
+
+    console.log(`🤖 [JAMB SIMULATOR] Generating ${totalQuestions} questions using ${modelName}...`);
+
+    const model = this.genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: { responseMimeType: "application/json" }
+    });
+
+    for (let i = 0; i < batchesNeeded; i++) {
+      const remaining = totalQuestions - allQuestions.length;
+      const currentBatchSize = Math.min(BATCH_SIZE, remaining);
       
-      // 4. Fix formatting issues (newlines inside strings)
-      cleaned = cleaned
-        .replace(/(?:\r\n|\r|\n)/g, ' ') // Replace all hard newlines with spaces
-        .replace(/\s+/g, ' '); // Collapse multiple spaces
+      const prompt = `
+        ACT AS: JAMB Chief Examiner.
+        TASK: Generate ${currentBatchSize} ${difficulty} questions for ${subject} on "${topic}".
+        ${this.getDomainInstructions(subject)}
+        STRICTLY RETURN JSON ARRAY: [{ "question": "...", "options": ["A","B","C","D"], "answer": "...", "explanation": "..." }]
+      `;
 
       try {
-        return JSON.parse(cleaned);
-      } catch (finalError) {
-        console.error("❌ Final JSON Parse Error. Raw Text:", text);
-        throw new Error(`Failed to parse AI response. The AI generated invalid JSON.`);
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const batchData = this.cleanAndParseJSON(response.text());
+        
+        if (Array.isArray(batchData) && batchData.length > 0) {
+          allQuestions = [...allQuestions, ...batchData];
+          console.log(`   ✅ Batch ${i + 1}/${batchesNeeded} success`);
+        } else {
+           console.warn(`   ⚠️ Batch ${i + 1} returned empty data.`);
+        }
+
+        // SAFETY DELAY: 5 seconds between requests to avoid 429 errors
+        if (i < batchesNeeded - 1) {
+            console.log("   ⏳ Waiting 5s (Rate Limit Safety)...");
+            await new Promise(r => setTimeout(r, 5000));
+        }
+
+      } catch (error) {
+        console.error(`   ❌ Batch ${i + 1} failed:`, error.message);
+        // If we hit a rate limit, wait 60s and retry the batch (simple retry logic)
+        if (error.message.includes('429')) {
+             console.log("   🛑 Rate Limit hit. Pausing for 60 seconds...");
+             await new Promise(r => setTimeout(r, 60000));
+             i--; // Retry this batch
+        }
       }
     }
-  }
 
-  /**
-   * GENERATE QUESTIONS (High Educational Standard)
-   */
-  async generateQuestions(text, options = {}) {
-    const { questionCount = 10, difficulty = 'medium', questionTypes = ['multiple-choice'] } = options;
+    if (allQuestions.length === 0) throw new Error("Failed to generate questions. API might be overloaded.");
     
-    if (!text || text.length < 10) throw new Error("Text is too short to generate questions.");
-    
-    const processedText = text.substring(0, 30000); 
-    const modelName = await this.getValidModel();
-    const url = `${this.baseUrl}/${modelName}:generateContent?key=${this.apiKey}`;
-
-    const promptText = `
-    ROLE: Act as an expert University Professor and Examiner.
-    TASK: Create a rigorous exam based strictly on the provided text.
-    
-    TARGET AUDIENCE: Students who need to master this subject.
-    DIFFICULTY: ${difficulty} (Adjust complexity of logic, not just obscure facts).
-    
-    INSTRUCTIONS FOR QUALITY:
-    1. **Deep Understanding:** Do not ask surface-level questions. Ask "How", "Why", and "Analyze".
-    2. **Plausible Distractors:** For Multiple Choice, wrong options must be realistic misconceptions.
-    3. **Educational Explanations:** The 'explanation' field is CRITICAL. It must be a mini-lesson explaining WHY the answer is correct.
-    
-    REQUIRED QUESTION TYPES:
-    ${questionTypes.join(', ')}
-    
-    SOURCE MATERIAL:
-    """
-    ${processedText}
-    """
-    
-    OUTPUT FORMAT:
-    Return a RAW JSON Array of objects. No Markdown. No conversational text.
-    
-    CRITICAL SYNTAX RULES:
-    - Do NOT use real newlines inside strings.
-    - Escape all quotes properly.
-    
-    JSON STRUCTURE PER QUESTION:
-    {
-      "type": "multiple-choice" | "true-false" | "fill-in-blank" | "flashcard",
-      "question": "The question text",
-      "options": ["A", "B", "C", "D"] (Required for MC/TrueFalse),
-      "correct_answer": "Exact string matching one option",
-      "explanation": "Detailed pedagogical explanation (mini-lesson)",
-      "difficulty": "${difficulty}"
-    }
-    
-    Generate exactly ${questionCount} questions.
-    `;
-
-    const payload = {
-      contents: [{ parts: [{ text: promptText }] }],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json"
-      }
-    };
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || response.statusText);
-      }
-
-      const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      return this.cleanAndParseJSON(rawText);
-
-    } catch (error) {
-      console.error('AI Service Error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * VALIDATE ANSWER (Grading)
-   */
-  async validateAnswer(userAnswer, correctAnswer, question) {
-    const modelName = await this.getValidModel();
-    const url = `${this.baseUrl}/${modelName}:generateContent?key=${this.apiKey}`;
-
-    const prompt = `
-    Context: Educational Grading.
-    Question: "${question}"
-    Correct Answer: "${correctAnswer}"
-    Student Answer: "${userAnswer}"
-
-    Task: Determine if the Student Answer is semantically correct.
-    
-    Output JSON: { "isCorrect": boolean, "feedback": "string", "issues": ["string"] }
-    `;
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { 
-            temperature: 0.1, 
-            responseMimeType: "application/json" 
-          }
-        })
-      });
-
-      if (!response.ok) throw new Error('AI validation failed');
-
-      const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      return this.cleanAndParseJSON(rawText);
-      
-    } catch (error) {
-      console.error('Validation error:', error);
-      return { isCorrect: false, feedback: "Could not validate answer automatically.", issues: ["AI Error"] };
-    }
+    return allQuestions;
   }
 }
 

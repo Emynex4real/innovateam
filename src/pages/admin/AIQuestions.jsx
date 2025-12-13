@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Badge } from '../../components/ui/badge';
 import { AIQuestionsService } from '../../services/aiQuestions.service';
-import { Plus, Trash2, Edit, Eye, EyeOff, Download, Upload, AlertCircle } from 'lucide-react';
+import { Trash2, Eye, EyeOff, AlertCircle, BookOpen, BrainCircuit } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { diagnoseQuestionBank } from '../../utils/questionBankDiagnostic';
+
+// --- MATH RENDERING IMPORTS ---
+import 'katex/dist/katex.min.css';
+import Latex from 'react-latex-next';
 
 const AIQuestions = () => {
   const [activeTab, setActiveTab] = useState('generate');
@@ -18,16 +21,18 @@ const AIQuestions = () => {
   const [questions, setQuestions] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [selectedQuestions, setSelectedQuestions] = useState([]);
+  
+  // Toggle between 'topic' (AI Simulator) and 'text' (Comprehension)
+  const [generationMode, setGenerationMode] = useState('topic');
 
-  // Generate form state
   const [generateForm, setGenerateForm] = useState({
-    text: '',
-    questionCount: 10,
-    difficulty: 'medium',
+    subject: '',      
+    topic: '',        
+    bankName: '',     
+    text: '',         
+    questionCount: 5, // Default to Safe Mode
+    difficulty: 'hard',
     questionTypes: ['multiple-choice'],
-    bankName: '',
-    subject: ''
   });
 
   useEffect(() => {
@@ -35,22 +40,17 @@ const AIQuestions = () => {
     loadStats();
   }, []);
 
+  // --- DATA LOADING ---
   const loadBanks = async () => {
     try {
       setLoading(true);
-      console.log('Loading question banks...');
       const result = await AIQuestionsService.getQuestionBanks();
-      console.log('Question banks result:', result);
       if (result.success) {
         setBanks(result.data || []);
-        toast.success(`Loaded ${result.data?.length || 0} question banks`);
-      } else {
-        toast.error('Failed to load question banks');
       }
     } catch (error) {
-      console.error('Failed to load question banks:', error);
-      const errorMsg = error.response?.data?.error || error.message || 'Failed to load question banks';
-      toast.error(errorMsg);
+      toast.error('Failed to load question banks');
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -58,15 +58,10 @@ const AIQuestions = () => {
 
   const loadStats = async () => {
     try {
-      console.log('Loading question stats...');
       const result = await AIQuestionsService.getQuestionStats();
-      console.log('Question stats result:', result);
-      if (result.success) {
-        setStats(result.data);
-      }
+      if (result.success) setStats(result.data);
     } catch (error) {
-      console.error('Failed to load stats:', error);
-      // Don't show error toast for stats as it's not critical
+      console.error('Stats load failed', error);
     }
   };
 
@@ -77,6 +72,7 @@ const AIQuestions = () => {
       if (result.success) {
         setQuestions(result.data);
         setSelectedBank(bankId);
+        setActiveTab('questions'); 
       }
     } catch (error) {
       toast.error('Failed to load questions');
@@ -85,52 +81,72 @@ const AIQuestions = () => {
     }
   };
 
+  // --- ACTION HANDLERS ---
+
   const handleGenerate = async (e) => {
     e.preventDefault();
-    if (!generateForm.text || generateForm.text.length < 10) {
-      toast.error('Please provide text content (minimum 10 characters)');
+
+    // 1. Validation
+    if (!generateForm.subject || !generateForm.bankName) {
+      toast.error('Subject and Bank Name are required.');
       return;
     }
 
-    // Default to 10 if empty/invalid
-    const finalForm = {
-        ...generateForm,
-        questionCount: generateForm.questionCount || 10
+    if (generationMode === 'topic' && !generateForm.topic) {
+      toast.error('Please specify a Topic.');
+      return;
+    }
+
+    if (generationMode === 'text' && (!generateForm.text || generateForm.text.length < 50)) {
+      toast.error('Please provide sufficient text content (min 50 chars).');
+      return;
+    }
+
+    // 2. Payload
+    const payload = {
+      ...generateForm,
+      text: generationMode === 'topic' ? null : generateForm.text,
+      questionCount: parseInt(generateForm.questionCount) || 5
     };
 
     try {
       setLoading(true);
-      toast.loading('Generating questions... This may take 30-60 seconds');
+      const loadingToast = toast.loading(
+        `AI is generating ${payload.questionCount} questions. This may take a few minutes...`
+      );
       
+      // 3. EXTENDED TIMEOUT (5 Minutes)
       const result = await Promise.race([
-        AIQuestionsService.generateQuestions(finalForm),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout - try with shorter text')), 90000) // Increased timeout to 90s
-        )
+        AIQuestionsService.generateQuestions(payload),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('AI took too long (Timeout).')), 300000))
       ]);
       
-      toast.dismiss();
+      toast.dismiss(loadingToast);
+
       if (result.success) {
-        toast.success(`Generated ${result.questions.length} questions successfully!`);
-        setGenerateForm({ ...generateForm, text: '' });
+        toast.success(`Success! Generated ${result.questions.length} questions.`);
+        // Reset form but keep subject
+        setGenerateForm({ ...generateForm, text: '', topic: '' }); 
         loadBanks();
         loadStats();
+        if (result.bankId) loadQuestions(result.bankId);
       }
     } catch (error) {
       toast.dismiss();
-      console.error('Generate error:', error);
-      toast.error(error.message || error.response?.data?.message || 'Failed to generate questions');
+      console.error('Generate Error:', error);
+      toast.error(error.message || 'Generation failed.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteBank = async (bankId) => {
-    if (!window.confirm('Delete this question bank? All questions will be removed.')) return;
+  const handleDeleteBank = async (bankId, e) => {
+    e.stopPropagation(); 
+    if (!window.confirm('Delete this bank and all its questions?')) return;
     
     try {
       await AIQuestionsService.deleteQuestionBank(bankId);
-      toast.success('Question bank deleted');
+      toast.success('Bank deleted');
       loadBanks();
       loadStats();
       if (selectedBank === bankId) {
@@ -138,251 +154,162 @@ const AIQuestions = () => {
         setQuestions([]);
       }
     } catch (error) {
-      toast.error('Failed to delete question bank');
+      toast.error('Delete failed');
     }
   };
 
-  const handleDeleteQuestion = async (questionId) => {
-    if (!window.confirm('Delete this question?')) return;
-    
-    try {
-      await AIQuestionsService.deleteQuestion(questionId);
-      toast.success('Question deleted');
-      loadQuestions(selectedBank);
-      loadStats();
-    } catch (error) {
-      toast.error('Failed to delete question');
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedQuestions.length === 0) {
-      toast.error('No questions selected');
-      return;
-    }
-    if (!window.confirm(`Delete ${selectedQuestions.length} selected questions?`)) return;
-
-    try {
-      await AIQuestionsService.bulkDeleteQuestions(selectedQuestions);
-      toast.success(`${selectedQuestions.length} questions deleted`);
-      setSelectedQuestions([]);
-      loadQuestions(selectedBank);
-      loadStats();
-    } catch (error) {
-      toast.error('Failed to delete questions');
-    }
-  };
-
-  const handleToggleStatus = async (questionId) => {
-    try {
-      await AIQuestionsService.toggleQuestionStatus(questionId);
-      toast.success('Question status updated');
-      loadQuestions(selectedBank);
-    } catch (error) {
-      toast.error('Failed to update question status');
-    }
-  };
-
-  const toggleQuestionSelection = (questionId) => {
-    setSelectedQuestions(prev =>
-      prev.includes(questionId)
-        ? prev.filter(id => id !== questionId)
-        : [...prev, questionId]
-    );
-  };
+  // --- RENDER HELPERS ---
 
   const renderGenerateTab = () => (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <button
+          type="button"
+          onClick={() => setGenerationMode('topic')}
+          className={`p-4 border rounded-lg flex items-center gap-3 transition-all ${
+            generationMode === 'topic' 
+              ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+              : 'hover:bg-gray-50'
+          }`}
+        >
+          <BrainCircuit className="w-6 h-6" />
+          <div className="text-left">
+            <div className="font-semibold">AI Simulator (Topic)</div>
+            <div className="text-xs opacity-70">Best for Science & Math. AI creates new questions.</div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setGenerationMode('text')}
+          className={`p-4 border rounded-lg flex items-center gap-3 transition-all ${
+            generationMode === 'text' 
+              ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' 
+              : 'hover:bg-gray-50'
+          }`}
+        >
+          <BookOpen className="w-6 h-6" />
+          <div className="text-left">
+            <div className="font-semibold">Comprehension (Text)</div>
+            <div className="text-xs opacity-70">Best for English Passages. Paste text to analyze.</div>
+          </div>
+        </button>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Generate Questions from Text</CardTitle>
+          <CardTitle>
+            {generationMode === 'topic' ? 'Generate from Topic' : 'Generate from Text'}
+          </CardTitle>
+          <CardDescription>
+            Configure your exam parameters below.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleGenerate} className="space-y-4">
-            <div>
-              <Label>Text Content</Label>
-              <Textarea
-                value={generateForm.text}
-                onChange={(e) => setGenerateForm({ ...generateForm, text: e.target.value })}
-                placeholder="Paste your educational content here..."
-                rows={8}
-                required
-              />
+          <form onSubmit={handleGenerate} className="space-y-6">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label>Subject <span className="text-red-500">*</span></Label>
+                <Input
+                  value={generateForm.subject}
+                  onChange={(e) => setGenerateForm({ ...generateForm, subject: e.target.value })}
+                  placeholder="e.g. Mathematics"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Topic <span className="text-red-500">*</span></Label>
+                <Input
+                  value={generateForm.topic}
+                  onChange={(e) => setGenerateForm({ 
+                    ...generateForm, 
+                    topic: e.target.value,
+                    bankName: !generateForm.bankName ? `${e.target.value} Quiz` : generateForm.bankName
+                  })}
+                  placeholder="e.g. Calculus"
+                  className="mt-1"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {generationMode === 'text' && (
+              <div className="animate-in fade-in zoom-in duration-300">
+                <Label>Source Text <span className="text-red-500">*</span></Label>
+                <Textarea
+                  value={generateForm.text}
+                  onChange={(e) => setGenerateForm({ ...generateForm, text: e.target.value })}
+                  placeholder="Paste passage here..."
+                  rows={8}
+                  className="mt-1"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <Label>Bank Name</Label>
                 <Input
                   value={generateForm.bankName}
                   onChange={(e) => setGenerateForm({ ...generateForm, bankName: e.target.value })}
-                  placeholder="e.g., Biology Chapter 1"
-                  required
+                  placeholder="Set Name"
+                  className="mt-1"
                 />
               </div>
-              <div>
-                <Label>Subject</Label>
-                <Input
-                  value={generateForm.subject}
-                  onChange={(e) => setGenerateForm({ ...generateForm, subject: e.target.value })}
-                  placeholder="e.g., Biology"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label>Question Count</Label>
-                {/* FIX: Handle NaN/Empty values safely */}
-                <Input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={generateForm.questionCount || ''}
-                  onChange={(e) => setGenerateForm({ 
-                    ...generateForm, 
-                    questionCount: e.target.value ? parseInt(e.target.value) : '' 
-                  })}
-                  placeholder="10"
-                />
+                <Label>Quantity</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={generateForm.questionCount}
+                  onChange={(e) => setGenerateForm({ ...generateForm, questionCount: e.target.value })}
+                >
+                  <option value="5">5 Questions (Free Tier Safe)</option>
+                  <option value="15">15 Questions (1 Batch)</option>
+                  <option value="30">30 Questions (2 Batches)</option>
+                  <option value="45">45 Questions (Standard)</option>
+                  <option value="60">60 Questions (Exam Mode)</option>
+                </select>
               </div>
+
               <div>
                 <Label>Difficulty</Label>
                 <select 
-                  value={generateForm.difficulty} 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={generateForm.difficulty}
                   onChange={(e) => setGenerateForm({ ...generateForm, difficulty: e.target.value })}
-                  className="w-full p-2 border rounded-md"
                 >
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
                   <option value="hard">Hard</option>
                 </select>
               </div>
-              <div>
-                <Label>Question Types</Label>
-                <select 
-                  value={generateForm.questionTypes[0]} 
-                  onChange={(e) => setGenerateForm({ ...generateForm, questionTypes: [e.target.value] })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="multiple-choice">Multiple Choice</option>
-                  <option value="true-false">True/False</option>
-                  <option value="fill-in-blank">Fill in Blank</option>
-                  <option value="flashcard">Flashcard</option>
-                </select>
-              </div>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Generating...' : 'Generate Questions'}
+            <Button size="lg" type="submit" disabled={loading} className="w-full font-semibold">
+              {loading ? <span className="animate-spin mr-2">⏳</span> : null}
+              {loading ? 'Generating...' : `Generate ${generateForm.questionCount} Questions`}
             </Button>
           </form>
         </CardContent>
       </Card>
 
+      {/* Stats Section */}
       {stats && (
-        <div className="grid grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{stats.totalBanks}</div>
-              <div className="text-sm text-gray-500">Question Banks</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-slate-50">
+            <CardContent className="pt-6 text-center">
+              <div className="text-2xl font-bold text-blue-600">{stats.totalBanks}</div>
+              <div className="text-xs text-gray-500 uppercase">Banks</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{stats.totalQuestions}</div>
-              <div className="text-sm text-gray-500">Total Questions</div>
+          <Card className="bg-slate-50">
+            <CardContent className="pt-6 text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.totalQuestions}</div>
+              <div className="text-xs text-gray-500 uppercase">Questions</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{stats.totalUsage}</div>
-              <div className="text-sm text-gray-500">Times Used</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">
-                {stats.totalUsage > 0 ? Math.round((stats.correctAnswers / stats.totalUsage) * 100) : 0}%
-              </div>
-              <div className="text-sm text-gray-500">Success Rate</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderBanksTab = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Question Banks</h2>
-        <Button onClick={loadBanks}>Refresh</Button>
-      </div>
-
-      {loading && banks.length === 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="h-4 bg-gray-200 rounded"></div>
-                <div className="h-4 bg-gray-200 rounded"></div>
-                <div className="h-10 bg-gray-300 rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {banks.map((bank) => (
-          <Card key={bank.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{bank.name}</CardTitle>
-                  <p className="text-sm text-gray-500">{bank.subject}</p>
-                </div>
-                <Badge variant={bank.is_active ? 'default' : 'secondary'}>
-                  {bank.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Questions:</span>
-                  <span className="font-semibold">{bank.questionCount}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Difficulty:</span>
-                  <Badge variant="outline">{bank.difficulty}</Badge>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Created by:</span>
-                  <span className="text-gray-600">{bank.creatorName}</span>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button size="sm" onClick={() => loadQuestions(bank.id)} className="flex-1">
-                    <Eye className="w-4 h-4 mr-1" /> View
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleDeleteBank(bank.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        </div>
-      )}
-
-      {!loading && banks.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          No question banks yet. Generate some questions to get started!
         </div>
       )}
     </div>
@@ -390,146 +317,152 @@ const AIQuestions = () => {
 
   const renderQuestionsTab = () => (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Questions</h2>
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg border shadow-sm">
+        <div>
+          <h2 className="text-xl font-bold">
+            {banks.find(b => b.id === selectedBank)?.name || 'All Questions'}
+          </h2>
+          <p className="text-sm text-gray-500">{questions.length} Questions loaded</p>
+        </div>
         <div className="flex gap-2">
-          {selectedQuestions.length > 0 && (
-            <Button variant="destructive" onClick={handleBulkDelete}>
-              Delete Selected ({selectedQuestions.length})
-            </Button>
-          )}
-          {selectedBank && <Button onClick={() => loadQuestions(selectedBank)}>Refresh</Button>}
+           <Button variant="outline" onClick={() => setActiveTab('banks')}>Back</Button>
+           <Button onClick={() => loadQuestions(selectedBank)}>Refresh</Button>
         </div>
       </div>
 
-      {!selectedBank ? (
-        <div className="text-center py-12 text-gray-500">
-          Select a question bank from the Banks tab to view questions
-        </div>
-      ) : questions.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          No questions in this bank
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {questions.map((q, idx) => (
-            <Card key={q.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedQuestions.includes(q.id)}
-                    onChange={() => toggleQuestionSelection(q.id)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex gap-2">
-                        <Badge>{q.type}</Badge>
-                        <Badge variant="outline">{q.difficulty}</Badge>
-                        <Badge variant={q.is_active ? 'default' : 'secondary'}>
-                          {q.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => handleToggleStatus(q.id)}>
-                          {q.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDeleteQuestion(q.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+      <div className="grid gap-6">
+        {questions.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            No questions found. Select a bank to view questions.
+          </div>
+        ) : (
+          questions.map((q, idx) => (
+            <Card key={q.id || idx} className="overflow-hidden hover:shadow-md transition-shadow">
+              <div className="border-l-4 border-blue-500">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-2 items-center">
+                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded">
+                        Q{idx + 1}
+                      </span>
+                      <Badge variant="outline">{q.difficulty}</Badge>
+                    </div>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* --- QUESTION TEXT WITH LATEX --- */}
+                  <div className="text-lg font-medium mb-4 text-gray-800">
+                    <Latex>{q.question}</Latex>
+                  </div>
+
+                  {/* --- OPTIONS WITH LATEX --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pl-4 border-l-2 border-gray-100">
+                    {(() => {
+                      let parsedOptions = [];
+                      try {
+                        parsedOptions = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+                      } catch (e) { parsedOptions = []; }
+
+                      if (!Array.isArray(parsedOptions)) return <div className="text-red-500 text-sm">Error options</div>;
+
+                      return parsedOptions.map((opt, i) => {
+                        const isCorrect = opt.trim() === q.correct_answer?.trim();
+                        return (
+                          <div 
+                            key={i} 
+                            className={`p-3 rounded-md text-sm border ${
+                              isCorrect 
+                                ? 'bg-green-50 border-green-200 text-green-800 font-medium' 
+                                : 'bg-gray-50 border-gray-100 text-gray-600'
+                            }`}
+                          >
+                            <span className="font-bold mr-2">{String.fromCharCode(65 + i)}.</span>
+                            {/* Render Option Math */}
+                            <Latex>{opt}</Latex>
+                            {isCorrect && <span className="ml-2">✅</span>}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* --- EXPLANATION WITH LATEX --- */}
+                  {q.explanation && (
+                    <div className="bg-blue-50 p-3 rounded text-sm text-blue-800 flex items-start gap-2">
+                      <BrainCircuit className="w-4 h-4 mt-1 shrink-0" />
+                      <div>
+                        <span className="font-bold block text-xs uppercase tracking-wide opacity-70">Explanation</span>
+                        <Latex>{q.explanation}</Latex>
                       </div>
                     </div>
-                    <p className="font-semibold mb-2">{idx + 1}. {q.question}</p>
-                    {q.options && (
-                      <div className="ml-4 space-y-1 text-sm">
-                        {(() => {
-                          try {
-                            const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-                            return Array.isArray(options) ? options.map((opt, i) => (
-                              <div key={i} className={opt === q.correct_answer ? 'text-green-600 font-semibold' : ''}>
-                                {opt} {opt === q.correct_answer && '✓'}
-                              </div>
-                            )) : null;
-                          } catch (e) {
-                            return <div className="text-red-500">Invalid options format</div>;
-                          }
-                        })()}
-                      </div>
-                    )}
-                    {!q.options && (
-                      <div className="ml-4 text-sm">
-                        <span className="font-semibold text-green-600">Answer: {q.correct_answer}</span>
-                      </div>
-                    )}
-                    {q.explanation && (
-                      <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        <strong>Explanation:</strong> {q.explanation}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
+                  )}
+                </CardContent>
+              </div>
             </Card>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 
-  const runDiagnostic = async () => {
-    toast.loading('Running diagnostic...');
-    try {
-      const results = await diagnoseQuestionBank();
-      toast.dismiss();
-      
-      const allGood = results.auth && results.admin && results.tables && results.api;
-      if (allGood) {
-        toast.success('All systems operational!');
-      } else {
-        toast.error('Issues found. Check browser console for details.');
-      }
-    } catch (error) {
-      toast.dismiss();
-      toast.error('Diagnostic failed. Check console.');
-      console.error('Diagnostic error:', error);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">AI Question Management</h1>
-        <Button variant="outline" onClick={runDiagnostic}>
-          <AlertCircle className="w-4 h-4 mr-2" />
-          Run Diagnostic
-        </Button>
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">AI Question Studio</h1>
+          <p className="text-gray-500">Generate, manage, and distribute JAMB-standard questions.</p>
+        </div>
+        <div className="flex gap-2">
+           <Button variant="outline" size="sm" onClick={() => diagnoseQuestionBank()}>
+             <AlertCircle className="w-4 h-4 mr-2" /> System Check
+           </Button>
+        </div>
       </div>
 
-      <div className="flex gap-2 border-b">
-        <Button
-          variant={activeTab === 'generate' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('generate')}
-        >
-          Generate
-        </Button>
-        <Button
-          variant={activeTab === 'banks' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('banks')}
-        >
-          Banks ({banks.length})
-        </Button>
-        <Button
-          variant={activeTab === 'questions' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('questions')}
-        >
-          Questions {selectedBank && `(${questions.length})`}
-        </Button>
+      <div className="flex gap-2 mb-6 border-b pb-1 overflow-x-auto">
+        {['generate', 'banks', 'questions'].map(tab => (
+           <button
+             key={tab}
+             onClick={() => setActiveTab(tab)}
+             className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+               activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-gray-600 hover:bg-gray-100'
+             }`}
+           >
+             {tab.charAt(0).toUpperCase() + tab.slice(1)}
+           </button>
+        ))}
       </div>
 
-      {activeTab === 'generate' && renderGenerateTab()}
-      {activeTab === 'banks' && renderBanksTab()}
-      {activeTab === 'questions' && renderQuestionsTab()}
+      <div className="min-h-[500px]">
+        {activeTab === 'generate' && renderGenerateTab()}
+        {activeTab === 'banks' && (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {loading && <div className="col-span-full text-center py-10">Loading banks...</div>}
+             {!loading && banks.map(bank => (
+                <Card key={bank.id} className="hover:shadow-md transition-all cursor-pointer group" onClick={() => loadQuestions(bank.id)}>
+                   <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                         <Badge>{bank.subject}</Badge>
+                         <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500" onClick={(e) => handleDeleteBank(bank.id, e)}>
+                            <Trash2 className="w-4 h-4" />
+                         </Button>
+                      </div>
+                      <CardTitle className="text-lg mt-2 truncate">{bank.name}</CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                      <div className="flex justify-between text-sm text-gray-500 mt-2">
+                         <span>{bank.questionCount || 0} Questions</span>
+                         <span className="capitalize">{bank.difficulty}</span>
+                      </div>
+                   </CardContent>
+                </Card>
+             ))}
+           </div>
+        )}
+        {activeTab === 'questions' && renderQuestionsTab()}
+      </div>
     </div>
   );
 };

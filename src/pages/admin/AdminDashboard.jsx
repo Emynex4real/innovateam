@@ -1,191 +1,157 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Users, DollarSign, Activity, TrendingUp, Eye, Edit, Ban, CheckCircle, Database, Moon, Sun, Search, Wallet, Download, Trophy } from 'lucide-react';
+import { Input } from '../../components/ui/input';
+import { 
+  Users, DollarSign, Activity, TrendingUp, Sun, Moon, 
+  Search, Download, ChevronLeft, ChevronRight, Wallet, Eye 
+} from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, LabelList 
+} from 'recharts';
 import directSupabaseService from '../../services/directSupabase.service';
 import UserDetailModal from '../../components/UserDetailModal';
 import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 import AIQuestions from './AIQuestions';
 import AdminLeaderboard from './AdminLeaderboard';
-
 import toast from 'react-hot-toast';
-import emailService from '../../services/email/emailService';
+import { supabase } from '../../config/supabase'; 
+
+// --- STAT CARD COMPONENT ---
+const StatCard = ({ title, value, icon: Icon, isDark, subValue }) => (
+  <Card className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'} hover:shadow-lg transition-all`}>
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
+          <h3 className={`text-2xl font-bold mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</h3>
+          {subValue && <p className="text-xs text-green-500 mt-1 flex items-center">↑ {subValue}</p>}
+        </div>
+        <div className={`p-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-blue-50'}`}>
+          <Icon className={`h-6 w-6 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const AdminDashboardContent = () => {
   const { isDark, toggleTheme } = useTheme();
+  
+  // --- STATE MANAGEMENT ---
+  const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
+  
+  // Data
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [supabaseStatus, setSupabaseStatus] = useState(null);
-  const [lastTransactionCount, setLastTransactionCount] = useState(0);
+  const [creditRequests, setCreditRequests] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  
+  // REAL CHART DATA STATE (Replaces Mock Data)
+  const [chartData, setChartData] = useState([]);
+
+  // Modals & Actions
   const [selectedUser, setSelectedUser] = useState(null);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
-  const [transactionSearch, setTransactionSearch] = useState('');
   const [walletModalUser, setWalletModalUser] = useState(null);
   const [walletAmount, setWalletAmount] = useState('');
   const [walletType, setWalletType] = useState('credit');
-  const [creditRequests, setCreditRequests] = useState([]);
 
+  // Pagination & Search
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [itemsPerPage] = useState(10);
+
+  // --- INITIAL DATA LOAD ---
   useEffect(() => {
-    loadDashboardData();
-    if (activeTab === 'credit-requests') {
-      loadCreditRequests();
+    loadStats();
+    loadCreditRequests(); 
+  }, []);
+
+  // --- TAB SWITCH LOAD ---
+  useEffect(() => {
+    if (activeTab === 'users' || activeTab === 'transactions') {
+      loadTableData();
     }
-  }, [activeTab]);
+  }, [activeTab, currentPage, searchTerm]);
+
+  // --- DATA FETCHING FUNCTIONS ---
+
+  const loadStats = async () => {
+    // 1. Load General Stats (Top Cards)
+    const statsResult = await directSupabaseService.getDashboardStats();
+    if (statsResult.success) setStats(statsResult.stats);
+
+    // 2. Load Real Chart Data (Graphs)
+    // Checks if the new service method exists before calling to prevent crashes
+    if (directSupabaseService.getChartData) {
+      const chartResult = await directSupabaseService.getChartData();
+      if (chartResult.success) {
+        setChartData(chartResult.chartData);
+      }
+    }
+  };
 
   const loadCreditRequests = async () => {
-    try {
-      const supabase = (await import('../../config/supabase')).default;
-      const { data, error } = await supabase
-        .from('credit_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Credit requests error:', error);
-        setCreditRequests([]);
-        return;
-      }
-      
-      // Fetch user details separately
-      const requestsWithUsers = await Promise.all(
-        (data || []).map(async (request) => {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('full_name, email')
-            .eq('id', request.user_id)
-            .single();
-          
-          return {
-            ...request,
-            user_profiles: profile
-          };
-        })
-      );
-      
-      setCreditRequests(requestsWithUsers);
-    } catch (error) {
-      console.error('Failed to load credit requests:', error);
-      setCreditRequests([]);
-    }
+    const result = await directSupabaseService.getCreditRequests();
+    if (result.success) setCreditRequests(result.requests);
   };
 
-  const handleCreditRequest = async (requestId, action) => {
-    const loadingToast = toast.loading(`${action === 'approve' ? 'Approving' : 'Rejecting'} request...`);
-    try {
-      const supabase = (await import('../../config/supabase')).default;
-      const request = creditRequests.find(r => r.id === requestId);
-      
-      if (action === 'approve') {
-        // Update wallet balance
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('wallet_balance')
-          .eq('id', request.user_id)
-          .single();
-        
-        const newBalance = (profile?.wallet_balance || 0) + request.amount;
-        
-        await supabase
-          .from('user_profiles')
-          .update({ wallet_balance: newBalance })
-          .eq('id', request.user_id);
-        
-        // Create transaction
-        await supabase.from('transactions').insert({
-          user_id: request.user_id,
-          amount: request.amount,
-          type: 'credit',
-          status: 'successful',
-          description: 'Beta test credit - Admin approved'
-        });
-      }
-      
-      // Update request status
-      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-      await supabase
-        .from('credit_requests')
-        .update({
-          status: action === 'approve' ? 'approved' : 'rejected',
-          approved_by: currentUser.id,
-          approved_at: new Date().toISOString()
-        })
-        .eq('id', requestId);
-      
-      // Create notification
-      await supabase.from('notifications').insert({
-        user_id: request.user_id,
-        title: action === 'approve' ? '✅ Credit Request Approved!' : '❌ Credit Request Rejected',
-        message: action === 'approve' 
-          ? `Your test credit request of ₦${request.amount.toLocaleString()} has been approved and added to your wallet.`
-          : 'Your test credit request has been rejected. Please contact support for more information.',
-        type: action === 'approve' ? 'success' : 'error'
-      });
-      
-      // Send email notification
-      emailService.sendCreditApprovalEmail(
-        request.user_profiles?.email,
-        request.user_profiles?.full_name || 'User',
-        request.amount,
-        action === 'approve'
-      );
-      
-      toast.dismiss(loadingToast);
-      toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
-      await loadCreditRequests();
-      await loadDashboardData();
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      toast.error('Failed: ' + error.message);
-    }
-  };
-
-  const loadDashboardData = async () => {
+  const loadTableData = async () => {
     setLoading(true);
     try {
-      const [statsResult, usersResult, transactionsResult] = await Promise.all([
-        directSupabaseService.getDashboardStats(),
-        directSupabaseService.getAllUsers(),
-        directSupabaseService.getAllTransactions()
-      ]);
-      
-      // Mock services data for now
-      const servicesResult = { success: true, services: [] };
-
-      if (statsResult.success) setStats(statsResult.stats);
-      if (usersResult.success) setUsers(usersResult.users);
-      if (transactionsResult.success) {
-        const newTransactions = transactionsResult.transactions;
-        if (lastTransactionCount > 0 && newTransactions.length > lastTransactionCount) {
-          toast.success(`New transaction received! Total: ${newTransactions.length}`);
+      let result;
+      if (activeTab === 'users') {
+        result = await directSupabaseService.getAllUsers(currentPage, itemsPerPage, searchTerm);
+        if (result.success) {
+          setUsers(result.users);
+          setTotalItems(result.totalCount || 0);
         }
-        setTransactions(newTransactions);
-        setLastTransactionCount(newTransactions.length);
+      } else if (activeTab === 'transactions') {
+        result = await directSupabaseService.getAllTransactions(currentPage, itemsPerPage, searchTerm);
+        if (result.success) {
+          setTransactions(result.transactions);
+          setTotalItems(result.totalCount || 0);
+        }
       }
-      if (servicesResult.success) setServices(servicesResult.services);
     } catch (error) {
-      toast.error('Failed to load dashboard data');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
+  // --- FAST REFRESH FUNCTION ---
+  const handleRefresh = async () => {
+    const loadingToast = toast.loading('Refreshing dashboard...');
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadStats(), // Refreshes Stats AND Charts
+        loadCreditRequests(),
+        (activeTab === 'users' || activeTab === 'transactions') ? loadTableData() : Promise.resolve()
+      ]);
+      toast.success('Dashboard updated');
+    } catch (error) {
+      toast.error('Refresh failed');
+    } finally {
+      toast.dismiss(loadingToast);
+      setLoading(false);
+    }
+  };
+
+  // --- ACTION HANDLERS ---
+
   const handleWalletUpdate = async () => {
     if (!walletModalUser || !walletAmount) return;
     const amount = parseFloat(walletAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Invalid amount');
-      return;
-    }
+    if (isNaN(amount) || amount <= 0) return toast.error('Invalid amount');
 
     const loadingToast = toast.loading('Updating wallet...');
     try {
-      const supabase = (await import('../../config/supabase')).default;
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('wallet_balance')
@@ -195,11 +161,7 @@ const AdminDashboardContent = () => {
       const currentBalance = profile?.wallet_balance || 0;
       const newBalance = walletType === 'credit' ? currentBalance + amount : currentBalance - amount;
 
-      if (newBalance < 0) {
-        toast.dismiss(loadingToast);
-        toast.error('Insufficient balance for debit');
-        return;
-      }
+      if (newBalance < 0) throw new Error('Insufficient balance for debit');
 
       const { error } = await supabase
         .from('user_profiles')
@@ -217,647 +179,341 @@ const AdminDashboardContent = () => {
       });
 
       toast.dismiss(loadingToast);
-      toast.success(`₦${amount} ${walletType}ed successfully`);
+      toast.success(`Wallet updated successfully`);
       setWalletModalUser(null);
       setWalletAmount('');
-      await loadDashboardData();
+      loadTableData(); 
+      loadStats(); // Refresh charts to show new revenue immediately
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error('Failed: ' + error.message);
+      toast.error(error.message);
     }
   };
 
-  const exportToCSV = (data, filename) => {
-    const csv = data.map(row => Object.values(row).join(',')).join('\n');
-    const header = Object.keys(data[0]).join(',');
-    const blob = new Blob([header + '\n' + csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    toast.success('Exported successfully');
+  const handleCreditRequest = async (requestId, action, userId, amount) => {
+    const loadingToast = toast.loading('Processing request...');
+    try {
+      if (action === 'approve') {
+        const { data: profile } = await supabase.from('user_profiles').select('wallet_balance').eq('id', userId).single();
+        await supabase.from('user_profiles').update({ wallet_balance: (profile.wallet_balance || 0) + amount }).eq('id', userId);
+        await supabase.from('transactions').insert({
+          user_id: userId, amount, type: 'credit', status: 'successful', description: 'Credit Request Approved'
+        });
+      }
+
+      await supabase.from('credit_requests')
+        .update({ status: action === 'approve' ? 'approved' : 'rejected' })
+        .eq('id', requestId);
+
+      toast.dismiss(loadingToast);
+      toast.success(`Request ${action}d`);
+      loadCreditRequests(); 
+      loadStats(); // Refresh charts
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Action failed');
+    }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    user.id?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    user.phone?.includes(userSearch)
-  );
+  // --- RENDERERS ---
 
-  const filteredTransactions = transactions.filter(tx => 
-    tx.id?.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-    tx.description?.toLowerCase().includes(transactionSearch.toLowerCase())
-  );
-
-
-
-  if (loading) {
+  const renderPagination = () => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded"></div>
-            ))}
-          </div>
+      <div className="flex items-center justify-between mt-4">
+        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          Page {currentPage} of {totalPages || 1} (Total: {totalItems})
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     );
-  }
+  };
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${
-      isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
-    }`}>
-      <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>Admin Dashboard</h1>
-        <div className="flex gap-2">
-          <Button onClick={toggleTheme} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-          <Button onClick={loadDashboardData} variant="outline" className={isDark ? 'border-gray-600 text-white hover:bg-gray-800 hover:text-white bg-transparent' : 'border-gray-400 text-black hover:bg-gray-100 hover:text-black bg-white'}>
-            Refresh Data
-          </Button>
+    <div className={`min-h-screen transition-colors duration-200 ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Admin Portal</h1>
+            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Manage users, finances, and AI content.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={toggleTheme} variant="outline" size="icon" className="rounded-full">
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button onClick={handleRefresh} variant="default" className="flex items-center gap-2">
+               <Activity className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> 
+               Refresh Data
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className={`flex space-x-1 p-1 rounded-lg w-fit ${
-        isDark ? 'bg-gray-800' : 'bg-gray-200'
-      }`}>
-        {[
-          { id: 'overview', label: 'Overview' },
-          { id: 'users', label: 'Users' },
-          { id: 'transactions', label: 'Transactions' },
-          { id: 'credit-requests', label: '🎁 Credit Requests' },
-          { id: 'leaderboard', label: '🏆 Leaderboard Management' },
-          { id: 'ai-questions', label: '🤖 AI Questions' }
-        ].map(tab => (
-          <Button
-            key={tab.id}
-            variant={activeTab === tab.id ? 'default' : 'ghost'}
-            onClick={() => setActiveTab(tab.id)}
-            size="sm"
-            className={activeTab === tab.id 
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : (isDark ? 'text-white hover:bg-gray-700' : 'text-black hover:bg-gray-200')
-            }
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Total Users</p>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{stats?.totalUsers || 0}</p>
-                </div>
-                <Users className={`h-8 w-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Total Transactions</p>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{stats?.totalTransactions || 0}</p>
-                </div>
-                <Activity className={`h-8 w-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Total Revenue</p>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>₦{stats?.totalRevenue || 0}</p>
-                </div>
-                <DollarSign className={`h-8 w-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Today's Revenue</p>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>₦{stats?.todayRevenue || 0}</p>
-                </div>
-                <TrendingUp className={`h-8 w-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Navigation */}
+        <div className={`flex flex-wrap gap-2 p-1 rounded-xl w-full md:w-fit ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+          {[
+            { id: 'overview', label: 'Overview', icon: Activity },
+            { id: 'users', label: 'Users', icon: Users },
+            { id: 'transactions', label: 'Transactions', icon: DollarSign },
+            { id: 'credit-requests', label: 'Credits', icon: TrendingUp },
+            { id: 'leaderboard', label: 'Leaderboard', icon: TrendingUp },
+            { id: 'ai-questions', label: 'AI Studio', icon: Activity }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setSearchTerm(''); setCurrentPage(1); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.id 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : (isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-black hover:bg-gray-200')
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
-      )}
 
-      {/* Users Tab */}
-      {activeTab === 'users' && (
-        <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-          <CardContent className="p-0">
-            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>All Users ({filteredUsers.length})</h3>
-                <Button onClick={() => exportToCSV(users.map(u => ({name: u.name, phone: u.phone, balance: u.walletBalance, created: u.createdAt})), 'users.csv')} variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" /> Export
-                </Button>
+        {/* --- MAIN CONTENT --- */}
+        <div className="min-h-[500px]">
+          
+          {/* 1. OVERVIEW TAB (With REAL Charts) */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard title="Total Revenue" value={`₦${stats?.totalRevenue?.toLocaleString() || 0}`} icon={DollarSign} isDark={isDark} />
+                <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} isDark={isDark} />
+                <StatCard title="Transactions" value={stats?.totalTransactions || 0} icon={Activity} isDark={isDark} />
+                <StatCard title="Active Today" value={stats?.activeToday || 0} icon={TrendingUp} isDark={isDark} />
               </div>
-              <div className="relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                <input
-                  type="text"
-                  placeholder="Search by name, ID, or phone..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                />
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className={isDark ? 'bg-gray-700' : 'bg-gray-100'}>
-                  <tr>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Name</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Phone</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Role</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Wallet Balance</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Created</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user, index) => (
-                    <tr key={user.id || index} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                      <td className="p-4">
-                        <div>
-                          <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{user.name}</span>
-                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{user.id}</p>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{user.phone || 'N/A'}</span>
-                      </td>
-                      <td className="p-4">
-                        <button
-                          onClick={async () => {
-                            const newRole = user.role === 'admin' ? 'user' : 'admin';
-                            if (!window.confirm(`Change ${user.name}'s role to ${newRole}?`)) return;
-                            
-                            const loadingToast = toast.loading('Updating role...');
-                            try {
-                              const supabase = (await import('../../config/supabase')).default;
-                              const { error } = await supabase
-                                .from('user_profiles')
-                                .update({ role: newRole })
-                                .eq('id', user.id);
-                              
-                              if (error) throw error;
-                              toast.dismiss(loadingToast);
-                              toast.success(`${user.name} is now ${newRole}`);
-                              await loadDashboardData();
-                            } catch (error) {
-                              toast.dismiss(loadingToast);
-                              toast.error('Failed: ' + error.message);
-                              console.error('Role update error:', error);
-                            }
-                          }}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
-                            user.role === 'admin'
-                              ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-200'
-                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200'
-                          }`}
-                        >
-                          {user.role || 'user'} ↻
-                        </button>
-                      </td>
-                      <td className="p-4">
-                        <Badge className={user.status === 'active' ? (isDark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800') : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800')}>
-                          {user.status || 'active'}
-                        </Badge>
-                      </td>
-                      <td className={`p-4 font-semibold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                        ₦{user.walletBalance || 0}
-                      </td>
-                      <td className={`p-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setIsUserModalOpen(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setWalletModalUser(user)}
-                          >
-                            <Wallet className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Revenue Chart */}
+                <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+                  <CardContent className="p-6">
+                    <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Revenue Trends (Last 7 Days)</h3>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                          <XAxis dataKey="name" stroke={isDark ? '#9CA3AF' : '#4B5563'} fontSize={12} />
+                          <YAxis stroke={isDark ? '#9CA3AF' : '#4B5563'} tickFormatter={(val) => `₦${val}`} fontSize={12} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: isDark ? '#1F2937' : '#fff', borderColor: isDark ? '#374151' : '#e5e7eb', color: isDark ? '#fff' : '#000' }}
+                            formatter={(value) => [`₦${value.toLocaleString()}`, 'Revenue']}
+                          />
+                          <Legend />
+                          <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Daily Revenue">
+                            <LabelList dataKey="revenue" position="top" formatter={(v) => v > 0 ? `₦${v}` : ''} style={{ fill: isDark ? '#9CA3AF' : '#4B5563', fontSize: 10 }} />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
 
-      {/* Credit Requests Tab */}
-      {activeTab === 'credit-requests' && (
-        <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-          <CardContent className="p-0">
-            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Test Credit Requests ({creditRequests.filter(r => r.status === 'pending').length} pending)</h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Approve or reject beta testing credit requests</p>
+                {/* User Growth Chart */}
+                <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+                  <CardContent className="p-6">
+                    <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>New Users (Last 7 Days)</h3>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                          <XAxis dataKey="name" stroke={isDark ? '#9CA3AF' : '#4B5563'} fontSize={12} />
+                          <YAxis stroke={isDark ? '#9CA3AF' : '#4B5563'} fontSize={12} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: isDark ? '#1F2937' : '#fff', borderColor: isDark ? '#374151' : '#e5e7eb', color: isDark ? '#fff' : '#000' }}
+                          />
+                          <Legend />
+                          <Line type="monotone" dataKey="users" stroke="#10B981" strokeWidth={3} activeDot={{ r: 8 }} name="New Users">
+                             <LabelList dataKey="users" position="top" offset={10} formatter={(v) => v > 0 ? v : ''} style={{ fill: isDark ? '#9CA3AF' : '#4B5563', fontSize: 10 }} />
+                          </Line>
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              {creditRequests.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No credit requests yet. Run CREDIT_REQUESTS_TABLE.sql first.</p>
+          )}
+
+          {/* 2. USERS TAB */}
+          {activeTab === 'users' && (
+            <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+              <CardContent className="p-6">
+                <div className="flex justify-between mb-4">
+                  <div className="relative w-1/3">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <Input placeholder="Search users..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                  </div>
+                  <Button variant="outline"><Download className="h-4 w-4 mr-2"/> Export</Button>
                 </div>
-              ) : (
-                <table className="w-full">
-                  <thead className={isDark ? 'bg-gray-700' : 'bg-gray-100'}>
-                    <tr>
-                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Student</th>
-                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Amount</th>
-                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
-                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Requested</th>
-                      <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {creditRequests.map((request) => (
-                      <tr key={request.id} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                        <td className="p-4">
-                          <div>
-                            <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                              {request.user_profiles?.full_name || 'Unknown'}
-                            </p>
-                            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {request.user_profiles?.email}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                            ₦{request.amount.toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <Badge className={
-                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            request.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          }>
-                            {request.status}
-                          </Badge>
-                        </td>
-                        <td className={`p-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {new Date(request.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="p-4">
-                          {request.status === 'pending' && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleCreditRequest(request.id, 'approve')}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleCreditRequest(request.id, 'reject')}
-                                className="border-red-600 text-red-600 hover:bg-red-50"
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
-                        </td>
+                <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+                  <table className="w-full text-sm">
+                    <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                      <tr>
+                        <th className="p-3 text-left">User</th>
+                        <th className="p-3 text-left">Balance</th>
+                        <th className="p-3 text-left">Status</th>
+                        <th className="p-3 text-left">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Leaderboard Management Tab */}
-      {activeTab === 'leaderboard' && (
-        <AdminLeaderboard />
-      )}
-
-      {/* Old Leaderboard Tab (backup) */}
-      {activeTab === 'leaderboard-old' && (
-        <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-          <CardContent className="p-6">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Student Leaderboard</h3>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Track top performers for rewards</p>
-                </div>
-                <Button onClick={() => {
-                  const data = users.map(u => {
-                    try {
-                      const stats = JSON.parse(localStorage.getItem(`practice_stats_${u.id}`) || '{}');
-                      const history = JSON.parse(localStorage.getItem(`practice_history_${u.id}`) || '[]');
-                      const totalCorrect = stats.totalCorrect || 0;
-                      const totalQuestions = stats.totalQuestions || 0;
-                      const averageScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-                      const points = (totalCorrect * 10) + (history.length * 50) + (averageScore * 2);
-                      return { name: u.name, points, sessions: history.length, score: averageScore };
-                    } catch { return null; }
-                  }).filter(Boolean);
-                  const csv = data.map(r => Object.values(r).join(',')).join('\n');
-                  const blob = new Blob(['Name,Points,Sessions,Score\n' + csv], { type: 'text/csv' });
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = 'leaderboard.csv';
-                  a.click();
-                  toast.success('Exported successfully');
-                }} variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" /> Export
-                </Button>
-              </div>
-              
-              {(() => {
-                const leaderboardData = users.map(user => {
-                  try {
-                    const stats = JSON.parse(localStorage.getItem(`practice_stats_${user.id}`) || '{}');
-                    const history = JSON.parse(localStorage.getItem(`practice_history_${user.id}`) || '[]');
-                    const totalCorrect = stats.totalCorrect || 0;
-                    const totalQuestions = stats.totalQuestions || 0;
-                    const averageScore = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-                    const level = Math.floor(totalQuestions / 50) + 1;
-                    
-                    // Calculate streak
-                    const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
-                    let streak = 0;
-                    for (let i = 0; i < sortedHistory.length; i++) {
-                      const sessionDate = new Date(sortedHistory[i].date).toDateString();
-                      const expectedDate = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toDateString();
-                      if (sessionDate === expectedDate) streak++;
-                      else break;
-                    }
-                    
-                    const points = (totalCorrect * 10) + (history.length * 50) + (averageScore * 2);
-                    return {
-                      ...user,
-                      totalSessions: history.length,
-                      averageScore,
-                      points,
-                      totalQuestions,
-                      level,
-                      streak
-                    };
-                  } catch {
-                    return { ...user, totalSessions: 0, averageScore: 0, points: 0, totalQuestions: 0, level: 1, streak: 0 };
-                  }
-                }).filter(u => u.totalSessions > 0).sort((a, b) => b.points - a.points);
-
-                return leaderboardData.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Trophy className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                    <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>No practice data available yet</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className={isDark ? 'bg-gray-700' : 'bg-gray-100'}>
-                        <tr>
-                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Rank</th>
-                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Student</th>
-                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Level</th>
-                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Streak</th>
-                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Points</th>
-                          <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Avg Score</th>
+                    </thead>
+                    <tbody>
+                      {users.map(user => (
+                        <tr key={user.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                          <td className="p-3">
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-xs text-gray-500">{user.email}</div>
+                          </td>
+                          <td className="p-3 font-mono text-green-500">₦{user.walletBalance}</td>
+                          <td className="p-3"><Badge variant="outline">{user.status}</Badge></td>
+                          <td className="p-3 flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => { setSelectedUser(user); setIsUserModalOpen(true); }}>
+                               <Eye className="h-4 w-4"/>
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setWalletModalUser(user)}>
+                               <Wallet className="h-4 w-4"/>
+                            </Button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {leaderboardData.map((student, index) => (
-                          <tr key={student.id} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                            <td className="p-4">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                                index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                index === 1 ? 'bg-gray-100 text-gray-700' :
-                                index === 2 ? 'bg-orange-100 text-orange-700' :
-                                isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div>
-                                <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{student.name}</p>
-                                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{student.totalSessions} sessions</p>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
-                                Level {student.level}
-                              </Badge>
-                            </td>
-                            <td className="p-4">
-                              <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-semibold">
-                                🔥 {student.streak} days
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <span className={`font-bold text-lg ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                                {student.points.toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <span className={`font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                                {student.averageScore}%
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* AI Questions Tab */}
-      {activeTab === 'ai-questions' && (
-        <AIQuestions />
-      )}
-
-      {/* Transactions Tab */}
-      {activeTab === 'transactions' && (
-        <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
-          <CardContent className="p-0">
-            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Recent Transactions ({filteredTransactions.length})</h3>
-                <Button onClick={() => exportToCSV(transactions.map(t => ({id: t.id, amount: t.amount, type: t.type, status: t.status, date: t.created_at})), 'transactions.csv')} variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" /> Export
-                </Button>
-              </div>
-              <div className="relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-                <input
-                  type="text"
-                  placeholder="Search by ID or description..."
-                  value={transactionSearch}
-                  onChange={(e) => setTransactionSearch(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                />
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className={isDark ? 'bg-gray-700' : 'bg-gray-100'}>
-                  <tr>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>ID</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Amount</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Type</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Description</th>
-                    <th className={`text-left p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((transaction, index) => (
-                    <tr key={transaction.id || index} className={`border-b ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                      <td className={`p-4 font-mono text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{transaction.id}</td>
-                      <td className={`p-4 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>₦{transaction.amount}</td>
-                      <td className="p-4">
-                        <Badge className={transaction.type === 'credit' ? (isDark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800') : (isDark ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800')}>
-                          {transaction.type}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <Badge className={transaction.status === 'successful' ? (isDark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800') : (isDark ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800')}>
-                          {transaction.status}
-                        </Badge>
-                      </td>
-                      <td className={`p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{transaction.description}</td>
-                      <td className={`p-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {new Date(transaction.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* User Detail Modal */}
-      <UserDetailModal 
-        user={selectedUser}
-        isOpen={isUserModalOpen}
-        onClose={() => {
-          setIsUserModalOpen(false);
-          setSelectedUser(null);
-        }}
-        isDark={isDark}
-      />
-
-      {/* Wallet Management Modal */}
-      {walletModalUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className={`rounded-lg p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-            <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Manage Wallet - {walletModalUser.name}
-            </h3>
-            <p className={`text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              Current Balance: <span className="font-bold text-green-600">₦{walletModalUser.walletBalance}</span>
-            </p>
-            
-            <div className="space-y-4">
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Type</label>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setWalletType('credit')}
-                    variant={walletType === 'credit' ? 'default' : 'outline'}
-                    className={walletType === 'credit' ? 'bg-green-600 hover:bg-green-700' : ''}
-                  >
-                    Credit
-                  </Button>
-                  <Button
-                    onClick={() => setWalletType('debit')}
-                    variant={walletType === 'debit' ? 'default' : 'outline'}
-                    className={walletType === 'debit' ? 'bg-red-600 hover:bg-red-700' : ''}
-                  >
-                    Debit
-                  </Button>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-              
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Amount</label>
-                <input
-                  type="number"
-                  value={walletAmount}
-                  onChange={(e) => setWalletAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                />
-              </div>
-            </div>
+                {renderPagination()}
+              </CardContent>
+            </Card>
+          )}
 
-            <div className="flex gap-2 mt-6">
-              <Button onClick={handleWalletUpdate} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                Update Wallet
-              </Button>
-              <Button onClick={() => { setWalletModalUser(null); setWalletAmount(''); }} variant="outline" className="flex-1">
-                Cancel
-              </Button>
+          {/* 3. TRANSACTIONS TAB */}
+          {activeTab === 'transactions' && (
+            <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+              <CardContent className="p-6">
+                <div className="relative w-1/3 mb-4">
+                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                   <Input placeholder="Search transactions..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                </div>
+                <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+                  <table className="w-full text-sm">
+                    <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                      <tr>
+                        <th className="p-3 text-left">ID</th>
+                        <th className="p-3 text-left">User</th>
+                        <th className="p-3 text-left">Amount</th>
+                        <th className="p-3 text-left">Type</th>
+                        <th className="p-3 text-left">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map(tx => (
+                        <tr key={tx.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                          <td className="p-3 font-mono text-xs">{tx.id.substring(0,8)}...</td>
+                          <td className="p-3">{tx.userName}</td>
+                          <td className={`p-3 font-mono ${tx.type === 'credit' ? 'text-green-500' : 'text-red-500'}`}>
+                            {tx.type === 'credit' ? '+' : '-'}₦{tx.amount}
+                          </td>
+                          <td className="p-3"><Badge variant="outline">{tx.type}</Badge></td>
+                          <td className="p-3 text-gray-500">{new Date(tx.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {renderPagination()}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 4. CREDIT REQUESTS TAB */}
+          {activeTab === 'credit-requests' && (
+            <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-4">Pending Requests</h3>
+                <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+                  <table className="w-full text-sm">
+                    <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                      <tr>
+                        <th className="p-3 text-left">User</th>
+                        <th className="p-3 text-left">Amount</th>
+                        <th className="p-3 text-left">Status</th>
+                        <th className="p-3 text-left">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {creditRequests.map(req => (
+                        <tr key={req.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                          <td className="p-3">{req.user_profiles?.full_name || 'Unknown'}</td>
+                          <td className="p-3 font-bold text-green-500">₦{req.amount}</td>
+                          <td className="p-3"><Badge>{req.status}</Badge></td>
+                          <td className="p-3">
+                            {req.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <Button size="sm" className="bg-green-600" onClick={() => handleCreditRequest(req.id, 'approve', req.user_id, req.amount)}>Approve</Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleCreditRequest(req.id, 'reject')}>Reject</Button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'ai-questions' && <AIQuestions />}
+          {activeTab === 'leaderboard' && <AdminLeaderboard />}
+        </div>
+      </div>
+
+      {/* --- MODALS --- */}
+      
+      {/* 1. Wallet Modal */}
+      {walletModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`rounded-lg p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+            <h3 className="text-lg font-bold mb-4">Manage Wallet: {walletModalUser.name}</h3>
+            <p className="mb-4">Current Balance: <span className="text-green-500 font-mono">₦{walletModalUser.walletBalance}</span></p>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Button onClick={() => setWalletType('credit')} variant={walletType === 'credit' ? 'default' : 'outline'} className="flex-1">Credit</Button>
+                <Button onClick={() => setWalletType('debit')} variant={walletType === 'debit' ? 'destructive' : 'outline'} className="flex-1">Debit</Button>
+              </div>
+              <Input type="number" placeholder="Amount" value={walletAmount} onChange={(e) => setWalletAmount(e.target.value)} />
+              <div className="flex gap-2">
+                <Button onClick={handleWalletUpdate} className="flex-1">Confirm</Button>
+                <Button onClick={() => setWalletModalUser(null)} variant="outline" className="flex-1">Cancel</Button>
+              </div>
             </div>
           </div>
         </div>
       )}
-      </div>
+
+      {/* 2. User Detail Modal */}
+      <UserDetailModal 
+        user={selectedUser}
+        isOpen={isUserModalOpen}
+        onClose={() => { setIsUserModalOpen(false); setSelectedUser(null); }}
+        isDark={isDark}
+      />
     </div>
   );
 };
 
-const AdminDashboard = () => {
-  return (
-    <ThemeProvider>
-      <AdminDashboardContent />
-    </ThemeProvider>
-  );
-};
+const AdminDashboard = () => (
+  <ThemeProvider>
+    <AdminDashboardContent />
+  </ThemeProvider>
+);
 
 export default AdminDashboard;
