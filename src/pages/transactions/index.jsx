@@ -1,23 +1,30 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWallet } from '../../contexts/WalletContext';
-import { useDarkMode } from '../../contexts/DarkModeContext';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
-import { Download, Filter, Search, X, Calendar, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { 
+  Download, Filter, Search, X, Calendar, DollarSign, 
+  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Printer,
+  ChevronLeft, ChevronRight, CheckCircle 
+} from 'lucide-react';
 import { TransactionUtils } from '../../services/wallet.service.enhanced';
 import toast from 'react-hot-toast';
 
 const Transactions = () => {
   const { transactions, loading } = useWallet();
-  const { isDarkMode } = useDarkMode();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  
+  // --- Pagination State ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
+  // --- Logic: Filtering & Sorting ---
   const filteredTransactions = useMemo(() => {
     return transactions
       .filter((t) => {
@@ -44,17 +51,26 @@ const Transactions = () => {
       });
   }, [transactions, filter, searchTerm, sortConfig]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
+
+  // --- Pagination Logic ---
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
   const handleExport = () => {
-    const csvContent = filteredTransactions
-      .map(t => [
-        t.id,
-        t.label,
-        t.amount,
-        t.date.split('T')[0],
-        t.status
-      ].join(','))
-      .join('\n');
-    
+    const csvContent = filteredTransactions.map(t => [t.id, t.label, t.amount, t.date.split('T')[0], t.status].join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -62,246 +78,248 @@ const Transactions = () => {
     a.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    toast.success('Transactions exported successfully!');
+    toast.success('Export successful');
   };
 
   const totalCredits = transactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0);
   const totalDebits = transactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0);
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4"
-        >
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <DollarSign className="h-12 w-12 text-primary" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight">Transaction History</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            View and manage your complete transaction history
-          </p>
-        </motion.div>
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+           <div>
+             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transaction History</h1>
+             <p className="text-gray-500 mt-1">Track every payment and credit in one place.</p>
+           </div>
+           <Button variant="outline" onClick={handleExport} className="gap-2 border-gray-200 dark:border-gray-800">
+             <Download className="w-4 h-4" /> Export CSV
+           </Button>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-green-100 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Credits</p>
-                  <p className="text-2xl font-bold text-green-600">₦{totalCredits.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-red-100 rounded-full">
-                  <TrendingDown className="h-6 w-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Debits</p>
-                  <p className="text-2xl font-bold text-red-600">₦{totalDebits.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Transactions</p>
-                  <p className="text-2xl font-bold text-blue-600">{transactions.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+           <Card className="border border-gray-100 dark:border-gray-800 shadow-sm">
+              <CardContent className="p-6">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full text-green-600">
+                       <TrendingUp className="w-6 h-6" />
+                    </div>
+                    <div>
+                       <p className="text-sm font-medium text-gray-500">Total Inflow</p>
+                       <p className="text-2xl font-bold text-green-600">₦{totalCredits.toLocaleString()}</p>
+                    </div>
+                 </div>
+              </CardContent>
+           </Card>
+
+           <Card className="border border-gray-100 dark:border-gray-800 shadow-sm">
+              <CardContent className="p-6">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full text-red-600">
+                       <TrendingDown className="w-6 h-6" />
+                    </div>
+                    <div>
+                       <p className="text-sm font-medium text-gray-500">Total Outflow</p>
+                       <p className="text-2xl font-bold text-red-600">₦{totalDebits.toLocaleString()}</p>
+                    </div>
+                 </div>
+              </CardContent>
+           </Card>
+
+           <Card className="border border-gray-100 dark:border-gray-800 shadow-sm">
+              <CardContent className="p-6">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-full text-blue-600">
+                       <DollarSign className="w-6 h-6" />
+                    </div>
+                    <div>
+                       <p className="text-sm font-medium text-gray-500">Total Transactions</p>
+                       <p className="text-2xl font-bold text-blue-600">{transactions.length}</p>
+                    </div>
+                 </div>
+              </CardContent>
+           </Card>
         </div>
 
-        {/* Filters and Search */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-              <CardTitle>Transactions</CardTitle>
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search transactions..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
-                  />
-                </div>
-                <Button variant="outline" onClick={handleExport}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              {['all', 'credit', 'debit'].map((type) => (
-                <Button
-                  key={type}
-                  variant={filter === type ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilter(type)}
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </Button>
-              ))}
-            </div>
-          </CardHeader>
-          
-          <CardContent>
-            {filteredTransactions.length === 0 ? (
-              <div className="text-center py-12">
-                <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No transactions found</p>
-                <p className="text-sm text-muted-foreground">Try adjusting your search or filter criteria</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredTransactions.map((transaction) => (
-                  <motion.div
-                    key={transaction.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-lg border hover:shadow-md transition-all duration-200 cursor-pointer"
-                    onClick={() => setSelectedTransaction(transaction)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="space-y-1">
-                        <h3 className="font-medium">{transaction.label}</h3>
-                        <p className="text-sm text-muted-foreground">{transaction.description}</p>
-                        <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                          <span>{new Date(transaction.date).toLocaleDateString()}</span>
-                          <Badge variant={transaction.status === 'completed' ? 'default' : 'destructive'}>
-                            {transaction.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-lg font-semibold ${
-                          transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {TransactionUtils.formatAmount(transaction.amount)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.date).toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Transaction Details Modal */}
-      <AnimatePresence>
-        {selectedTransaction && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedTransaction(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-2xl bg-background rounded-xl shadow-xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold">Transaction Details</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedTransaction(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+        {/* Main List Section */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col min-h-[600px]">
+           
+           {/* Controls Toolbar */}
+           <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row gap-4 justify-between bg-gray-50/50 dark:bg-gray-900/50">
+              <div className="relative w-full md:w-80">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                 <input 
+                   type="text" 
+                   placeholder="Search transactions..." 
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
+                   className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                 />
               </div>
               
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Transaction ID</h3>
-                      <p className="mt-1 font-mono text-sm">{selectedTransaction.id}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
-                      <p className="mt-1">{selectedTransaction.label}</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Details</h3>
-                      <p className="mt-1 text-sm">{selectedTransaction.description || 'No additional details'}</p>
-                    </div>
-                  </div>
+              <div className="flex gap-2">
+                 {['all', 'credit', 'debit'].map(type => (
+                   <button
+                     key={type}
+                     onClick={() => setFilter(type)}
+                     className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
+                       filter === type 
+                         ? 'bg-green-600 text-white shadow-md shadow-green-200 dark:shadow-none' 
+                         : 'bg-white dark:bg-gray-800 text-gray-600 border border-gray-200 dark:border-gray-700 hover:bg-gray-50'
+                     }`}
+                   >
+                     {type}
+                   </button>
+                 ))}
+              </div>
+           </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Amount</h3>
-                      <p className={`mt-1 text-2xl font-bold ${
-                        selectedTransaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {selectedTransaction.type === 'credit' ? '+' : ''}{TransactionUtils.formatAmount(selectedTransaction.amount)}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Date & Time</h3>
-                      <div className="mt-1 space-y-1">
-                        <p>{new Date(selectedTransaction.date).toLocaleDateString()}</p>
-                        <p className="text-sm text-muted-foreground">{new Date(selectedTransaction.date).toLocaleTimeString()}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                      <div className="mt-2">
-                        <Badge variant={selectedTransaction.status === 'completed' ? 'default' : 'destructive'}>
-                          {selectedTransaction.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+           {/* Transaction List */}
+           <div className="flex-1 divide-y divide-gray-100 dark:divide-gray-800">
+              {paginatedTransactions.length === 0 ? (
+                <div className="text-center py-20 text-gray-400">
+                   <Filter className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                   <p>No transactions found matching your filters.</p>
                 </div>
-              </div>
+              ) : (
+                paginatedTransactions.map((tx, index) => (
+                   <motion.div 
+                     layout
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ delay: index * 0.05 }} // Staggered animation
+                     key={tx.id}
+                     onClick={() => setSelectedTransaction(tx)}
+                     className="p-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
+                   >
+                      <div className="flex items-center gap-4">
+                         <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${
+                            tx.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                         }`}>
+                            {tx.type === 'credit' ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                         </div>
+                         <div>
+                            <p className="font-bold text-gray-900 dark:text-white text-sm">{tx.label}</p>
+                            <p className="text-xs text-gray-500">{new Date(tx.date).toLocaleDateString()} • {new Date(tx.date).toLocaleTimeString()}</p>
+                         </div>
+                      </div>
 
-              <div className="p-6 border-t flex justify-end space-x-3">
-                <Button variant="outline" onClick={() => setSelectedTransaction(null)}>
-                  Close
-                </Button>
-                <Button onClick={() => window.print()}>
-                  Print Receipt
-                </Button>
-              </div>
+                      <div className="text-right">
+                         <p className={`font-bold ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                            {tx.type === 'credit' ? '+' : '-'}₦{tx.amount.toLocaleString()}
+                         </p>
+                         <Badge variant={tx.status === 'completed' ? 'success' : 'destructive'} className={`text-[10px] mt-1 capitalize ${
+                            tx.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-red-100 text-red-700 hover:bg-red-100'
+                         }`}>
+                            {tx.status}
+                         </Badge>
+                      </div>
+                   </motion.div>
+                ))
+              )}
+           </div>
+
+           {/* Pagination Footer */}
+           {filteredTransactions.length > 0 && (
+             <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} entries
+                </span>
+                
+                <div className="flex gap-2">
+                   <Button 
+                     variant="outline" 
+                     size="sm" 
+                     onClick={() => handlePageChange(currentPage - 1)}
+                     disabled={currentPage === 1}
+                     className="h-8 w-8 p-0"
+                   >
+                     <ChevronLeft className="w-4 h-4" />
+                   </Button>
+                   <Button 
+                     variant="outline" 
+                     size="sm" 
+                     onClick={() => handlePageChange(currentPage + 1)}
+                     disabled={currentPage === totalPages}
+                     className="h-8 w-8 p-0"
+                   >
+                     <ChevronRight className="w-4 h-4" />
+                   </Button>
+                </div>
+             </div>
+           )}
+        </div>
+
+        {/* Receipt Modal */}
+        <AnimatePresence>
+          {selectedTransaction && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedTransaction(null)}
+            >
+               <motion.div 
+                 initial={{ scale: 0.9, y: 20 }} 
+                 animate={{ scale: 1, y: 0 }} 
+                 exit={{ scale: 0.9, y: 20 }}
+                 className="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative"
+                 onClick={e => e.stopPropagation()}
+               >
+                  {/* Receipt Header */}
+                  <div className="bg-green-600 p-6 text-white text-center relative overflow-hidden">
+                     <div className="absolute top-0 left-0 w-full h-full bg-white/10 opacity-20" style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                     <div className="relative z-10">
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-4">
+                           <CheckCircle className="w-8 h-8 text-white" />
+                        </div>
+                        <h2 className="text-2xl font-bold">Transaction Successful</h2>
+                        <p className="text-green-100 text-sm mt-1">{new Date(selectedTransaction.date).toLocaleString()}</p>
+                     </div>
+                  </div>
+
+                  {/* Receipt Body */}
+                  <div className="p-8">
+                     <div className="text-center mb-8">
+                        <p className="text-sm text-gray-500 uppercase tracking-wide font-bold">Amount</p>
+                        <h1 className={`text-4xl font-black mt-2 ${selectedTransaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                           ₦{selectedTransaction.amount.toLocaleString()}
+                        </h1>
+                     </div>
+
+                     <div className="space-y-4 border-t border-b border-gray-100 dark:border-gray-800 py-6 mb-6">
+                        <div className="flex justify-between">
+                           <span className="text-gray-500 text-sm">Status</span>
+                           <span className="font-bold text-green-600 capitalize">{selectedTransaction.status}</span>
+                        </div>
+                        <div className="flex justify-between">
+                           <span className="text-gray-500 text-sm">Reference</span>
+                           <span className="font-mono text-sm">{selectedTransaction.id.substring(0, 12)}...</span>
+                        </div>
+                        <div className="flex justify-between">
+                           <span className="text-gray-500 text-sm">Type</span>
+                           <span className="capitalize">{selectedTransaction.type}</span>
+                        </div>
+                        <div className="flex justify-between">
+                           <span className="text-gray-500 text-sm">Description</span>
+                           <span className="font-medium text-right max-w-[200px]">{selectedTransaction.label}</span>
+                        </div>
+                     </div>
+
+                     <Button onClick={() => window.print()} className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 h-12 rounded-xl font-bold">
+                        <Printer className="w-4 h-4 mr-2" /> Print Receipt
+                     </Button>
+                  </div>
+               </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+
+      </div>
     </div>
   );
 };
