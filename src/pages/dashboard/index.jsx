@@ -1,618 +1,223 @@
-// src/pages/dashboard/index.jsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  CreditCard, 
-  Database, 
-  DollarSign, 
-  ChevronDown, 
-  ChevronUp, 
-  TrendingUp, 
-  Activity, 
-  Users, 
-  ArrowUpRight,
-  Brain,
-  Trophy,
-  BarChart3,
-  BookOpen,
-  Zap,
-  Award,
-  Flame,
-  Target,
-  AlertCircle,
-  X,
-  Clock
+  Brain, Sparkles, Zap, Target, AlertCircle, X, 
+  CheckCircle2, ChevronRight, Crown, Play, History,
+  TrendingUp, BarChart3, Bot, FileText, Medal,
+  ArrowRight, Compass, ArrowUpRight
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
 import { useAuth } from '../../App';
 import { useDarkMode } from '../../contexts/DarkModeContext';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import { Progress } from "../../components/ui/progress";
 import { useWallet } from '../../contexts/WalletContext';
 import PaymentModal from '../../components/PaymentModal';
-import toast from 'react-hot-toast';
-import EducationalSidebar from '../../components/EducationalSidebar';
+import practiceSessionService from '../../services/practiceSession.service';
 
-// Import images directly
-import waecResultCheckerImg from '../../assets/images/services/waec-result-checker.jpg';
-import necoResultCheckerImg from '../../assets/images/services/neco-result-checker.jpg';
-import nabtebResultCheckerImg from '../../assets/images/services/nabteb-result-checker.jpg';
-import nbaisResultCheckerImg from '../../assets/images/services/nbais-result-checker.jpg';
-import waecGceImg from '../../assets/images/services/waec-gce.jpg';
-import placeholderImg from '../../assets/images/services/placeholder.svg';
+const AI_TOOLS = [
+  { id: 'practice', title: 'Smart Prep', subtitle: 'Practice Questions', desc: 'Generate custom CBT drills instantly.', icon: Target, color: 'bg-emerald-500', gradient: 'from-emerald-500/20 to-teal-500/20', link: '/dashboard/practice-questions', btnText: 'Start Drill' },
+  { id: 'examiner', title: 'The Examiner', subtitle: 'AI Assessment', desc: 'Deep theory grading & analysis.', icon: FileText, color: 'bg-indigo-500', gradient: 'from-indigo-500/20 to-blue-500/20', link: '/dashboard/ai-examiner', btnText: 'Take Exam' },
+  { id: 'advisor', title: 'Pathfinder AI', subtitle: 'Course Advisor', desc: 'Find your perfect admission path.', icon: Compass, color: 'bg-violet-500', gradient: 'from-violet-500/20 to-fuchsia-500/20', link: '/dashboard/course-advisor', btnText: 'Ask AI' }
+];
 
 const Dashboard = () => {
-  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const navigate = useNavigate();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showLowBalanceAlert, setShowLowBalanceAlert] = useState(true);
-  const { user } = useAuth();
   
-  const { walletBalance, transactions, getRecentTransactions, getTransactionsByType, addTransaction } = useWallet();
+  const [loading, setLoading] = useState(true);
+  const [progressData, setProgressData] = useState({
+    totalSessions: 0, averageScore: 0, streak: 0,
+    level: 1, progress: 0, totalQuestions: 0,
+    chartData: [], hasPracticedToday: false
+  });
+
+  const { user } = useAuth();
+  const { walletBalance, getRecentTransactions } = useWallet();
   const { isDarkMode } = useDarkMode();
 
-  // Get practice stats from localStorage
-  const getPracticeStats = () => {
-    try {
-      const stats = JSON.parse(localStorage.getItem(`practice_stats_${user?.id}`) || '{}');
-      const history = JSON.parse(localStorage.getItem(`practice_history_${user?.id}`) || '[]');
-      
-      // Calculate streak
-      const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
-      let streak = 0;
-      const today = new Date().toDateString();
-      
-      for (let i = 0; i < sortedHistory.length; i++) {
-        const sessionDate = new Date(sortedHistory[i].date).toDateString();
-        const expectedDate = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toDateString();
-        if (sessionDate === expectedDate || (i === 0 && sessionDate === today)) {
-          streak++;
-        } else break;
+  useEffect(() => {
+    const fetchProgress = async () => {
+      if (user?.id) {
+        setLoading(true);
+        await new Promise(r => setTimeout(r, 600)); 
+        // Using the same service for dashboard stats
+        const result = await practiceSessionService.getStudentProgress(user.id);
+        if (result.success) setProgressData(result.stats);
+        setLoading(false);
       }
-      
-      const totalQuestions = stats.totalQuestions || 0;
-      const level = Math.floor(totalQuestions / 50) + 1;
-      const progress = (totalQuestions % 50) / 50 * 100;
-      
-      return {
-        totalSessions: history.length,
-        averageScore: stats.averageScore || 0,
-        streak,
-        level,
-        progress,
-        totalQuestions
-      };
-    } catch {
-      return { totalSessions: 0, averageScore: 0, streak: 0, level: 1, progress: 0, totalQuestions: 0 };
-    }
-  };
+    };
+    fetchProgress();
+  }, [user?.id]);
 
-  const practiceStats = getPracticeStats();
-
-  const stats = [
-    {
-      title: "Total Balance",
-      value: `₦${(walletBalance || 0).toLocaleString()}`,
-      icon: DollarSign,
-      change: "+12.5%",
-      changeType: "positive"
-    },
-    {
-      title: "This Month",
-      value: `₦${getTransactionsByType('credit').reduce((sum, tx) => sum + tx.amount, 0).toLocaleString()}`,
-      icon: TrendingUp,
-      change: "+8.2%",
-      changeType: "positive"
-    },
-    {
-      title: "Transactions",
-      value: transactions.length.toString(),
-      icon: Activity,
-      change: "+23.1%",
-      changeType: "positive"
-    },
-    {
-      title: "Services Used",
-      value: "12",
-      icon: Users,
-      change: "+4.3%",
-      changeType: "positive"
-    }
+  const quests = [
+    { title: "Smart Prep Session", desc: "Complete 1 drill", xp: "50 XP", done: progressData.hasPracticedToday },
+    { title: "Consult Pathfinder", desc: "Check admission chances", xp: "30 XP", done: false }, 
+    { title: "Top 10%", desc: "Reach leaderboard top 10", xp: "Badge", done: false },
   ];
 
-  const recentTransactions = getRecentTransactions(5);
-
-  const services = [
-    {
-      title: 'WAEC Result Checker',
-      price: '₦3,400.00',
-      image: waecResultCheckerImg,
-      link: '/dashboard/scratch-card/waec-checker',
-      category: 'education',
-      popularity: 'high',
-      features: ['Instant results', 'Secure payment', '24/7 support'],
-    },
-    {
-      title: 'NECO Result Checker',
-      price: '₦1,300.00',
-      image: necoResultCheckerImg,
-      link: '/dashboard/scratch-card/neco-checker',
-      category: 'education',
-      popularity: 'medium',
-      features: ['Fast processing', 'Easy to use', 'Detailed reports'],
-    },
-    {
-      title: 'NABTEB Result Checker',
-      price: '₦900.00',
-      image: nabtebResultCheckerImg,
-      link: '/dashboard/scratch-card/nabteb-checker',
-      category: 'education',
-      popularity: 'low',
-      features: ['Quick results', 'Affordable', 'User-friendly'],
-    },
-    {
-      title: 'NBAIS Result Checker',
-      price: '₦1,100.00',
-      image: nbaisResultCheckerImg,
-      link: '/dashboard/scratch-card/nbais-checker',
-      category: 'education',
-    },
-    {
-      title: 'WAEC GCE',
-      price: '₦28,000.00',
-      image: waecGceImg,
-      link: '/dashboard/scratch-card/waec-gce',
-      category: 'education',
-    },
-  ];
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
-  const toggleTransactions = () => setShowAllTransactions((prev) => !prev);
-
-  const handlePurchaseService = async (service) => {
-    const amount = parseFloat(service.price.replace('₦', '').replace(',', ''));
-    if (walletBalance < amount) {
-      toast.error('Insufficient balance. Please fund your wallet.');
-      setShowPaymentModal(true);
-      return;
-    }
-    
-    try {
-      const result = await addTransaction({
-        label: service.title,
-        description: `Purchased ${service.title}`,
-        amount: amount,
-        type: 'debit',
-        category: service.category,
-        status: 'Successful',
-        date: new Date().toISOString()
-      });
-      
-      if (result.success) {
-        toast.success(`${service.title} purchased successfully!`);
-      } else {
-        toast.error('Purchase failed. Please try again.');
-      }
-    } catch (error) {
-      toast.error('Purchase failed. Please try again.');
-    }
-  };
+  const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } };
+  const itemVariants = { hidden: { y: 20, opacity: 0, scale: 0.95 }, visible: { y: 0, opacity: 1, scale: 1, transition: { type: "spring", stiffness: 100 } } };
 
   return (
-      <div className="min-h-screen bg-background p-6">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-8"
-        >
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 p-4 md:p-8 space-y-8">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="max-w-7xl mx-auto space-y-8">
+        
         {/* Header */}
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, {user?.user_metadata?.full_name || user?.email || 'User'}!
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with your account today.
-          </p>
+        <div className="flex flex-col md:flex-row justify-between items-end gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+              <span className="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">Dashboard</span>
+              <span className="text-2xl">🚀</span>
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Let's crush some goals, {user?.user_metadata?.full_name?.split(' ')[0] || 'Scholar'}.</p>
+          </div>
+          <div className="flex items-center gap-3">
+             <Link to="/dashboard/leaderboard">
+               <div className="flex items-center gap-2 bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 px-4 py-1.5 rounded-full text-sm font-bold border border-yellow-200 dark:border-yellow-900 cursor-pointer hover:scale-105 transition-transform">
+                 <Medal className="w-4 h-4 fill-current" />
+                 Rank #{loading ? '...' : '124'}
+               </div>
+             </Link>
+             <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-200 dark:border-indigo-900">
+               <Zap className="w-4 h-4 fill-current" />
+               {progressData.streak} Day Streak
+             </div>
+          </div>
         </div>
 
-        {/* Low Balance Alert */}
-        {walletBalance < 5000 && showLowBalanceAlert && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-orange-900 dark:text-orange-200">Low Balance Warning</h3>
-                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
-                    Your wallet balance is low (₦{walletBalance.toLocaleString()}). Fund your wallet to continue using services.
-                  </p>
-                  <Button onClick={() => setShowPaymentModal(true)} size="sm" className="mt-2 bg-orange-600 hover:bg-orange-700">
-                    Fund Wallet Now
-                  </Button>
-                </div>
+        {/* Low Credit Warning */}
+        {walletBalance < 500 && showLowBalanceAlert && (
+          <motion.div variants={itemVariants} className="bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-2xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"/>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-600"><AlertCircle className="h-5 w-5" /></div>
+              <div>
+                <p className="font-bold text-red-900 dark:text-red-200 text-sm">Credits Low (₦{walletBalance.toLocaleString()})</p>
+                <p className="text-xs text-red-600 dark:text-red-400">You need credits to use AI tools.</p>
               </div>
-              <button onClick={() => setShowLowBalanceAlert(false)} className="text-orange-600 hover:text-orange-800">
-                <X className="h-4 w-4" />
-              </button>
             </div>
+            <Button size="sm" onClick={() => setShowPaymentModal(true)} className="bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20">Refill Now</Button>
           </motion.div>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div key={index} variants={cardVariants}>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {stat.title}
-                    </CardTitle>
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <span className={`inline-flex items-center ${
-                        stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        <ArrowUpRight className="h-3 w-3 mr-1" />
-                        {stat.change}
-                      </span>
-                      {" from last month"}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Quick Actions & Progress */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <motion.div variants={cardVariants} className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-primary" />
-                  Quick Actions
-                </CardTitle>
-                <CardDescription>Access your learning tools</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Link to="/dashboard/practice-questions">
-                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
-                      <BookOpen className="h-5 w-5" />
-                      <span className="text-xs font-medium">Practice</span>
-                    </Button>
-                  </Link>
-                  <Link to="/dashboard/course-advisor">
-                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
-                      <Brain className="h-5 w-5" />
-                      <span className="text-xs font-medium">AI Advisor</span>
-                    </Button>
-                  </Link>
-                  <Link to="/dashboard/leaderboard">
-                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
-                      <Trophy className="h-5 w-5" />
-                      <span className="text-xs font-medium">Leaderboard</span>
-                    </Button>
-                  </Link>
-                  <Link to="/dashboard/analytics">
-                    <Button variant="outline" className="w-full h-20 flex flex-col gap-2 hover:bg-primary/10 hover:border-primary">
-                      <BarChart3 className="h-5 w-5" />
-                      <span className="text-xs font-medium">Analytics</span>
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Progress Widget */}
-          <motion.div variants={cardVariants}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-primary" />
-                  Your Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Target className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">Level {practiceStats.level}</p>
-                      <p className="text-xs text-muted-foreground">{practiceStats.totalQuestions} questions</p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">Progress to Level {practiceStats.level + 1}</span>
-                    <span className="font-medium">{Math.round(practiceStats.progress)}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary transition-all" style={{ width: `${practiceStats.progress}%` }} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="flex items-center gap-2">
-                    <Flame className="h-4 w-4 text-orange-500" />
-                    <div>
-                      <p className="text-lg font-bold">{practiceStats.streak}</p>
-                      <p className="text-xs text-muted-foreground">Day Streak</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-yellow-500" />
-                    <div>
-                      <p className="text-lg font-bold">{practiceStats.averageScore}%</p>
-                      <p className="text-xs text-muted-foreground">Avg Score</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-7">
-          {/* Wallet Overview */}
-          <motion.div variants={cardVariants} className="lg:col-span-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Wallet Overview</CardTitle>
-                    <CardDescription>
-                      Your current balance and recent activity
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    onClick={() => setShowPaymentModal(true)}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    Fund Wallet
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                      <DollarSign className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">₦{(walletBalance || 0).toLocaleString()}</p>
-                      <p className="text-sm text-muted-foreground">Available Balance</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Scratch Cards</span>
-                      </div>
-                      <p className="text-lg font-semibold">
-                        ₦{getTransactionsByType('scratch_card').reduce((sum, tx) => sum + tx.amount, 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Database className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Data Services</span>
-                      </div>
-                      <p className="text-lg font-semibold">
-                        ₦{getTransactionsByType('data').reduce((sum, tx) => sum + tx.amount, 0).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Recent Activity Timeline */}
-          <motion.div variants={cardVariants} className="lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Recent Activity</CardTitle>
-                    <CardDescription>Your transaction timeline</CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleTransactions}
-                  >
-                    {showAllTransactions ? (
-                      <>
-                        Show Less <ChevronUp className="ml-1 h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        View All <ChevronDown className="ml-1 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="relative space-y-4">
-                  {recentTransactions.length === 0 ? (
-                    <p className="text-center text-sm text-muted-foreground py-4">
-                      No recent transactions
-                    </p>
-                  ) : (
-                    <>
-                      {/* Timeline line */}
-                      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
-                      
-                      {(showAllTransactions ? recentTransactions : recentTransactions.slice(0, 3)).map(
-                        (transaction, index) => (
-                          <motion.div
-                            key={transaction.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="relative flex items-start gap-4 pl-10"
-                          >
-                            {/* Timeline dot */}
-                            <div className={`absolute left-0 h-8 w-8 rounded-full flex items-center justify-center border-2 border-background ${
-                              transaction.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                            }`}>
-                              {transaction.type === 'credit' ? '+' : '-'}
-                            </div>
-                            
-                            <div className="flex-1 bg-muted/50 rounded-lg p-3 hover:bg-muted transition-colors">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium">{transaction.label}</p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Clock className="h-3 w-3 text-muted-foreground" />
-                                    <p className="text-xs text-muted-foreground">
-                                      {new Date(transaction.date).toLocaleString()}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className={`text-sm font-bold ${
-                                    transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                                  }`}>
-                                    {transaction.type === 'credit' ? '+' : '-'}₦{Number(transaction.amount || 0).toLocaleString()}
-                                  </p>
-                                  <Badge variant="secondary" className="text-xs mt-1">
-                                    {transaction.status || 'Completed'}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )
-                      )}
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Services Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Available Services</h2>
-              <p className="text-muted-foreground">
-                Choose from our range of educational services
-              </p>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Hero */}
+          <motion.div variants={itemVariants} className="md:col-span-8 relative group overflow-hidden rounded-[2rem] bg-slate-900 dark:bg-black text-white shadow-2xl ring-1 ring-slate-900/5 min-h-[280px] flex flex-col justify-between p-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/90 to-teal-600/90 group-hover:scale-105 transition-transform duration-1000" />
+            <div className="absolute -right-16 -bottom-24 opacity-20 rotate-12 group-hover:rotate-0 transition-transform duration-700"><Brain className="h-80 w-80 text-white" /></div>
+            <div className="relative z-10">
+              <Badge className="bg-white/20 text-white hover:bg-white/30 border-none mb-4 backdrop-blur-md px-3 py-1">Recommended for you</Badge>
+              <h2 className="text-4xl font-extrabold tracking-tight mb-3 leading-tight">Time to level up. <br/> Start a Smart Drill?</h2>
+              <p className="text-emerald-100 max-w-md font-medium text-sm md:text-base">Your AI has analyzed your history. We recommend a 20-minute speed drill.</p>
             </div>
-            <Button variant="outline" asChild>
-              <Link to="/dashboard/services">View All</Link>
-            </Button>
-          </div>
+            <div className="relative z-10 flex gap-4 mt-8">
+              <Link to="/dashboard/practice-questions" className="flex-1 sm:flex-none">
+                <Button className="w-full sm:w-auto bg-white text-emerald-700 hover:bg-emerald-50 font-bold h-12 rounded-xl shadow-xl shadow-black/20 text-base px-8"><Play className="mr-2 h-5 w-5 fill-current" /> Start Session</Button>
+              </Link>
+            </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {services.map((service, index) => (
-              <motion.div key={index} variants={cardVariants}>
-                <Card className="h-full overflow-hidden group hover:shadow-lg transition-shadow">
-                  <div className="aspect-video relative overflow-hidden">
-                    <img
-                      src={service.image}
-                      alt={service.title}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        e.target.src = placeholderImg;
-                      }}
-                    />
-                    {service.popularity && (
-                      <Badge 
-                        className="absolute top-2 right-2" 
-                        variant={service.popularity === 'high' ? 'default' : 'secondary'}
-                      >
-                        {service.popularity === 'high' ? 'Popular' : 'New'}
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="font-semibold text-base line-clamp-1">
-                          {service.title}
-                        </h3>
-                        <p className="text-2xl font-bold text-primary">
-                          {service.price}
-                        </p>
-                      </div>
-                      
-                      {service.features && (
-                        <ul className="space-y-1">
-                          {service.features.slice(0, 2).map((feature, idx) => (
-                            <li key={idx} className="flex items-center text-xs text-muted-foreground">
-                              <div className="w-1 h-1 rounded-full bg-primary mr-2" />
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          className="flex-1 bg-primary hover:bg-primary/90"
-                          asChild
-                        >
-                          <Link to={service.link}>
-                            Purchase
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                        >
-                          <Link to={service.link}>
-                            <ArrowUpRight className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </div>
+          {/* Wallet */}
+          <motion.div variants={itemVariants} className="md:col-span-4 bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between group relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="flex justify-between items-start relative z-10">
+               <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white group-hover:scale-110 transition-transform shadow-sm"><Zap className="h-6 w-6 fill-orange-500 text-orange-500" /></div>
+               <Badge variant="outline" className="font-mono text-xs">CREDITS</Badge>
+            </div>
+            <div className="relative z-10">
+              <h3 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-4">{loading ? <div className="h-10 w-32 bg-slate-100 rounded animate-pulse"/> : `₦${(walletBalance || 0).toLocaleString()}`}</h3>
+              <p className="text-slate-400 text-xs font-medium mt-1">Available for AI Tools</p>
+              <div className="mt-6"><Button onClick={() => setShowPaymentModal(true)} className="w-full bg-slate-900 dark:bg-slate-800 text-white font-bold h-10 rounded-xl hover:scale-[1.02] transition-transform">Top Up Wallet</Button></div>
+            </div>
+          </motion.div>
+
+          {/* AI Tools */}
+          <div className="md:col-span-12">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5 text-indigo-500" /> Your AI Arsenal</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {AI_TOOLS.map((tool) => (
+                <Link to={tool.link} key={tool.id} className="block h-full">
+                  <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-transparent hover:shadow-2xl hover:shadow-indigo-500/10 transition-all group relative overflow-hidden">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${tool.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                    <div className="relative z-10 flex flex-col h-full">
+                      <div className={`w-14 h-14 rounded-2xl ${tool.color} flex items-center justify-center text-white mb-6 shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform duration-300`}><tool.icon className="h-7 w-7" /></div>
+                      <div className="mb-auto"><h4 className="font-bold text-xl text-slate-900 dark:text-white">{tool.title}</h4><p className="text-xs font-bold text-indigo-500 uppercase tracking-wider mt-1">{tool.subtitle}</p><p className="text-sm text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">{tool.desc}</p></div>
+                      <div className="mt-6 flex items-center text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">{tool.btnText} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" /></div>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
           </div>
+          
+          {/* Performance Chart */}
+          <motion.div variants={itemVariants} className="md:col-span-8 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm p-8">
+             <div className="flex items-center justify-between mb-8">
+                <div><h3 className="font-bold text-xl text-slate-900 dark:text-white flex items-center gap-2"><TrendingUp className="h-5 w-5 text-indigo-500" /> Performance Analytics</h3><p className="text-sm text-slate-500">Your learning curve over the last 7 days</p></div>
+                <Link to="/dashboard/analytics"><Button variant="outline" size="sm" className="rounded-full px-4 border-slate-200">Full Analytics <ChevronRight className="ml-1 h-3 w-3" /></Button></Link>
+             </div>
+             <div className="h-[200px] w-full">
+               {loading ? <div className="h-full w-full bg-slate-50 dark:bg-slate-800 animate-pulse rounded-xl"/> : progressData.chartData.every(d => d.score === 0) ? <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl"><BarChart3 className="h-8 w-8 text-slate-300 mb-2" /><p className="text-sm text-slate-400 font-medium">No tests taken yet</p></div> : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={progressData.chartData}>
+                    <defs><linearGradient id="mainChart" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2}/><stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/></linearGradient></defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} domain={[0, 100]} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }} cursor={{ stroke: '#8b5cf6', strokeWidth: 1 }} />
+                    <Area type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={3} fill="url(#mainChart)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+               )}
+             </div>
+          </motion.div>
+
+          {/* Leaderboard Preview */}
+          <motion.div variants={itemVariants} className="md:col-span-4 bg-gradient-to-b from-slate-900 to-indigo-950 rounded-[2rem] shadow-xl p-8 text-white relative overflow-hidden flex flex-col">
+             <div className="absolute top-0 right-0 p-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+             <div className="relative z-10 flex-1">
+               <div className="flex items-center gap-3 mb-6">
+                 <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-400"><Crown className="h-6 w-6" /></div>
+                 <div><h3 className="font-bold text-lg">Leaderboard</h3><p className="text-indigo-200 text-xs">Top performers this week</p></div>
+               </div>
+               <div className="space-y-4">
+                 {[1, 2].map((i) => (
+                   <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                     <span className="font-bold text-yellow-400 w-6">#{i}</span>
+                     <div className="h-8 w-8 rounded-full bg-white/10" />
+                     <div className="flex-1"><div className="h-2 w-20 bg-white/20 rounded mb-1" /><div className="h-1.5 w-12 bg-white/10 rounded" /></div>
+                   </div>
+                 ))}
+               </div>
+             </div>
+             <Link to="/dashboard/leaderboard" className="relative z-10 mt-6"><Button className="w-full bg-white text-indigo-950 hover:bg-indigo-50 font-bold h-12 rounded-xl">View Rankings</Button></Link>
+          </motion.div>
         </div>
+
+        {/* Recent Activity */}
+        <motion.div variants={itemVariants}>
+          <div className="flex items-center justify-between mb-4 pl-1"><h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Activity Log</h3><Link to="/dashboard/history" className="text-xs font-medium text-indigo-600 hover:underline">View All</Link></div>
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+            {loading ? <div className="p-8 text-center"><div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"/></div> : getRecentTransactions(3).length === 0 ? <div className="p-8 text-center text-slate-400 text-sm flex flex-col items-center gap-2"><History className="h-8 w-8 opacity-20" />No activity yet.</div> : getRecentTransactions(3).map((tx) => (
+                <div key={tx.id} className="p-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors first:rounded-t-[2rem] last:rounded-b-[2rem]">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center ${tx.type === 'credit' ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>{tx.type === 'credit' ? <ArrowUpRight className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}</div>
+                    <div><p className="font-medium text-sm text-slate-900 dark:text-white">{tx.description || tx.label}</p><p className="text-xs text-slate-500">{new Date(tx.date).toLocaleDateString()}</p></div>
+                  </div>
+                  <span className={`font-semibold text-sm ${tx.type === 'credit' ? 'text-emerald-600' : 'text-slate-900 dark:text-slate-300'}`}>{tx.type === 'credit' ? '+' : '-'}₦{Number(tx.amount).toLocaleString()}</span>
+                </div>
+              ))}
+          </div>
         </motion.div>
-        
-        <PaymentModal 
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          onSuccess={() => setShowPaymentModal(false)}
-        />
-      </div>
+      </motion.div>
+      <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onSuccess={() => setShowPaymentModal(false)} />
+    </div>
   );
 };
 

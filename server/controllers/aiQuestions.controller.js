@@ -2,7 +2,7 @@ const supabase = require('../supabaseClient');
 const GeminiService = require('../services/gemini.service');
 
 // ==========================================
-// 1. GENERATE QUESTIONS (Fixed Logic)
+// 1. GENERATE QUESTIONS (AI Powered)
 // ==========================================
 exports.generateQuestions = async (req, res) => {
   console.log("📝 Received Generation Request:", req.body);
@@ -17,31 +17,38 @@ exports.generateQuestions = async (req, res) => {
       difficulty = 'medium' 
     } = req.body;
 
-    // --- A. VALIDATION LOGIC ---
-    if (!bankName) {
+    // --- A. INPUT SANITIZATION & VALIDATION ---
+    if (!bankName || typeof bankName !== 'string' || !bankName.trim()) {
       return res.status(400).json({ success: false, message: "Bank Name is required." });
     }
 
-    const hasText = text && text.length > 10;
+    // Ensure valid integer for count
+    const safeCount = Math.min(Math.max(parseInt(questionCount) || 10, 1), 50); // Cap at 50 questions
+    
+    // Ensure strings for AI context to prevent crashes
+    const safeSubject = (subject || 'General').toString().trim();
+    const safeTopic = (topic || 'General').toString().trim();
+    const safeDifficulty = (difficulty || 'medium').toString().trim();
+
+    const hasText = text && typeof text === 'string' && text.length > 10;
     const hasTopic = subject && topic;
 
     if (!hasText && !hasTopic) {
       return res.status(400).json({ 
         success: false,
-        message: "Invalid Request. Please provide either a 'text' passage (for Comprehension) OR a 'subject' and 'topic' (for AI Simulator)." 
+        message: "Invalid Request. Please provide either a 'text' passage OR a 'subject' and 'topic'." 
       });
     }
 
     // --- B. CALL AI SERVICE ---
-    console.log(`🤖 Generating ${questionCount} questions for ${bankName}...`);
+    console.log(`🤖 Generating ${safeCount} questions for "${bankName}"...`);
     
-    // The Service handles batching automatically
     const questions = await GeminiService.generateQuestions({
       text: hasText ? text : null,
-      subject: subject || 'General',
-      topic: topic || 'General',
-      difficulty,
-      totalQuestions: parseInt(questionCount)
+      subject: safeSubject,
+      topic: safeTopic,
+      difficulty: safeDifficulty,
+      totalQuestions: safeCount
     });
 
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
@@ -56,10 +63,10 @@ exports.generateQuestions = async (req, res) => {
     const { data: bankData, error: bankError } = await supabase
       .from('question_banks')
       .insert([{
-        name: bankName,
-        subject: subject || 'General',
-        topic: hasTopic ? topic : 'Text Analysis', 
-        difficulty: difficulty,
+        name: bankName.trim(),
+        subject: safeSubject,
+        topic: hasTopic ? safeTopic : 'Text Analysis', 
+        difficulty: safeDifficulty,
         is_active: true,
         created_at: new Date().toISOString()
       }])
@@ -71,24 +78,35 @@ exports.generateQuestions = async (req, res) => {
       throw new Error(`Failed to create Question Bank: ${bankError.message}`);
     }
 
-    // 2. Prepare Questions for Insert
-    const questionsToInsert = questions.map(q => ({
-      bank_id: bankData.id,
-      question: q.question,
-      options: typeof q.options === 'string' ? q.options : JSON.stringify(q.options),
-      correct_answer: q.answer || q.correct_answer,
-      explanation: q.explanation || "No explanation provided.",
-      type: 'multiple-choice',
-      difficulty: difficulty,
-      is_active: true,
-      created_at: new Date().toISOString()
-    }));
+    // 2. Prepare Questions for Bulk Insert
+    const questionsToInsert = questions.map(q => {
+      // Ensure options is always a JSON string for the DB
+      let optionsStr;
+      try {
+        optionsStr = typeof q.options === 'string' ? q.options : JSON.stringify(q.options || []);
+      } catch (e) {
+        optionsStr = '[]';
+      }
 
-    // 3. Bulk Insert Questions
+      return {
+        bank_id: bankData.id,
+        question: q.question || "Untitled Question",
+        options: optionsStr,
+        correct_answer: q.answer || q.correct_answer || "",
+        explanation: q.explanation || "No explanation provided.",
+        type: 'multiple-choice',
+        difficulty: safeDifficulty,
+        is_active: true,
+        created_at: new Date().toISOString()
+      };
+    });
+
+    // 3. Bulk Insert
     const { error: insertError } = await supabase
       .from('questions')
       .insert(questionsToInsert);
 
+    // Rollback logic: If questions fail, delete the empty bank to keep DB clean
     if (insertError) {
       console.error("❌ Questions Insert Error:", insertError);
       await supabase.from('question_banks').delete().eq('id', bankData.id);
@@ -113,7 +131,7 @@ exports.generateQuestions = async (req, res) => {
 };
 
 // ==========================================
-// 2. OTHER CRUD FUNCTIONS
+// 2. BANK MANAGEMENT (CRUD)
 // ==========================================
 
 exports.getQuestionBanks = async (req, res) => {
@@ -125,6 +143,7 @@ exports.getQuestionBanks = async (req, res) => {
 
     if (error) throw error;
 
+    // Flatten structure for frontend convenience
     const formattedData = data.map(bank => ({
       ...bank,
       questionCount: bank.questions ? bank.questions[0]?.count : 0
@@ -136,6 +155,27 @@ exports.getQuestionBanks = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.deleteQuestionBank = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Delete questions first (Cascading delete manual handling)
+    await supabase.from('questions').delete().eq('bank_id', id);
+    
+    // Delete bank
+    const { error } = await supabase.from('question_banks').delete().eq('id', id);
+
+    if (error) throw error;
+    res.status(200).json({ success: true, message: "Bank deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ==========================================
+// 3. QUESTION MANAGEMENT (CRUD)
+// ==========================================
 
 exports.getQuestionsByBank = async (req, res) => {
   try {
@@ -154,7 +194,6 @@ exports.getQuestionsByBank = async (req, res) => {
   }
 };
 
-// --- THIS IS THE FUNCTION YOU WERE MISSING ---
 exports.updateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
@@ -171,20 +210,6 @@ exports.updateQuestion = async (req, res) => {
     res.status(200).json({ success: true, data });
   } catch (error) {
     console.error('Update Question Error:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-// ---------------------------------------------
-
-exports.deleteQuestionBank = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await supabase.from('questions').delete().eq('bank_id', id);
-    const { error } = await supabase.from('question_banks').delete().eq('id', id);
-
-    if (error) throw error;
-    res.status(200).json({ success: true, message: "Bank deleted successfully" });
-  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -218,9 +243,12 @@ exports.bulkDeleteQuestions = async (req, res) => {
 exports.toggleQuestionStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    // First fetch current status
     const { data: question } = await supabase.from('questions').select('is_active').eq('id', id).single();
+    
     if (!question) return res.status(404).json({ success: false, message: 'Question not found' });
 
+    // Then toggle it
     const { data, error } = await supabase
       .from('questions')
       .update({ is_active: !question.is_active })
@@ -237,6 +265,7 @@ exports.toggleQuestionStatus = async (req, res) => {
 
 exports.getQuestionStats = async (req, res) => {
   try {
+    // 'head: true' gets the count without fetching all data (Performance optimization)
     const { count: bankCount } = await supabase.from('question_banks').select('*', { count: 'exact', head: true });
     const { count: questionCount } = await supabase.from('questions').select('*', { count: 'exact', head: true });
 

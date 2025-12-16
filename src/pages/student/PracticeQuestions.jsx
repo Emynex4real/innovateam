@@ -5,7 +5,8 @@ import { Badge } from '../../components/ui/badge';
 import { AIQuestionsService } from '../../services/aiQuestions.service';
 import { 
   BookOpen, Clock, Trophy, Lock, Unlock, CheckCircle, XCircle, 
-  ArrowRight, RotateCcw, Search, Zap, Wallet, BarChart 
+  ArrowRight, RotateCcw, Search, Zap, Wallet, BarChart, ChevronLeft,
+  Brain, AlertTriangle, Sparkles, Filter
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../contexts/DarkModeContext';
@@ -14,19 +15,19 @@ import practiceSessionService from '../../services/practiceSession.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+// IMPORTANT: You need to install recharts if you haven't: npm install recharts
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
-// Helper function to safely get current user from localStorage
+// --- UTILS ---
 const getCurrentUser = () => {
-  try {
-    return JSON.parse(localStorage.getItem('confirmedUser') || '{}');
-  } catch (error) {
-    console.error('Failed to parse current user:', error);
-    return {};
-  }
+  try { return JSON.parse(localStorage.getItem('confirmedUser') || '{}'); } 
+  catch (error) { return {}; }
 };
 
 const PracticeQuestions = () => {
   const { isDarkMode: isDark } = useDarkMode();
+  
+  // --- STATE ---
   const [view, setView] = useState('banks'); // 'banks', 'practice', 'results'
   const [banks, setBanks] = useState([]);
   const [selectedBank, setSelectedBank] = useState(null);
@@ -35,7 +36,7 @@ const PracticeQuestions = () => {
   const [userAnswers, setUserAnswers] = useState({});
   const [practiceComplete, setPracticeComplete] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState({ freeQuestionsToday: 0, unlockedBanks: [] });
   const [walletBalance, setWalletBalance] = useState(0);
   const [selectedSubject, setSelectedSubject] = useState('all');
@@ -47,13 +48,17 @@ const PracticeQuestions = () => {
   const FREE_QUESTIONS_LIMIT = 5;
   const UNLOCK_PRICE = 300;
 
+  // --- INITIALIZATION ---
   useEffect(() => {
-    loadBanks();
-    loadUserStats();
-    loadWalletBalance();
-    restoreExamState();
+    const init = async () => {
+      await Promise.all([loadBanks(), loadWalletBalance()]);
+      loadUserStats();
+      restoreExamState();
+    };
+    init();
   }, []);
 
+  // Timer Logic
   useEffect(() => {
     let interval;
     if (view === 'practice' && !practiceComplete) {
@@ -62,14 +67,12 @@ const PracticeQuestions = () => {
     return () => clearInterval(interval);
   }, [view, practiceComplete]);
 
-  // Save exam state on changes
+  // Save State
   useEffect(() => {
-    if (view === 'practice' && questions.length > 0) {
-      saveExamState();
-    }
+    if (view === 'practice' && questions.length > 0) saveExamState();
   }, [currentQuestionIndex, userAnswers, timer, view]);
 
-  // Warn before leaving during exam
+  // Prevent accidental exit
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (view === 'practice' && !practiceComplete) {
@@ -81,18 +84,10 @@ const PracticeQuestions = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [view, practiceComplete]);
 
-  // --- Exam State Persistence ---
-
+  // --- DATA HANDLING ---
   const saveExamState = () => {
     const currentUser = getCurrentUser();
-    const examState = {
-      selectedBank,
-      questions,
-      currentQuestionIndex,
-      userAnswers,
-      timer,
-      timestamp: Date.now()
-    };
+    const examState = { selectedBank, questions, currentQuestionIndex, userAnswers, timer, timestamp: Date.now() };
     localStorage.setItem(`exam_state_${currentUser.id}`, JSON.stringify(examState));
   };
 
@@ -100,21 +95,16 @@ const PracticeQuestions = () => {
     const currentUser = getCurrentUser();
     const saved = localStorage.getItem(`exam_state_${currentUser.id}`);
     if (!saved) return;
-
     try {
-      const examState = JSON.parse(saved);
-      const hourAgo = Date.now() - (60 * 60 * 1000);
-      
-      if (examState.timestamp > hourAgo && examState.questions?.length > 0) {
-        setPendingExamState(examState);
+      const state = JSON.parse(saved);
+      // Valid for 1 hour
+      if (state.timestamp > Date.now() - (60 * 60 * 1000) && state.questions?.length > 0) {
+        setPendingExamState(state);
         setShowRestoreDialog(true);
       } else {
         clearExamState();
       }
-    } catch (error) {
-      console.error('Failed to restore exam state:', error);
-      clearExamState();
-    }
+    } catch { clearExamState(); }
   };
 
   const handleRestoreConfirm = () => {
@@ -125,14 +115,9 @@ const PracticeQuestions = () => {
       setUserAnswers(pendingExamState.userAnswers);
       setTimer(pendingExamState.timer);
       setView('practice');
-      toast.success('Exam restored!');
+      toast.success('Session restored successfully');
       setPendingExamState(null);
     }
-  };
-
-  const handleRestoreCancel = () => {
-    clearExamState();
-    setPendingExamState(null);
   };
 
   const clearExamState = () => {
@@ -140,192 +125,91 @@ const PracticeQuestions = () => {
     localStorage.removeItem(`exam_state_${currentUser.id}`);
   };
 
-  // --- Logic Functions ---
-
   const loadBanks = async () => {
     try {
       setLoading(true);
       const result = await AIQuestionsService.getQuestionBanks();
       if (result.success) {
-        const activeBanks = result.data.filter(b => b.is_active);
-        setBanks(activeBanks);
-        const uniqueSubjects = [...new Set(activeBanks.map(b => b.subject).filter(Boolean))];
-        setSubjects(uniqueSubjects.sort());
+        const active = result.data.filter(b => b.is_active);
+        setBanks(active);
+        setSubjects([...new Set(active.map(b => b.subject).filter(Boolean))].sort());
       }
-    } catch (error) {
-      toast.error('Failed to load question banks');
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error('Could not load question banks'); } 
+    finally { setLoading(false); }
   };
 
   const loadUserStats = () => {
     const currentUser = getCurrentUser();
-    let stats = {};
-    try {
-      stats = JSON.parse(localStorage.getItem(`practice_stats_${currentUser.id}`) || '{}');
-    } catch (error) {
-      console.error('Failed to parse user stats:', error);
-      stats = {};
-    }
+    const stats = JSON.parse(localStorage.getItem(`practice_stats_${currentUser.id}`) || '{}');
     const today = new Date().toDateString();
-    
-    if (stats.lastPracticeDate !== today) {
-      stats.freeQuestionsToday = 0;
-      stats.lastPracticeDate = today;
-    }
-    
-    setUserStats({
-      freeQuestionsToday: stats.freeQuestionsToday || 0,
-      unlockedBanks: stats.unlockedBanks || []
-    });
+    if (stats.lastPracticeDate !== today) { stats.freeQuestionsToday = 0; stats.lastPracticeDate = today; }
+    setUserStats({ freeQuestionsToday: stats.freeQuestionsToday || 0, unlockedBanks: stats.unlockedBanks || [] });
   };
 
   const loadWalletBalance = async () => {
-    try {
-      const currentUser = getCurrentUser();
-      if (!currentUser.id) return;
-      
-      const supabase = (await import('../../config/supabase')).default;
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('wallet_balance')
-        .eq('id', currentUser.id)
-        .single();
-      
-      if (!error && data) {
-        setWalletBalance(data.wallet_balance || 0);
-        // Note: Supabase is the source of truth; localStorage is fallback only
-      } else {
-        // Fallback to localStorage if Supabase fails (offline mode)
-        setWalletBalance(parseInt(localStorage.getItem('wallet_balance') || '0'));
-      }
-    } catch (error) {
-      console.error('Failed to load wallet balance:', error);
-      toast.error('Failed to load wallet balance');
-    }
-  };
-
-  const saveUserStats = (newStats) => {
     const currentUser = getCurrentUser();
-    const today = new Date().toDateString();
-    localStorage.setItem(`practice_stats_${currentUser.id}`, JSON.stringify({
-      ...newStats,
-      lastPracticeDate: today
-    }));
-    setUserStats(newStats);
+    if (!currentUser.id) return;
+    try {
+       const supabase = (await import('../../config/supabase')).default;
+       const { data } = await supabase.from('user_profiles').select('wallet_balance').eq('id', currentUser.id).single();
+       if (data) setWalletBalance(data.wallet_balance);
+    } catch (e) { console.error(e); }
   };
 
   const isBankUnlocked = (bankId) => userStats.unlockedBanks.includes(bankId);
-  const canUseFreeQuestions = () => userStats.freeQuestionsToday < FREE_QUESTIONS_LIMIT;
 
   const handleUnlockBank = async (bank) => {
-    if (walletBalance < UNLOCK_PRICE) {
-      toast.error(`Insufficient balance. You need ₦${UNLOCK_PRICE}.`);
-      return;
-    }
-
+    if (walletBalance < UNLOCK_PRICE) return toast.error(`Insufficient balance. Need ₦${UNLOCK_PRICE}`);
+    
     if (!window.confirm(`Unlock "${bank.name}" for ₦${UNLOCK_PRICE}?`)) return;
 
     try {
       setLoading(true);
       const currentUser = getCurrentUser();
+      const result = await simpleWalletService.addTransaction(currentUser.email, UNLOCK_PRICE, `Unlocked: ${bank.name}`, 'debit');
       
-      if (!currentUser.id) {
-        toast.error('User session expired. Please log in again.');
-        return;
-      }
-      
-      const result = await simpleWalletService.addTransaction(
-        currentUser.email,
-        UNLOCK_PRICE,
-        `Unlocked Question Bank: ${bank.name}`,
-        'debit'
-      );
-
       if (result.success) {
-        const newStats = {
-          ...userStats,
-          unlockedBanks: [...userStats.unlockedBanks, bank.id]
-        };
-        saveUserStats(newStats);
+        const newStats = { ...userStats, unlockedBanks: [...userStats.unlockedBanks, bank.id] };
+        localStorage.setItem(`practice_stats_${currentUser.id}`, JSON.stringify(newStats));
+        setUserStats(newStats);
         setWalletBalance(result.newBalance);
-        toast.success(`${bank.name} unlocked!`);
-      } else {
-        toast.error('Failed to unlock bank: ' + result.error);
-      }
-    } catch (error) {
-      toast.error('Unlock failed: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
+        toast.success('Bank Unlocked!');
+      } else { toast.error(result.error); }
+    } catch (e) { toast.error(e.message); } 
+    finally { setLoading(false); }
   };
 
   const startPractice = async (bank, isFree = false) => {
     try {
       setLoading(true);
       const result = await AIQuestionsService.getQuestionsByBank(bank.id);
-      
       if (result.success && result.data.length > 0) {
-        let questionsToUse = result.data.filter(q => q.is_active);
+        let qList = result.data.filter(q => q.is_active);
+        if (isFree) qList = qList.slice(0, FREE_QUESTIONS_LIMIT - userStats.freeQuestionsToday);
         
-        if (isFree) {
-          const remaining = FREE_QUESTIONS_LIMIT - userStats.freeQuestionsToday;
-          questionsToUse = questionsToUse.slice(0, remaining);
-        }
-        
-        questionsToUse = questionsToUse.sort(() => Math.random() - 0.5);
-        
-        setQuestions(questionsToUse);
+        setQuestions(qList.sort(() => Math.random() - 0.5));
         setSelectedBank(bank);
         setCurrentQuestionIndex(0);
         setUserAnswers({});
         setPracticeComplete(false);
         setTimer(0);
         setView('practice');
-      } else {
-        toast.error('No questions available in this bank');
-      }
-    } catch (error) {
-      toast.error('Failed to start practice');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAnswer = (answer) => {
-    const currentQuestion = questions[currentQuestionIndex];
-    setUserAnswers({ ...userAnswers, [currentQuestion.id]: answer });
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      completePractice();
-    }
+      } else { toast.error('Bank is empty'); }
+    } catch { toast.error('Failed to start'); } 
+    finally { setLoading(false); }
   };
 
   const completePractice = async () => {
     clearExamState();
-    const isUnlocked = isBankUnlocked(selectedBank.id);
     const score = calculateScore();
     
-    if (!isUnlocked) {
-      const newStats = {
-        ...userStats,
-        freeQuestionsToday: userStats.freeQuestionsToday + questions.length
-      };
-      saveUserStats(newStats);
+    if (!isBankUnlocked(selectedBank.id)) {
+      const newStats = { ...userStats, freeQuestionsToday: userStats.freeQuestionsToday + questions.length };
+      localStorage.setItem(`practice_stats_${getCurrentUser().id}`, JSON.stringify(newStats));
+      setUserStats(newStats);
     }
-    
-    // Save to database for leaderboard
+
+    // Save to Supabase (Real DB)
     const sessionData = {
       bankId: selectedBank.id,
       bankName: selectedBank.name,
@@ -335,356 +219,163 @@ const PracticeQuestions = () => {
       timeSpent: timer,
       percentage: score.percentage
     };
-    
-    // Save to Supabase and get feedback
-    const result = await practiceSessionService.savePracticeSession(sessionData);
-    
-    // Show appropriate message
-    if (result.success) {
-      if (result.isFirstAttempt) {
-        toast.success(`🎉 ${result.message}`, { duration: 4000 });
-      } else {
-        toast(`📝 ${result.message}`, { 
-          icon: '💡',
-          duration: 3000 
-        });
-      }
-    }
-    
-    // Also save to localStorage as backup
-    const currentUser = getCurrentUser();
-    let history = [];
-    try {
-      history = JSON.parse(localStorage.getItem(`practice_history_${currentUser.id}`) || '[]');
-    } catch (error) {
-      console.error('Failed to parse practice history:', error);
-      history = [];
-    }
-    
-    history.push({
-      date: new Date().toISOString(),
-      ...sessionData
-    });
-    
-    localStorage.setItem(`practice_history_${currentUser.id}`, JSON.stringify(history));
-    setPracticeComplete(true);
-    setView('results');
 
-    if (score.percentage >= 70 && result.isFirstAttempt) {
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#22c55e', '#16a34a', '#4ade80']
-      });
+    const result = await practiceSessionService.savePracticeSession(sessionData);
+    if (result.success) {
+      toast.success(result.isFirstAttempt ? `+${result.pointsAwarded} XP Earned!` : 'Session Recorded');
+      if (score.percentage >= 70 && result.isFirstAttempt) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#6366f1'] });
     }
+
+    setView('results');
   };
 
   const calculateScore = () => {
     let correct = 0;
     questions.forEach(q => {
-      const userAns = String(userAnswers[q.id] || '').trim();
-      const correctAns = String(q.correct_answer || '').trim();
-      if (userAns === correctAns) correct++;
+      if (String(userAnswers[q.id] || '').trim() === String(q.correct_answer || '').trim()) correct++;
     });
-    const percentage = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
-    return { correct, total: questions.length, percentage };
+    return { correct, total: questions.length, percentage: Math.round((correct / questions.length) * 100) || 0 };
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
-  // --- VIEW RENDERERS ---
+  // --- ANIMATIONS ---
+  const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 
-  // 1. The Dashboard / Banks View
+  // --- RENDERERS ---
+
   const renderBanksView = () => {
-    let filteredBanks = selectedSubject === 'all' ? banks : banks.filter(b => b.subject === selectedSubject);
-    if (searchQuery.trim()) {
-      filteredBanks = filteredBanks.filter(b => 
-        b.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        b.subject?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+    let filtered = selectedSubject === 'all' ? banks : banks.filter(b => b.subject === selectedSubject);
+    if (searchQuery) filtered = filtered.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-      <div className="space-y-8">
-        {/* Header Section */}
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Practice Questions</h1>
-          <p className="text-gray-500 text-sm">Select a subject bank to start practicing</p>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-end gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <BookOpen className="h-8 w-8 text-emerald-500" /> Smart Prep
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Select a module to begin your AI-powered drill.</p>
+          </div>
+          <div className="flex items-center gap-3">
+             <Badge variant="outline" className="px-3 py-1.5 border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-900">
+                <Zap className="w-3.5 h-3.5 mr-1 fill-current" /> {FREE_QUESTIONS_LIMIT - userStats.freeQuestionsToday} Free Daily
+             </Badge>
+             <Badge variant="outline" className="px-3 py-1.5 border-slate-200 dark:border-slate-800">
+                <Wallet className="w-3.5 h-3.5 mr-1" /> ₦{walletBalance.toLocaleString()}
+             </Badge>
+          </div>
         </div>
 
-        {/* Stats Row - Matches Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Wallet Card */}
-          <Card className="border border-gray-100 dark:border-gray-800 shadow-sm rounded-xl">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Wallet Balance</p>
-                  <h3 className="text-2xl font-bold">₦{walletBalance.toLocaleString()}</h3>
-                  <p className="text-xs text-green-500 mt-1 font-medium">Available for unlocks</p>
-                </div>
-                <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <Wallet className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Free Questions Card */}
-          <Card className="border border-gray-100 dark:border-gray-800 shadow-sm rounded-xl">
-             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Daily Free Access</p>
-                  <h3 className="text-2xl font-bold">{Math.max(0, FREE_QUESTIONS_LIMIT - userStats.freeQuestionsToday)} <span className="text-sm font-normal text-gray-400">/ {FREE_QUESTIONS_LIMIT}</span></h3>
-                  <p className="text-xs text-blue-500 mt-1 font-medium">Resets daily</p>
-                </div>
-                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Mastery/Stats Card */}
-          <Card className="border border-gray-100 dark:border-gray-800 shadow-sm rounded-xl">
-             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Unlocked Banks</p>
-                  <h3 className="text-2xl font-bold">{userStats.unlockedBanks.length}</h3>
-                  <p className="text-xs text-purple-500 mt-1 font-medium">Lifetime access</p>
-                </div>
-                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters & Search - Clean Toolbar */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
-           <div className="relative w-full md:w-80">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+           <div className="relative w-full md:w-96 group">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
              <input 
-               type="text" 
-               placeholder="Search banks..." 
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-               className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border-none rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+               type="text" placeholder="Search topics..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+               className="w-full pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
              />
            </div>
-
-           <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
-             <button
-               onClick={() => setSelectedSubject('all')}
-               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                 selectedSubject === 'all' 
-                   ? 'bg-green-600 text-white shadow-md shadow-green-200 dark:shadow-none' 
-                   : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-               }`}
-             >
-               All
-             </button>
-             {subjects.map(subject => (
-               <button
-                 key={subject}
-                 onClick={() => setSelectedSubject(subject)}
-                 className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                   selectedSubject === subject 
-                     ? 'bg-green-600 text-white shadow-md shadow-green-200 dark:shadow-none' 
-                     : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+           <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-1 hide-scrollbar">
+             {['all', ...subjects].map(sub => (
+               <button key={sub} onClick={() => setSelectedSubject(sub)}
+                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                   selectedSubject === sub ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50'
                  }`}
-               >
-                 {subject}
-               </button>
+               >{sub.toUpperCase()}</button>
              ))}
            </div>
         </div>
 
-        {/* Content Grid */}
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
-            {loading ? (
-               [1,2,3].map(i => (
-                 <div key={i} className="h-48 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-               ))
-            ) : filteredBanks.length === 0 ? (
-               <div className="col-span-full py-12 text-center text-gray-400">
-                  <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p>No question banks found matching your criteria.</p>
+            {loading ? [1,2,3].map(i => <div key={i} className="h-56 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse"/>) : filtered.length === 0 ? (
+               <div className="col-span-full py-20 text-center text-slate-400 flex flex-col items-center">
+                 <Search className="w-16 h-16 mb-4 opacity-20" />
+                 <p>No modules found.</p>
                </div>
-            ) : (
-               filteredBanks.map((bank) => {
-                 const isUnlocked = isBankUnlocked(bank.id);
-                 const canTryFree = canUseFreeQuestions();
-                 
-                 return (
-                   <motion.div
-                     layout
-                     initial={{ opacity: 0 }}
-                     animate={{ opacity: 1 }}
-                     exit={{ opacity: 0 }}
-                     key={bank.id}
-                   >
-                     <Card className="h-full hover:shadow-md transition-shadow duration-200 border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden flex flex-col">
-                        <div className={`h-1 w-full ${isUnlocked ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`} />
-                        <CardContent className="p-5 flex flex-col flex-1">
-                           <div className="flex justify-between items-start mb-3">
-                              <Badge variant="outline" className="font-normal text-xs text-gray-500 border-gray-200 dark:border-gray-700">
-                                {bank.subject}
-                              </Badge>
-                              {isUnlocked ? (
-                                <div className="flex items-center gap-1 text-green-600 text-xs font-bold bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                                  <Unlock className="w-3 h-3" /> OWNED
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1 text-gray-400 text-xs font-bold bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
-                                  <Lock className="w-3 h-3" /> LOCKED
-                                </div>
-                              )}
-                           </div>
-                           
-                           <h3 className="font-bold text-lg mb-2 line-clamp-2">{bank.name}</h3>
-                           
-                           <div className="flex items-center gap-4 text-xs text-gray-500 mb-6">
-                              <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" /> {bank.questionCount} Qs</span>
-                              <span className="flex items-center gap-1"><BarChart className="w-3 h-3" /> {bank.difficulty}</span>
-                           </div>
-                           
-                           <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-3">
-                              {isUnlocked ? (
-                                <Button 
-                                  onClick={() => startPractice(bank)}
-                                  className="col-span-2 w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
-                                >
-                                  Start Practice
-                                </Button>
-                              ) : (
-                                <>
-                                  {canTryFree && (
-                                    <Button 
-                                      variant="outline" 
-                                      onClick={() => startPractice(bank, true)}
-                                      className="border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50"
-                                    >
-                                      Try Free
-                                    </Button>
-                                  )}
-                                  <Button 
-                                    onClick={() => handleUnlockBank(bank)}
-                                    className={`${canTryFree ? '' : 'col-span-2'} bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90`}
-                                  >
-                                    Unlock ₦{UNLOCK_PRICE}
-                                  </Button>
-                                </>
-                              )}
-                           </div>
-                        </CardContent>
-                     </Card>
-                   </motion.div>
-                 );
-               })
-            )}
+            ) : filtered.map(bank => {
+               const isUnlocked = isBankUnlocked(bank.id);
+               const canFree = userStats.freeQuestionsToday < FREE_QUESTIONS_LIMIT;
+               return (
+                 <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={bank.id} className="h-full">
+                   <div className="group relative h-full bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all overflow-hidden flex flex-col">
+                      <div className={`absolute top-0 left-0 w-full h-1.5 ${isUnlocked ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'}`} />
+                      <div className="p-6 flex flex-col flex-1">
+                         <div className="flex justify-between items-start mb-4">
+                            <Badge variant="secondary" className="rounded-lg text-[10px] font-bold uppercase tracking-wider">{bank.subject}</Badge>
+                            {isUnlocked ? <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full"><Unlock className="w-3.5 h-3.5" /></div> : <div className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full"><Lock className="w-3.5 h-3.5" /></div>}
+                         </div>
+                         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-emerald-500 transition-colors">{bank.name}</h3>
+                         <div className="flex items-center gap-4 text-xs text-slate-500 font-medium mb-6">
+                            <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> {bank.questionCount} Qs</span>
+                            <span className="flex items-center gap-1"><BarChart className="w-3.5 h-3.5" /> {bank.difficulty}</span>
+                         </div>
+                         <div className="mt-auto grid grid-cols-2 gap-3">
+                            {isUnlocked ? (
+                              <Button onClick={() => startPractice(bank)} className="col-span-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold">Start Drill</Button>
+                            ) : (
+                              <>
+                                {canFree && <Button variant="outline" onClick={() => startPractice(bank, true)} className="rounded-xl border-slate-200 dark:border-slate-700">Try Free</Button>}
+                                <Button onClick={() => handleUnlockBank(bank)} className={`${canFree ? '' : 'col-span-2'} bg-slate-900 dark:bg-white text-white dark:text-black rounded-xl font-bold`}>Unlock ₦{UNLOCK_PRICE}</Button>
+                              </>
+                            )}
+                         </div>
+                      </div>
+                   </div>
+                 </motion.div>
+               );
+            })}
           </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
-  // 2. The Active Practice View (Clean, Focus Mode)
   const renderPracticeView = () => {
     if (!questions.length) return null;
     const q = questions[currentQuestionIndex];
     let options = [];
-    if (typeof q.options === 'string') {
-      try {
-        options = JSON.parse(q.options);
-      } catch {
-        options = [];
-      }
-    } else {
-      options = q.options || [];
-    }
+    try { options = JSON.parse(q.options || '[]'); } catch { options = []; }
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
     return (
-      <div className="max-w-3xl mx-auto py-8">
-        {/* Simple Header */}
-        <div className="flex items-center justify-between mb-8">
-           <Button variant="ghost" onClick={() => setView('banks')} className="text-gray-500 hover:text-red-500">
-             <XCircle className="w-5 h-5 mr-2" /> Exit
-           </Button>
-           <div className="flex items-center gap-2 font-mono text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md font-bold">
-             <Clock className="w-4 h-4" /> {formatTime(timer)}
-           </div>
+      <div className="max-w-4xl mx-auto py-4 md:py-8">
+        <div className="flex items-center justify-between mb-6">
+           <Button variant="ghost" onClick={() => setView('banks')} className="text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><ChevronLeft className="w-5 h-5 mr-1" /> Exit</Button>
+           <div className="flex items-center gap-2 font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl font-bold border border-emerald-100 dark:border-emerald-900"><Clock className="w-4 h-4" /> {formatTime(timer)}</div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8">
-           {/* Progress Bar */}
-           <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full mb-8 overflow-hidden">
-              <motion.div 
-                className="h-full bg-green-500" 
-                initial={{ width: 0 }} 
-                animate={{ width: `${progress}%` }} 
-              />
-           </div>
-
-           <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block">
-             Question {currentQuestionIndex + 1} of {questions.length}
-           </span>
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-slate-200 dark:border-slate-800 p-6 md:p-10 relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-100 dark:bg-slate-800"><motion.div className="h-full bg-emerald-500" initial={{ width: 0 }} animate={{ width: `${progress}%` }} /></div>
            
-           <h2 className="text-xl md:text-2xl font-bold mb-8 leading-relaxed">
-             {q.question}
-           </h2>
+           <div className="mb-8">
+             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Question {currentQuestionIndex + 1} / {questions.length}</span>
+             <h2 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mt-3 leading-tight">{q.question}</h2>
+           </div>
 
            <div className="space-y-3">
-              {options.map((opt, idx) => {
-                const isSelected = userAnswers[q.id] === opt;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handleAnswer(opt)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${
-                      isSelected 
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/10' 
-                        : 'border-gray-100 dark:border-gray-800 hover:border-green-200 dark:hover:border-green-900'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${
-                       isSelected ? 'bg-green-500 text-white border-green-500' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700'
-                    }`}>
-                       {String.fromCharCode(65 + idx)}
-                    </div>
-                    <span className={isSelected ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}>
-                      {opt}
-                    </span>
-                  </button>
-                )
-              })}
+             {options.map((opt, idx) => {
+               const isSelected = userAnswers[q.id] === opt;
+               return (
+                 <button key={idx} onClick={() => { 
+                    const currentQ = questions[currentQuestionIndex];
+                    setUserAnswers({ ...userAnswers, [currentQ.id]: opt });
+                 }}
+                 className={`w-full text-left p-5 rounded-2xl border-2 transition-all flex items-center gap-4 group ${isSelected ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold border transition-colors ${isSelected ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-200 dark:border-slate-700 group-hover:border-emerald-300'}`}>{String.fromCharCode(65 + idx)}</div>
+                    <span className={`text-base md:text-lg ${isSelected ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'}`}>{opt}</span>
+                 </button>
+               )
+             })}
            </div>
 
-           <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800 flex justify-between">
-              <Button 
-                onClick={handlePrevious}
-                disabled={currentQuestionIndex === 0}
-                variant="outline"
-                className="px-8 py-6 rounded-xl font-bold text-lg"
-              >
-                <ArrowRight className="w-5 h-5 mr-2 rotate-180" /> Previous
-              </Button>
-              <Button 
-                onClick={handleNext}
-                disabled={!userAnswers[q.id]}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 rounded-xl font-bold text-lg"
-              >
-                {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'} <ArrowRight className="w-5 h-5 ml-2" />
+           <div className="mt-10 flex justify-between items-center">
+              <Button variant="outline" onClick={() => currentQuestionIndex > 0 && setCurrentQuestionIndex(prev => prev - 1)} disabled={currentQuestionIndex === 0} className="rounded-xl h-12 px-6">Previous</Button>
+              <Button onClick={() => currentQuestionIndex < questions.length - 1 ? setCurrentQuestionIndex(prev => prev + 1) : completePractice()} disabled={!userAnswers[q.id]} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 px-8 font-bold text-base shadow-lg shadow-emerald-500/20">
+                {currentQuestionIndex === questions.length - 1 ? 'Finish Exam' : 'Next Question'} <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
            </div>
         </div>
@@ -692,120 +383,90 @@ const PracticeQuestions = () => {
     );
   };
 
-  // 3. Results View
   const renderResultsView = () => {
-    const score = calculateScore();
-    const passed = score.percentage >= 60;
+    const { correct, total, percentage } = calculateScore();
+    const passed = percentage >= 60;
+    // Donut Chart Data
+    const chartData = [{ name: 'Correct', value: correct, color: '#10b981' }, { name: 'Wrong', value: total - correct, color: '#ef4444' }];
 
     return (
-      <div className="max-w-4xl mx-auto py-12">
-        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-gray-800 text-center mb-8">
-           <div className={`inline-flex p-4 rounded-full mb-6 ${passed ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-              <Trophy className="w-12 h-12" />
-           </div>
+      <div className="max-w-3xl mx-auto py-8">
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-slate-200 dark:border-slate-800 text-center relative overflow-hidden">
+           <div className={`absolute top-0 left-0 w-full h-2 ${passed ? 'bg-emerald-500' : 'bg-orange-500'}`} />
            
-           <h2 className="text-3xl font-bold mb-2">{passed ? "Great Job!" : "Practice Needed"}</h2>
-           <p className="text-gray-500 mb-8">You scored {score.percentage}% ({score.correct}/{score.total})</p>
+           <div className="mb-8 relative z-10">
+             {/* DONUT CHART */}
+             <div className="h-40 w-full flex justify-center mb-4">
+               <ResponsiveContainer width="100%" height="100%">
+                 <PieChart>
+                   <Pie data={chartData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                     {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />)}
+                   </Pie>
+                 </PieChart>
+               </ResponsiveContainer>
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                 <span className="text-4xl font-extrabold text-slate-900 dark:text-white">{percentage}%</span>
+                 <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Score</p>
+               </div>
+             </div>
+             
+             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{passed ? "Mission Accomplished! 🚀" : "Keep Pushing! 💪"}</h2>
+             <p className="text-slate-500">You answered {correct} out of {total} questions correctly.</p>
+           </div>
 
-           <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                 <p className="text-sm text-gray-500 mb-1">Time Taken</p>
-                 <p className="font-bold text-xl">{formatTime(timer)}</p>
+           <div className="grid grid-cols-2 gap-4 mb-10 max-w-md mx-auto">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                 <p className="text-xs text-slate-400 font-bold uppercase mb-1">Time</p>
+                 <p className="text-xl font-bold text-slate-900 dark:text-white">{formatTime(timer)}</p>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                 <p className="text-sm text-gray-500 mb-1">Accuracy</p>
-                 <p className="font-bold text-xl">{score.percentage}%</p>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                 <p className="text-xs text-slate-400 font-bold uppercase mb-1">XP Earned</p>
+                 <p className="text-xl font-bold text-emerald-500">+{isBankUnlocked(selectedBank.id) ? 0 : 50}</p>
               </div>
            </div>
 
-           <div className="flex gap-4 justify-center">
-              <Button variant="outline" onClick={() => setView('banks')} className="py-6 px-8 rounded-xl">
-                Back to Dashboard
-              </Button>
-              <Button onClick={() => startPractice(selectedBank, !isBankUnlocked(selectedBank.id))} className="bg-green-600 hover:bg-green-700 text-white py-6 px-8 rounded-xl">
-                <RotateCcw className="w-4 h-4 mr-2" /> Retry
-              </Button>
+           <div className="flex flex-col md:flex-row gap-4 justify-center">
+              <Button variant="outline" onClick={() => setView('banks')} className="h-12 rounded-xl border-slate-200 dark:border-slate-700">Back to Library</Button>
+              <Button onClick={() => startPractice(selectedBank, !isBankUnlocked(selectedBank.id))} className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 shadow-lg shadow-emerald-500/20"><RotateCcw className="w-4 h-4 mr-2" /> Retry Drill</Button>
            </div>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold mb-4">Review Your Answers</h3>
-          {questions.map((q, index) => {
-            const userAnswer = userAnswers[q.id];
-            const userAns = String(userAnswer || '').trim();
-            const correctAns = String(q.correct_answer || '').trim();
-            const isCorrect = userAns === correctAns;
-            let options = [];
-            if (typeof q.options === 'string') {
-              try { options = JSON.parse(q.options); } catch { options = []; }
-            } else {
-              options = q.options || [];
-            }
-
-            return (
-              <motion.div key={q.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}
-                className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                    {isCorrect ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold text-gray-400 uppercase">Question {index + 1}</span>
-                      <Badge className={isCorrect ? 'bg-green-100 text-green-700 border-0' : 'bg-red-100 text-red-700 border-0'}>
-                        {isCorrect ? 'Correct' : 'Incorrect'}
-                      </Badge>
-                    </div>
-                    <p className="font-bold text-lg mb-4">{q.question}</p>
-                    <div className="space-y-2 mb-4">
-                      {options.map((opt, idx) => {
-                        const optTrimmed = String(opt || '').trim();
-                        const isUserAnswer = userAns === optTrimmed;
-                        const isCorrectAnswer = correctAns === optTrimmed;
-                        return (
-                          <div key={idx} className={`p-3 rounded-lg border-2 flex items-center gap-3 ${isCorrectAnswer ? 'border-green-500 bg-green-50 dark:bg-green-900/10' : isUserAnswer ? 'border-red-500 bg-red-50 dark:bg-red-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isCorrectAnswer ? 'bg-green-500 text-white' : isUserAnswer ? 'bg-red-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
-                              {String.fromCharCode(65 + idx)}
-                            </div>
-                            <span className={`flex-1 text-sm ${isCorrectAnswer || isUserAnswer ? 'font-semibold' : ''}`}>{opt}</span>
-                            {isCorrectAnswer && <CheckCircle className="w-5 h-5 text-green-600" />}
-                            {isUserAnswer && !isCorrectAnswer && <XCircle className="w-5 h-5 text-red-600" />}
+        {/* Answer Review */}
+        <div className="mt-8 space-y-4">
+           <h3 className="text-lg font-bold text-slate-900 dark:text-white px-4">Performance Breakdown</h3>
+           {questions.map((q, i) => {
+             const userAns = String(userAnswers[q.id] || '').trim();
+             const correctAns = String(q.correct_answer || '').trim();
+             const isCorrect = userAns === correctAns;
+             return (
+               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={q.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex gap-4">
+                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isCorrect ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                        {isCorrect ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                     </div>
+                     <div className="flex-1">
+                        <p className="font-bold text-slate-900 dark:text-white mb-2">{q.question}</p>
+                        <p className="text-sm text-slate-500 mb-1">Your Answer: <span className={isCorrect ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}>{userAns || 'Skipped'}</span></p>
+                        {!isCorrect && <p className="text-sm text-emerald-600">Correct Answer: <span className="font-bold">{correctAns}</span></p>}
+                        {q.explanation && (
+                          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                             <p className="text-xs font-bold text-blue-600 uppercase mb-1">Explanation</p>
+                             <p className="text-sm text-slate-600 dark:text-slate-300">{q.explanation}</p>
                           </div>
-                        );
-                      })}
-                    </div>
-                    {q.explanation && (
-                      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
-                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-2">Explanation</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">{q.explanation}</p>
-                      </div>
-                    )}
+                        )}
+                     </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
+               </motion.div>
+             )
+           })}
         </div>
       </div>
     );
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} p-4 md:p-8`}>
-      <ConfirmDialog
-        isOpen={showRestoreDialog}
-        onClose={() => {
-          setShowRestoreDialog(false);
-          handleRestoreCancel();
-        }}
-        onConfirm={handleRestoreConfirm}
-        title="Continue Your Exam?"
-        message="You have an unfinished exam. Would you like to continue where you left off?"
-        confirmText="Continue Exam"
-        cancelText="Start Fresh"
-        type="info"
-      />
-      
+    <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} p-4 md:p-8 transition-colors`}>
+      <ConfirmDialog isOpen={showRestoreDialog} onClose={() => { setShowRestoreDialog(false); clearExamState(); }} onConfirm={handleRestoreConfirm} title="Resume Session?" message="We found an unfinished practice session. Pick up where you left off?" confirmText="Resume" cancelText="Start Over" type="info" />
       {view === 'banks' && renderBanksView()}
       {view === 'practice' && renderPracticeView()}
       {view === 'results' && renderResultsView()}

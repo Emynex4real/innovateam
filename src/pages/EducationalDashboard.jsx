@@ -334,7 +334,7 @@ const EducationalDashboard = () => {
         </div>
 
         {/* Services Section */}
-        <div className="space-y-6">
+        {/* <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">Available Services</h2>
@@ -408,7 +408,7 @@ const EducationalDashboard = () => {
               </motion.div>
             ))}
           </div>
-        </div>
+        </div> */}
       </motion.div>
 
       {/* Confirmation Modal */}

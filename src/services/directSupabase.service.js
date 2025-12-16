@@ -247,6 +247,122 @@ class DirectSupabaseService {
       return { success: false, error: error.message };
     }
   }
+  /**
+   * 7. GET STUDENT PROGRESS (Calculates Level, Streak, & XP from DB)
+   * Replaces localStorage logic with real database aggregation.
+   */
+  async getStudentProgress(userId) {
+    try {
+      // Fetch all practice history for this user
+      const { data: history, error } = await this.supabase
+        .from('practice_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!history || history.length === 0) {
+        return { 
+          success: true, 
+          stats: { totalSessions: 0, averageScore: 0, streak: 0, level: 1, progress: 0, totalQuestions: 0, chartData: [], hasPracticedToday: false } 
+        };
+      }
+
+      // --- A. CALCULATE AGGREGATES ---
+      const totalSessions = history.length;
+      const totalQuestions = history.reduce((sum, session) => sum + (session.total_questions || 0), 0);
+      const totalScore = history.reduce((sum, session) => sum + (session.score || 0), 0);
+      const averageScore = Math.round(totalScore / totalSessions);
+
+      // --- B. CALCULATE LEVEL (Gamification) ---
+      // Logic: Every 50 questions = 1 Level
+      const level = Math.floor(totalQuestions / 50) + 1;
+      const progress = ((totalQuestions % 50) / 50) * 100;
+
+      // --- C. CALCULATE STREAK (Real-Time) ---
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      let checkDate = new Date(today);
+      
+      // Get unique dates the user practiced
+      const practiceDates = new Set(
+        history.map(h => new Date(h.created_at).toDateString())
+      );
+
+      // Check today (if practiced today, streak starts at 1, else check yesterday)
+      if (practiceDates.has(checkDate.toDateString())) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1); // Move to yesterday
+      } else {
+        // If not practiced today, check if streak ended yesterday
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (!practiceDates.has(yesterday.toDateString())) {
+          streak = 0; // Streak broken
+        } else {
+          checkDate = yesterday; // Streak is alive, start counting from yesterday
+        }
+      }
+
+      // Count backwards
+      while (streak > 0 && practiceDates.has(checkDate.toDateString())) {
+        // We already counted the first day above, so we check consecutive days
+        // This is a simplified loop for the "next" days
+        checkDate.setDate(checkDate.getDate() - 1);
+        if (practiceDates.has(checkDate.toDateString())) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+
+      // --- D. PREPARE CHART DATA (Last 7 Days) ---
+      const chartData = [];
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const now = new Date();
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        const dateStr = d.toDateString();
+        
+        const daySessions = history.filter(h => new Date(h.created_at).toDateString() === dateStr);
+        let dayAvg = 0;
+        if (daySessions.length > 0) {
+          const dayTotal = daySessions.reduce((sum, s) => sum + (s.score || 0), 0);
+          dayAvg = Math.round(dayTotal / daySessions.length);
+        }
+
+        chartData.push({
+          day: days[d.getDay()],
+          fullDate: dateStr,
+          score: dayAvg
+        });
+      }
+
+      const hasPracticedToday = practiceDates.has(today.toDateString());
+
+      return {
+        success: true,
+        stats: {
+          totalSessions,
+          averageScore,
+          streak,
+          level,
+          progress,
+          totalQuestions,
+          chartData,
+          hasPracticedToday
+        }
+      };
+
+    } catch (error) {
+      console.error('Progress Error:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 const directSupabaseService = new DirectSupabaseService();
