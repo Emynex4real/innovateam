@@ -177,7 +177,22 @@ Generate well-structured academic examination questions that test:
       return JSON.parse(cleaned);
     } catch (e) {
       console.error('❌ JSON Parse Error:', e.message);
-      return [];
+      
+      // Try to fix common JSON issues with control characters
+      try {
+        // Replace problematic control characters in strings
+        const fixed = cleaned
+          .replace(/\n/g, '\\n')    // Escape newlines
+          .replace(/\r/g, '\\r')    // Escape carriage returns
+          .replace(/\t/g, '\\t')    // Escape tabs
+          .replace(/\f/g, '\\f')    // Escape form feeds
+          .replace(/\b/g, '\\b');   // Escape backspaces
+        
+        return JSON.parse(fixed);
+      } catch (e2) {
+        console.error('❌ JSON Fix Failed:', e2.message);
+        return [];
+      }
     }
   }
 
