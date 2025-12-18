@@ -15,8 +15,9 @@ import practiceSessionService from '../../services/practiceSession.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-// IMPORTANT: You need to install recharts if you haven't: npm install recharts
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import 'katex/dist/katex.min.css';
+import Latex from 'react-latex-next';
 
 // --- UTILS ---
 const getCurrentUser = () => {
@@ -232,7 +233,22 @@ const PracticeQuestions = () => {
   const calculateScore = () => {
     let correct = 0;
     questions.forEach(q => {
-      if (String(userAnswers[q.id] || '').trim() === String(q.correct_answer || '').trim()) correct++;
+      const userAns = String(userAnswers[q.id] || '').trim();
+      const correctAns = String(q.correct_answer || '').trim();
+      
+      // Parse options to find the correct answer text
+      let options = [];
+      try { options = JSON.parse(q.options || '[]'); } catch { options = []; }
+      
+      // Check if correct_answer is a letter (A, B, C, D) or the full text
+      let correctAnswerText = correctAns;
+      if (correctAns.length === 1 && /^[A-D]$/i.test(correctAns)) {
+        // It's a letter, convert to index and get the option text
+        const index = correctAns.toUpperCase().charCodeAt(0) - 65;
+        correctAnswerText = options[index] || correctAns;
+      }
+      
+      if (userAns === correctAnswerText) correct++;
     });
     return { correct, total: questions.length, percentage: Math.round((correct / questions.length) * 100) || 0 };
   };
@@ -353,7 +369,7 @@ const PracticeQuestions = () => {
            
            <div className="mb-8">
              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Question {currentQuestionIndex + 1} / {questions.length}</span>
-             <h2 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mt-3 leading-tight">{q.question}</h2>
+             <h2 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mt-3 leading-tight"><Latex>{q.question}</Latex></h2>
            </div>
 
            <div className="space-y-3">
@@ -366,7 +382,7 @@ const PracticeQuestions = () => {
                  }}
                  className={`w-full text-left p-5 rounded-2xl border-2 transition-all flex items-center gap-4 group ${isSelected ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold border transition-colors ${isSelected ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-200 dark:border-slate-700 group-hover:border-emerald-300'}`}>{String.fromCharCode(65 + idx)}</div>
-                    <span className={`text-base md:text-lg ${isSelected ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'}`}>{opt}</span>
+                    <span className={`text-base md:text-lg ${isSelected ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'}`}><Latex>{opt}</Latex></span>
                  </button>
                )
              })}
@@ -437,7 +453,19 @@ const PracticeQuestions = () => {
            {questions.map((q, i) => {
              const userAns = String(userAnswers[q.id] || '').trim();
              const correctAns = String(q.correct_answer || '').trim();
-             const isCorrect = userAns === correctAns;
+             
+             // Parse options to find the correct answer text
+             let options = [];
+             try { options = JSON.parse(q.options || '[]'); } catch { options = []; }
+             
+             // Check if correct_answer is a letter (A, B, C, D) or the full text
+             let correctAnswerText = correctAns;
+             if (correctAns.length === 1 && /^[A-D]$/i.test(correctAns)) {
+               const index = correctAns.toUpperCase().charCodeAt(0) - 65;
+               correctAnswerText = options[index] || correctAns;
+             }
+             
+             const isCorrect = userAns === correctAnswerText;
              return (
                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={q.id} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
                   <div className="flex gap-4">
@@ -445,13 +473,13 @@ const PracticeQuestions = () => {
                         {isCorrect ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                      </div>
                      <div className="flex-1">
-                        <p className="font-bold text-slate-900 dark:text-white mb-2">{q.question}</p>
-                        <p className="text-sm text-slate-500 mb-1">Your Answer: <span className={isCorrect ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}>{userAns || 'Skipped'}</span></p>
-                        {!isCorrect && <p className="text-sm text-emerald-600">Correct Answer: <span className="font-bold">{correctAns}</span></p>}
+                        <p className="font-bold text-slate-900 dark:text-white mb-2"><Latex>{q.question}</Latex></p>
+                        <p className="text-sm text-slate-500 mb-1">Your Answer: <span className={isCorrect ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}><Latex>{userAns || 'Skipped'}</Latex></span></p>
+                        {!isCorrect && <p className="text-sm text-emerald-600">Correct Answer: <span className="font-bold"><Latex>{correctAns}</Latex></span></p>}
                         {q.explanation && (
                           <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/50">
                              <p className="text-xs font-bold text-blue-600 uppercase mb-1">Explanation</p>
-                             <p className="text-sm text-slate-600 dark:text-slate-300">{q.explanation}</p>
+                             <p className="text-sm text-slate-600 dark:text-slate-300"><Latex>{q.explanation}</Latex></p>
                           </div>
                         )}
                      </div>
