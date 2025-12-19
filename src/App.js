@@ -40,6 +40,22 @@ import Leaderboard from './pages/student/Leaderboard';
 import ForgotPassword from './pages/forgot-password';
 import ResetPassword from './pages/reset-password';
 
+// Tutor pages
+import TutorDashboard from './pages/tutor/Dashboard';
+import TutorQuestions from './pages/tutor/Questions';
+import AIGenerator from './pages/tutor/AIGenerator';
+import TestBuilder from './pages/tutor/TestBuilder';
+import Tests from './pages/tutor/Tests';
+import Students from './pages/tutor/Students';
+import TutorLeaderboard from './pages/tutor/Leaderboard';
+
+// Student Tutorial Center pages
+import JoinCenter from './pages/student/tutorial-center/JoinCenter';
+import MyCenters from './pages/student/tutorial-center/MyCenters';
+import StudentTests from './pages/student/tutorial-center/Tests';
+import TakeTest from './pages/student/tutorial-center/TakeTest';
+import Results from './pages/student/tutorial-center/Results';
+
 import supabase from './config/supabase';
 
 console.log('✅ Supabase configured and ready');
@@ -255,6 +271,23 @@ function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
+            {/* Tutor Routes */}
+            <Route path="/tutor" element={<ProtectedRoute><TutorDashboard /></ProtectedRoute>} />
+            <Route path="/tutor/dashboard" element={<ProtectedRoute><TutorDashboard /></ProtectedRoute>} />
+            <Route path="/tutor/questions" element={<ProtectedRoute><TutorQuestions /></ProtectedRoute>} />
+            <Route path="/tutor/questions/generate" element={<ProtectedRoute><AIGenerator /></ProtectedRoute>} />
+            <Route path="/tutor/tests" element={<ProtectedRoute><Tests /></ProtectedRoute>} />
+            <Route path="/tutor/tests/create" element={<ProtectedRoute><TestBuilder /></ProtectedRoute>} />
+            <Route path="/tutor/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
+            <Route path="/tutor/leaderboard/:testId" element={<ProtectedRoute><TutorLeaderboard /></ProtectedRoute>} />
+            
+            {/* Student Tutorial Center Routes */}
+            <Route path="/student/centers" element={<ProtectedRoute><MyCenters /></ProtectedRoute>} />
+            <Route path="/student/centers/join" element={<ProtectedRoute><JoinCenter /></ProtectedRoute>} />
+            <Route path="/student/tests" element={<ProtectedRoute><StudentTests /></ProtectedRoute>} />
+            <Route path="/student/test/:testId" element={<ProtectedRoute><TakeTest /></ProtectedRoute>} />
+            <Route path="/student/results/:testId" element={<ProtectedRoute><Results /></ProtectedRoute>} />
+            
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
             <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />

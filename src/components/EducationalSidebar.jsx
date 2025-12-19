@@ -77,6 +77,7 @@ const EducationalSidebar = ({ children }) => {
         { label: 'Leaderboard', path: '/dashboard/leaderboard' }
       ]
     },
+    { id: 'tutorial-center', label: 'Tutorial Center', icon: LightBulbIcon, path: '/tutor' },
     { id: 'transactions', label: 'Transactions', icon: ClipboardDocumentListIcon, path: '/dashboard/transactions' },
     { id: 'support', label: 'Support', icon: QuestionMarkCircleIcon, path: '/dashboard/support' }
   ];

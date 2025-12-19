@@ -24,6 +24,13 @@ const emailRoutes = require('./routes/email.routes');
 const courseRecommendationRoutes = require('./routes/courseRecommendation.routes');
 const leaderboardRoutes = require('./routes/leaderboard.routes');
 
+// Tutorial Center routes
+const tutorialCenterRoutes = require('./routes/tutorialCenter.routes');
+const tcEnrollmentsRoutes = require('./routes/tcEnrollments.routes');
+const tcQuestionsRoutes = require('./routes/tcQuestions.routes');
+const tcQuestionSetsRoutes = require('./routes/tcQuestionSets.routes');
+const tcAttemptsRoutes = require('./routes/tcAttempts.routes');
+
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
 const { logger } = require('./utils/logger');
@@ -280,6 +287,13 @@ app.use('/api/email', emailRoutes);
 app.use('/api', courseRecommendationRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', csrfProtection, adminRoutes);
+
+// Tutorial Center routes (no CSRF for now)
+app.use('/api/tutorial-centers', tutorialCenterRoutes);
+app.use('/api/tc-enrollments', tcEnrollmentsRoutes);
+app.use('/api/tc-questions', tcQuestionsRoutes);
+app.use('/api/tc-question-sets', tcQuestionSetsRoutes);
+app.use('/api/tc-attempts', tcAttemptsRoutes);
 
 // ============================================
 // 12. ERROR HANDLING

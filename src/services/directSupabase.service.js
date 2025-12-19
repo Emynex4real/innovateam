@@ -1,12 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../lib/supabase';
 
 class DirectSupabaseService {
   constructor() {
-    // Initialize with your Project URL and Anon (Public) Key
-    this.supabase = createClient(
-      'https://jdedscbvbkjvqmmdabig.supabase.co',
-      'sb_publishable_cVZ7KXM0lNdNfuUzVD-Hlw_E4yNzJJO'
-    );
+    this.supabase = supabase;
   }
 
   /**

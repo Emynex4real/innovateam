@@ -12,24 +12,24 @@ import {
 } from 'recharts';
 import directSupabaseService from '../../services/directSupabase.service';
 import UserDetailModal from '../../components/UserDetailModal';
-import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 import AIQuestions from './AIQuestions';
 import AdminLeaderboard from './AdminLeaderboard';
 import toast from 'react-hot-toast';
 import { supabase } from '../../config/supabase'; 
 
 // --- STAT CARD COMPONENT ---
-const StatCard = ({ title, value, icon: Icon, isDark, subValue }) => (
-  <Card className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'} hover:shadow-lg transition-all`}>
+const StatCard = ({ title, value, icon: Icon, isDarkMode, subValue }) => (
+  <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} hover:shadow-lg transition-all`}>
     <CardContent className="p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
-          <h3 className={`text-2xl font-bold mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</h3>
+          <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
+          <h3 className={`text-2xl font-bold mt-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{value}</h3>
           {subValue && <p className="text-xs text-green-500 mt-1 flex items-center">↑ {subValue}</p>}
         </div>
-        <div className={`p-3 rounded-full ${isDark ? 'bg-gray-700' : 'bg-blue-50'}`}>
-          <Icon className={`h-6 w-6 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+        <div className={`p-3 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
+          <Icon className={`h-6 w-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
         </div>
       </div>
     </CardContent>
@@ -37,7 +37,7 @@ const StatCard = ({ title, value, icon: Icon, isDark, subValue }) => (
 );
 
 const AdminDashboardContent = () => {
-  const { isDark, toggleTheme } = useTheme();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   
   // --- STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState('overview');
@@ -221,7 +221,7 @@ const AdminDashboardContent = () => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     return (
       <div className="flex items-center justify-between mt-4">
-        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           Page {currentPage} of {totalPages || 1} (Total: {totalItems})
         </p>
         <div className="flex gap-2">
@@ -237,18 +237,18 @@ const AdminDashboardContent = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Admin Portal</h1>
-            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Manage users, finances, and AI content.</p>
+            <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Manage users, finances, and AI content.</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={toggleTheme} variant="outline" size="icon" className="rounded-full">
-              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            <Button onClick={toggleDarkMode} variant="outline" size="icon" className="rounded-full">
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
             <Button onClick={handleRefresh} variant="default" className="flex items-center gap-2">
                <Activity className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> 
@@ -258,7 +258,7 @@ const AdminDashboardContent = () => {
         </div>
 
         {/* Navigation */}
-        <div className={`flex flex-wrap gap-2 p-1 rounded-xl w-full md:w-fit ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <div className={`flex flex-wrap gap-2 p-1 rounded-xl w-full md:w-fit ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
           {[
             { id: 'overview', label: 'Overview', icon: Activity },
             { id: 'users', label: 'Users', icon: Users },
@@ -273,7 +273,7 @@ const AdminDashboardContent = () => {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab.id 
                   ? 'bg-blue-600 text-white shadow-md' 
-                  : (isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-black hover:bg-gray-200')
+                  : (isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-black hover:bg-gray-200')
               }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -289,30 +289,30 @@ const AdminDashboardContent = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-in fade-in duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard title="Total Revenue" value={`₦${stats?.totalRevenue?.toLocaleString() || 0}`} icon={DollarSign} isDark={isDark} />
-                <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} isDark={isDark} />
-                <StatCard title="Transactions" value={stats?.totalTransactions || 0} icon={Activity} isDark={isDark} />
-                <StatCard title="Active Today" value={stats?.activeToday || 0} icon={TrendingUp} isDark={isDark} />
+                <StatCard title="Total Revenue" value={`₦${stats?.totalRevenue?.toLocaleString() || 0}`} icon={DollarSign} isDarkMode={isDarkMode} />
+                <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} isDarkMode={isDarkMode} />
+                <StatCard title="Transactions" value={stats?.totalTransactions || 0} icon={Activity} isDarkMode={isDarkMode} />
+                <StatCard title="Active Today" value={stats?.activeToday || 0} icon={TrendingUp} isDarkMode={isDarkMode} />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* Revenue Chart */}
-                <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
                   <CardContent className="p-6">
-                    <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Revenue Trends (Last 7 Days)</h3>
+                    <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Revenue Trends (Last 7 Days)</h3>
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                          <XAxis dataKey="name" stroke={isDark ? '#9CA3AF' : '#4B5563'} fontSize={12} />
-                          <YAxis stroke={isDark ? '#9CA3AF' : '#4B5563'} tickFormatter={(val) => `₦${val}`} fontSize={12} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                          <XAxis dataKey="name" stroke={isDarkMode ? '#9CA3AF' : '#4B5563'} fontSize={12} />
+                          <YAxis stroke={isDarkMode ? '#9CA3AF' : '#4B5563'} tickFormatter={(val) => `₦${val}`} fontSize={12} />
                           <Tooltip 
-                            contentStyle={{ backgroundColor: isDark ? '#1F2937' : '#fff', borderColor: isDark ? '#374151' : '#e5e7eb', color: isDark ? '#fff' : '#000' }}
+                            contentStyle={{ backgroundColor: isDarkMode ? '#1F2937' : '#fff', borderColor: isDarkMode ? '#374151' : '#e5e7eb', color: isDarkMode ? '#fff' : '#000' }}
                             formatter={(value) => [`₦${value.toLocaleString()}`, 'Revenue']}
                           />
                           <Legend />
                           <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Daily Revenue">
-                            <LabelList dataKey="revenue" position="top" formatter={(v) => v > 0 ? `₦${v}` : ''} style={{ fill: isDark ? '#9CA3AF' : '#4B5563', fontSize: 10 }} />
+                            <LabelList dataKey="revenue" position="top" formatter={(v) => v > 0 ? `₦${v}` : ''} style={{ fill: isDarkMode ? '#9CA3AF' : '#4B5563', fontSize: 10 }} />
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
@@ -321,21 +321,21 @@ const AdminDashboardContent = () => {
                 </Card>
 
                 {/* User Growth Chart */}
-                <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+                <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
                   <CardContent className="p-6">
-                    <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>New Users (Last 7 Days)</h3>
+                    <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>New Users (Last 7 Days)</h3>
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                          <XAxis dataKey="name" stroke={isDark ? '#9CA3AF' : '#4B5563'} fontSize={12} />
-                          <YAxis stroke={isDark ? '#9CA3AF' : '#4B5563'} fontSize={12} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                          <XAxis dataKey="name" stroke={isDarkMode ? '#9CA3AF' : '#4B5563'} fontSize={12} />
+                          <YAxis stroke={isDarkMode ? '#9CA3AF' : '#4B5563'} fontSize={12} />
                           <Tooltip 
-                            contentStyle={{ backgroundColor: isDark ? '#1F2937' : '#fff', borderColor: isDark ? '#374151' : '#e5e7eb', color: isDark ? '#fff' : '#000' }}
+                            contentStyle={{ backgroundColor: isDarkMode ? '#1F2937' : '#fff', borderColor: isDarkMode ? '#374151' : '#e5e7eb', color: isDarkMode ? '#fff' : '#000' }}
                           />
                           <Legend />
                           <Line type="monotone" dataKey="users" stroke="#10B981" strokeWidth={3} activeDot={{ r: 8 }} name="New Users">
-                             <LabelList dataKey="users" position="top" offset={10} formatter={(v) => v > 0 ? v : ''} style={{ fill: isDark ? '#9CA3AF' : '#4B5563', fontSize: 10 }} />
+                             <LabelList dataKey="users" position="top" offset={10} formatter={(v) => v > 0 ? v : ''} style={{ fill: isDarkMode ? '#9CA3AF' : '#4B5563', fontSize: 10 }} />
                           </Line>
                         </LineChart>
                       </ResponsiveContainer>
@@ -348,7 +348,7 @@ const AdminDashboardContent = () => {
 
           {/* 2. USERS TAB */}
           {activeTab === 'users' && (
-            <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+            <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
               <CardContent className="p-6">
                 <div className="flex justify-between mb-4">
                   <div className="relative w-1/3">
@@ -359,7 +359,7 @@ const AdminDashboardContent = () => {
                 </div>
                 <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
                   <table className="w-full text-sm">
-                    <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                    <thead className={isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}>
                       <tr>
                         <th className="p-3 text-left">User</th>
                         <th className="p-3 text-left">Balance</th>
@@ -369,7 +369,7 @@ const AdminDashboardContent = () => {
                     </thead>
                     <tbody>
                       {users.map(user => (
-                        <tr key={user.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <tr key={user.id} className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                           <td className="p-3">
                             <div className="font-medium">{user.name}</div>
                             <div className="text-xs text-gray-500">{user.email}</div>
@@ -396,7 +396,7 @@ const AdminDashboardContent = () => {
 
           {/* 3. TRANSACTIONS TAB */}
           {activeTab === 'transactions' && (
-            <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+            <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
               <CardContent className="p-6">
                 <div className="relative w-1/3 mb-4">
                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -404,7 +404,7 @@ const AdminDashboardContent = () => {
                 </div>
                 <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
                   <table className="w-full text-sm">
-                    <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                    <thead className={isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}>
                       <tr>
                         <th className="p-3 text-left">ID</th>
                         <th className="p-3 text-left">User</th>
@@ -415,7 +415,7 @@ const AdminDashboardContent = () => {
                     </thead>
                     <tbody>
                       {transactions.map(tx => (
-                        <tr key={tx.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <tr key={tx.id} className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                           <td className="p-3 font-mono text-xs">{tx.id.substring(0,8)}...</td>
                           <td className="p-3">{tx.userName}</td>
                           <td className={`p-3 font-mono ${tx.type === 'credit' ? 'text-green-500' : 'text-red-500'}`}>
@@ -435,12 +435,12 @@ const AdminDashboardContent = () => {
 
           {/* 4. CREDIT REQUESTS TAB */}
           {activeTab === 'credit-requests' && (
-            <Card className={isDark ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+            <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
               <CardContent className="p-6">
                 <h3 className="text-lg font-bold mb-4">Pending Requests</h3>
                 <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
                   <table className="w-full text-sm">
-                    <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                    <thead className={isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}>
                       <tr>
                         <th className="p-3 text-left">User</th>
                         <th className="p-3 text-left">Amount</th>
@@ -450,7 +450,7 @@ const AdminDashboardContent = () => {
                     </thead>
                     <tbody>
                       {creditRequests.map(req => (
-                        <tr key={req.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                        <tr key={req.id} className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                           <td className="p-3">{req.user_profiles?.full_name || 'Unknown'}</td>
                           <td className="p-3 font-bold text-green-500">₦{req.amount}</td>
                           <td className="p-3"><Badge>{req.status}</Badge></td>
@@ -481,7 +481,7 @@ const AdminDashboardContent = () => {
       {/* 1. Wallet Modal */}
       {walletModalUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className={`rounded-lg p-6 max-w-md w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`rounded-lg p-6 max-w-md w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <h3 className="text-lg font-bold mb-4">Manage Wallet: {walletModalUser.name}</h3>
             <p className="mb-4">Current Balance: <span className="text-green-500 font-mono">₦{walletModalUser.walletBalance}</span></p>
             <div className="space-y-4">
@@ -504,16 +504,12 @@ const AdminDashboardContent = () => {
         user={selectedUser}
         isOpen={isUserModalOpen}
         onClose={() => { setIsUserModalOpen(false); setSelectedUser(null); }}
-        isDark={isDark}
+        isDarkMode={isDarkMode}
       />
     </div>
   );
 };
 
-const AdminDashboard = () => (
-  <ThemeProvider>
-    <AdminDashboardContent />
-  </ThemeProvider>
-);
+const AdminDashboard = () => <AdminDashboardContent />;
 
 export default AdminDashboard;
