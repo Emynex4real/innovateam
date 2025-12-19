@@ -4,7 +4,7 @@ const { logger } = require('../utils/logger');
 // Create question set (test)
 exports.createQuestionSet = async (req, res) => {
   try {
-    const { title, description, question_ids, time_limit, passing_score } = req.body;
+    const { title, description, question_ids, time_limit, passing_score, visibility, show_answers } = req.body;
     const tutorId = req.user.id;
 
     const { data: center } = await supabase
@@ -26,7 +26,9 @@ exports.createQuestionSet = async (req, res) => {
         title,
         description,
         time_limit,
-        passing_score
+        passing_score,
+        visibility: visibility || 'private',
+        show_answers: show_answers || false
       }])
       .select()
       .single();
@@ -144,12 +146,12 @@ exports.getQuestionSet = async (req, res) => {
 exports.updateQuestionSet = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, time_limit, passing_score, show_answers, is_active } = req.body;
+    const { title, description, time_limit, passing_score, show_answers, is_active, visibility } = req.body;
     const tutorId = req.user.id;
 
     const { data, error } = await supabase
       .from('tc_question_sets')
-      .update({ title, description, time_limit, passing_score, show_answers, is_active })
+      .update({ title, description, time_limit, passing_score, show_answers, is_active, visibility })
       .eq('id', id)
       .eq('tutor_id', tutorId)
       .select()
@@ -206,6 +208,29 @@ exports.deleteQuestionSet = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     logger.error('Delete question set error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get public tests
+exports.getPublicTests = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('tc_question_sets')
+      .select(`
+        *,
+        question_count:tc_question_set_items(count),
+        center:center_id(name, tutor_id)
+      `)
+      .eq('visibility', 'public')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ success: true, tests: data });
+  } catch (error) {
+    logger.error('Get public tests error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -58,6 +58,13 @@ export const studentTCService = {
       headers: await getAuthHeader()
     });
     return response.data;
+  },
+
+  getPublicTests: async () => {
+    const response = await axios.get(`${API_BASE}/tc-question-sets/public/all`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
   }
 };
 

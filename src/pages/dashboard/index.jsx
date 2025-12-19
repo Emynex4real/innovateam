@@ -65,6 +65,17 @@ const AI_TOOLS = [
     btnText: "Take Exam",
   },
   {
+    id: "tutorial",
+    title: "Tutorial Center",
+    subtitle: "Practice Tests",
+    desc: "Join centers & take tests from tutors.",
+    icon: Brain,
+    color: "bg-blue-500",
+    gradient: "from-blue-500/20 to-cyan-500/20",
+    link: "/student/centers",
+    btnText: "Browse Tests",
+  },
+  {
     id: "advisor",
     title: "Pathfinder AI",
     subtitle: "Course Advisor",
@@ -292,7 +303,7 @@ const Dashboard = () => {
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-indigo-500" /> Your AI Arsenal
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {AI_TOOLS.map((tool) => (
                 <Link to={tool.link} key={tool.id} className="block h-full">
                   <motion.div

@@ -44,8 +44,25 @@ const Login = () => {
         setEmail("");
         setPassword("");
         setRememberMe(false);
-        const from = location.state?.from?.pathname || "/dashboard";
-        navigate(from, { replace: true });
+        
+        // Get user role and redirect accordingly
+        const supabase = (await import('../../config/supabase')).default;
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', result.data.user.id)
+          .single();
+        
+        const role = profile?.role || 'student';
+        
+        // Role-based redirect
+        if (role === 'tutor') {
+          navigate('/tutor', { replace: true });
+        } else if (role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       } else {
         toast.error(result.error || "Invalid credentials");
         setFormError(result.error || "Invalid credentials");

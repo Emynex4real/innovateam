@@ -14,7 +14,8 @@ const TestBuilder = () => {
     description: '',
     time_limit: 60,
     passing_score: 70,
-    show_answers: false
+    show_answers: false,
+    visibility: 'private'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -127,6 +128,20 @@ const TestBuilder = () => {
                   onChange={(e) => setFormData({ ...formData, passing_score: parseInt(e.target.value) })}
                   className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                 />
+              </div>
+              <div className="md:col-span-2">
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Visibility</label>
+                <select
+                  value={formData.visibility}
+                  onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                >
+                  <option value="private">🔒 Private (Center members only)</option>
+                  <option value="public">🌍 Public (Anyone can access)</option>
+                </select>
+                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {formData.visibility === 'public' ? 'This test will be visible to all students' : 'Only students enrolled in your center can access'}
+                </p>
               </div>
               <div className="md:col-span-2">
                 <label className="flex items-center gap-2">

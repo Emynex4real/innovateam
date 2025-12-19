@@ -67,25 +67,38 @@ exports.getEnrolledCenters = async (req, res) => {
           id,
           name,
           description,
-          tutor:tutor_id (
-            id,
-            email,
-            raw_user_meta_data
-          )
+          tutor_id
         )
       `)
       .eq('student_id', studentId);
 
     if (error) throw error;
 
+    // Get tutor details separately
+    const centerIds = data.map(e => e.center.id);
+    const { data: centers_with_tutors } = await supabase
+      .from('tutorial_centers')
+      .select('id, tutor_id')
+      .in('id', centerIds);
+
+    const tutorIds = centers_with_tutors?.map(c => c.tutor_id) || [];
+    const { data: tutors } = await supabase
+      .from('user_profiles')
+      .select('id, full_name, email')
+      .in('id', tutorIds);
+
     // Format response
-    const centers = data.map(e => ({
-      id: e.center.id,
-      name: e.center.name,
-      description: e.center.description,
-      tutor_name: e.center.tutor.raw_user_meta_data?.name || e.center.tutor.email.split('@')[0],
-      enrolled_at: e.enrolled_at
-    }));
+    const centers = data.map(e => {
+      const centerData = centers_with_tutors?.find(c => c.id === e.center.id);
+      const tutor = tutors?.find(t => t.id === centerData?.tutor_id);
+      return {
+        id: e.center.id,
+        name: e.center.name,
+        description: e.center.description,
+        tutor_name: tutor?.full_name || tutor?.email?.split('@')[0] || 'Unknown',
+        enrolled_at: e.enrolled_at
+      };
+    });
 
     res.json({ success: true, centers });
   } catch (error) {

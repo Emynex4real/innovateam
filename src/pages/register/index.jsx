@@ -27,6 +27,7 @@ const Register = () => {
     phoneNumber: "",
     password: "",
     confirmPassword: "",
+    role: "student",
     agreeToTerms: false,
   });
   const [errors, setErrors] = useState({});
@@ -121,7 +122,8 @@ const Register = () => {
     try {
       const result = await signUp(formData.email, formData.password, {
         fullName: formData.name,
-        phone: formData.phoneNumber
+        phone: formData.phoneNumber,
+        role: formData.role
       });
       
       if (result.success) {
@@ -142,6 +144,7 @@ const Register = () => {
           phoneNumber: "",
           password: "",
           confirmPassword: "",
+          role: "student",
           agreeToTerms: false,
         });
       } else {
@@ -265,6 +268,25 @@ const Register = () => {
                 {errors.phoneNumber && (
                   <p className="text-sm text-red-500 mt-1">{errors.phoneNumber}</p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="role">I am a</Label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    isDarkMode 
+                      ? 'bg-gray-800 border-gray-700 text-gray-100' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                  disabled={isLoading}
+                >
+                  <option value="student">Student</option>
+                  <option value="tutor">Tutor</option>
+                </select>
               </div>
 
               <div className="space-y-2">

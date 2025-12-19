@@ -34,6 +34,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import EmailConfirmation from './pages/email-confirmation';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
+import RoleProtectedRoute from './components/RoleProtectedRoute';
 import PracticeQuestions from './pages/student/PracticeQuestions';
 import PerformanceAnalytics from './pages/student/PerformanceAnalytics';
 import Leaderboard from './pages/student/Leaderboard';
@@ -53,6 +54,7 @@ import TutorLeaderboard from './pages/tutor/Leaderboard';
 import JoinCenter from './pages/student/tutorial-center/JoinCenter';
 import MyCenters from './pages/student/tutorial-center/MyCenters';
 import StudentTests from './pages/student/tutorial-center/Tests';
+import PublicTests from './pages/student/tutorial-center/PublicTests';
 import TakeTest from './pages/student/tutorial-center/TakeTest';
 import Results from './pages/student/tutorial-center/Results';
 
@@ -130,7 +132,8 @@ const SupabaseAuthProvider = ({ children }) => {
         options: {
           data: {
             full_name: userData?.fullName,
-            phone: userData?.phone
+            phone: userData?.phone,
+            role: userData?.role || 'student'
           },
           emailRedirectTo: `${window.location.origin}/dashboard`
         }
@@ -138,12 +141,22 @@ const SupabaseAuthProvider = ({ children }) => {
       
       if (error) throw error;
       
-      // Store real Supabase user data
+      // Create user profile with role
       if (data.user) {
+        await supabase.from('user_profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          full_name: userData?.fullName,
+          role: userData?.role || 'student',
+          wallet_balance: 0,
+          status: 'active'
+        });
+        
         const userToStore = {
           id: data.user.id,
           email: data.user.email,
           name: userData?.fullName,
+          role: userData?.role || 'student',
           user_metadata: data.user.user_metadata,
           email_confirmed_at: data.user.email_confirmed_at
         };
@@ -271,22 +284,23 @@ function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
-            {/* Tutor Routes */}
-            <Route path="/tutor" element={<ProtectedRoute><TutorDashboard /></ProtectedRoute>} />
-            <Route path="/tutor/dashboard" element={<ProtectedRoute><TutorDashboard /></ProtectedRoute>} />
-            <Route path="/tutor/questions" element={<ProtectedRoute><TutorQuestions /></ProtectedRoute>} />
-            <Route path="/tutor/questions/generate" element={<ProtectedRoute><AIGenerator /></ProtectedRoute>} />
-            <Route path="/tutor/tests" element={<ProtectedRoute><Tests /></ProtectedRoute>} />
-            <Route path="/tutor/tests/create" element={<ProtectedRoute><TestBuilder /></ProtectedRoute>} />
-            <Route path="/tutor/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
-            <Route path="/tutor/leaderboard/:testId" element={<ProtectedRoute><TutorLeaderboard /></ProtectedRoute>} />
+            {/* Tutor Routes - Only accessible by tutors */}
+            <Route path="/tutor" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorDashboard /></RoleProtectedRoute>} />
+            <Route path="/tutor/dashboard" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorDashboard /></RoleProtectedRoute>} />
+            <Route path="/tutor/questions" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorQuestions /></RoleProtectedRoute>} />
+            <Route path="/tutor/questions/generate" element={<RoleProtectedRoute allowedRoles={['tutor']}><AIGenerator /></RoleProtectedRoute>} />
+            <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor']}><Tests /></RoleProtectedRoute>} />
+            <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor']}><TestBuilder /></RoleProtectedRoute>} />
+            <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor']}><Students /></RoleProtectedRoute>} />
+            <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorLeaderboard /></RoleProtectedRoute>} />
             
-            {/* Student Tutorial Center Routes */}
-            <Route path="/student/centers" element={<ProtectedRoute><MyCenters /></ProtectedRoute>} />
-            <Route path="/student/centers/join" element={<ProtectedRoute><JoinCenter /></ProtectedRoute>} />
-            <Route path="/student/tests" element={<ProtectedRoute><StudentTests /></ProtectedRoute>} />
-            <Route path="/student/test/:testId" element={<ProtectedRoute><TakeTest /></ProtectedRoute>} />
-            <Route path="/student/results/:testId" element={<ProtectedRoute><Results /></ProtectedRoute>} />
+            {/* Student Tutorial Center Routes - Only accessible by students */}
+            <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><MyCenters /></RoleProtectedRoute>} />
+            <Route path="/student/centers/join" element={<RoleProtectedRoute allowedRoles={['student']}><JoinCenter /></RoleProtectedRoute>} />
+            <Route path="/student/tests" element={<RoleProtectedRoute allowedRoles={['student']}><StudentTests /></RoleProtectedRoute>} />
+            <Route path="/student/tests/public" element={<RoleProtectedRoute allowedRoles={['student']}><PublicTests /></RoleProtectedRoute>} />
+            <Route path="/student/test/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><TakeTest /></RoleProtectedRoute>} />
+            <Route path="/student/results/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><Results /></RoleProtectedRoute>} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />

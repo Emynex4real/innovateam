@@ -7,6 +7,7 @@ router.use(authenticate);
 
 router.post('/', tcQuestionSetsController.createQuestionSet);
 router.get('/', tcQuestionSetsController.getQuestionSets);
+router.get('/public/all', tcQuestionSetsController.getPublicTests);
 router.get('/:id', tcQuestionSetsController.getQuestionSet);
 router.put('/:id', tcQuestionSetsController.updateQuestionSet);
 router.put('/:id/toggle-answers', tcQuestionSetsController.toggleAnswers);

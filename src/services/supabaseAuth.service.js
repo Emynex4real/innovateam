@@ -24,7 +24,7 @@ class SupabaseAuthService {
 
       if (authError) throw authError;
 
-      // Create user profile with email
+      // Create user profile with email and role
       const { error: profileError } = await supabase
         .from('user_profiles')
         .insert({
@@ -32,7 +32,7 @@ class SupabaseAuthService {
           email: userData.email,
           full_name: userData.name,
           wallet_balance: 0,
-          role: 'user',
+          role: userData.role || 'student',
           status: 'active'
         });
 
@@ -49,7 +49,7 @@ class SupabaseAuthService {
           id: authData.user.id,
           email: authData.user.email,
           name: userData.name,
-          role: 'user',
+          role: userData.role || 'student',
           isAdmin: false
         }
       };

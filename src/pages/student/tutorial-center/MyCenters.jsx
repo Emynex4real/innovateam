@@ -31,27 +31,37 @@ const MyCenters = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">My Tutorial Centers</h1>
-        <button
-          onClick={() => navigate('/student/centers/join')}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-        >
-          Join Center
-        </button>
-      </div>
-
-      {centers.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-          <p className="text-gray-500 mb-4">You haven't joined any centers yet</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-3xl font-bold">Practice Tests</h1>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate('/student/tests/public')}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+          >
+            🌍 Public Tests
+          </button>
           <button
             onClick={() => navigate('/student/centers/join')}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
           >
-            Join Your First Center
+            Join Center
           </button>
         </div>
-      ) : (
+      </div>
+
+      <div className="mb-8">
+        <h2 className="text-xl font-bold mb-4">🔒 My Private Centers</h2>
+        {centers.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+            <p className="text-gray-500 mb-4">You haven't joined any centers yet</p>
+            <button
+              onClick={() => navigate('/student/centers/join')}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            >
+              Join Your First Center
+            </button>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {centers.map((center) => (
             <div key={center.id} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition">
@@ -70,7 +80,18 @@ const MyCenters = () => {
             </div>
           ))}
         </div>
-      )}
+        )}
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+        <p className="text-blue-800 mb-3">Looking for more practice?</p>
+        <button
+          onClick={() => navigate('/student/tests/public')}
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+        >
+          Browse Public Tests 🌍
+        </button>
+      </div>
     </div>
   );
 };

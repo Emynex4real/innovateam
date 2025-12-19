@@ -114,6 +114,9 @@ const Tests = () => {
                       <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>📝 {test.question_count?.[0]?.count || 0} questions</span>
                       <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>⏱️ {test.time_limit} minutes</span>
                       <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>🎯 {test.passing_score}% to pass</span>
+                      <span className={test.visibility === 'public' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}>
+                        {test.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
+                      </span>
                       <span className={test.show_answers ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
                         {test.show_answers ? '✓ Answers visible' : '✗ Answers hidden'}
                       </span>
