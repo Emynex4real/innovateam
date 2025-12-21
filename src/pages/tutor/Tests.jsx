@@ -75,12 +75,20 @@ const Tests = () => {
             </button>
             <h1 className={`text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Tests</h1>
           </div>
-          <button
-            onClick={() => navigate('/tutor/tests/create')}
-            className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-          >
-            Create Test
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => navigate('/tutor/analytics')}
+              className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold"
+            >
+              📈 Analytics
+            </button>
+            <button
+              onClick={() => navigate('/tutor/tests/create')}
+              className="flex-1 sm:flex-none bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+            >
+              Create Test
+            </button>
+          </div>
         </div>
 
         {tests.length === 0 ? (

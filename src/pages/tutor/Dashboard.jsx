@@ -258,7 +258,15 @@ const TutorDashboard = () => {
               className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-orange-500 hover:bg-orange-900/20' : 'border-gray-200 hover:border-orange-500 hover:bg-orange-50'}`}
             >
               <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">👥</div>
-              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>View Students</p>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Manage Students</p>
+            </button>
+
+            <button
+              onClick={() => navigate('/tutor/analytics')}
+              className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-pink-500 hover:bg-pink-900/20' : 'border-gray-200 hover:border-pink-500 hover:bg-pink-50'}`}
+            >
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">📊</div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Analytics</p>
             </button>
           </div>
         </div>

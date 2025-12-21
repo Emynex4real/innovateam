@@ -59,6 +59,10 @@ import TakeTest from './pages/student/tutorial-center/TakeTest';
 import Results from './pages/student/tutorial-center/Results';
 import ReviewAnswers from './pages/student/tutorial-center/ReviewAnswers';
 
+// Phase 1 Analytics Pages
+import StudentAnalytics from './pages/student/analytics/MyAnalytics';
+import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
+
 import supabase from './config/supabase';
 
 console.log('✅ Supabase configured and ready');
@@ -307,6 +311,10 @@ function App() {
             <Route path="/student/test/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><TakeTest /></RoleProtectedRoute>} />
             <Route path="/student/results/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><Results /></RoleProtectedRoute>} />
             <Route path="/student/review/:attemptId" element={<RoleProtectedRoute allowedRoles={['student']}><ReviewAnswers /></RoleProtectedRoute>} />
+            <Route path="/student/analytics/:centerId" element={<RoleProtectedRoute allowedRoles={['student']}><StudentAnalytics /></RoleProtectedRoute>} />
+            
+            {/* Tutor Analytics Route */}
+            <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorAnalyticsDashboard /></RoleProtectedRoute>} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />

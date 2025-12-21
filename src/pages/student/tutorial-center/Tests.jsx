@@ -56,7 +56,22 @@ const StudentTests = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Available Tests</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Available Tests</h1>
+        <button
+          onClick={() => {
+            const centerId = localStorage.getItem('currentCenterId');
+            if (centerId) {
+              navigate(`/student/analytics/${centerId}`);
+            } else {
+              toast.error('Center not found');
+            }
+          }}
+          className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold flex items-center gap-2"
+        >
+          📊 View Analytics
+        </button>
+      </div>
 
       {tests.length === 0 ? (
         <div className="bg-white rounded-lg shadow-lg p-12 text-center">
