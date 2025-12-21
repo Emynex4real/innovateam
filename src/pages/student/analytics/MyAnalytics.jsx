@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import analyticsService from '../../services/analyticsService';
-import predictionService from '../../services/predictionService';
+import analyticsService from '../../../services/analyticsService';
+import predictionService from '../../../services/predictionService';
 import toast from 'react-hot-toast';
-import { useDarkMode } from '../../contexts/DarkModeContext';
+import { useDarkMode } from '../../../contexts/DarkModeContext';
 import {
   ScoreTrendChart,
   TopicMasteryHeatmap,
   AtRiskIndicator,
   PerformancePrediction
-} from '../../components/analytics/AnalyticsCharts';
+} from '../../../components/analytics/AnalyticsCharts';
 
 const StudentAnalytics = () => {
   const navigate = useNavigate();

@@ -292,7 +292,7 @@ const TutorAnalyticsDashboard = () => {
               {questionAnalysis?.problematic && questionAnalysis.problematic.length > 0 && (
                 <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-red-900/20 border border-red-700' : 'bg-red-50 border border-red-200'}`}>
                   <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-red-300' : 'text-red-900'}`}>
-                    ❌ Problematic Questions (< 40% accuracy)
+                    ❌ Problematic Questions (&lt; 40% accuracy)
                   </h3>
                   <div className="space-y-2">
                     {questionAnalysis.problematic.slice(0, 5).map((q, idx) => (
