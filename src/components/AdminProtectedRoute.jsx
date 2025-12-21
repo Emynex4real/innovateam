@@ -11,28 +11,22 @@ const AdminProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const checkAdminAccess = async () => {
+      if (loading) return;
+
+      if (!user && !isAuthenticated) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
       try {
-        const confirmedUser = localStorage.getItem('confirmedUser');
-        
-        if (!confirmedUser && !user && !isAuthenticated) {
-          navigate('/login', { replace: true });
-          return;
-        }
-
-        const userData = confirmedUser ? JSON.parse(confirmedUser) : user;
-        
-        if (!userData?.id) {
-          navigate('/login', { replace: true });
-          return;
-        }
-
-        const { data: profile, error } = await supabase
+        const { data: profile } = await supabase
           .from('user_profiles')
-          .select('role')
-          .eq('id', userData.id)
+          .select('is_admin, role')
+          .eq('id', user.id)
           .single();
 
-        if (error || !profile || profile.role !== 'admin') {
+        // Check is_admin flag OR role === 'admin' for backward compatibility
+        if (!profile || (!profile.is_admin && profile.role !== 'admin')) {
           navigate('/dashboard', { replace: true });
           return;
         }
@@ -46,9 +40,7 @@ const AdminProtectedRoute = ({ children }) => {
       }
     };
 
-    if (!loading) {
-      checkAdminAccess();
-    }
+    checkAdminAccess();
   }, [user, isAuthenticated, loading, navigate]);
 
   if (loading || checking) {

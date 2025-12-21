@@ -6,11 +6,11 @@ import supabase from '../config/supabase';
 const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
-  const [userRole, setUserRole] = useState(null);
+  const [hasAccess, setHasAccess] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const checkRoleAndRedirect = async () => {
+    const checkAccess = async () => {
       if (loading) return;
 
       if (!user && !isAuthenticated) {
@@ -19,39 +19,47 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
       }
 
       try {
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from('user_profiles')
-          .select('role')
+          .select('role, is_admin, is_tutor, is_student')
           .eq('id', user.id)
           .single();
 
-        if (profileError) {
-          console.error('❌ Profile fetch error:', profileError);
+        if (!profile) {
+          navigate('/dashboard', { replace: true });
+          return;
         }
 
-        const role = profile?.role || 'student';
-        setUserRole(role);
+        // Check if user has any of the allowed roles
+        const userRoles = [];
+        if (profile.is_admin) userRoles.push('admin');
+        if (profile.is_tutor) userRoles.push('tutor');
+        if (profile.is_student) userRoles.push('student');
 
-        // Check if user has permission
-        if (!allowedRoles.includes(role)) {
-          // Redirect based on their actual role
-          if (role === 'admin') {
+        const hasPermission = allowedRoles.some(role => userRoles.includes(role));
+
+        if (!hasPermission) {
+          // Redirect to their primary dashboard
+          if (profile.is_admin) {
             navigate('/admin/dashboard', { replace: true });
-          } else if (role === 'tutor') {
+          } else if (profile.is_tutor) {
             navigate('/tutor', { replace: true });
           } else {
             navigate('/dashboard', { replace: true });
           }
+          return;
         }
+
+        setHasAccess(true);
       } catch (error) {
-        console.error('❌ Role check error:', error);
+        console.error('Access check error:', error);
         navigate('/dashboard', { replace: true });
       } finally {
         setChecking(false);
       }
     };
 
-    checkRoleAndRedirect();
+    checkAccess();
   }, [user, isAuthenticated, loading, navigate, allowedRoles]);
 
   if (loading || checking) {
@@ -62,7 +70,7 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
     );
   }
 
-  if (!userRole || !allowedRoles.includes(userRole)) {
+  if (!hasAccess) {
     return null;
   }
 
