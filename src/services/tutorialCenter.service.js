@@ -130,8 +130,29 @@ export const tutorialCenterService = {
     return response.data;
   },
 
-  getLeaderboard: async (questionSetId) => {
-    const response = await axios.get(`${API_BASE}/tc-attempts/leaderboard/${questionSetId}`, {
+  getLeaderboard: async (questionSetId, filter = 'all') => {
+    const response = await axios.get(`${API_BASE}/tutorial-centers/leaderboard/${questionSetId}?filter=${filter}`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
+  },
+
+  getMyAnalytics: async (centerId) => {
+    const response = await axios.get(`${API_BASE}/tutorial-centers/analytics/${centerId}`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
+  },
+
+  getMyAchievements: async () => {
+    const response = await axios.get(`${API_BASE}/tutorial-centers/achievements`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
+  },
+
+  getAllAchievements: async () => {
+    const response = await axios.get(`${API_BASE}/tutorial-centers/achievements/all`, {
       headers: await getAuthHeader()
     });
     return response.data;

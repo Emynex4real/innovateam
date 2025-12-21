@@ -8,16 +8,18 @@ const TutorDashboard = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
   const [center, setCenter] = useState(null);
-  const [stats, setStats] = useState({ students: 0, questions: 0, tests: 0 });
+  const [stats, setStats] = useState({ students: 0, questions: 0, tests: 0, totalAttempts: 0, avgScore: 0 });
+  const [analytics, setAnalytics] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
   useEffect(() => {
-    loadCenter();
+    loadDashboard();
   }, []);
 
-  const loadCenter = async () => {
+  const loadDashboard = async () => {
     try {
       const response = await tutorialCenterService.getMyCenter();
       if (response.success && response.center) {
@@ -25,12 +27,16 @@ const TutorDashboard = () => {
         setStats({
           students: response.center.student_count?.[0]?.count || 0,
           questions: response.center.question_count?.[0]?.count || 0,
-          tests: response.center.test_count?.[0]?.count || 0
+          tests: response.center.test_count?.[0]?.count || 0,
+          totalAttempts: response.analytics?.totalAttempts || 0,
+          avgScore: response.analytics?.avgScore || 0
         });
+        setAnalytics(response.analytics);
+        setRecentActivity(response.recentActivity || []);
       }
     } catch (error) {
       if (error.response?.status !== 404) {
-        toast.error('Failed to load center');
+        toast.error('Failed to load dashboard');
       }
     } finally {
       setLoading(false);
@@ -53,49 +59,57 @@ const TutorDashboard = () => {
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'}`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (!center) {
     return (
-      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'}`}>
         <div className="max-w-2xl mx-auto pt-20 p-8">
-          <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow-lg p-8 text-center`}>
-            <h2 className="text-2xl font-bold mb-4">Welcome, Tutor!</h2>
-            <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>Create your tutorial center to get started</p>
+          <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white/80 backdrop-blur-xl shadow-2xl'} rounded-2xl p-8 text-center`}>
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">🎓</span>
+              </div>
+              <h2 className={`text-3xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Welcome, Tutor!</h2>
+              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} text-lg`}>Create your tutorial center to start teaching</p>
+            </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 font-semibold text-lg shadow-lg"
             >
               Create Tutorial Center
             </button>
           </div>
 
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg p-8 max-w-md w-full`}>
-                <h3 className="text-xl font-bold mb-4">Create Tutorial Center</h3>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl p-8 max-w-md w-full shadow-2xl`}>
+                <h3 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Create Tutorial Center</h3>
                 <form onSubmit={handleCreateCenter}>
-                  <div className="mb-4">
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Center Name</label>
+                  <div className="mb-5">
+                    <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Center Name</label>
                     <input
                       type="text"
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 transition ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                       placeholder="e.g., Ade's Tutorial Center"
                     />
                   </div>
                   <div className="mb-6">
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Description</label>
+                    <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Description</label>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 transition ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                       rows="3"
                       placeholder="Brief description of your center"
                     />
@@ -103,14 +117,14 @@ const TutorDashboard = () => {
                   <div className="flex gap-3">
                     <button
                       type="submit"
-                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition font-semibold"
                     >
                       Create
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowCreateModal(false)}
-                      className={`flex-1 py-2 rounded-lg transition ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+                      className={`flex-1 py-3 rounded-xl transition font-semibold ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                     >
                       Cancel
                     </button>
@@ -124,68 +138,178 @@ const TutorDashboard = () => {
     );
   }
 
+  const getTierColor = (tier) => {
+    const colors = {
+      bronze: 'from-orange-600 to-orange-800',
+      silver: 'from-gray-400 to-gray-600',
+      gold: 'from-yellow-400 to-yellow-600',
+      platinum: 'from-cyan-400 to-blue-600',
+      diamond: 'from-purple-400 to-pink-600'
+    };
+    return colors[tier] || colors.bronze;
+  };
+
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
-        <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow-lg p-4 md:p-6 mb-6`}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'}`}>
+      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        
+        {/* Header Card */}
+        <div className={`${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-purple-900/50 backdrop-blur-xl border border-gray-700' : 'bg-gradient-to-r from-blue-600 to-purple-600 shadow-2xl'} rounded-2xl p-6 md:p-8 text-white`}>
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">{center.name}</h1>
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} text-sm md:text-base`}>{center.description}</p>
-            </div>
-            <div className="text-left md:text-right">
-              <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-4 py-2 rounded-lg font-mono text-base md:text-lg font-bold">
-                {center.access_code}
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-4xl">🎓</span>
+                <h1 className="text-3xl md:text-4xl font-bold">{center.name}</h1>
               </div>
-              <p className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>Access Code</p>
+              <p className="text-blue-100 text-base md:text-lg mb-4">{center.description}</p>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">👥</span>
+                  <span>{stats.students} Students</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">📝</span>
+                  <span>{stats.tests} Tests</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">📊</span>
+                  <span>{stats.totalAttempts} Attempts</span>
+                </div>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="bg-white/20 backdrop-blur-md px-6 py-4 rounded-xl border-2 border-white/30">
+                <p className="text-xs uppercase tracking-wider mb-1 opacity-90">Access Code</p>
+                <p className="text-3xl font-mono font-bold tracking-widest">{center.access_code}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6">
-          <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow p-6`}>
-            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm mb-2`}>Students</p>
-            <p className="text-3xl md:text-4xl font-bold">{stats.students}</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-xl p-6 hover:scale-105 transition-transform`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-3xl">👥</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-600'}`}>Total</span>
+            </div>
+            <p className={`text-4xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{stats.students}</p>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Students Enrolled</p>
           </div>
-          <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow p-6`}>
-            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm mb-2`}>Questions</p>
-            <p className="text-3xl md:text-4xl font-bold">{stats.questions}</p>
+
+          <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-xl p-6 hover:scale-105 transition-transform`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-3xl">❓</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-600'}`}>Bank</span>
+            </div>
+            <p className={`text-4xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{stats.questions}</p>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Questions Created</p>
           </div>
-          <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow p-6`}>
-            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm mb-2`}>Tests</p>
-            <p className="text-3xl md:text-4xl font-bold">{stats.tests}</p>
+
+          <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-xl p-6 hover:scale-105 transition-transform`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-3xl">📝</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>Active</span>
+            </div>
+            <p className={`text-4xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{stats.tests}</p>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Tests Available</p>
+          </div>
+
+          <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-xl p-6 hover:scale-105 transition-transform`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-3xl">📊</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-yellow-900/50 text-yellow-300' : 'bg-yellow-100 text-yellow-600'}`}>Avg</span>
+            </div>
+            <p className={`text-4xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{stats.avgScore.toFixed(1)}%</p>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Average Score</p>
           </div>
         </div>
 
-        <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow-lg p-4 md:p-6`}>
-          <h2 className="text-lg md:text-xl font-bold mb-4">Quick Actions</h2>
+        {/* Quick Actions */}
+        <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-2xl p-6`}>
+          <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <button
               onClick={() => navigate('/tutor/questions')}
-              className={`p-4 border-2 rounded-lg transition ${isDarkMode ? 'border-gray-700 hover:border-blue-500 hover:bg-gray-700' : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'}`}
+              className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-blue-500 hover:bg-blue-900/20' : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'}`}
             >
-              <p className="font-semibold text-sm md:text-base">Add Questions</p>
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">❓</div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Add Questions</p>
             </button>
+            
             <button
               onClick={() => navigate('/tutor/questions/generate')}
-              className={`p-4 border-2 rounded-lg transition ${isDarkMode ? 'border-gray-700 hover:border-green-500 hover:bg-gray-700' : 'border-gray-200 hover:border-green-500 hover:bg-green-50'}`}
+              className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-green-500 hover:bg-green-900/20' : 'border-gray-200 hover:border-green-500 hover:bg-green-50'}`}
             >
-              <p className="font-semibold text-sm md:text-base">AI Generate</p>
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">🤖</div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>AI Generate</p>
             </button>
+            
             <button
               onClick={() => navigate('/tutor/tests/create')}
-              className={`p-4 border-2 rounded-lg transition ${isDarkMode ? 'border-gray-700 hover:border-purple-500 hover:bg-gray-700' : 'border-gray-200 hover:border-purple-500 hover:bg-purple-50'}`}
+              className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-purple-500 hover:bg-purple-900/20' : 'border-gray-200 hover:border-purple-500 hover:bg-purple-50'}`}
             >
-              <p className="font-semibold text-sm md:text-base">Create Test</p>
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">📝</div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Create Test</p>
             </button>
+            
             <button
               onClick={() => navigate('/tutor/students')}
-              className={`p-4 border-2 rounded-lg transition ${isDarkMode ? 'border-gray-700 hover:border-orange-500 hover:bg-gray-700' : 'border-gray-200 hover:border-orange-500 hover:bg-orange-50'}`}
+              className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-orange-500 hover:bg-orange-900/20' : 'border-gray-200 hover:border-orange-500 hover:bg-orange-50'}`}
             >
-              <p className="font-semibold text-sm md:text-base">View Students</p>
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">👥</div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>View Students</p>
             </button>
           </div>
         </div>
+
+        {/* Analytics Preview */}
+        {analytics && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-2xl p-6`}>
+              <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Top Performers 🏆</h3>
+              {analytics.topStudents?.length > 0 ? (
+                <div className="space-y-3">
+                  {analytics.topStudents.slice(0, 5).map((student, idx) => (
+                    <div key={idx} className={`flex items-center gap-3 p-3 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getTierColor(student.tier)} flex items-center justify-center text-white font-bold text-sm`}>
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{student.name}</p>
+                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{student.xp} XP • Level {student.level}</p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${student.avgScore >= 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {student.avgScore}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No student data yet</p>
+              )}
+            </div>
+
+            <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-2xl p-6`}>
+              <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Recent Activity 📈</h3>
+              {recentActivity.length > 0 ? (
+                <div className="space-y-3">
+                  {recentActivity.slice(0, 5).map((activity, idx) => (
+                    <div key={idx} className={`flex items-start gap-3 p-3 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+                      <div className="text-2xl">{activity.type === 'test' ? '📝' : '👤'}</div>
+                      <div className="flex-1">
+                        <p className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{activity.message}</p>
+                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{activity.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No recent activity</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

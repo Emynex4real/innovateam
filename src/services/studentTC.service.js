@@ -72,6 +72,20 @@ export const studentTCService = {
       headers: await getAuthHeader()
     });
     return response.data;
+  },
+
+  getMyAnalytics: async () => {
+    const response = await axios.get(`${API_BASE}/tutorial-centers/analytics/all`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
+  },
+
+  getMyAchievements: async () => {
+    const response = await axios.get(`${API_BASE}/tutorial-centers/achievements`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
   }
 };
 

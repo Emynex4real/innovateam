@@ -31,6 +31,12 @@ const tcQuestionsRoutes = require('./routes/tcQuestions.routes');
 const tcQuestionSetsRoutes = require('./routes/tcQuestionSets.routes');
 const tcAttemptsRoutes = require('./routes/tcAttempts.routes');
 
+// Phase 2 routes
+const subscriptionRoutes = require('./routes/subscription.routes');
+const messagingRoutes = require('./routes/messaging.routes');
+const analyticsRoutes = require('./routes/analytics.routes');
+const gamificationRoutes = require('./routes/gamification.routes');
+
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
 const { logger } = require('./utils/logger');
@@ -294,6 +300,12 @@ app.use('/api/tc-enrollments', tcEnrollmentsRoutes);
 app.use('/api/tc-questions', tcQuestionsRoutes);
 app.use('/api/tc-question-sets', tcQuestionSetsRoutes);
 app.use('/api/tc-attempts', tcAttemptsRoutes);
+
+// Phase 2 routes
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/messages', messagingRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/gamification', gamificationRoutes);
 
 // ============================================
 // 12. ERROR HANDLING

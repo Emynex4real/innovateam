@@ -1,5 +1,6 @@
 const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
+const tutorialCenterService = require('../services/tutorialCenter.service');
 
 // Create tutorial center
 exports.createCenter = async (req, res) => {
@@ -38,25 +39,11 @@ exports.createCenter = async (req, res) => {
   }
 };
 
-// Get tutor's center
+// Get tutor's center with analytics
 exports.getMyCenter = async (req, res) => {
   try {
-    const tutorId = req.user.id;
-
-    const { data, error } = await supabase
-      .from('tutorial_centers')
-      .select(`
-        *,
-        student_count:tc_enrollments(count),
-        question_count:tc_questions(count),
-        test_count:tc_question_sets(count)
-      `)
-      .eq('tutor_id', tutorId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') throw error;
-
-    res.json({ success: true, center: data });
+    const result = await tutorialCenterService.getMyCenter(req.user.id);
+    res.json(result);
   } catch (error) {
     logger.error('Get center error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -143,6 +130,53 @@ exports.getCenterStudents = async (req, res) => {
     res.json({ success: true, students, center_id: center.id });
   } catch (error) {
     logger.error('Get students error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get leaderboard
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const { filter } = req.query;
+    const result = await tutorialCenterService.getLeaderboard(testId, filter);
+    res.json(result);
+  } catch (error) {
+    logger.error('Get leaderboard error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student analytics
+exports.getStudentAnalytics = async (req, res) => {
+  try {
+    const { centerId } = req.params;
+    const result = await tutorialCenterService.getStudentAnalytics(req.user.id, centerId);
+    res.json(result);
+  } catch (error) {
+    logger.error('Get analytics error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student achievements
+exports.getMyAchievements = async (req, res) => {
+  try {
+    const result = await tutorialCenterService.getStudentAchievements(req.user.id);
+    res.json(result);
+  } catch (error) {
+    logger.error('Get achievements error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get all achievements
+exports.getAllAchievements = async (req, res) => {
+  try {
+    const result = await tutorialCenterService.getAllAchievements();
+    res.json(result);
+  } catch (error) {
+    logger.error('Get all achievements error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
