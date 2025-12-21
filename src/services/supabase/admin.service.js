@@ -6,7 +6,7 @@ export class AdminService {
     try {
       // Get user count
       const { count: totalUsers } = await supabase
-        .from('users')
+        .from('user_profiles')
         .select('*', { count: 'exact', head: true })
 
       // Get transaction metrics
@@ -52,8 +52,8 @@ export class AdminService {
   static async getUsers() {
     try {
       const { data, error } = await supabase
-        .from('users')
-        .select('id, email, full_name, role, wallet_balance, is_verified, created_at')
+        .from('user_profiles')
+        .select('id, email, full_name, role, is_admin, is_tutor, is_student, wallet_balance, status, created_at')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -88,7 +88,7 @@ export class AdminService {
         .from('transactions')
         .select(`
           id, amount, type, status, service_name, description, created_at,
-          users!inner(email, full_name)
+          user_profiles!inner(email, full_name)
         `)
         .order('created_at', { ascending: false })
 
@@ -102,8 +102,8 @@ export class AdminService {
           type: tx.type,
           status: tx.status,
           service: tx.service_name || tx.description,
-          userEmail: tx.users.email,
-          userName: tx.users.full_name,
+          userEmail: tx.user_profiles.email,
+          userName: tx.user_profiles.full_name,
           createdAt: tx.created_at
         }))
       }
@@ -127,12 +127,19 @@ export class AdminService {
     }
   }
 
-  // Update user role
+  // Update user role (now updates role flags)
   static async updateUserRole(userId, role) {
     try {
+      const updates = {
+        role,
+        is_admin: role === 'admin',
+        is_tutor: role === 'tutor',
+        is_student: role === 'student'
+      };
+      
       const { error } = await supabase
-        .from('users')
-        .update({ role })
+        .from('user_profiles')
+        .update(updates)
         .eq('id', userId)
 
       if (error) throw error
@@ -146,7 +153,7 @@ export class AdminService {
   static async deleteUser(userId) {
     try {
       const { error } = await supabase
-        .from('users')
+        .from('user_profiles')
         .delete()
         .eq('id', userId)
 
@@ -179,7 +186,7 @@ export class AdminService {
         .from('course_recommendations')
         .select(`
           id, jamb_score, match_percentage, created_at,
-          users!inner(email, full_name)
+          user_profiles!inner(email, full_name)
         `)
         .order('created_at', { ascending: false })
 
@@ -202,9 +209,9 @@ export class AdminService {
       const weekAgo = new Date(today)
       weekAgo.setDate(weekAgo.getDate() - 7)
 
-      // Daily active users (users who logged in today)
+      // Daily active users
       const { count: dailyActiveUsers } = await supabase
-        .from('users')
+        .from('user_profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today.toISOString().split('T')[0])
 

@@ -142,13 +142,17 @@ const SupabaseAuthProvider = ({ children }) => {
       
       if (error) throw error;
       
-      // Create user profile with role
+      // Create user profile with role flags
       if (data.user) {
+        const isStudent = !userData?.role || userData?.role === 'student';
         await supabase.from('user_profiles').insert({
           id: data.user.id,
           email: data.user.email,
           full_name: userData?.fullName,
           role: userData?.role || 'student',
+          is_admin: userData?.role === 'admin',
+          is_tutor: userData?.role === 'tutor',
+          is_student: isStudent,
           wallet_balance: 0,
           status: 'active'
         });
