@@ -10,7 +10,7 @@ const Questions = () => {
   const { isDarkMode } = useDarkMode();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState({ subject: '', difficulty: '' });
+  const [filter, setFilter] = useState({ subject: '', difficulty: '', category: '' });
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -20,7 +20,8 @@ const Questions = () => {
     explanation: '',
     subject: '',
     topic: '',
-    difficulty: 'medium'
+    difficulty: 'medium',
+    category: ''
   });
 
   useEffect(() => {
@@ -82,7 +83,8 @@ const Questions = () => {
       explanation: '',
       subject: '',
       topic: '',
-      difficulty: 'medium'
+      difficulty: 'medium',
+      category: ''
     });
     setEditingId(null);
     setShowForm(false);
@@ -123,6 +125,17 @@ const Questions = () => {
 
         <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-4 mb-6`}>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <select
+              value={filter.category}
+              onChange={(e) => setFilter({ ...filter, category: e.target.value })}
+              className={`px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+            >
+              <option value="">All Categories</option>
+              <option value="Science">Science</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Arts">Arts</option>
+              <option value="General">General</option>
+            </select>
             <input
               type="text"
               placeholder="Filter by subject..."
@@ -204,6 +217,20 @@ const Questions = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Category</label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    >
+                      <option value="">Select Category</option>
+                      <option value="Science">Science</option>
+                      <option value="Commercial">Commercial</option>
+                      <option value="Arts">Arts</option>
+                      <option value="General">General</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Subject</label>
                     <input
                       required
@@ -212,14 +239,14 @@ const Questions = () => {
                       className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     />
                   </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Topic</label>
-                    <input
-                      value={formData.topic}
-                      onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    />
-                  </div>
+                </div>
+                <div className="mb-4">
+                  <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Topic</label>
+                  <input
+                    value={formData.topic}
+                    onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                    className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  />
                 </div>
                 <div className="mb-6">
                   <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Explanation</label>
@@ -250,6 +277,7 @@ const Questions = () => {
               <div className="flex flex-col md:flex-row justify-between items-start gap-3 mb-4">
                 <div className="flex-1 w-full">
                   <div className="flex flex-wrap gap-2 mb-2">
+                    {q.category && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded font-semibold">{q.category}</span>}
                     <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">{q.subject}</span>
                     {q.topic && <span className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>{q.topic}</span>}
                     <span className={`px-2 py-1 text-xs rounded ${

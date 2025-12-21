@@ -103,8 +103,13 @@ const Results = () => {
               </div>
 
               {test.show_answers && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm text-green-600">✓ Answers and explanations are available</p>
+                <div className="mt-4 pt-4 border-t flex gap-3">
+                  <button
+                    onClick={() => navigate(`/student/review/${attempt.id}`)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                  >
+                    Review Answers
+                  </button>
                 </div>
               )}
             </div>

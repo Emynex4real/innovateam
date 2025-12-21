@@ -5,7 +5,7 @@ const { logger } = require('../utils/logger');
 // Create question
 exports.createQuestion = async (req, res) => {
   try {
-    const { question_text, options, correct_answer, explanation, subject, topic, difficulty } = req.body;
+    const { question_text, options, correct_answer, explanation, subject, topic, difficulty, category } = req.body;
     const tutorId = req.user.id;
 
     // Get tutor's center
@@ -30,7 +30,8 @@ exports.createQuestion = async (req, res) => {
         explanation,
         subject,
         topic,
-        difficulty
+        difficulty,
+        category
       }])
       .select()
       .single();
@@ -118,7 +119,7 @@ exports.saveBulkQuestions = async (req, res) => {
 // Get questions
 exports.getQuestions = async (req, res) => {
   try {
-    const { subject, difficulty } = req.query;
+    const { subject, difficulty, category } = req.query;
     const tutorId = req.user.id;
 
     // Get tutor's center
@@ -140,6 +141,7 @@ exports.getQuestions = async (req, res) => {
 
     if (subject) query = query.eq('subject', subject);
     if (difficulty) query = query.eq('difficulty', difficulty);
+    if (category) query = query.eq('category', category);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -155,12 +157,12 @@ exports.getQuestions = async (req, res) => {
 exports.updateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
-    const { question_text, options, correct_answer, explanation, subject, topic, difficulty } = req.body;
+    const { question_text, options, correct_answer, explanation, subject, topic, difficulty, category } = req.body;
     const tutorId = req.user.id;
 
     const { data, error } = await supabase
       .from('tc_questions')
-      .update({ question_text, options, correct_answer, explanation, subject, topic, difficulty })
+      .update({ question_text, options, correct_answer, explanation, subject, topic, difficulty, category })
       .eq('id', id)
       .eq('tutor_id', tutorId)
       .select()

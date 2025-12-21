@@ -56,6 +56,8 @@ const Students = () => {
                 <tr>
                   <th className={`px-4 md:px-6 py-3 text-left text-xs font-medium uppercase ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Name</th>
                   <th className={`px-4 md:px-6 py-3 text-left text-xs font-medium uppercase ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Email</th>
+                  <th className={`px-4 md:px-6 py-3 text-left text-xs font-medium uppercase ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Attempts</th>
+                  <th className={`px-4 md:px-6 py-3 text-left text-xs font-medium uppercase ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Avg Score</th>
                   <th className={`px-4 md:px-6 py-3 text-left text-xs font-medium uppercase ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Enrolled</th>
                 </tr>
               </thead>
@@ -67,6 +69,18 @@ const Students = () => {
                     </td>
                     <td className={`px-4 md:px-6 py-4 whitespace-nowrap text-sm md:text-base ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                       {student.email}
+                    </td>
+                    <td className={`px-4 md:px-6 py-4 whitespace-nowrap text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {student.total_attempts || 0}
+                    </td>
+                    <td className={`px-4 md:px-6 py-4 whitespace-nowrap`}>
+                      <span className={`px-2 py-1 rounded text-sm font-semibold ${
+                        student.average_score >= 70 ? 'bg-green-100 text-green-800' :
+                        student.average_score >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {student.average_score}%
+                      </span>
                     </td>
                     <td className={`px-4 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {new Date(student.enrolled_at).toLocaleDateString()}

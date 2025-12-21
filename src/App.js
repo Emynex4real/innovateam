@@ -57,6 +57,7 @@ import StudentTests from './pages/student/tutorial-center/Tests';
 import PublicTests from './pages/student/tutorial-center/PublicTests';
 import TakeTest from './pages/student/tutorial-center/TakeTest';
 import Results from './pages/student/tutorial-center/Results';
+import ReviewAnswers from './pages/student/tutorial-center/ReviewAnswers';
 
 import supabase from './config/supabase';
 
@@ -301,6 +302,7 @@ function App() {
             <Route path="/student/tests/public" element={<RoleProtectedRoute allowedRoles={['student']}><PublicTests /></RoleProtectedRoute>} />
             <Route path="/student/test/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><TakeTest /></RoleProtectedRoute>} />
             <Route path="/student/results/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><Results /></RoleProtectedRoute>} />
+            <Route path="/student/review/:attemptId" element={<RoleProtectedRoute allowedRoles={['student']}><ReviewAnswers /></RoleProtectedRoute>} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />

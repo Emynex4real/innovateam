@@ -148,6 +148,72 @@ exports.getLeaderboard = async (req, res) => {
   }
 };
 
+// Get single attempt details with answers
+exports.getAttemptDetails = async (req, res) => {
+  try {
+    const { attemptId } = req.params;
+    const studentId = req.user.id;
+
+    const { data: attempt, error } = await supabase
+      .from('tc_student_attempts')
+      .select(`
+        *,
+        question_set:question_set_id(
+          title,
+          passing_score,
+          show_answers,
+          questions:tc_question_set_items(
+            order_number,
+            question:question_id(
+              id,
+              question_text,
+              options,
+              correct_answer,
+              explanation
+            )
+          )
+        )
+      `)
+      .eq('id', attemptId)
+      .eq('student_id', studentId)
+      .single();
+
+    if (error || !attempt) {
+      return res.status(404).json({ success: false, error: 'Attempt not found' });
+    }
+
+    if (!attempt.question_set.show_answers) {
+      return res.status(403).json({ success: false, error: 'Answers not available' });
+    }
+
+    // Build results with questions
+    const results = attempt.question_set.questions
+      .sort((a, b) => a.order_number - b.order_number)
+      .map(item => {
+        const userAnswer = attempt.answers.find(a => a.question_id === item.question.id);
+        return {
+          question_text: item.question.question_text,
+          options: item.question.options,
+          selected_answer: userAnswer?.selected_answer,
+          correct_answer: item.question.correct_answer,
+          is_correct: userAnswer?.selected_answer === item.question.correct_answer,
+          explanation: item.question.explanation
+        };
+      });
+
+    res.json({
+      success: true,
+      attempt: {
+        ...attempt,
+        results
+      }
+    });
+  } catch (error) {
+    logger.error('Get attempt details error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Get all attempts for tutor's center
 exports.getCenterAttempts = async (req, res) => {
   try {

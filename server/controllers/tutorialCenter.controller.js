@@ -101,31 +101,46 @@ exports.getCenterStudents = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Center not found' });
     }
 
-    // Get enrolled students with stats
-    const { data, error } = await supabase
+    // Get enrolled students
+    const { data: enrollments, error } = await supabase
       .from('tc_enrollments')
-      .select(`
-        id,
-        enrolled_at,
-        student:student_id (
-          id,
-          email,
-          raw_user_meta_data
-        )
-      `)
+      .select('student_id, enrolled_at')
       .eq('center_id', center.id);
 
     if (error) throw error;
 
-    // Format response
-    const students = data.map(e => ({
-      id: e.student.id,
-      email: e.student.email,
-      name: e.student.raw_user_meta_data?.name || e.student.email.split('@')[0],
-      enrolled_at: e.enrolled_at
-    }));
+    // Get student details from user_profiles
+    const studentIds = enrollments.map(e => e.student_id);
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('id, email, full_name')
+      .in('id', studentIds);
 
-    res.json({ success: true, students });
+    // Get attempt stats for each student
+    const { data: attempts } = await supabase
+      .from('tc_student_attempts')
+      .select('student_id, score, question_set_id')
+      .in('student_id', studentIds);
+
+    // Combine data
+    const students = enrollments.map(e => {
+      const profile = profiles?.find(p => p.id === e.student_id);
+      const studentAttempts = attempts?.filter(a => a.student_id === e.student_id) || [];
+      const avgScore = studentAttempts.length > 0
+        ? Math.round(studentAttempts.reduce((sum, a) => sum + a.score, 0) / studentAttempts.length)
+        : 0;
+
+      return {
+        id: e.student_id,
+        email: profile?.email || 'Unknown',
+        name: profile?.full_name || profile?.email?.split('@')[0] || 'Unknown',
+        enrolled_at: e.enrolled_at,
+        total_attempts: studentAttempts.length,
+        average_score: avgScore
+      };
+    });
+
+    res.json({ success: true, students, center_id: center.id });
   } catch (error) {
     logger.error('Get students error:', error);
     res.status(500).json({ success: false, error: error.message });

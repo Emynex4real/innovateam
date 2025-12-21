@@ -65,6 +65,13 @@ export const studentTCService = {
       headers: await getAuthHeader()
     });
     return response.data;
+  },
+
+  getAttemptDetails: async (attemptId) => {
+    const response = await axios.get(`${API_BASE}/tc-attempts/details/${attemptId}`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
   }
 };
 

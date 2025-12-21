@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import studentTCService from '../../../services/studentTC.service';
 import toast from 'react-hot-toast';
+import MathText from '../../../components/MathText';
 
 const TakeTest = () => {
   const { testId } = useParams();
@@ -74,7 +75,7 @@ const TakeTest = () => {
 
       if (response.success) {
         toast.success('Test submitted!');
-        navigate(`/student/result/${response.attempt.id}`);
+        navigate(`/student/results/${testId}`);
       }
     } catch (error) {
       toast.error('Failed to submit test');
@@ -112,7 +113,7 @@ const TakeTest = () => {
           <div key={q.id} className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex gap-3 mb-4">
               <span className="font-bold text-lg">{idx + 1}.</span>
-              <p className="flex-1 text-lg">{q.question_text}</p>
+              <MathText text={q.question_text} className="flex-1 text-lg" />
             </div>
             <div className="space-y-2 ml-8">
               {['A', 'B', 'C', 'D'].map((letter, optIdx) => (
@@ -132,7 +133,7 @@ const TakeTest = () => {
                     className="w-4 h-4"
                   />
                   <span className="font-semibold">{letter}.</span>
-                  <span className="flex-1">{q.options[optIdx]}</span>
+                  <MathText text={q.options[optIdx]} className="flex-1" />
                 </label>
               ))}
             </div>
