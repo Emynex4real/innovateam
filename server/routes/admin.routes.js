@@ -82,17 +82,28 @@ router.post('/users/:id/role', async (req, res) => {
     const { role } = req.body;
     const supabase = require('../supabaseClient');
     
-    if (!['admin', 'user'].includes(role)) {
+    if (!['admin', 'user', 'student', 'tutor'].includes(role)) {
       return res.status(400).json({ success: false, error: 'Invalid role' });
     }
     
-    const { error } = await supabase.admin.auth.updateUserById(id, {
+    // Update user_metadata in Supabase Auth
+    const { error: authError } = await supabase.admin.auth.updateUserById(id, {
       user_metadata: { role }
     });
     
-    if (error) {
-      console.error('Update role error:', error);
-      return res.status(500).json({ success: false, error: error.message });
+    if (authError) {
+      console.error('Update auth role error:', authError);
+      return res.status(500).json({ success: false, error: authError.message });
+    }
+    
+    // Update role in user_profiles table
+    const { error: dbError } = await supabase
+      .from('user_profiles')
+      .update({ role })
+      .eq('id', id);
+    
+    if (dbError) {
+      console.error('Update user_profiles table role error:', dbError);
     }
     
     res.json({ success: true, message: `User role updated to ${role}` });

@@ -19,7 +19,6 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
       }
 
       try {
-        // Get user role from database
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
           .select('role')
@@ -28,30 +27,21 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
 
         if (profileError) {
           console.error('❌ Profile fetch error:', profileError);
-          console.log('User ID:', user.id);
-          console.log('Allowed roles:', allowedRoles);
         }
 
         const role = profile?.role || 'student';
-        console.log('✅ User role from DB:', role);
-        console.log('Allowed roles:', allowedRoles);
-        console.log('Has access:', allowedRoles.includes(role));
-        
         setUserRole(role);
 
         // Check if user has permission
         if (!allowedRoles.includes(role)) {
-          console.log('🚫 Access denied. Redirecting...');
-          // Redirect to appropriate dashboard
-          if (role === 'tutor') {
-            navigate('/tutor', { replace: true });
-          } else if (role === 'admin') {
+          // Redirect based on their actual role
+          if (role === 'admin') {
             navigate('/admin/dashboard', { replace: true });
+          } else if (role === 'tutor') {
+            navigate('/tutor', { replace: true });
           } else {
             navigate('/dashboard', { replace: true });
           }
-        } else {
-          console.log('✅ Access granted');
         }
       } catch (error) {
         console.error('❌ Role check error:', error);

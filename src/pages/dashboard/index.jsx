@@ -72,7 +72,7 @@ const AI_TOOLS = [
     icon: Brain,
     color: "bg-blue-500",
     gradient: "from-blue-500/20 to-cyan-500/20",
-    link: "/student/centers",
+    link: null, // Dynamic based on role
     btnText: "Browse Tests",
   },
   {
@@ -92,6 +92,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showLowBalanceAlert, setShowLowBalanceAlert] = useState(true);
+  const [userRole, setUserRole] = useState('student');
 
   const [loading, setLoading] = useState(true);
   const [progressData, setProgressData] = useState({
@@ -110,11 +111,25 @@ const Dashboard = () => {
   const { isDarkMode } = useDarkMode();
 
   useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user?.id) {
+        const supabase = (await import('../../config/supabase')).default;
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        setUserRole(profile?.role || 'student');
+      }
+    };
+    fetchUserRole();
+  }, [user?.id]);
+
+  useEffect(() => {
     const fetchProgress = async () => {
       if (user?.id) {
         setLoading(true);
         await new Promise((r) => setTimeout(r, 600));
-        // Using the same service for dashboard stats
         const result = await practiceSessionService.getStudentProgress(user.id);
         if (result.success) setProgressData(result.stats);
         setLoading(false);
@@ -304,8 +319,14 @@ const Dashboard = () => {
               <Sparkles className="h-5 w-5 text-indigo-500" /> Your AI Arsenal
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {AI_TOOLS.map((tool) => (
-                <Link to={tool.link} key={tool.id} className="block h-full">
+              {AI_TOOLS.map((tool) => {
+                // Dynamic link for tutorial center based on role
+                const toolLink = tool.id === 'tutorial' 
+                  ? (userRole === 'tutor' || userRole === 'admin' ? '/tutor' : '/student/centers')
+                  : tool.link;
+                
+                return (
+                  <Link to={toolLink} key={tool.id} className="block h-full">
                   <motion.div
                     variants={itemVariants}
                     whileHover={{ y: -5 }}
@@ -338,7 +359,8 @@ const Dashboard = () => {
                     </div>
                   </motion.div>
                 </Link>
-              ))}
+              );
+              })}
             </div>
           </div>
 

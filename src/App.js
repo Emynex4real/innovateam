@@ -285,15 +285,15 @@ function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/support" element={<Support />} />
             <Route path="/ai-examiner" element={<AIExaminer />} />
-            {/* Tutor Routes - Only accessible by tutors */}
-            <Route path="/tutor" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorDashboard /></RoleProtectedRoute>} />
-            <Route path="/tutor/dashboard" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorDashboard /></RoleProtectedRoute>} />
-            <Route path="/tutor/questions" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorQuestions /></RoleProtectedRoute>} />
-            <Route path="/tutor/questions/generate" element={<RoleProtectedRoute allowedRoles={['tutor']}><AIGenerator /></RoleProtectedRoute>} />
-            <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor']}><Tests /></RoleProtectedRoute>} />
-            <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor']}><TestBuilder /></RoleProtectedRoute>} />
-            <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor']}><Students /></RoleProtectedRoute>} />
-            <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor']}><TutorLeaderboard /></RoleProtectedRoute>} />
+            {/* Tutor Routes - Accessible by tutors and admins */}
+            <Route path="/tutor" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorDashboard /></RoleProtectedRoute>} />
+            <Route path="/tutor/dashboard" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorDashboard /></RoleProtectedRoute>} />
+            <Route path="/tutor/questions" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorQuestions /></RoleProtectedRoute>} />
+            <Route path="/tutor/questions/generate" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AIGenerator /></RoleProtectedRoute>} />
+            <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Tests /></RoleProtectedRoute>} />
+            <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestBuilder /></RoleProtectedRoute>} />
+            <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Students /></RoleProtectedRoute>} />
+            <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorLeaderboard /></RoleProtectedRoute>} />
             
             {/* Student Tutorial Center Routes - Only accessible by students */}
             <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><MyCenters /></RoleProtectedRoute>} />

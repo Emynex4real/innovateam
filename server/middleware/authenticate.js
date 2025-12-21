@@ -23,12 +23,9 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Verify token with Supabase
     const { data, error } = await supabase.auth.getUser(token);
     
     if (error || !data.user) {
-      console.error('❌ Token verification failed:', error?.message || 'No user data');
-      console.error('   Token (first 50 chars):', token.substring(0, 50) + '...');
       return res.status(401).json({
         success: false,
         error: 'Invalid or expired token',
@@ -36,12 +33,21 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Add user info to request
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role, is_admin, is_tutor, is_student')
+      .eq('id', data.user.id)
+      .single();
+
+    const userRole = userProfile?.role || 'user';
+
     req.user = {
       id: data.user.id,
       email: data.user.email,
-      role: data.user.user_metadata?.role || 'user',
-      isAdmin: data.user.user_metadata?.role === 'admin',
+      role: userRole,
+      isAdmin: userProfile?.is_admin || userRole === 'admin',
+      isTutor: userProfile?.is_tutor || userRole === 'tutor',
+      isStudent: userProfile?.is_student || userRole === 'student',
       metadata: data.user.user_metadata
     };
 
@@ -79,11 +85,9 @@ const requireAdmin = async (req, res, next) => {
       });
     }
 
-    // Verify token with Supabase
     const { data, error } = await supabase.auth.getUser(token);
     
     if (error || !data.user) {
-      console.error('❌ Token verification failed:', error?.message || 'No user data');
       return res.status(401).json({
         success: false,
         error: 'Invalid or expired token',
@@ -91,19 +95,26 @@ const requireAdmin = async (req, res, next) => {
       });
     }
 
-    // Add user info to request
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role, is_admin, is_tutor, is_student')
+      .eq('id', data.user.id)
+      .single();
+
+    const userRole = userProfile?.role || 'user';
+    const isAdmin = userProfile?.is_admin || userRole === 'admin';
+
     req.user = {
       id: data.user.id,
       email: data.user.email,
-      role: data.user.user_metadata?.role || 'user',
-      isAdmin: data.user.user_metadata?.role === 'admin',
+      role: userRole,
+      isAdmin,
+      isTutor: userProfile?.is_tutor || userRole === 'tutor',
+      isStudent: userProfile?.is_student || userRole === 'student',
       metadata: data.user.user_metadata
     };
 
-    console.log('✅ User authenticated:', req.user.email, 'Role:', req.user.role, 'IsAdmin:', req.user.isAdmin);
-
-    // Check if user is admin
-    if (!req.user.isAdmin) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Admin access required',
@@ -122,7 +133,7 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
-// Optional authentication (doesn't fail if no token)
+// Optional authentication
 const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -146,11 +157,21 @@ const optionalAuth = async (req, res, next) => {
       return next();
     }
 
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role, is_admin, is_tutor, is_student')
+      .eq('id', data.user.id)
+      .single();
+
+    const userRole = userProfile?.role || 'user';
+
     req.user = {
       id: data.user.id,
       email: data.user.email,
-      role: data.user.user_metadata?.role || 'user',
-      isAdmin: data.user.user_metadata?.role === 'admin',
+      role: userRole,
+      isAdmin: userProfile?.is_admin || userRole === 'admin',
+      isTutor: userProfile?.is_tutor || userRole === 'tutor',
+      isStudent: userProfile?.is_student || userRole === 'student',
       metadata: data.user.user_metadata
     };
 
