@@ -115,11 +115,11 @@ const StudyGroups = () => {
 
   const handleJoinGroup = async (e, groupId) => {
     e.stopPropagation();
-    const result = await CollaborationService.joinGroup(groupId);
+    const result = await CollaborationService.joinStudyGroup(groupId);
     
     if (result.success) {
       toast.success('Joined successfully!');
-      setRefreshKey(prev => prev + 1);
+      await fetchAllData();
     } else {
       if (result.error === 'Already a member') {
         toast('You are already a member', { icon: 'ℹ️' });
@@ -182,13 +182,21 @@ const StudyGroups = () => {
         <div className="sg-tabs">
           <button 
             className={`sg-tab ${view === 'browse' ? 'active' : ''}`}
-            onClick={() => setView('browse')}
+            onClick={() => {
+              console.log('🔍 Switching to Explore tab');
+              console.log('🔍 Current groups state:', groups);
+              setView('browse');
+            }}
           >
             Explore
           </button>
           <button 
             className={`sg-tab ${view === 'my-groups' ? 'active' : ''}`}
-            onClick={() => setView('my-groups')}
+            onClick={() => {
+              console.log('🔍 Switching to My Groups tab');
+              console.log('🔍 Current userGroups state:', userGroups);
+              setView('my-groups');
+            }}
           >
             My Groups <span className="badge">{userGroups.length}</span>
           </button>

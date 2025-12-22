@@ -19,9 +19,9 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
   const fetchDetails = async () => {
     setLoading(true);
     const result = await CollaborationService.getStudyGroupDetail(groupId);
-    if (result.success) {
-      setGroup(result.group);
-      setPosts(result.group.posts || []);
+    if (result.success && result.data) {
+      setGroup(result.data);
+      setPosts(result.data.posts || []);
     }
     setLoading(false);
   };

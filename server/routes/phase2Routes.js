@@ -117,18 +117,18 @@ router.get('/forums/search/:centerId', authenticate, async (req, res) => {
 // STUDY GROUPS ROUTES (Updated for your Service)
 // ============================================
 
-// 1. Get groups (Explore Tab)
-router.get('/study-groups/:centerId', authenticate, async (req, res) => {
-  const { centerId } = req.params;
+// IMPORTANT: Specific routes MUST come before parameterized routes
+
+// 1a. Get ALL groups (Explore Tab - no center filter)
+router.get('/study-groups/all/explore', authenticate, async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
-  // If centerId is 'all', pass null to get all groups
-  const centerIdParam = centerId === 'all' ? null : centerId;
-  const result = await studyGroupsService.getGroups(centerIdParam, req.user.id, parseInt(page), parseInt(limit));
+  console.log('🔍 Explore: Fetching ALL groups');
+  const result = await studyGroupsService.getGroups(null, req.user.id, parseInt(page), parseInt(limit));
+  console.log('🔍 Explore: Result:', result);
   res.json(result);
 });
 
 // 2. Get user's groups (My Groups Tab)
-// Note: This must come BEFORE /:groupId routes to avoid conflict
 router.get('/study-groups/user/my-groups', authenticate, async (req, res) => {
   const result = await studyGroupsService.getUserGroups(req.user.id);
   res.json(result);
@@ -137,7 +137,7 @@ router.get('/study-groups/user/my-groups', authenticate, async (req, res) => {
 // 3. Search groups
 router.get('/study-groups/search/:centerId', authenticate, async (req, res) => {
   const { centerId } = req.params;
-  const { q, page = 1, limit = 20 } = req.query; // Changed query to q to match service logic usually
+  const { q, page = 1, limit = 20 } = req.query;
   const result = await studyGroupsService.searchGroups(centerId, q, parseInt(page), parseInt(limit));
   res.json(result);
 });
@@ -146,6 +146,16 @@ router.get('/study-groups/search/:centerId', authenticate, async (req, res) => {
 router.get('/study-groups/:groupId/detail', authenticate, async (req, res) => {
   const { groupId } = req.params;
   const result = await studyGroupsService.getGroupDetail(groupId, req.user.id);
+  res.json(result);
+});
+
+// 1b. Get groups by center (Explore Tab - with center filter) - MUST be last
+router.get('/study-groups/:centerId', authenticate, async (req, res) => {
+  const { centerId } = req.params;
+  const { page = 1, limit = 20 } = req.query;
+  console.log('🔍 Explore: Fetching groups for centerId:', centerId);
+  const result = await studyGroupsService.getGroups(centerId, req.user.id, parseInt(page), parseInt(limit));
+  console.log('🔍 Explore: Result:', result);
   res.json(result);
 });
 

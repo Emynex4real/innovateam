@@ -51,10 +51,15 @@ class CollaborationService {
         limit: limit.toString(),
       });
 
-      // Use 'all' as centerId if not provided to fetch all groups
-      const centerParam = centerId && centerId !== 'undefined' && centerId !== 'null' ? centerId : 'all';
+      // Use dedicated 'all/explore' endpoint if no centerId
+      let url;
+      if (!centerId || centerId === 'undefined' || centerId === 'null') {
+        url = `${API_BASE_URL}/phase2/study-groups/all/explore?${query}`;
+      } else {
+        url = `${API_BASE_URL}/phase2/study-groups/${centerId}?${query}`;
+      }
 
-      const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${centerParam}?${query}`, {
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
       });

@@ -10,6 +10,7 @@ class StudyGroupsService {
   // 1. Get study groups for center (Explore Tab)
   async getGroups(centerId, userId, page = 1, limit = 20) {
     try {
+      console.log('🔍 getGroups called with:', { centerId, userId, page, limit });
       const offset = (page - 1) * limit;
 
       let query = supabase
@@ -20,12 +21,20 @@ class StudyGroupsService {
 
       // Only filter by center_id if it's provided and not null
       if (centerId && centerId !== 'null' && centerId !== 'undefined') {
+        console.log('🔍 Filtering by center_id:', centerId);
         query = query.eq('center_id', centerId);
+      } else {
+        console.log('🔍 No center_id filter - fetching all groups');
       }
 
       const { data, error, count } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.log('❌ Query error:', error);
+        throw error;
+      }
+
+      console.log('🔍 Query returned', data?.length, 'groups');
 
       // Manually fetch creator info and member counts
       const enrichedGroups = await Promise.all(
@@ -49,12 +58,15 @@ class StudyGroupsService {
         })
       );
 
+      console.log('✅ Returning', enrichedGroups.length, 'enriched groups');
+
       return { 
         success: true, 
         data: enrichedGroups,
         meta: { total: count, page, limit }
       };
     } catch (error) {
+      console.log('❌ Error in getGroups:', error);
       logger.error('Error getting study groups:', error);
       return { success: false, error: error.message, data: [] };
     }
