@@ -16,16 +16,14 @@ router.post('/conversations', messagingController.startConversation);
 // 2. Get all conversations list
 router.get('/conversations', messagingController.getConversations);
 
-// 3. ✅ FIX: Get messages for a specific conversation
-// Matches GET /phase2/messaging/conversations/:id
-// We use ':partnerId' here to match the variable name in your existing controller
-router.get('/conversations/:partnerId', messagingController.getMessages);
+// 3. Get messages for a specific conversation
+router.get('/conversations/:conversationId', messagingController.getMessages);
 
 // 4. Send a message
 router.post('/send', messagingController.sendMessage);
 
-// 5. Direct access fallback (optional, keeps existing functionality)
-router.get('/:partnerId', messagingController.getMessages);
+// 5. Direct access fallback
+router.get('/:conversationId', messagingController.getMessages);
 
 // ==========================================
 // ANNOUNCEMENT ROUTES

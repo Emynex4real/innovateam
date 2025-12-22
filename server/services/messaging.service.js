@@ -142,10 +142,10 @@ const messagingService = {
     // Mark as read
     await supabase
       .from('messages')
-      .update({ is_read: true, read_at: new Date() })
+      .update({ read: true, read_at: new Date() })
       .eq('conversation_id', conversationId)
       .eq('receiver_id', userId)
-      .eq('is_read', false);
+      .eq('read', false);
 
     return { success: true, messages: data.reverse() };
   },
@@ -212,7 +212,7 @@ const messagingService = {
 
     if (error) throw error;
 
-    const unreadCount = data ? data.filter(n => !n.is_read).length : 0;
+    const unreadCount = data ? data.filter(n => !n.read).length : 0;
     return { success: true, notifications: data || [], unreadCount };
   },
 
@@ -220,7 +220,7 @@ const messagingService = {
   async markNotificationRead(notificationId) {
     const { error } = await supabase
       .from('notifications')
-      .update({ is_read: true, read_at: new Date() })
+      .update({ read: true, read_at: new Date() })
       .eq('id', notificationId);
 
     if (error) throw error;
@@ -231,9 +231,9 @@ const messagingService = {
   async markAllNotificationsRead(userId) {
     const { error } = await supabase
       .from('notifications')
-      .update({ is_read: true, read_at: new Date() })
+      .update({ read: true, read_at: new Date() })
       .eq('user_id', userId)
-      .eq('is_read', false);
+      .eq('read', false);
 
     if (error) throw error;
     return { success: true };

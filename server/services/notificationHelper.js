@@ -10,7 +10,7 @@ class NotificationHelper {
   /**
    * Create a notification for a user
    */
-  async create(userId, type, title, content, actionUrl = null) {
+  async create(userId, type, title, message, actionUrl = null) {
     try {
       console.log('🔔 NotificationHelper.create called:', { userId, type, title });
       
@@ -20,9 +20,9 @@ class NotificationHelper {
           user_id: userId,
           type,
           title,
-          content, // Using correct column name 'content'
+          message,
           action_url: actionUrl,
-          read: false // Using correct column name 'read'
+          read: false
         });
 
       if (error) {
@@ -67,7 +67,7 @@ class NotificationHelper {
         user_id: member.user_id,
         type: 'info',
         title: `New post in ${groupName}`,
-        content: `${authorName}: ${preview}`,
+        message: `${authorName}: ${preview}`,
         action_url: `/student/study-groups?group=${groupId}`,
         read: false
       }));
@@ -167,7 +167,7 @@ class NotificationHelper {
         user_id: n.userId,
         type: n.type,
         title: n.title,
-        content: n.content,
+        message: n.content,
         action_url: n.actionUrl || null,
         read: false
       }));

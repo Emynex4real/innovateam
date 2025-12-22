@@ -68,21 +68,39 @@ exports.startConversation = async (req, res) => {
 // 2. Send Message
 exports.sendMessage = async (req, res) => {
   try {
-    // Extract conversationId from body (sent by frontend)
-    const { conversationId, messageText, mediaUrl, mediaType } = req.body; 
-    const receiverId = req.body.receiverId; 
+    console.log('📨 SendMessage called with body:', req.body);
+    console.log('📨 User ID:', req.user.id);
     
-    // ✅ CRITICAL FIX: Pass conversationId as the 4th argument
+    const { conversationId, messageText, mediaUrl, mediaType } = req.body; 
+    let receiverId = req.body.receiverId;
+    
+    // If receiverId not provided, get it from conversation
+    if (!receiverId && conversationId) {
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('participant_1_id, participant_2_id')
+        .eq('id', conversationId)
+        .single();
+      
+      if (conv) {
+        receiverId = conv.participant_1_id === req.user.id ? conv.participant_2_id : conv.participant_1_id;
+      }
+    }
+    
+    console.log('📨 Parameters:', { conversationId, receiverId, messageText });
+    
     const result = await messagingService.sendMessage(
         req.user.id, 
         receiverId, 
         messageText, 
-        conversationId, 
-        [] // attachments placeholder
+        conversationId,
+        []
     );
     
+    console.log('📨 SendMessage result:', result);
     res.json(result);
   } catch (error) {
+    console.error('📨 SendMessage error:', error);
     logger.error('Send message error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
@@ -100,8 +118,8 @@ exports.getConversations = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { partnerId } = req.params; 
-    const result = await messagingService.getMessages(req.user.id, partnerId);
+    const { conversationId } = req.params; 
+    const result = await messagingService.getMessages(req.user.id, conversationId);
     res.json(result);
   } catch (error) {
     logger.error('Get messages error:', error);

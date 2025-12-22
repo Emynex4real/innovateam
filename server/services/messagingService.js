@@ -34,7 +34,7 @@ class MessagingService {
           const otherUserId = conv.participant_1_id === userId ? conv.participant_2_id : conv.participant_1_id;
           const { data: otherUser } = await supabase
             .from('user_profiles')
-            .select('id, email, name, avatar_url')
+            .select('id, email, full_name, avatar_url')
             .eq('id', otherUserId)
             .single();
 
@@ -71,7 +71,7 @@ class MessagingService {
         data.map(async (msg) => {
           const { data: sender } = await supabase
             .from('user_profiles')
-            .select('id, email, name, avatar_url')
+            .select('id, email, full_name, avatar_url')
             .eq('id', msg.sender_id)
             .single();
 
@@ -92,6 +92,10 @@ class MessagingService {
   // Send a message
   async sendMessage(conversationId, senderId, receiverId, messageText, mediaUrl = null, mediaType = null) {
     try {
+      console.log('📨 MessagingService.sendMessage called with:', {
+        conversationId, senderId, receiverId, messageText, mediaUrl, mediaType
+      });
+      
       // Create message
       const { data: message, error: msgError } = await supabase
         .from('messages')
@@ -102,7 +106,7 @@ class MessagingService {
           message_text: messageText,
           media_url: mediaUrl,
           media_type: mediaType,
-          is_read: false
+          read: false
         })
         .select()
         .single();
@@ -144,10 +148,10 @@ class MessagingService {
     try {
       const { error } = await supabase
         .from('messages')
-        .update({ is_read: true, read_at: new Date() })
+        .update({ read: true, read_at: new Date() })
         .eq('conversation_id', conversationId)
         .eq('receiver_id', userId)
-        .eq('is_read', false);
+        .eq('read', false);
 
       if (error) throw error;
 
