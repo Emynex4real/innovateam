@@ -318,6 +318,9 @@ app.use('/api/messages', messagingRoutes);
 // This bypasses the /api prefix, so we handle it explicitly here.
 app.use('/phase2/messaging', messagingRoutes);
 
+// 3. Mount Phase 2 routes at /phase2 (Fixes Frontend 404s)
+app.use('/phase2', phase2Routes);
+
 // 3. Keep Phase 2 general route
 app.use('/api/phase2', phase2Routes);
 

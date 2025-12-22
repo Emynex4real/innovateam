@@ -1,347 +1,253 @@
 import React, { useState, useEffect } from 'react';
+import { Search, Plus, Users, BookOpen, ArrowRight } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import CreateStudyGroupModal from '../../components/collaboration/CreateStudyGroupModal';
+import StudyGroupDetail from '../../components/collaboration/StudyGroupDetail';
 import CollaborationService from '../../services/collaborationService';
+import { useAuth } from '../../App';
 import './StudyGroups.css';
 
-/**
- * Study Groups Page
- * Browse and manage collaborative learning groups
- */
-const StudyGroups = ({ centerId, userId }) => {
-  const [view, setView] = useState('browse'); // browse or my-groups
+const StudyGroups = () => {
+  const { user } = useAuth();
+  const [view, setView] = useState('browse');
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const [groups, setGroups] = useState([]);
   const [userGroups, setUserGroups] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [newGroupData, setNewGroupData] = useState({
-    name: '',
-    description: '',
-    topic: '',
-    subject: '',
-  });
-  const [posting, setPosting] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    if (view === 'browse') {
-      fetchGroups();
-    } else {
-      fetchUserGroups();
+    if (user?.center_id) {
+      fetchAllData();
     }
-  }, [view]);
+  }, [user, refreshKey]);
 
-  const fetchGroups = async () => {
+  const fetchAllData = async () => {
     setLoading(true);
-    const result = await CollaborationService.getStudyGroups(centerId);
-    if (result.success) {
-      setGroups(result.data || []);
-      setError(null);
-    } else {
-      setError(result.error);
+    try {
+      const [allRes, myRes] = await Promise.all([
+        CollaborationService.getStudyGroups(user.center_id),
+        CollaborationService.getUserStudyGroups()
+      ]);
+
+      if (allRes.success) setGroups(allRes.data || []);
+      if (myRes.success) setUserGroups(myRes.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load groups");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const fetchUserGroups = async () => {
-    setLoading(true);
-    const result = await CollaborationService.getUserStudyGroups();
-    if (result.success) {
-      setUserGroups(result.data || []);
-      setError(null);
-    } else {
-      setError(result.error);
-    }
-    setLoading(false);
-  };
-
-  const handleSearchGroups = async (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
+    setLoading(true);
     if (!searchQuery.trim()) {
-      fetchGroups();
+      fetchAllData();
       return;
     }
-
-    setLoading(true);
-    const result = await CollaborationService.searchStudyGroups(
-      centerId,
-      searchQuery
-    );
-    if (result.success) {
-      setGroups(result.data || []);
-      setError(null);
-    } else {
-      setError(result.error);
+    const res = await CollaborationService.searchStudyGroups(user.center_id, searchQuery);
+    if (res.success) {
+      setGroups(res.data || []);
     }
     setLoading(false);
   };
 
-  const handleCreateGroup = async () => {
-    if (
-      !newGroupData.name.trim() ||
-      !newGroupData.description.trim() ||
-      !newGroupData.subject.trim()
-    ) {
-      setError('Please fill in all fields');
-      return;
-    }
+  const handleCreateGroup = async (groupData) => {
+    setCreating(true);
+    
+    // ✅ FIX: Ensure centerId is attached
+    const payload = {
+      ...groupData,
+      centerId: user.center_id
+    };
 
-    setPosting(true);
-    const result = await CollaborationService.createStudyGroup(
-      newGroupData.name,
-      newGroupData.description,
-      newGroupData.topic || newGroupData.subject,
-      newGroupData.subject
+    const result = await CollaborationService.createStudyGroup(payload);
+    
+    if (result.success) {
+      toast.success('Study Group Created!');
+      setShowCreateModal(false);
+      setRefreshKey(prev => prev + 1); 
+      setView('my-groups'); 
+    } else {
+      toast.error(result.error || 'Failed to create group');
+    }
+    setCreating(false);
+  };
+
+  const handleJoinGroup = async (e, groupId) => {
+    e.stopPropagation();
+    const result = await CollaborationService.joinGroup(groupId);
+    
+    if (result.success) {
+      toast.success('Joined successfully!');
+      setRefreshKey(prev => prev + 1);
+    } else {
+      if (result.error === 'Already a member') {
+        toast('You are already a member', { icon: 'ℹ️' });
+      } else {
+        toast.error(result.error || 'Failed to join');
+      }
+    }
+  };
+
+  const isJoined = (groupId) => {
+    return userGroups.some(g => g.id === groupId);
+  };
+
+  const getGradient = (name) => {
+    const colors = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #2af598 0%, #009efd 100%)',
+      'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)',
+      'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+      'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)'
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  if (view === 'detail' && selectedGroupId) {
+    return (
+      <StudyGroupDetail 
+        groupId={selectedGroupId} 
+        onBack={() => {
+          setSelectedGroupId(null);
+          setView('browse');
+          setRefreshKey(prev => prev + 1);
+        }}
+      />
     );
+  }
 
-    if (result.success) {
-      setNewGroupData({
-        name: '',
-        description: '',
-        topic: '',
-        subject: '',
-      });
-      setShowCreateGroup(false);
-      fetchUserGroups();
-      setView('my-groups');
-      setError(null);
-    } else {
-      setError(result.error);
-    }
-    setPosting(false);
-  };
+  const displayList = view === 'browse' ? groups : userGroups;
 
-  const handleJoinGroup = async (groupId) => {
-    setPosting(true);
-    const result = await CollaborationService.joinStudyGroup(groupId);
-    if (result.success) {
-      fetchGroups();
-      setError(null);
-    } else {
-      setError(result.error);
-    }
-    setPosting(false);
-  };
-
-  const handleLeaveGroup = async (groupId) => {
-    setPosting(true);
-    const result = await CollaborationService.leaveStudyGroup(groupId);
-    if (result.success) {
-      fetchUserGroups();
-      setError(null);
-    } else {
-      setError(result.error);
-    }
-    setPosting(false);
-  };
-
-  const displayGroups = view === 'browse' ? groups : userGroups;
+  if (!user) return <div className="loader-container"><div className="spinner"></div></div>;
 
   return (
-    <div className="study-groups-page">
+    <div className="study-groups-layout">
       <div className="sg-header">
-        <h1>Study Groups</h1>
-        <div className="sg-controls">
-          <div className="search-bar">
-            <form onSubmit={handleSearchGroups}>
-              <input
-                type="text"
-                placeholder="Search groups..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
-              <button type="submit" className="search-btn">
-                🔍
-              </button>
-            </form>
-          </div>
-          <button
-            className="create-btn"
-            onClick={() => setShowCreateGroup(true)}
+        <div>
+          <h1 className="sg-title">Study Groups</h1>
+          <p className="sg-subtitle">Connect, collaborate, and ace your exams together.</p>
+        </div>
+        <button 
+          className="btn-primary-lg" 
+          onClick={() => setShowCreateModal(true)}
+        >
+          <Plus size={20} /> Create New Group
+        </button>
+      </div>
+
+      <div className="sg-controls">
+        <div className="sg-tabs">
+          <button 
+            className={`sg-tab ${view === 'browse' ? 'active' : ''}`}
+            onClick={() => setView('browse')}
           >
-            + Create Group
+            Explore
+          </button>
+          <button 
+            className={`sg-tab ${view === 'my-groups' ? 'active' : ''}`}
+            onClick={() => setView('my-groups')}
+          >
+            My Groups <span className="badge">{userGroups.length}</span>
           </button>
         </div>
+
+        <form onSubmit={handleSearch} className="sg-search">
+          <Search className="search-icon" size={18} />
+          <input 
+            type="text" 
+            placeholder="Search topics, subjects..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </form>
       </div>
 
-      <div className="sg-tabs">
-        <button
-          className={`tab-btn ${view === 'browse' ? 'active' : ''}`}
-          onClick={() => setView('browse')}
-        >
-          Browse
-        </button>
-        <button
-          className={`tab-btn ${view === 'my-groups' ? 'active' : ''}`}
-          onClick={() => setView('my-groups')}
-        >
-          My Groups
-        </button>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      {loading ? (
-        <div className="loading">Loading groups...</div>
-      ) : displayGroups.length === 0 ? (
-        <div className="empty-state">
-          <p>
-            {view === 'browse'
-              ? 'No groups found'
-              : 'You haven\'t joined any groups yet'}
-          </p>
-          {view === 'browse' ? (
-            <button
-              className="primary-btn"
-              onClick={() => setShowCreateGroup(true)}
-            >
-              Create Your First Group
-            </button>
-          ) : (
-            <button className="primary-btn" onClick={() => setView('browse')}>
-              Browse Groups
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="groups-grid">
-          {displayGroups.map((group) => (
-            <div key={group.id} className="group-card">
-              {group.image_url && (
-                <div className="group-image">
-                  <img src={group.image_url} alt={group.name} />
-                </div>
-              )}
-              <div className="group-content">
-                <h3>{group.name}</h3>
-                <p className="group-description">{group.description}</p>
-
-                <div className="group-meta">
-                  <span className="subject-tag">{group.subject}</span>
-                  <span className="member-count">
-                    {group.member_count || 0} members
-                  </span>
+      <div className="sg-grid-container">
+        {loading ? (
+          [1,2,3,4].map(i => <div key={i} className="sg-card skeleton"></div>)
+        ) : displayList.length === 0 ? (
+          <div className="sg-empty">
+            <div className="empty-illustration">📚</div>
+            <h3>{view === 'browse' ? "No study groups found" : "You haven't joined any groups"}</h3>
+            <p>
+              {view === 'browse' 
+                ? "Try adjusting your search or create the first group!" 
+                : "Browse the 'Explore' tab to find a group to join."}
+            </p>
+            {view === 'my-groups' && (
+              <button className="btn-outline" onClick={() => setView('browse')}>Browse Groups</button>
+            )}
+          </div>
+        ) : (
+          displayList.map(group => {
+            const joined = isJoined(group.id);
+            return (
+              <div 
+                key={group.id} 
+                className="sg-card"
+                onClick={() => { setSelectedGroupId(group.id); setView('detail'); }}
+              >
+                <div className="sg-card-cover" style={{ background: group.image_url ? `url(${group.image_url})` : getGradient(group.name) }}>
+                  {group.image_url && <img src={group.image_url} alt={group.name} />}
+                  <span className="sg-subject-tag">{group.subject}</span>
                 </div>
 
-                <div className="group-stats">
-                  <span className="posts">
-                    {group.post_count || 0} posts
-                  </span>
+                <div className="sg-card-body">
+                  <h3 className="sg-card-title">{group.name}</h3>
+                  <p className="sg-card-desc">
+                    {group.description || "No description provided."}
+                  </p>
+                  
+                  <div className="sg-card-meta">
+                    <div className="meta-item">
+                      <Users size={14} />
+                      <span>{group.members?.[0]?.count || 1} Members</span>
+                    </div>
+                    {group.topic && (
+                      <div className="meta-item">
+                        <BookOpen size={14} />
+                        <span>{group.topic}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="group-actions">
-                  {view === 'browse' ? (
-                    <button
-                      className="primary-btn"
-                      onClick={() => handleJoinGroup(group.id)}
-                      disabled={posting}
-                    >
-                      {posting ? 'Joining...' : 'Join'}
+                <div className="sg-card-footer">
+                  {joined ? (
+                    <button className="btn-view">
+                      View Group <ArrowRight size={16} />
                     </button>
                   ) : (
-                    <>
-                      <button
-                        className="secondary-btn"
-                        onClick={() => setSelectedGroup(group)}
-                      >
-                        View
-                      </button>
-                      <button
-                        className="danger-btn"
-                        onClick={() => handleLeaveGroup(group.id)}
-                        disabled={posting}
-                      >
-                        Leave
-                      </button>
-                    </>
+                    <button 
+                      className="btn-join"
+                      onClick={(e) => handleJoinGroup(e, group.id)}
+                    >
+                      Join Group
+                    </button>
                   )}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            );
+          })
+        )}
+      </div>
 
-      {showCreateGroup && (
-        <div className="modal-overlay" onClick={() => setShowCreateGroup(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Create New Study Group</h2>
-
-            <div className="form-group">
-              <label>Group Name *</label>
-              <input
-                type="text"
-                placeholder="e.g., AP Biology Study Group"
-                value={newGroupData.name}
-                onChange={(e) =>
-                  setNewGroupData({ ...newGroupData, name: e.target.value })
-                }
-                className="input-field"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Description *</label>
-              <textarea
-                placeholder="What is this group about?"
-                value={newGroupData.description}
-                onChange={(e) =>
-                  setNewGroupData({
-                    ...newGroupData,
-                    description: e.target.value,
-                  })
-                }
-                className="input-field"
-                rows="4"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Subject *</label>
-              <input
-                type="text"
-                placeholder="e.g., Biology"
-                value={newGroupData.subject}
-                onChange={(e) =>
-                  setNewGroupData({ ...newGroupData, subject: e.target.value })
-                }
-                className="input-field"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Topic</label>
-              <input
-                type="text"
-                placeholder="Optional: Specific topic"
-                value={newGroupData.topic}
-                onChange={(e) =>
-                  setNewGroupData({ ...newGroupData, topic: e.target.value })
-                }
-                className="input-field"
-              />
-            </div>
-
-            <div className="modal-footer">
-              <button
-                className="secondary-btn"
-                onClick={() => setShowCreateGroup(false)}
-                disabled={posting}
-              >
-                Cancel
-              </button>
-              <button
-                className="primary-btn"
-                onClick={handleCreateGroup}
-                disabled={posting}
-              >
-                {posting ? 'Creating...' : 'Create Group'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateStudyGroupModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateGroup}
+        loading={creating}
+      />
     </div>
   );
 };

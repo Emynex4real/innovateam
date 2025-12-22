@@ -6,151 +6,95 @@ const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
 
 class StudyGroupsService {
-  // Get all groups for center
+  // Get study groups for center
   async getGroups(centerId, userId, page = 1, limit = 20) {
     try {
       const offset = (page - 1) * limit;
 
-      // Get public groups
-      const { data: groups, error } = await supabase
+      const { data, error } = await supabase
         .from('study_groups')
-        .select('*')
+        .select(`
+          *,
+          creator:user_profiles!creator_id(id, full_name, avatar_url),
+          member_count:study_group_members(count)
+        `)
         .eq('center_id', centerId)
-        .eq('is_public', true)
-        .order('updated_at', { ascending: false })
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
       if (error) throw error;
 
-      // Enrich with member info and check if user is member
-      const enrichedGroups = await Promise.all(
-        groups.map(async (group) => {
-          const { data: creator } = await supabase
-            .from('user_profiles')
-            .select('id, name, avatar_url')
-            .eq('id', group.creator_id)
-            .single();
-
-          const { data: isMember } = await supabase
-            .from('study_group_members')
-            .select('id')
-            .eq('group_id', group.id)
-            .eq('user_id', userId)
-            .single();
-
-          return {
-            ...group,
-            creator,
-            is_member: !!isMember
-          };
-        })
-      );
-
-      return { success: true, groups: enrichedGroups };
+      return { success: true, data: data || [] };
     } catch (error) {
-      logger.error('Error getting groups:', error);
-      return { success: false, error: error.message };
+      logger.error('Error getting study groups:', error);
+      return { success: false, error: error.message, data: [] };
     }
   }
 
-  // Get user's groups
+  // Get user's study groups
   async getUserGroups(userId) {
     try {
-      const { data: memberships } = await supabase
+      const { data, error } = await supabase
         .from('study_group_members')
-        .select('group_id')
-        .eq('user_id', userId);
-
-      const groupIds = memberships.map(m => m.group_id);
-
-      if (groupIds.length === 0) {
-        return { success: true, groups: [] };
-      }
-
-      const { data: groups, error } = await supabase
-        .from('study_groups')
-        .select('*')
-        .in('id', groupIds)
-        .order('updated_at', { ascending: false });
+        .select(`
+          study_groups(
+            *,
+            creator:user_profiles!creator_id(id, full_name, avatar_url),
+            member_count:study_group_members(count)
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('is_active', true);
 
       if (error) throw error;
 
-      return { success: true, groups };
+      const groups = data?.map(item => item.study_groups).filter(Boolean) || [];
+      return { success: true, data: groups };
     } catch (error) {
       logger.error('Error getting user groups:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, data: [] };
     }
   }
 
-  // Get group detail
+  // Get group detail with posts
   async getGroupDetail(groupId, userId) {
     try {
       const { data: group, error: groupError } = await supabase
         .from('study_groups')
-        .select('*')
+        .select(`
+          *,
+          creator:user_profiles!creator_id(id, full_name, avatar_url)
+        `)
         .eq('id', groupId)
         .single();
 
       if (groupError) throw groupError;
 
-      // Get creator
-      const { data: creator } = await supabase
-        .from('user_profiles')
-        .select('id, name, avatar_url')
-        .eq('id', group.creator_id)
-        .single();
-
-      // Get members
-      const { data: memberships } = await supabase
-        .from('study_group_members')
-        .select('user_id, role, contribution_score')
-        .eq('group_id', groupId);
-
-      const { data: members } = await supabase
-        .from('user_profiles')
-        .select('id, name, avatar_url')
-        .in('id', memberships.map(m => m.user_id));
-
-      const enrichedMembers = memberships.map(m => ({
-        ...members.find(mb => mb.id === m.user_id),
-        role: m.role,
-        contribution_score: m.contribution_score
-      }));
-
       // Get posts
-      const { data: posts } = await supabase
+      const { data: posts, error: postsError } = await supabase
         .from('study_group_posts')
-        .select('*')
+        .select(`
+          *,
+          author:user_profiles!author_id(id, full_name, avatar_url)
+        `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
-      // Check if user is member
-      const { data: isMember } = await supabase
-        .from('study_group_members')
-        .select('id, role')
-        .eq('group_id', groupId)
-        .eq('user_id', userId)
-        .single();
+      if (postsError) throw postsError;
 
-      return {
-        success: true,
-        group: { ...group, creator },
-        members: enrichedMembers,
-        posts: posts || [],
-        is_member: !!isMember,
-        user_role: isMember?.role
-      };
+      return { success: true, data: { ...group, posts: posts || [] } };
     } catch (error) {
       logger.error('Error getting group detail:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, data: null };
     }
   }
 
-  // Create group
+  // Create study group
   async createGroup(centerId, creatorId, name, description, topic, subject, imageUrl = null) {
     try {
-      const { data: group, error: groupError } = await supabase
+      const { data: group, error } = await supabase
         .from('study_groups')
         .insert({
           center_id: centerId,
@@ -159,16 +103,15 @@ class StudyGroupsService {
           description,
           topic,
           subject,
-          image_url: imageUrl,
-          member_count: 1
+          image_url: imageUrl
         })
         .select()
         .single();
 
-      if (groupError) throw groupError;
+      if (error) throw error;
 
-      // Add creator as admin member
-      const { error: memberError } = await supabase
+      // Auto-join creator
+      await supabase
         .from('study_group_members')
         .insert({
           group_id: group.id,
@@ -176,12 +119,10 @@ class StudyGroupsService {
           role: 'admin'
         });
 
-      if (memberError) throw memberError;
-
       logger.info(`Study group created: ${group.id}`);
-      return { success: true, group };
+      return { success: true, data: group };
     } catch (error) {
-      logger.error('Error creating group:', error);
+      logger.error('Error creating study group:', error);
       return { success: false, error: error.message };
     }
   }
@@ -201,7 +142,6 @@ class StudyGroupsService {
         return { success: false, error: 'Already a member of this group' };
       }
 
-      // Add member
       const { error } = await supabase
         .from('study_group_members')
         .insert({
@@ -212,7 +152,7 @@ class StudyGroupsService {
 
       if (error) throw error;
 
-      logger.info(`User joined group: ${groupId}`);
+      logger.info(`User ${userId} joined group ${groupId}`);
       return { success: true };
     } catch (error) {
       logger.error('Error joining group:', error);
@@ -231,7 +171,7 @@ class StudyGroupsService {
 
       if (error) throw error;
 
-      logger.info(`User left group: ${groupId}`);
+      logger.info(`User ${userId} left group ${groupId}`);
       return { success: true };
     } catch (error) {
       logger.error('Error leaving group:', error);
@@ -251,27 +191,16 @@ class StudyGroupsService {
           attachment_url: attachmentUrl,
           resource_type: resourceType
         })
-        .select()
+        .select(`
+          *,
+          author:user_profiles!author_id(id, full_name, avatar_url)
+        `)
         .single();
 
       if (error) throw error;
 
-      // Get author info
-      const { data: author } = await supabase
-        .from('user_profiles')
-        .select('id, name, avatar_url')
-        .eq('id', authorId)
-        .single();
-
-      // Increment contribution score
-      await supabase
-        .from('study_group_members')
-        .update({ contribution_score: supabase.raw('contribution_score + 1') })
-        .eq('group_id', groupId)
-        .eq('user_id', authorId);
-
-      logger.info(`Post created in group: ${post.id}`);
-      return { success: true, post: { ...post, author } };
+      logger.info(`Post created in group ${groupId}: ${post.id}`);
+      return { success: true, data: post };
     } catch (error) {
       logger.error('Error posting in group:', error);
       return { success: false, error: error.message };
@@ -285,19 +214,23 @@ class StudyGroupsService {
 
       const { data, error } = await supabase
         .from('study_groups')
-        .select('*')
+        .select(`
+          *,
+          creator:user_profiles!creator_id(id, full_name, avatar_url),
+          member_count:study_group_members(count)
+        `)
         .eq('center_id', centerId)
-        .eq('is_public', true)
         .or(`name.ilike.%${query}%,description.ilike.%${query}%,subject.ilike.%${query}%`)
-        .order('member_count', { ascending: false })
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
       if (error) throw error;
 
-      return { success: true, groups: data };
+      return { success: true, data: data || [] };
     } catch (error) {
       logger.error('Error searching groups:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, data: [] };
     }
   }
 }

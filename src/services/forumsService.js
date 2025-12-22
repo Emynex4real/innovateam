@@ -6,19 +6,26 @@ import { API_BASE_URL } from '../config/api';
  */
 
 class ForumsService {
+  static getToken() {
+    return localStorage.getItem('authToken') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+  }
+
+  static getHeaders() {
+    return {
+      'Authorization': `Bearer ${this.getToken()}`,
+      'Content-Type': 'application/json',
+    };
+  }
+
   static async getCategories(centerId) {
-    // ✅ FIX: Guard clause
     if (!centerId || centerId === 'undefined' || centerId === 'null') {
       return { success: false, data: [], error: 'Center ID not provided' };
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/phase2/forums/categories/${centerId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/phase2/forums/categories/${centerId}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -38,7 +45,6 @@ class ForumsService {
   }
 
   static async getThreads(categoryId, page = 1, limit = 20) {
-    // ✅ FIX: Guard clause
     if (!categoryId || categoryId === 'undefined') return { success: false, data: [] };
 
     try {
@@ -48,13 +54,10 @@ class ForumsService {
       });
 
       const response = await fetch(
-        `${API_BASE_URL}/phase2/forums/categories/${categoryId}/threads?${query}`,
+        `${API_BASE_URL}/api/phase2/forums/categories/${categoryId}/threads?${query}`,
         {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            'Content-Type': 'application/json',
-          },
+          headers: this.getHeaders(),
         }
       );
 
