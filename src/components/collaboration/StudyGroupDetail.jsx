@@ -150,7 +150,7 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
             <div className="member-list-placeholder">
               <div className="member-row">
                 <div className="member-dot"></div>
-                <span>{group.members?.[0]?.count || 1} Members joined</span>
+                <span>{group.memberCount || 1} Members joined</span>
               </div>
             </div>
           </div>
