@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import supabase from '../config/supabase';
 import NotificationCenter from './NotificationCenter';
 import {
@@ -31,6 +32,7 @@ const EducationalSidebar = ({ children }) => {
   const sidebarRef = useRef(null);
   
   const { user, signOut } = useAuth();
+  const { unreadCount } = useUnreadMessages();
   const walletBalance = 0; // In a real app, fetch from context
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
@@ -75,6 +77,18 @@ const EducationalSidebar = ({ children }) => {
         { label: 'Practice Questions', path: '/dashboard/practice-questions' },
         { label: 'Performance Analytics', path: '/dashboard/analytics' },
         { label: 'Leaderboard', path: '/dashboard/leaderboard' }
+      ]
+    },
+    {
+      id: 'collaboration',
+      label: 'Collaboration',
+      icon: LightBulbIcon,
+      isGroup: true,
+      children: [
+        { label: 'Messages', path: '/student/messaging' },
+        { label: 'Forums', path: '/student/forums' },
+        { label: 'Study Groups', path: '/student/study-groups' },
+        { label: 'Tutoring', path: '/student/tutoring' }
       ]
     },
     { id: 'tutorial-center', label: 'Tutorial Center', icon: LightBulbIcon, path: '/tutor' },

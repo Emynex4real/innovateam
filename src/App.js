@@ -63,6 +63,12 @@ import ReviewAnswers from './pages/student/tutorial-center/ReviewAnswers';
 import StudentAnalytics from './pages/student/analytics/MyAnalytics';
 import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
 
+// Phase 2 Collaboration Pages
+import Messaging from './pages/student/Messaging';
+import Forums from './pages/student/Forums';
+import StudyGroups from './pages/student/StudyGroups';
+import TutoringMarketplace from './pages/student/TutoringMarketplace';
+
 import supabase from './config/supabase';
 
 console.log('✅ Supabase configured and ready');
@@ -312,6 +318,12 @@ function App() {
             <Route path="/student/results/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><Results /></RoleProtectedRoute>} />
             <Route path="/student/review/:attemptId" element={<RoleProtectedRoute allowedRoles={['student']}><ReviewAnswers /></RoleProtectedRoute>} />
             <Route path="/student/analytics/:centerId" element={<RoleProtectedRoute allowedRoles={['student']}><StudentAnalytics /></RoleProtectedRoute>} />
+            
+            {/* Phase 2 Collaboration & Communication Routes - Only accessible by students */}
+            <Route path="/student/messaging" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><Messaging /></EducationalSidebar></RoleProtectedRoute>} />
+            <Route path="/student/forums" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><Forums /></EducationalSidebar></RoleProtectedRoute>} />
+            <Route path="/student/study-groups" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><StudyGroups /></EducationalSidebar></RoleProtectedRoute>} />
+            <Route path="/student/tutoring" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><TutoringMarketplace /></EducationalSidebar></RoleProtectedRoute>} />
             
             {/* Tutor Analytics Route */}
             <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorAnalyticsDashboard /></RoleProtectedRoute>} />
