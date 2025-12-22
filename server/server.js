@@ -33,7 +33,7 @@ const tcAttemptsRoutes = require('./routes/tcAttempts.routes');
 
 // Phase 1 & 2 routes
 const subscriptionRoutes = require('./routes/subscription.routes');
-const messagingRoutes = require('./routes/messaging.routes');
+const messagingRoutes = require('./routes/messaging.routes'); // Ensure this file exists
 const analyticsRoutes = require('./routes/analytics.routes');
 const gamificationRoutes = require('./routes/gamification.routes');
 const phase2Routes = require('./routes/phase2Routes');
@@ -304,15 +304,25 @@ app.use('/api/tc-attempts', tcAttemptsRoutes);
 
 // Phase 1 routes
 app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/messages', messagingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/gamification', gamificationRoutes);
 
-// Phase 2: Collaboration & Communication routes
+// ============================================
+// 12. MESSAGING ROUTE FIX (CRITICAL)
+// ============================================
+// 1. Mount at /api/messages (Standard)
+app.use('/api/messages', messagingRoutes);
+
+// 2. Mount at /phase2/messaging (Fixes your Frontend 404)
+// The frontend requests http://localhost:5000/phase2/messaging/conversations
+// This bypasses the /api prefix, so we handle it explicitly here.
+app.use('/phase2/messaging', messagingRoutes);
+
+// 3. Keep Phase 2 general route
 app.use('/api/phase2', phase2Routes);
 
 // ============================================
-// 12. ERROR HANDLING
+// 13. ERROR HANDLING
 // ============================================
 
 app.use((req, res) => {
@@ -326,7 +336,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // ============================================
-// 13. SERVER STARTUP
+// 14. SERVER STARTUP
 // ============================================
 
 const PORT = process.env.PORT || 5000;
@@ -353,7 +363,7 @@ app.listen(PORT, HOST, () => {
 });
 
 // ============================================
-// 14. GRACEFUL SHUTDOWN
+// 15. GRACEFUL SHUTDOWN
 // ============================================
 
 process.on('SIGTERM', () => {

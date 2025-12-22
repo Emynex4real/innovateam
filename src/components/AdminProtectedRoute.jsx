@@ -19,13 +19,20 @@ const AdminProtectedRoute = ({ children }) => {
       }
 
       try {
+        // First check metadata (fast)
+        if (user.user_metadata?.role === 'admin') {
+           setIsAdmin(true);
+           setChecking(false);
+           return;
+        }
+
+        // Then check database (secure)
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('is_admin, role')
           .eq('id', user.id)
           .single();
 
-        // Check is_admin flag OR role === 'admin' for backward compatibility
         if (!profile || (!profile.is_admin && profile.role !== 'admin')) {
           navigate('/dashboard', { replace: true });
           return;

@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../App';
-import apiService from '../services/api.service';
-import WalletService from '../services/wallet.service';
-import supabaseWalletService from '../services/supabaseWallet.service';
 import cleanWalletService from '../services/cleanWallet.service';
+import simpleWalletService from '../services/simpleWallet.service'; // Static import is better
 
 const WalletContext = createContext();
 
@@ -19,16 +17,16 @@ export const WalletProvider = ({ children }) => {
     
     try {
       setIsFetching(true);
-      setLoading(true);
+      // Only show global loading on first fetch if needed, 
+      // otherwise we just update in background
+      if (transactions.length === 0) setLoading(true);
       
       const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
       
       if (!currentUser.id) {
-        console.warn('No user ID found');
+        // console.warn('No user ID found during wallet fetch');
         return;
       }
-      
-      const simpleWalletService = (await import('../services/simpleWallet.service')).default;
       
       // Get user balance from Supabase user_profiles table
       const balanceResult = await simpleWalletService.getUserBalance(currentUser.id);
@@ -40,7 +38,7 @@ export const WalletProvider = ({ children }) => {
       const result = await simpleWalletService.getAllTransactions();
       
       if (result.success) {
-        // Filter transactions for current user by user_id (more reliable than email)
+        // Filter transactions for current user by user_id
         const userTransactions = result.transactions
           .filter(t => t.user_id === currentUser.id)
           .map(t => ({
@@ -60,8 +58,7 @@ export const WalletProvider = ({ children }) => {
 
     } catch (error) {
       console.error('Failed to fetch wallet data:', error);
-      setWalletBalance(0);
-      setTransactions([]);
+      // Don't zero out data on error, keep previous state if available
     } finally {
       setLoading(false);
       setIsFetching(false);
@@ -92,7 +89,7 @@ export const WalletProvider = ({ children }) => {
       throw new Error('Funding failed');
     } catch (error) {
       console.error('❌ Wallet funding failed:', error.message);
-      throw error; // Don't use fallback, ensure Supabase integration works
+      throw error;
     }
   };
 
@@ -100,8 +97,25 @@ export const WalletProvider = ({ children }) => {
     if (!user?.id) return null;
 
     try {
-      const result = await WalletService.getTransactionStats(user.id, days);
-      return result.success ? result.stats : null;
+      // Simple stats calculation from existing transactions
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      
+      const recentTransactions = transactions.filter(
+        tx => new Date(tx.date) >= cutoffDate
+      );
+      
+      const stats = {
+        totalTransactions: recentTransactions.length,
+        totalCredits: recentTransactions
+          .filter(tx => tx.type === 'credit')
+          .reduce((sum, tx) => sum + tx.amount, 0),
+        totalDebits: recentTransactions
+          .filter(tx => tx.type === 'debit')
+          .reduce((sum, tx) => sum + tx.amount, 0)
+      };
+      
+      return stats;
     } catch (error) {
       console.error('Failed to get transaction stats:', error);
       return null;
@@ -127,7 +141,6 @@ export const WalletProvider = ({ children }) => {
         await fetchWalletData();
         return result;
       }
-      
       
       throw new Error('Service payment failed');
     } catch (error) {
@@ -182,11 +195,12 @@ export const WalletProvider = ({ children }) => {
     return transactions.filter(tx => tx.category === type || tx.type === type);
   };
 
+  // Fetch data when authentication state changes
   useEffect(() => {
-    fetchWalletData();
+    if (isAuthenticated) {
+      fetchWalletData();
+    }
   }, [isAuthenticated]);
-
-
   
   return (
     <WalletContext.Provider

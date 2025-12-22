@@ -1,71 +1,145 @@
 const supabase = require('../supabaseClient');
+const { logger } = require('../utils/logger');
 
 const messagingService = {
-  // Send message
-  async sendMessage(senderId, receiverId, messageText, centerId = null, attachments = []) {
-    const { data, error } = await supabase
-      .from('messages')
-      .insert({
-        sender_id: senderId,
-        receiver_id: receiverId,
-        center_id: centerId,
-        message_text: messageText,
-        attachments
-      })
-      .select()
-      .single();
+  // 1. Send message (FIXED: Auto-detects receiver if missing)
+  async sendMessage(senderId, receiverId, messageText, conversationId = null, attachments = []) {
+    try {
+      // FIX: If we have a conversationId but NO receiverId, find the receiver from the DB
+      if (conversationId && !receiverId) {
+        const { data: conv, error: convError } = await supabase
+            .from('conversations')
+            .select('participant_1_id, participant_2_id')
+            .eq('id', conversationId)
+            .single();
+        
+        if (!convError && conv) {
+            // The receiver is the participant who is NOT the sender
+            receiverId = (conv.participant_1_id === senderId) 
+                ? conv.participant_2_id 
+                : conv.participant_1_id;
+        }
+      }
 
-    if (error) throw error;
+      // 2. If still no conversationId, try to find one by participants or create new
+      if (!conversationId) {
+         if (!receiverId) throw new Error("Cannot send message: Receiver ID missing");
+         
+         // Check for existing conversation
+         const { data: existingConv } = await supabase
+            .from('conversations')
+            .select('id')
+            .or(`and(participant_1_id.eq.${senderId},participant_2_id.eq.${receiverId}),and(participant_1_id.eq.${receiverId},participant_2_id.eq.${senderId})`)
+            .maybeSingle();
+         
+         if (existingConv) {
+             conversationId = existingConv.id;
+         } else {
+             // Create new conversation
+             const { data: newConv, error: createError } = await supabase
+                .from('conversations')
+                .insert({
+                    participant_1_id: senderId,
+                    participant_2_id: receiverId,
+                    updated_at: new Date()
+                })
+                .select()
+                .single();
+                
+             if (createError) throw createError;
+             conversationId = newConv.id;
+         }
+      }
 
-    // Create notification for receiver
-    await supabase.from('notifications').insert({
-      user_id: receiverId,
-      type: 'message',
-      title: 'New Message',
-      content: `You have a new message`,
-      action_url: `/messages/${senderId}`
-    });
+      // Safety check: We must have both IDs now
+      if (!conversationId || !receiverId) {
+          throw new Error("Failed to resolve conversation or receiver.");
+      }
 
-    return { success: true, message: data };
+      // 3. Insert Message
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: senderId,
+          receiver_id: receiverId,
+          message_text: messageText,
+          created_at: new Date()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 4. Update Conversation Metadata
+      await supabase
+        .from('conversations')
+        .update({
+            last_message: messageText,
+            last_message_at: new Date(),
+            updated_at: new Date()
+        })
+        .eq('id', conversationId);
+
+      // 5. Create Notification
+      await supabase.from('notifications').insert({
+        user_id: receiverId,
+        type: 'message',
+        title: 'New Message',
+        content: 'You have a new message',
+        action_url: `/messages`
+      });
+
+      return { success: true, message: data };
+    } catch (error) {
+      logger.error('Service sendMessage error:', error);
+      throw error;
+    }
   },
 
-  // Get conversations
+  // 2. Get conversations
   async getConversations(userId) {
     const { data, error } = await supabase
-      .from('messages')
-      .select('sender_id, receiver_id, message_text, sent_at, is_read')
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-      .order('sent_at', { ascending: false });
+      .from('conversations')
+      .select(`
+        *,
+        p1:user_profiles!participant_1_id(id, full_name, avatar_url), 
+        p2:user_profiles!participant_2_id(id, full_name, avatar_url)
+      `)
+      .or(`participant_1_id.eq.${userId},participant_2_id.eq.${userId}`)
+      .order('updated_at', { ascending: false });
 
     if (error) throw error;
 
-    // Group by conversation partner
-    const conversations = {};
-    data.forEach(msg => {
-      const partnerId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
-      if (!conversations[partnerId]) {
-        conversations[partnerId] = {
-          partnerId,
-          lastMessage: msg.message_text,
-          lastMessageTime: msg.sent_at,
-          unreadCount: 0
+    const formattedConversations = data.map(conv => {
+        const isP1 = conv.participant_1_id === userId;
+        const otherUser = isP1 ? conv.p2 : conv.p1;
+        
+        return {
+            id: conv.id,
+            partnerId: otherUser?.id,
+            partnerName: otherUser?.full_name || 'Unknown User',
+            partnerAvatar: otherUser?.avatar_url || null, 
+            lastMessage: conv.last_message,
+            lastMessageTime: conv.last_message_at,
+            unreadCount: isP1 ? conv.participant_1_unread : conv.participant_2_unread,
+            other_user: otherUser // Raw object for frontend flexbility
         };
-      }
-      if (msg.receiver_id === userId && !msg.is_read) {
-        conversations[partnerId].unreadCount++;
-      }
     });
 
-    return { success: true, conversations: Object.values(conversations) };
+    return { success: true, conversations: formattedConversations };
   },
 
-  // Get messages with specific user
-  async getMessages(userId, partnerId, limit = 50) {
+  // 3. Get messages
+  async getMessages(userId, conversationId, limit = 50) {
     const { data, error } = await supabase
       .from('messages')
-      .select('*')
-      .or(`and(sender_id.eq.${userId},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${userId})`)
-      .order('sent_at', { ascending: false })
+      .select(`
+        *,
+        sender:user_profiles!sender_id(full_name, avatar_url)
+      `)
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false }) // ensure correct column name
       .limit(limit);
 
     if (error) throw error;
@@ -74,14 +148,14 @@ const messagingService = {
     await supabase
       .from('messages')
       .update({ is_read: true, read_at: new Date() })
+      .eq('conversation_id', conversationId)
       .eq('receiver_id', userId)
-      .eq('sender_id', partnerId)
       .eq('is_read', false);
 
     return { success: true, messages: data.reverse() };
   },
 
-  // Create announcement
+  // 4. Create Announcement
   async createAnnouncement(tutorId, centerId, title, content, priority = 'medium', expiresAt = null) {
     const { data, error } = await supabase
       .from('announcements')
@@ -98,27 +172,27 @@ const messagingService = {
 
     if (error) throw error;
 
-    // Get all students in center
+    // Notify students
     const { data: students } = await supabase
       .from('tc_enrollments')
       .select('student_id')
       .eq('center_id', centerId);
 
-    // Create notifications for all students
-    const notifications = students.map(s => ({
-      user_id: s.student_id,
-      type: 'announcement',
-      title: `New Announcement: ${title}`,
-      content: content.substring(0, 100),
-      action_url: `/announcements/${data.id}`
-    }));
-
-    await supabase.from('notifications').insert(notifications);
+    if (students && students.length > 0) {
+        const notifications = students.map(s => ({
+          user_id: s.student_id,
+          type: 'announcement',
+          title: `New Announcement: ${title}`,
+          content: content.substring(0, 100),
+          action_url: `/announcements/${data.id}`
+        }));
+        await supabase.from('notifications').insert(notifications);
+    }
 
     return { success: true, announcement: data };
   },
 
-  // Get announcements
+  // 5. Get Announcements
   async getAnnouncements(centerId) {
     const { data, error } = await supabase
       .from('announcements')
@@ -132,7 +206,7 @@ const messagingService = {
     return { success: true, announcements: data };
   },
 
-  // Get notifications
+  // 6. Get Notifications
   async getNotifications(userId, limit = 20) {
     const { data, error } = await supabase
       .from('notifications')
@@ -143,11 +217,11 @@ const messagingService = {
 
     if (error) throw error;
 
-    const unreadCount = data.filter(n => !n.is_read).length;
-    return { success: true, notifications: data, unreadCount };
+    const unreadCount = data ? data.filter(n => !n.is_read).length : 0;
+    return { success: true, notifications: data || [], unreadCount };
   },
 
-  // Mark notification as read
+  // 7. Mark Notification Read
   async markNotificationRead(notificationId) {
     const { error } = await supabase
       .from('notifications')
@@ -158,7 +232,7 @@ const messagingService = {
     return { success: true };
   },
 
-  // Mark all notifications as read
+  // 8. Mark All Notifications Read
   async markAllNotificationsRead(userId) {
     const { error } = await supabase
       .from('notifications')

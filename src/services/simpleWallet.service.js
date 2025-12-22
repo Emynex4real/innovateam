@@ -1,12 +1,16 @@
 import supabase from '../config/supabase';
 
 class SimpleWalletService {
+  /**
+   * Add a transaction and update wallet balance
+   */
   async addTransaction(userEmail, amount, description, type = 'credit') {
     try {
-      // Get current user from localStorage
-      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      // Get current user from localStorage or Supabase session
+      const confirmedUser = localStorage.getItem('confirmedUser');
+      const currentUser = confirmedUser ? JSON.parse(confirmedUser) : null;
       
-      if (!currentUser.id) {
+      if (!currentUser?.id) {
         throw new Error('User not authenticated');
       }
 
@@ -18,12 +22,12 @@ class SimpleWalletService {
           .eq('id', currentUser.id)
           .single();
 
-        if (!userProfile || userProfile.wallet_balance < amount) {
+        if (!userProfile || (userProfile.wallet_balance || 0) < amount) {
           throw new Error(`Insufficient balance. Available: ₦${userProfile?.wallet_balance || 0}`);
         }
       }
 
-      // Add transaction
+      // 1. Add transaction record
       const { data, error } = await supabase
         .from('transactions')
         .insert({
@@ -39,7 +43,7 @@ class SimpleWalletService {
 
       if (error) throw error;
 
-      // Update user wallet balance
+      // 2. Get current balance to calculate new balance
       const { data: currentProfile } = await supabase
         .from('user_profiles')
         .select('wallet_balance')
@@ -50,6 +54,7 @@ class SimpleWalletService {
         ? (currentProfile.wallet_balance || 0) + amount
         : (currentProfile.wallet_balance || 0) - amount;
 
+      // 3. Update user wallet balance
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ 
@@ -60,6 +65,7 @@ class SimpleWalletService {
 
       if (updateError) {
         console.warn('Balance update failed:', updateError);
+        // Note: In a production app, you might want to rollback the transaction here
       }
 
       return { success: true, transaction: data, newBalance };
@@ -69,6 +75,9 @@ class SimpleWalletService {
     }
   }
 
+  /**
+   * Get all transactions (filtered by user in the Context/UI layer or RLS)
+   */
   async getAllTransactions() {
     try {
       const { data, error } = await supabase
@@ -83,6 +92,9 @@ class SimpleWalletService {
     }
   }
 
+  /**
+   * Get specific user balance
+   */
   async getUserBalance(userId) {
     try {
       const { data, error } = await supabase

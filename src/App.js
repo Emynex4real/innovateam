@@ -3,9 +3,9 @@ import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { WalletProvider } from './contexts/WalletContext';
-import { sendConfirmationEmail } from './services/emailService';
-import adminService from './services/admin.service';
 import emailService from './services/email/emailService';
+
+// Pages
 import Home from './pages/Home';
 import Login from './pages/login';
 import Register from './pages/register';
@@ -18,7 +18,12 @@ import Profile from './pages/profile';
 import Wallet from './pages/wallet';
 import Transactions from './pages/transactions';
 import Support from './pages/support';
-import AIExaminer from './pages/ai examiner'; // Ensure folder name matches exactly in your project
+import AIExaminer from './pages/ai examiner';
+import EmailConfirmation from './pages/email-confirmation';
+import ForgotPassword from './pages/forgot-password';
+import ResetPassword from './pages/reset-password';
+
+// JAMB Services & Result Checkers
 import OLevelUploadExisting from './pages/jamb services/olevel upload';
 import WaecResultChecker from './pages/result checker/waec result checker';
 import NecoResultChecker from './pages/result checker/neco result checker';
@@ -29,28 +34,17 @@ import AdmissionLetter from './pages/jamb services/admission letter';
 import OriginalResult from './pages/jamb services/original result';
 import PinVending from './pages/jamb services/pin vending';
 import Reprinting from './pages/jamb services/reprinting';
+
+// Components
 import EducationalSidebar from './components/EducationalSidebar';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import EmailConfirmation from './pages/email-confirmation';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
-import RoleProtectedRoute from './components/RoleProtectedRoute';
+import RoleProtectedRoute from './components/RoleProtectedRoute'; // Ensure this exists
+
+// Student Pages
 import PracticeQuestions from './pages/student/PracticeQuestions';
 import PerformanceAnalytics from './pages/student/PerformanceAnalytics';
 import Leaderboard from './pages/student/Leaderboard';
-import ForgotPassword from './pages/forgot-password';
-import ResetPassword from './pages/reset-password';
-
-// Tutor pages
-import TutorDashboard from './pages/tutor/Dashboard';
-import TutorQuestions from './pages/tutor/Questions';
-import AIGenerator from './pages/tutor/AIGenerator';
-import TestBuilder from './pages/tutor/TestBuilder';
-import Tests from './pages/tutor/Tests';
-import Students from './pages/tutor/Students';
-import TutorLeaderboard from './pages/tutor/Leaderboard';
-
-// Student Tutorial Center pages
 import JoinCenter from './pages/student/tutorial-center/JoinCenter';
 import MyCenters from './pages/student/tutorial-center/MyCenters';
 import StudentTests from './pages/student/tutorial-center/Tests';
@@ -58,16 +52,22 @@ import PublicTests from './pages/student/tutorial-center/PublicTests';
 import TakeTest from './pages/student/tutorial-center/TakeTest';
 import Results from './pages/student/tutorial-center/Results';
 import ReviewAnswers from './pages/student/tutorial-center/ReviewAnswers';
-
-// Phase 1 Analytics Pages
 import StudentAnalytics from './pages/student/analytics/MyAnalytics';
-import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
-
-// Phase 2 Collaboration Pages
 import Messaging from './pages/student/Messaging';
 import Forums from './pages/student/Forums';
 import StudyGroups from './pages/student/StudyGroups';
 import TutoringMarketplace from './pages/student/TutoringMarketplace';
+
+// Tutor & Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import TutorDashboard from './pages/tutor/Dashboard';
+import TutorQuestions from './pages/tutor/Questions';
+import AIGenerator from './pages/tutor/AIGenerator';
+import TestBuilder from './pages/tutor/TestBuilder';
+import Tests from './pages/tutor/Tests';
+import Students from './pages/tutor/Students';
+import TutorLeaderboard from './pages/tutor/Leaderboard';
+import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
 
 import supabase from './config/supabase';
 
@@ -89,8 +89,7 @@ const SupabaseAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    
-    // Also check for confirmed user in localStorage for custom email flow
+    // Check for confirmed user in localStorage
     const confirmedUser = localStorage.getItem('confirmedUser');
     if (confirmedUser) {
       const userData = JSON.parse(confirmedUser);
@@ -104,12 +103,12 @@ const SupabaseAuthProvider = ({ children }) => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        // Store user data properly
         const userData = {
           id: session.user.id,
           email: session.user.email,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-          user_metadata: session.user.user_metadata
+          user_metadata: session.user.user_metadata,
+          role: session.user.user_metadata?.role // Ensure role is top level for easier access
         };
         localStorage.setItem('confirmedUser', JSON.stringify(userData));
         setUser(session.user);
@@ -119,8 +118,6 @@ const SupabaseAuthProvider = ({ children }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, session?.user?.email_confirmed_at);
-      
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
       } else if (event === 'SIGNED_OUT') {
@@ -152,7 +149,6 @@ const SupabaseAuthProvider = ({ children }) => {
       
       if (error) throw error;
       
-      // Create user profile with role flags
       if (data.user) {
         const isStudent = !userData?.role || userData?.role === 'student';
         await supabase.from('user_profiles').insert({
@@ -167,17 +163,6 @@ const SupabaseAuthProvider = ({ children }) => {
           status: 'active'
         });
         
-        const userToStore = {
-          id: data.user.id,
-          email: data.user.email,
-          name: userData?.fullName,
-          role: userData?.role || 'student',
-          user_metadata: data.user.user_metadata,
-          email_confirmed_at: data.user.email_confirmed_at
-        };
-        localStorage.setItem('confirmedUser', JSON.stringify(userToStore));
-        
-        // Send welcome email
         emailService.sendWelcomeEmail(email, userData?.fullName || email.split('@')[0]);
       }
       
@@ -193,7 +178,6 @@ const SupabaseAuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     setLoading(true);
     try {
-      // Import and use the secure authentication service
       const supabaseAuthService = (await import('./services/supabaseAuth.service')).default;
       const result = await supabaseAuthService.login({ email, password });
       
@@ -218,10 +202,7 @@ const SupabaseAuthProvider = ({ children }) => {
       localStorage.removeItem('wallet_balance');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      
-      const { error } = await supabase.auth.signOut();
-      if (error) console.warn('Supabase signout error:', error);
-      
+      await supabase.auth.signOut();
       return { success: true };
     } catch (error) {
       console.error('SignOut error:', error);
@@ -240,15 +221,7 @@ const SupabaseAuthProvider = ({ children }) => {
     }
   };
 
-  const value = {
-    user,
-    loading,
-    signUp,
-    signIn,
-    signOut,
-    resetPassword,
-    isAuthenticated: !!user
-  };
+  const value = { user, loading, signUp, signIn, signOut, resetPassword, isAuthenticated: !!user };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -259,79 +232,89 @@ function App() {
       <SupabaseAuthProvider>
         <WalletProvider>
           <div className="App">
-            {/* ✅ FIXED: Added Toaster here so alerts show up! */}
             <Toaster position="top-right" /> 
             
             <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/email-confirmation" element={<EmailConfirmation />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/course-advisor" element={<CourseAdvisor />} />
-            <Route path="/question-generator" element={<QuestionGenerator />} />
-            <Route path="/dashboard" element={<ProtectedRoute><EducationalSidebar><Dashboard /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/profile" element={<ProtectedRoute><EducationalSidebar><Profile /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/wallet" element={<ProtectedRoute><EducationalSidebar><Wallet /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/transactions" element={<ProtectedRoute><EducationalSidebar><Transactions /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/support" element={<ProtectedRoute><EducationalSidebar><Support /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/ai-examiner" element={<ProtectedRoute><EducationalSidebar><AIExaminer /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/course-advisor" element={<ProtectedRoute><EducationalSidebar><CourseAdvisor /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/buy-olevel-upload" element={<ProtectedRoute><EducationalSidebar><OLevelUploadExisting /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/buy-admission-letter" element={<ProtectedRoute><EducationalSidebar><AdmissionLetter /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/buy-original-result" element={<ProtectedRoute><EducationalSidebar><OriginalResult /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/buy-pin-vending" element={<ProtectedRoute><EducationalSidebar><PinVending /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/reprinting-jamb-caps" element={<ProtectedRoute><EducationalSidebar><Reprinting /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/scratch-card/waec-checker" element={<ProtectedRoute><EducationalSidebar><WaecResultChecker /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/scratch-card/neco-checker" element={<ProtectedRoute><EducationalSidebar><NecoResultChecker /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/scratch-card/nbais-checker" element={<ProtectedRoute><EducationalSidebar><NbaisResultChecker /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/scratch-card/nabteb-checker" element={<ProtectedRoute><EducationalSidebar><NabtebResultChecker /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/scratch-card/waec-gce" element={<ProtectedRoute><EducationalSidebar><WaecGceChecker /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/practice-questions" element={<ProtectedRoute><EducationalSidebar><PracticeQuestions /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/analytics" element={<ProtectedRoute><EducationalSidebar><PerformanceAnalytics /></EducationalSidebar></ProtectedRoute>} />
-            <Route path="/dashboard/leaderboard" element={<ProtectedRoute><EducationalSidebar><Leaderboard /></EducationalSidebar></ProtectedRoute>} />
-            {/* Legacy routes for backward compatibility */}
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/transactions" element={<Transactions />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/ai-examiner" element={<AIExaminer />} />
-            {/* Tutor Routes - Accessible by tutors and admins */}
-            <Route path="/tutor" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorDashboard /></RoleProtectedRoute>} />
-            <Route path="/tutor/dashboard" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorDashboard /></RoleProtectedRoute>} />
-            <Route path="/tutor/questions" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorQuestions /></RoleProtectedRoute>} />
-            <Route path="/tutor/questions/generate" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AIGenerator /></RoleProtectedRoute>} />
-            <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Tests /></RoleProtectedRoute>} />
-            <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestBuilder /></RoleProtectedRoute>} />
-            <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Students /></RoleProtectedRoute>} />
-            <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorLeaderboard /></RoleProtectedRoute>} />
-            
-            {/* Student Tutorial Center Routes - Only accessible by students */}
-            <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><MyCenters /></RoleProtectedRoute>} />
-            <Route path="/student/centers/join" element={<RoleProtectedRoute allowedRoles={['student']}><JoinCenter /></RoleProtectedRoute>} />
-            <Route path="/student/tests" element={<RoleProtectedRoute allowedRoles={['student']}><StudentTests /></RoleProtectedRoute>} />
-            <Route path="/student/tests/public" element={<RoleProtectedRoute allowedRoles={['student']}><PublicTests /></RoleProtectedRoute>} />
-            <Route path="/student/test/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><TakeTest /></RoleProtectedRoute>} />
-            <Route path="/student/results/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><Results /></RoleProtectedRoute>} />
-            <Route path="/student/review/:attemptId" element={<RoleProtectedRoute allowedRoles={['student']}><ReviewAnswers /></RoleProtectedRoute>} />
-            <Route path="/student/analytics/:centerId" element={<RoleProtectedRoute allowedRoles={['student']}><StudentAnalytics /></RoleProtectedRoute>} />
-            
-            {/* Phase 2 Collaboration & Communication Routes - Only accessible by students */}
-            <Route path="/student/messaging" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><Messaging /></EducationalSidebar></RoleProtectedRoute>} />
-            <Route path="/student/forums" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><Forums /></EducationalSidebar></RoleProtectedRoute>} />
-            <Route path="/student/study-groups" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><StudyGroups /></EducationalSidebar></RoleProtectedRoute>} />
-            <Route path="/student/tutoring" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><TutoringMarketplace /></EducationalSidebar></RoleProtectedRoute>} />
-            
-            {/* Tutor Analytics Route */}
-            <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorAnalyticsDashboard /></RoleProtectedRoute>} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-            <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-            <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/email-confirmation" element={<EmailConfirmation />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/course-advisor" element={<CourseAdvisor />} />
+              <Route path="/question-generator" element={<QuestionGenerator />} />
+
+              {/* General Protected Routes */}
+              <Route path="/dashboard" element={<ProtectedRoute><EducationalSidebar><Dashboard /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/profile" element={<ProtectedRoute><EducationalSidebar><Profile /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/wallet" element={<ProtectedRoute><EducationalSidebar><Wallet /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/transactions" element={<ProtectedRoute><EducationalSidebar><Transactions /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/support" element={<ProtectedRoute><EducationalSidebar><Support /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/ai-examiner" element={<ProtectedRoute><EducationalSidebar><AIExaminer /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/course-advisor" element={<ProtectedRoute><EducationalSidebar><CourseAdvisor /></EducationalSidebar></ProtectedRoute>} />
+              
+              {/* JAMB Services */}
+              <Route path="/dashboard/buy-olevel-upload" element={<ProtectedRoute><EducationalSidebar><OLevelUploadExisting /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/buy-admission-letter" element={<ProtectedRoute><EducationalSidebar><AdmissionLetter /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/buy-original-result" element={<ProtectedRoute><EducationalSidebar><OriginalResult /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/buy-pin-vending" element={<ProtectedRoute><EducationalSidebar><PinVending /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/reprinting-jamb-caps" element={<ProtectedRoute><EducationalSidebar><Reprinting /></EducationalSidebar></ProtectedRoute>} />
+              
+              {/* Result Checkers */}
+              <Route path="/dashboard/scratch-card/waec-checker" element={<ProtectedRoute><EducationalSidebar><WaecResultChecker /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/scratch-card/neco-checker" element={<ProtectedRoute><EducationalSidebar><NecoResultChecker /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/scratch-card/nbais-checker" element={<ProtectedRoute><EducationalSidebar><NbaisResultChecker /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/scratch-card/nabteb-checker" element={<ProtectedRoute><EducationalSidebar><NabtebResultChecker /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/scratch-card/waec-gce" element={<ProtectedRoute><EducationalSidebar><WaecGceChecker /></EducationalSidebar></ProtectedRoute>} />
+              
+              {/* Student Specific Routes */}
+              <Route path="/dashboard/practice-questions" element={<ProtectedRoute><EducationalSidebar><PracticeQuestions /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/analytics" element={<ProtectedRoute><EducationalSidebar><PerformanceAnalytics /></EducationalSidebar></ProtectedRoute>} />
+              <Route path="/dashboard/leaderboard" element={<ProtectedRoute><EducationalSidebar><Leaderboard /></EducationalSidebar></ProtectedRoute>} />
+              
+              {/* Legacy Routes */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/transactions" element={<Transactions />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/ai-examiner" element={<AIExaminer />} />
+
+              {/* Tutor Routes (Accessible by Tutor and Admin) */}
+              <Route path="/tutor" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorDashboard /></RoleProtectedRoute>} />
+              <Route path="/tutor/dashboard" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorDashboard /></RoleProtectedRoute>} />
+              <Route path="/tutor/questions" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorQuestions /></RoleProtectedRoute>} />
+              <Route path="/tutor/questions/generate" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AIGenerator /></RoleProtectedRoute>} />
+              <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Tests /></RoleProtectedRoute>} />
+              <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestBuilder /></RoleProtectedRoute>} />
+              <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Students /></RoleProtectedRoute>} />
+              <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorLeaderboard /></RoleProtectedRoute>} />
+              <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorAnalyticsDashboard /></RoleProtectedRoute>} />
+              
+              {/* Student Tutorial Center Routes (Students only) */}
+              <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><MyCenters /></RoleProtectedRoute>} />
+              <Route path="/student/centers/join" element={<RoleProtectedRoute allowedRoles={['student']}><JoinCenter /></RoleProtectedRoute>} />
+              <Route path="/student/tests" element={<RoleProtectedRoute allowedRoles={['student']}><StudentTests /></RoleProtectedRoute>} />
+              <Route path="/student/tests/public" element={<RoleProtectedRoute allowedRoles={['student']}><PublicTests /></RoleProtectedRoute>} />
+              <Route path="/student/test/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><TakeTest /></RoleProtectedRoute>} />
+              <Route path="/student/results/:testId" element={<RoleProtectedRoute allowedRoles={['student']}><Results /></RoleProtectedRoute>} />
+              <Route path="/student/review/:attemptId" element={<RoleProtectedRoute allowedRoles={['student']}><ReviewAnswers /></RoleProtectedRoute>} />
+              <Route path="/student/analytics/:centerId" element={<RoleProtectedRoute allowedRoles={['student']}><StudentAnalytics /></RoleProtectedRoute>} />
+              
+              {/* Collaboration Routes (Accessible by Students AND Admins) */}
+              {/* This explains your issue: allowedRoles includes 'admin', RoleProtectedRoute must support it */}
+              <Route path="/student/messaging" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><Messaging /></EducationalSidebar></RoleProtectedRoute>} />
+              <Route path="/student/forums" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><Forums /></EducationalSidebar></RoleProtectedRoute>} />
+              <Route path="/student/study-groups" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><StudyGroups /></EducationalSidebar></RoleProtectedRoute>} />
+              <Route path="/student/tutoring" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><TutoringMarketplace /></EducationalSidebar></RoleProtectedRoute>} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+              <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+              
+              <Route path="*" element={<div style={{padding: '20px'}}><h1>Page Not Found</h1></div>} />
             </Routes>
           </div>
         </WalletProvider>

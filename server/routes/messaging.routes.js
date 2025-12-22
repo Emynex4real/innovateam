@@ -3,23 +3,46 @@ const router = express.Router();
 const { authenticate } = require('../middleware/authenticate');
 const messagingController = require('../controllers/messaging.controller');
 
+// Apply authentication middleware to all routes
 router.use(authenticate);
 
-// Messages
-router.post('/send', messagingController.sendMessage);
+// ==========================================
+// MESSAGING ROUTES
+// ==========================================
+
+// 1. Start a new conversation
+router.post('/conversations', messagingController.startConversation);
+
+// 2. Get all conversations list
 router.get('/conversations', messagingController.getConversations);
+
+// 3. ✅ FIX: Get messages for a specific conversation
+// Matches GET /phase2/messaging/conversations/:id
+// We use ':partnerId' here to match the variable name in your existing controller
+router.get('/conversations/:partnerId', messagingController.getMessages);
+
+// 4. Send a message
+router.post('/send', messagingController.sendMessage);
+
+// 5. Direct access fallback (optional, keeps existing functionality)
 router.get('/:partnerId', messagingController.getMessages);
 
-// Announcements
+// ==========================================
+// ANNOUNCEMENT ROUTES
+// ==========================================
 router.post('/announcements', messagingController.createAnnouncement);
 router.get('/announcements/:centerId', messagingController.getAnnouncements);
 
-// Notifications
+// ==========================================
+// NOTIFICATION ROUTES
+// ==========================================
 router.get('/notifications', messagingController.getNotifications);
 router.put('/notifications/:notificationId/read', messagingController.markNotificationRead);
 router.put('/notifications/read-all', messagingController.markAllNotificationsRead);
 
-// Forums
+// ==========================================
+// FORUM ROUTES
+// ==========================================
 router.post('/forums/topics', messagingController.createTopic);
 router.get('/forums/topics/:centerId', messagingController.getTopics);
 router.get('/forums/topic/:topicId', messagingController.getTopic);

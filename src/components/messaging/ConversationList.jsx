@@ -1,128 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import MessagingService from '../../services/messagingService';
-import './ConversationList.css';
 
-/**
- * ConversationList Component
- * Displays all conversations and allows selection
- */
 const ConversationList = ({ selectedConversation, onSelectConversation, onComposeNew }) => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetchConversations();
-    // Refresh every 10 seconds for real-time updates
-    const interval = setInterval(fetchConversations, 10000);
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchConversations = async () => {
-    const result = await MessagingService.getConversations();
-    if (result.success) {
-      setConversations(result.data || []);
-      setError(null);
-    } else {
-      setError(result.error);
+  const fetchData = async () => {
+    const res = await MessagingService.getConversations();
+    if (res.success) {
+      setConversations(res.conversations || []);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const formatLastMessage = (conversation) => {
-    if (!conversation.last_message) return 'No messages yet';
+  const filtered = conversations.filter(c => {
+    const name = c.partnerName || c.other_user?.full_name || c.other_user?.email || '';
+    return name.toLowerCase().includes(search.toLowerCase());
+  });
 
-    let preview = conversation.last_message;
-    if (preview.length > 50) {
-      preview = preview.substring(0, 50) + '...';
-    }
-    return preview;
-  };
-
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  if (loading) {
-    return <div className="conversation-list loading">Loading conversations...</div>;
-  }
+  const getDetails = (c) => ({
+    name: c.partnerName || c.other_user?.full_name || c.other_user?.email || 'User',
+    avatar: c.partnerAvatar || c.other_user?.avatar_url,
+    initial: (c.partnerName || c.other_user?.email || 'U')[0].toUpperCase(),
+    time: c.lastMessageTime ? new Date(c.lastMessageTime).toLocaleDateString(undefined, {month:'short', day:'numeric'}) : '',
+    preview: c.lastMessage || 'No messages yet'
+  });
 
   return (
-    <div className="conversation-list">
-      <div className="conversation-header">
-        <h2>Messages</h2>
-        <button
-          className="compose-btn"
-          onClick={onComposeNew}
-          title="Start new conversation"
-        >
-          ✎
+    <div className="conv-list-container">
+      <div className="conv-header">
+        <h2>Chats</h2>
+        <button className="compose-btn-icon" onClick={onComposeNew} title="New Chat">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
         </button>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      <div className="search-wrapper">
+        <input 
+          type="text" 
+          placeholder="Search..." 
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
-      {conversations.length === 0 ? (
-        <div className="empty-state">
-          <p>No conversations yet</p>
-          <button onClick={onComposeNew} className="primary-btn">
-            Start a conversation
-          </button>
-        </div>
-      ) : (
-        <div className="conversations">
-          {conversations.map((conversation) => (
-            <div
-              key={conversation.id}
-              className={`conversation-item ${
-                selectedConversation?.id === conversation.id ? 'active' : ''
-              }`}
-              onClick={() => onSelectConversation(conversation)}
+      <div className="conv-items">
+        {loading && <div className="loading-skeleton">Loading chats...</div>}
+        
+        {!loading && filtered.length === 0 && (
+          <div className="empty-list">No conversations found</div>
+        )}
+
+        {filtered.map(conv => {
+          const { name, avatar, initial, time, preview } = getDetails(conv);
+          const active = selectedConversation?.id === conv.id;
+          
+          return (
+            <div 
+              key={conv.id} 
+              className={`conv-item ${active ? 'active' : ''}`}
+              onClick={() => onSelectConversation(conv)}
             >
-              <div className="conversation-avatar">
-                {conversation.other_user_avatar ? (
-                  <img src={conversation.other_user_avatar} alt={conversation.other_user_name} />
-                ) : (
-                  <div className="avatar-placeholder">
-                    {conversation.other_user_name?.charAt(0) || 'U'}
-                  </div>
-                )}
-                {conversation.unread_count > 0 && (
-                  <div className="unread-badge">{conversation.unread_count}</div>
-                )}
+              <div className="avatar">
+                {avatar ? <img src={avatar} alt={name} /> : <span>{initial}</span>}
               </div>
-
-              <div className="conversation-info">
-                <div className="conversation-name">{conversation.other_user_name}</div>
-                <div className="conversation-preview">
-                  {formatLastMessage(conversation)}
+              <div className="conv-info">
+                <div className="conv-top">
+                  <span className="conv-name">{name}</span>
+                  <span className="conv-time">{time}</span>
                 </div>
-              </div>
-
-              <div className="conversation-meta">
-                <div className="conversation-time">
-                  {formatTime(conversation.last_message_at)}
-                </div>
+                <div className="conv-preview">{preview}</div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 };

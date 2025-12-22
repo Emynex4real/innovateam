@@ -1,160 +1,111 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MessagingService from '../../services/messagingService';
-import MessageBubble from './MessageBubble';
-import './ChatInterface.css';
 
-/**
- * ChatInterface Component
- * Displays messages for a conversation and allows composing new messages
- */
-const ChatInterface = ({ conversation, currentUserId, currentUserName, currentUserAvatar }) => {
+const ChatInterface = ({ conversation, currentUserId, onBack }) => {
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [messageText, setMessageText] = useState('');
+  const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef(null);
+  const bottomRef = useRef(null);
 
+  // Get partner details safely
+  const partner = conversation?.other_user || {};
+  const name = conversation?.partnerName || partner.full_name || partner.email || 'User';
+  
   useEffect(() => {
-    if (conversation) {
+    if (conversation?.id) {
       fetchMessages();
-      // Mark messages as read
-      MessagingService.markMessagesAsRead(conversation.id);
-      // Poll for new messages every 3 seconds
       const interval = setInterval(fetchMessages, 3000);
       return () => clearInterval(interval);
     }
-  }, [conversation]);
+  }, [conversation?.id]);
 
   useEffect(() => {
-    scrollToBottom();
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const fetchMessages = async () => {
-    if (!conversation) return;
-
-    const result = await MessagingService.getMessages(conversation.id, 50, 0);
-    if (result.success) {
-      setMessages(result.data || []);
-      setError(null);
-    } else {
-      setError(result.error);
-    }
-    setLoading(false);
+    const res = await MessagingService.getMessages(conversation.id);
+    if (res.success) setMessages(res.messages || []);
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleSendMessage = async (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-
-    if (!messageText.trim()) return;
-
+    if (!text.trim()) return;
+    
     setSending(true);
-    const result = await MessagingService.sendMessage(
+    // Optimistic UI update could go here
+    const res = await MessagingService.sendMessage(
       conversation.id,
-      messageText.trim(),
+      text,
       null,
       null
     );
-
-    if (result.success) {
-      setMessageText('');
+    
+    if (res.success) {
+      setText('');
       fetchMessages();
-    } else {
-      setError(result.error || 'Failed to send message');
     }
     setSending(false);
   };
 
   if (!conversation) {
     return (
-      <div className="chat-interface empty">
-        <div className="empty-state">
-          <p>Select a conversation to start messaging</p>
-        </div>
+      <div className="chat-empty-state">
+        <div className="icon-circle">💬</div>
+        <h3>Your Messages</h3>
+        <p>Select a chat to start messaging</p>
       </div>
     );
   }
 
   return (
     <div className="chat-interface">
+      {/* Header */}
       <div className="chat-header">
-        <div className="chat-header-info">
-          <div className="chat-avatar">
-            {conversation.other_user_avatar ? (
-              <img src={conversation.other_user_avatar} alt={conversation.other_user_name} />
-            ) : (
-              <div className="avatar-placeholder">
-                {conversation.other_user_name?.charAt(0) || 'U'}
-              </div>
-            )}
-          </div>
-          <div>
-            <h3>{conversation.other_user_name}</h3>
-            <p className="status">Active now</p>
-          </div>
+        <button className="back-btn-mobile" onClick={onBack}>←</button>
+        <div className="header-details">
+          <h3>{name}</h3>
+          <span className="active-status">Active now</span>
         </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="messages-container">
-        {loading ? (
-          <div className="loading">Loading messages...</div>
-        ) : messages.length === 0 ? (
-          <div className="empty-state">
-            <p>No messages yet. Start the conversation!</p>
+      {/* Messages */}
+      <div className="messages-area">
+        {messages.length === 0 && (
+          <div className="new-chat-intro">
+            <p>This is the start of your conversation with <strong>{name}</strong>.</p>
           </div>
-        ) : (
-          <>
-            {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isOwn={message.sender_id === currentUserId}
-                senderName={
-                  message.sender_id === currentUserId
-                    ? currentUserName
-                    : conversation.other_user_name
-                }
-                senderAvatar={
-                  message.sender_id === currentUserId
-                    ? currentUserAvatar
-                    : conversation.other_user_avatar
-                }
-                showTimestamp
-                showAvatar
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </>
         )}
+        
+        {messages.map((msg, i) => {
+          const isMe = msg.sender_id === currentUserId;
+          return (
+            <div key={i} className={`msg-row ${isMe ? 'me' : 'them'}`}>
+              <div className="msg-bubble">
+                {msg.message_text}
+                <div className="msg-time">
+                  {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
       </div>
 
-      <div className="message-input-area">
-        <form onSubmit={handleSendMessage}>
-          <div className="input-wrapper">
-            <input
-              type="text"
-              placeholder="Type a message..."
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              disabled={sending}
-              className="message-input"
-            />
-            <button
-              type="submit"
-              disabled={sending || !messageText.trim()}
-              className="send-btn"
-            >
-              {sending ? 'Sending...' : 'Send'}
-            </button>
-          </div>
-        </form>
-      </div>
+      {/* Input */}
+      <form className="chat-input-wrapper" onSubmit={handleSend}>
+        <input 
+          type="text" 
+          placeholder="Type a message..." 
+          value={text}
+          onChange={e => setText(e.target.value)}
+          disabled={sending}
+        />
+        <button type="submit" disabled={!text.trim() || sending}>
+          {sending ? '...' : 'Send'}
+        </button>
+      </form>
     </div>
   );
 };

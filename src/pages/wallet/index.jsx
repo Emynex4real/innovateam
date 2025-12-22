@@ -13,7 +13,6 @@ import {
   AlertCircle, ShieldCheck 
 } from 'lucide-react';
 import supabase from '../../config/supabase';
-import { TransactionUtils } from '../../services/wallet.service.enhanced';
 import toast from 'react-hot-toast';
 
 const Wallet = () => {
@@ -26,7 +25,8 @@ const Wallet = () => {
 
   // --- Logic: Fund Wallet ---
   const handleFundWallet = async () => {
-    if (!TransactionUtils.validateAmount(amount)) {
+    const numAmount = parseFloat(amount);
+    if (!numAmount || numAmount < 100 || numAmount > 1000000) {
       toast.error('Please enter a valid amount (₦100 - ₦1,000,000)');
       return;
     }
@@ -37,7 +37,7 @@ const Wallet = () => {
       const result = await fundWallet(parseFloat(amount), paymentMethod, userEmail);
       
       if (result.success) {
-        toast.success(`Success! New balance: ${TransactionUtils.formatAmount(result.balance)}`);
+        toast.success(`Success! New balance: ₦${result.balance.toLocaleString()}`);
         setAmount('');
         setShowFundModal(false);
       } else {

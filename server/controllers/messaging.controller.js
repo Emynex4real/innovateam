@@ -1,12 +1,86 @@
 const messagingService = require('../services/messaging.service');
 const forumService = require('../services/forum.service');
 const { logger } = require('../utils/logger');
+const supabase = require('../supabaseClient'); 
 
-// Messages
+// ==========================================
+// MESSAGING CONTROLLER
+// ==========================================
+
+// 1. Start or Get Conversation
+exports.startConversation = async (req, res) => {
+  try {
+    let { otherUserId, centerId } = req.body;
+    const userId = req.user.id;
+
+    if (!otherUserId) {
+      return res.status(400).json({ success: false, error: 'Recipient ID or Email is required' });
+    }
+
+    // Handle Email Input: Find UUID if email is provided
+    if (otherUserId.includes('@')) {
+      const { data: user, error: userError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('email', otherUserId)
+        .single();
+
+      if (userError || !user) {
+        logger.warn(`Start conversation failed: User with email ${otherUserId} not found`);
+        return res.status(404).json({ success: false, error: 'User not found with this email' });
+      }
+      otherUserId = user.id; 
+    }
+
+    // Check if conversation already exists
+    const { data: existingConvs, error: searchError } = await supabase
+      .from('conversations')
+      .select('*')
+      .or(`and(participant_1_id.eq.${userId},participant_2_id.eq.${otherUserId}),and(participant_1_id.eq.${otherUserId},participant_2_id.eq.${userId})`);
+
+    if (searchError) throw searchError;
+
+    if (existingConvs && existingConvs.length > 0) {
+      return res.json({ success: true, conversation: existingConvs[0] });
+    }
+
+    // Create new conversation
+    const { data: newConv, error: createError } = await supabase
+      .from('conversations')
+      .insert({
+        participant_1_id: userId,
+        participant_2_id: otherUserId,
+        center_id: centerId || null,
+        updated_at: new Date()
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+
+    res.json({ success: true, conversation: newConv });
+  } catch (error) {
+    logger.error('Start conversation error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// 2. Send Message
 exports.sendMessage = async (req, res) => {
   try {
-    const { receiverId, messageText, centerId, attachments } = req.body;
-    const result = await messagingService.sendMessage(req.user.id, receiverId, messageText, centerId, attachments);
+    // Extract conversationId from body (sent by frontend)
+    const { conversationId, messageText, mediaUrl, mediaType } = req.body; 
+    const receiverId = req.body.receiverId; // Might be null/undefined for existing chats
+    
+    // ✅ CRITICAL FIX: Pass conversationId as the 4th argument
+    const result = await messagingService.sendMessage(
+        req.user.id, 
+        receiverId, 
+        messageText, 
+        conversationId, // <--- This was missing/null before
+        [] // attachments placeholder
+    );
+    
     res.json(result);
   } catch (error) {
     logger.error('Send message error:', error);
@@ -26,7 +100,7 @@ exports.getConversations = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { partnerId } = req.params;
+    const { partnerId } = req.params; // In the route /conversations/:id, this is the conversation ID
     const result = await messagingService.getMessages(req.user.id, partnerId);
     res.json(result);
   } catch (error) {
@@ -35,7 +109,9 @@ exports.getMessages = async (req, res) => {
   }
 };
 
-// Announcements
+// ==========================================
+// ANNOUNCEMENTS
+// ==========================================
 exports.createAnnouncement = async (req, res) => {
   try {
     const { centerId, title, content, priority, expiresAt } = req.body;
@@ -58,7 +134,9 @@ exports.getAnnouncements = async (req, res) => {
   }
 };
 
-// Notifications
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
 exports.getNotifications = async (req, res) => {
   try {
     const result = await messagingService.getNotifications(req.user.id);
@@ -90,7 +168,9 @@ exports.markAllNotificationsRead = async (req, res) => {
   }
 };
 
-// Forums
+// ==========================================
+// FORUMS
+// ==========================================
 exports.createTopic = async (req, res) => {
   try {
     const { centerId, title, description, testId } = req.body;

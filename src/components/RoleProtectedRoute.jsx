@@ -1,68 +1,61 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
 import supabase from '../config/supabase';
 
 const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, isAuthenticated, loading } = useAuth();
-  const navigate = useNavigate();
-  const [hasAccess, setHasAccess] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+  const [roleLoading, setRoleLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
-    const checkAccess = async () => {
+    let isMounted = true;
+
+    const fetchUserRole = async () => {
+      // 1. If auth is still loading, do nothing yet
       if (loading) return;
 
+      // 2. If no user, stop checking and let the redirect happen below
       if (!user && !isAuthenticated) {
-        navigate('/login', { replace: true });
+        if (isMounted) setRoleLoading(false);
         return;
       }
 
       try {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('role, is_admin, is_tutor, is_student')
-          .eq('id', user.id)
-          .single();
+        // 3. Try getting role from metadata (fastest)
+        let role = user?.user_metadata?.role;
 
-        if (!profile) {
-          navigate('/dashboard', { replace: true });
-          return;
+        // 4. If metadata is missing, check the DB
+        if (!role) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          role = profile?.role;
         }
 
-        // Check if user has any of the allowed roles
-        const userRoles = [];
-        if (profile.is_admin) userRoles.push('admin');
-        if (profile.is_tutor) userRoles.push('tutor');
-        if (profile.is_student) userRoles.push('student');
-
-        const hasPermission = allowedRoles.some(role => userRoles.includes(role));
-
-        if (!hasPermission) {
-          // Redirect to their primary dashboard
-          if (profile.is_admin) {
-            navigate('/admin/dashboard', { replace: true });
-          } else if (profile.is_tutor) {
-            navigate('/tutor', { replace: true });
-          } else {
-            navigate('/dashboard', { replace: true });
-          }
-          return;
+        if (isMounted) {
+          // console.log(`Role Check: ${role} | Allowed: ${allowedRoles.join(', ')}`);
+          setUserRole(role || 'student');
+          setRoleLoading(false);
         }
-
-        setHasAccess(true);
       } catch (error) {
-        console.error('Access check error:', error);
-        navigate('/dashboard', { replace: true });
-      } finally {
-        setChecking(false);
+        console.error('Error fetching role:', error);
+        if (isMounted) {
+          setUserRole('student');
+          setRoleLoading(false);
+        }
       }
     };
 
-    checkAccess();
-  }, [user, isAuthenticated, loading, navigate, allowedRoles]);
+    fetchUserRole();
 
-  if (loading || checking) {
+    return () => { isMounted = false; };
+  }, [user, isAuthenticated, loading]);
+
+  if (loading || roleLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -70,11 +63,24 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
     );
   }
 
-  if (!hasAccess) {
-    return null;
+  // 1. Not Authenticated
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  // 2. ✅ CRITICAL FIX: Check allowedRoles FIRST. 
+  // If the current page allows ['student', 'admin'] and I am 'admin', I stay here.
+  if (allowedRoles.includes(userRole)) {
+    return children;
+  }
+
+  // 3. Unauthorized Access Handling
+  // Redirect based on their actual role
+  if (userRole === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default RoleProtectedRoute;

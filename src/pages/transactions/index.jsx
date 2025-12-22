@@ -10,7 +10,6 @@ import {
   TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Printer,
   ChevronLeft, ChevronRight, CheckCircle 
 } from 'lucide-react';
-import { TransactionUtils } from '../../services/wallet.service.enhanced';
 import toast from 'react-hot-toast';
 
 const Transactions = () => {

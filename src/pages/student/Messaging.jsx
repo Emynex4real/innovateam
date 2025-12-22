@@ -1,126 +1,119 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '../../App';
 import ConversationList from '../../components/messaging/ConversationList';
 import ChatInterface from '../../components/messaging/ChatInterface';
 import MessagingService from '../../services/messagingService';
-import './Messaging.css';
+import './Messaging.css'; // We will put ALL styling here for consistency
 
-/**
- * Messaging Page
- * Main messaging interface with conversation list and chat
- */
 const Messaging = () => {
-  const { user, authToken } = useAuth();
+  const { user } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [newConversationUser, setNewConversationUser] = useState('');
   const [composing, setComposing] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  if (!user) {
-    return (
-      <div className="messaging-page">
-        <div className="error-state">
-          <p>Please log in to access messaging</p>
-        </div>
-      </div>
-    );
-  }
+  // Reset modal state
+  useEffect(() => {
+    if (!showComposeModal) {
+      setError(null);
+      setNewConversationUser('');
+    }
+  }, [showComposeModal]);
 
-  const handleSelectConversation = (conversation) => {
-    setSelectedConversation(conversation);
-    setShowComposeModal(false);
-  };
-
-  const handleComposeNew = () => {
-    setShowComposeModal(true);
-  };
+  if (!user) return <div className="messaging-loader">Loading...</div>;
 
   const handleStartConversation = async () => {
     if (!newConversationUser.trim()) {
-      setError('Please enter a user ID or email');
+      setError('Please enter a valid email');
       return;
     }
 
     setComposing(true);
-    const result = await MessagingService.startConversation(
-      newConversationUser.trim(),
-      user.center_id
-    );
+    setError(null);
 
-    if (result.success) {
-      setSelectedConversation(result.data);
-      setNewConversationUser('');
-      setShowComposeModal(false);
-      setError(null);
-    } else {
-      setError(result.error || 'Failed to start conversation');
+    try {
+      const result = await MessagingService.startConversation(
+        newConversationUser.trim(),
+        user.center_id || null
+      );
+
+      if (result.success) {
+        const conversation = result.conversation || result.data;
+        if (conversation) {
+          setShowComposeModal(false);
+          setRefreshKey(prev => prev + 1); // Refresh sidebar
+          setTimeout(() => setSelectedConversation(conversation), 50);
+          toast.success('Chat started!');
+        }
+      } else {
+        setError(result.error || 'User not found');
+      }
+    } catch (err) {
+      setError(err.message || 'Connection failed');
+    } finally {
+      setComposing(false);
     }
-    setComposing(false);
   };
 
   return (
-    <div className="messaging-page">
-      <div className="messaging-container">
+    <div className="messaging-layout">
+      {/* Sidebar - Hidden on mobile if chat is open */}
+      <div className={`messaging-sidebar ${selectedConversation ? 'hidden-mobile' : ''}`}>
         <ConversationList
+          key={refreshKey}
           selectedConversation={selectedConversation}
-          onSelectConversation={handleSelectConversation}
-          onComposeNew={handleComposeNew}
-        />
-
-        <ChatInterface
-          conversation={selectedConversation}
-          currentUserId={user.id}
-          currentUserName={user.name}
-          currentUserAvatar={user.avatar_url}
+          onSelectConversation={setSelectedConversation}
+          onComposeNew={() => setShowComposeModal(true)}
         />
       </div>
 
+      {/* Main Chat Area */}
+      <div className={`messaging-main ${!selectedConversation ? 'hidden-mobile' : ''}`}>
+        <ChatInterface
+          conversation={selectedConversation}
+          currentUserId={user.id}
+          currentUserName={user.name || user.full_name}
+          currentUserAvatar={user.avatar_url}
+          onBack={() => setSelectedConversation(null)}
+        />
+      </div>
+
+      {/* Modern Modal */}
       {showComposeModal && (
-        <div className="modal-overlay" onClick={() => setShowComposeModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop" onClick={() => setShowComposeModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Start New Conversation</h2>
-              <button
-                className="close-btn"
-                onClick={() => setShowComposeModal(false)}
-              >
-                ✕
-              </button>
+              <h3>New Message</h3>
+              <button className="icon-btn" onClick={() => setShowComposeModal(false)}>✕</button>
             </div>
-
-            {error && <div className="error-message">{error}</div>}
-
+            
             <div className="modal-body">
-              <div className="form-group">
-                <label htmlFor="user-input">User ID or Email</label>
+              {error && <div className="error-banner">{error}</div>}
+              <div className="input-field">
+                <label>To:</label>
                 <input
-                  id="user-input"
-                  type="text"
-                  placeholder="Enter user ID or email"
+                  type="email"
+                  placeholder="Enter email address..."
                   value={newConversationUser}
                   onChange={(e) => setNewConversationUser(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleStartConversation()}
-                  disabled={composing}
+                  onKeyDown={(e) => e.key === 'Enter' && handleStartConversation()}
+                  autoFocus
                 />
               </div>
+            </div>
 
-              <div className="modal-footer">
-                <button
-                  className="secondary-btn"
-                  onClick={() => setShowComposeModal(false)}
-                  disabled={composing}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="primary-btn"
-                  onClick={handleStartConversation}
-                  disabled={composing || !newConversationUser.trim()}
-                >
-                  {composing ? 'Starting...' : 'Start Conversation'}
-                </button>
-              </div>
+            <div className="modal-footer">
+              <button className="btn-text" onClick={() => setShowComposeModal(false)}>Cancel</button>
+              <button 
+                className="btn-primary" 
+                disabled={composing || !newConversationUser}
+                onClick={handleStartConversation}
+              >
+                {composing ? 'Starting...' : 'Start Chat'}
+              </button>
             </div>
           </div>
         </div>

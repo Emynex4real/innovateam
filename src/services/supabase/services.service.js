@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabase'
-import { WalletService } from './wallet.service'
+import cleanWalletService from '../cleanWallet.service'
 
 export class ServicesService {
   // Get all available services
@@ -46,13 +46,9 @@ export class ServicesService {
       const reference = `${service.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
       // Debit wallet
-      const debitResult = await WalletService.debitWallet(
-        userId,
+      const debitResult = await cleanWalletService.deductFromWallet(
         totalAmount,
-        service.type,
-        service.name,
-        `Purchase of ${quantity}x ${service.name}`,
-        reference
+        `Purchase of ${quantity}x ${service.name}`
       )
 
       if (!debitResult.success) throw new Error(debitResult.error)

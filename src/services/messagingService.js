@@ -6,19 +6,59 @@ import { API_BASE_URL } from '../config/api';
  */
 
 class MessagingService {
-  /**
-   * Get all conversations for the current user
-   * @returns {Promise} Object with success boolean and conversations array
-   */
+  
+  // ✅ HELPER: Robustly retrieve token from various possible storage keys
+  static getToken() {
+    // Check the most common keys used in your app
+    const token = 
+      localStorage.getItem('authToken') || 
+      localStorage.getItem('auth_token') || 
+      localStorage.getItem('token') ||
+      localStorage.getItem('access_token');
+
+    // If using Supabase directly, sometimes token is inside a JSON object
+    if (!token) {
+      const sbSession = localStorage.getItem('sb-jdedscbvbkjvqmmdabig-auth-token');
+      if (sbSession) {
+        try {
+          const parsed = JSON.parse(sbSession);
+          return parsed.access_token;
+        } catch (e) {
+          console.error('Error parsing Supabase session:', e);
+        }
+      }
+    }
+
+    return token;
+  }
+
+  // ✅ HELPER: Standardized headers
+  static getHeaders() {
+    const token = this.getToken();
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+  }
+
   static async getConversations() {
     try {
+      const token = this.getToken();
+      if (!token) {
+        console.warn('No auth token found, returning empty conversations');
+        return { success: false, data: [] };
+      }
+
       const response = await fetch(`${API_BASE_URL}/phase2/messaging/conversations`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getHeaders(),
       });
+
+      if (response.status === 401) {
+        // Handle token expiration gracefully
+        console.error('Session expired (401)');
+        return { success: false, error: 'Session expired', data: [] };
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -36,15 +76,13 @@ class MessagingService {
     }
   }
 
-  /**
-   * Get messages for a specific conversation
-   * @param {string} conversationId - The conversation ID
-   * @param {number} limit - Number of messages to fetch (default: 50)
-   * @param {number} offset - Pagination offset (default: 0)
-   * @returns {Promise} Object with success boolean and messages array
-   */
   static async getMessages(conversationId, limit = 50, offset = 0) {
+    if (!conversationId || conversationId === 'undefined') return { success: false, data: [] };
+
     try {
+      const token = this.getToken();
+      if (!token) return { success: false, error: 'No token found' };
+
       const query = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
@@ -54,10 +92,7 @@ class MessagingService {
         `${API_BASE_URL}/phase2/messaging/conversations/${conversationId}?${query}`,
         {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            'Content-Type': 'application/json',
-          },
+          headers: this.getHeaders(),
         }
       );
 
@@ -77,22 +112,17 @@ class MessagingService {
     }
   }
 
-  /**
-   * Send a new message
-   * @param {string} conversationId - The conversation ID
-   * @param {string} messageText - The message content
-   * @param {string} mediaUrl - Optional media URL
-   * @param {string} mediaType - Optional media type (image, video, document)
-   * @returns {Promise} Object with success boolean and new message data
-   */
   static async sendMessage(conversationId, messageText, mediaUrl = null, mediaType = null) {
+    if (!conversationId) return { success: false, error: 'Missing Conversation ID' };
+
     try {
-      const response = await fetch(`${API_BASE_URL}/phase2/messaging/messages`, {
+      const token = this.getToken();
+      if (!token) throw new Error('Authentication required');
+
+      // ✅ FIXED: Changed endpoint from '/messages' to '/send' to match your backend router
+      const response = await fetch(`${API_BASE_URL}/phase2/messaging/send`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify({
           conversationId,
           messageText,
@@ -116,25 +146,21 @@ class MessagingService {
     }
   }
 
-  /**
-   * Mark all messages in a conversation as read
-   * @param {string} conversationId - The conversation ID
-   * @returns {Promise} Object with success boolean
-   */
   static async markMessagesAsRead(conversationId) {
+    if (!conversationId) return { success: false };
+
     try {
       const response = await fetch(
         `${API_BASE_URL}/phase2/messaging/messages/read/${conversationId}`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            'Content-Type': 'application/json',
-          },
+          headers: this.getHeaders(),
         }
       );
 
       if (!response.ok) {
+        // Silently handle 404s for read status as non-critical
+        if (response.status === 404) return { success: false };
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -149,21 +175,13 @@ class MessagingService {
     }
   }
 
-  /**
-   * Delete a message
-   * @param {string} messageId - The message ID to delete
-   * @returns {Promise} Object with success boolean
-   */
   static async deleteMessage(messageId) {
     try {
       const response = await fetch(
         `${API_BASE_URL}/phase2/messaging/messages/${messageId}`,
         {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            'Content-Type': 'application/json',
-          },
+          headers: this.getHeaders(),
         }
       );
 
@@ -182,28 +200,31 @@ class MessagingService {
     }
   }
 
-  /**
-   * Start a new conversation with a user
-   * @param {string} otherUserId - The other user's ID
-   * @param {string} centerId - The center ID
-   * @returns {Promise} Object with success boolean and conversation data
-   */
   static async startConversation(otherUserId, centerId) {
     try {
+      const token = this.getToken();
+      
+      if (!token) {
+        console.error('StartConversation: No auth token found');
+        throw new Error('Authentication required. Please login again.');
+      }
+
       const response = await fetch(`${API_BASE_URL}/phase2/messaging/conversations`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify({
           otherUserId,
           centerId,
         }),
       });
 
+      if (response.status === 401) {
+        throw new Error('Unauthorized: Please log in again.');
+      }
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();

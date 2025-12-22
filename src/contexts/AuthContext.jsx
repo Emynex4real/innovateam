@@ -21,9 +21,12 @@ const AuthProvider = ({ children }) => {
         id: userData.id,
         email: userData.email,
         name: userData.name,
+        // ✅ FIX: Ensure centerId is preserved from input data
+        centerId: userData.centerId || userData.center_id || null, 
         role: userData.role || 'user',
         isAdmin: userData.isAdmin || userData.role === 'admin',
         emailVerified: userData.emailVerified || false,
+        avatarUrl: userData.avatarUrl || userData.avatar_url || null,
         createdAt: userData.createdAt,
         updatedAt: userData.updatedAt
       };

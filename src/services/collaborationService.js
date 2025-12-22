@@ -8,14 +8,12 @@ import { API_BASE_URL } from '../config/api';
 class CollaborationService {
   // ==================== STUDY GROUPS ====================
 
-  /**
-   * Get public study groups for a center
-   * @param {string} centerId - The center ID
-   * @param {number} page - Page number for pagination (default: 1)
-   * @param {number} limit - Results per page (default: 20)
-   * @returns {Promise} Object with success boolean and groups array
-   */
   static async getStudyGroups(centerId, page = 1, limit = 20) {
+    // ✅ FIX: Guard clause for missing centerId
+    if (!centerId || centerId === 'undefined' || centerId === 'null') {
+      return { success: false, data: [], error: 'Center ID not provided' };
+    }
+
     try {
       const query = new URLSearchParams({
         page: page.toString(),
@@ -46,10 +44,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get groups the current user has joined
-   * @returns {Promise} Object with success boolean and user's groups array
-   */
   static async getUserStudyGroups() {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/user/my-groups`, {
@@ -76,12 +70,9 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get detailed information about a study group
-   * @param {string} groupId - The group ID
-   * @returns {Promise} Object with success boolean and group detail data
-   */
   static async getStudyGroupDetail(groupId) {
+    if (!groupId || groupId === 'undefined') return { success: false, data: null };
+
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/detail`, {
         method: 'GET',
@@ -107,15 +98,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Create a new study group
-   * @param {string} name - Group name
-   * @param {string} description - Group description
-   * @param {string} topic - Group topic/subject
-   * @param {string} subject - Group subject
-   * @param {string} imageUrl - Optional group image URL
-   * @returns {Promise} Object with success boolean and new group data
-   */
   static async createStudyGroup(name, description, topic, subject, imageUrl = null) {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups`, {
@@ -148,12 +130,9 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Join a study group
-   * @param {string} groupId - The group ID to join
-   * @returns {Promise} Object with success boolean
-   */
   static async joinStudyGroup(groupId) {
+    if (!groupId || groupId === 'undefined') return { success: false, error: 'Invalid Group ID' };
+
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/join`, {
         method: 'POST',
@@ -178,12 +157,9 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Leave a study group
-   * @param {string} groupId - The group ID to leave
-   * @returns {Promise} Object with success boolean
-   */
   static async leaveStudyGroup(groupId) {
+    if (!groupId || groupId === 'undefined') return { success: false, error: 'Invalid Group ID' };
+    
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/leave`, {
         method: 'POST',
@@ -208,15 +184,9 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Post content in a study group
-   * @param {string} groupId - The group ID
-   * @param {string} content - Post content
-   * @param {string} resourceType - Type of resource (note, question, resource, discussion)
-   * @param {string} attachmentUrl - Optional attachment URL
-   * @returns {Promise} Object with success boolean and new post data
-   */
   static async postInStudyGroup(groupId, content, resourceType = 'discussion', attachmentUrl = null) {
+    if (!groupId || groupId === 'undefined') return { success: false, error: 'Invalid Group ID' };
+
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/posts`, {
         method: 'POST',
@@ -246,15 +216,10 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Search study groups
-   * @param {string} centerId - The center ID
-   * @param {string} query - Search query
-   * @param {number} page - Page number for pagination (default: 1)
-   * @param {number} limit - Results per page (default: 20)
-   * @returns {Promise} Object with success boolean and search results array
-   */
   static async searchStudyGroups(centerId, query, page = 1, limit = 20) {
+    // ✅ FIX: Guard clause
+    if (!centerId || centerId === 'undefined') return { success: false, data: [] };
+
     try {
       const params = new URLSearchParams({
         q: query,
@@ -288,15 +253,12 @@ class CollaborationService {
 
   // ==================== PEER TUTORING ====================
 
-  /**
-   * Get available tutors for a center
-   * @param {string} centerId - The center ID
-   * @param {string} subject - Optional filter by subject
-   * @param {number} page - Page number for pagination (default: 1)
-   * @param {number} limit - Results per page (default: 20)
-   * @returns {Promise} Object with success boolean and tutors array
-   */
   static async getTutors(centerId, subject = null, page = 1, limit = 20) {
+    // ✅ FIX: Guard clause
+    if (!centerId || centerId === 'undefined' || centerId === 'null') {
+      return { success: false, data: [], error: 'Center ID not provided' };
+    }
+
     try {
       const query = new URLSearchParams({
         page: page.toString(),
@@ -334,12 +296,9 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get detailed information about a tutor
-   * @param {string} tutorId - The tutor ID
-   * @returns {Promise} Object with success boolean and tutor profile data
-   */
   static async getTutorProfile(tutorId) {
+    if (!tutorId || tutorId === 'undefined') return { success: false, data: null };
+
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/tutors/${tutorId}/profile`, {
         method: 'GET',
@@ -365,15 +324,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Create a tutor profile for the current user
-   * @param {string} bio - Tutor bio/description
-   * @param {number} hourlyRate - Hourly rate in cents
-   * @param {array} subjects - Array of subject specializations
-   * @param {number} experienceYears - Years of tutoring experience
-   * @param {string} certificationUrl - Optional certification document URL
-   * @returns {Promise} Object with success boolean and new profile data
-   */
   static async createTutorProfile(
     bio,
     hourlyRate,
@@ -412,17 +362,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Request tutoring from a tutor
-   * @param {string} tutorId - The tutor ID
-   * @param {string} subject - Subject to learn
-   * @param {string} topic - Specific topic
-   * @param {string} description - Detailed description of needs
-   * @param {string} preferredStartDate - Preferred start date
-   * @param {array} preferredTimeSlots - Array of preferred times
-   * @param {number} estimatedHours - Estimated hours needed
-   * @returns {Promise} Object with success boolean and request data
-   */
   static async requestTutoring(
     tutorId,
     subject,
@@ -465,11 +404,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Accept a tutoring request (tutor action)
-   * @param {string} requestId - The tutoring request ID
-   * @returns {Promise} Object with success boolean
-   */
   static async acceptTutoringRequest(requestId) {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/requests/${requestId}/accept`, {
@@ -495,11 +429,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Decline a tutoring request (tutor action)
-   * @param {string} requestId - The tutoring request ID
-   * @returns {Promise} Object with success boolean
-   */
   static async declineTutoringRequest(requestId) {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/requests/${requestId}/decline`, {
@@ -525,13 +454,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Schedule a tutoring session
-   * @param {string} requestId - The tutoring request ID
-   * @param {string} scheduledAt - ISO date/time for the session
-   * @param {string} meetingLink - Optional meeting URL
-   * @returns {Promise} Object with success boolean and session data
-   */
   static async scheduleTutoringSession(requestId, scheduledAt, meetingLink = null) {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/sessions`, {
@@ -562,13 +484,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Complete a tutoring session and leave feedback
-   * @param {string} sessionId - The session ID
-   * @param {number} rating - Rating from 1-5
-   * @param {string} feedback - Written feedback
-   * @returns {Promise} Object with success boolean and review data
-   */
   static async completeTutoringSession(sessionId, rating, feedback) {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/sessions/${sessionId}/complete`, {
@@ -598,10 +513,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get student's tutoring sessions
-   * @returns {Promise} Object with success boolean and sessions array
-   */
   static async getStudentTutoringSessions() {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/sessions`, {
@@ -630,12 +541,6 @@ class CollaborationService {
 
   // ==================== NOTIFICATIONS ====================
 
-  /**
-   * Get user's notifications
-   * @param {boolean} unreadOnly - Only fetch unread notifications (default: false)
-   * @param {number} limit - Number of notifications to fetch (default: 50)
-   * @returns {Promise} Object with success boolean and notifications array
-   */
   static async getNotifications(unreadOnly = false, limit = 50) {
     try {
       const query = new URLSearchParams({
@@ -667,10 +572,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get unread notification count
-   * @returns {Promise} Object with success boolean and unread count
-   */
   static async getUnreadNotificationCount() {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/notifications/count`, {
@@ -697,11 +598,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Mark a notification as read
-   * @param {string} notificationId - The notification ID
-   * @returns {Promise} Object with success boolean
-   */
   static async markNotificationAsRead(notificationId) {
     try {
       const response = await fetch(
@@ -730,10 +626,6 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Mark all notifications as read
-   * @returns {Promise} Object with success boolean
-   */
   static async markAllNotificationsAsRead() {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/notifications/mark-all-read`, {
@@ -761,12 +653,10 @@ class CollaborationService {
 
   // ==================== GAMIFICATION ====================
 
-  /**
-   * Get user's badges for a center
-   * @param {string} centerId - The center ID
-   * @returns {Promise} Object with success boolean and badges array
-   */
   static async getUserBadges(centerId) {
+    // ✅ FIX: Guard clause
+    if (!centerId || centerId === 'undefined') return { success: false, data: [] };
+
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/gamification/badges/${centerId}`, {
         method: 'GET',
@@ -792,14 +682,10 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get leaderboard for a center
-   * @param {string} centerId - The center ID
-   * @param {string} period - Leaderboard period (daily, weekly, monthly, global) - default: global
-   * @param {number} limit - Number of top results (default: 100)
-   * @returns {Promise} Object with success boolean and leaderboard array
-   */
   static async getLeaderboard(centerId, period = 'global', limit = 100) {
+    // ✅ FIX: Guard clause
+    if (!centerId || centerId === 'undefined') return { success: false, data: [] };
+
     try {
       const query = new URLSearchParams({
         period,
@@ -833,13 +719,10 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get user's rank in the leaderboard
-   * @param {string} centerId - The center ID
-   * @param {string} period - Rank period (daily, weekly, monthly, global) - default: global
-   * @returns {Promise} Object with success boolean and rank data
-   */
   static async getUserRank(centerId, period = 'global') {
+    // ✅ FIX: Guard clause
+    if (!centerId || centerId === 'undefined') return { success: false, data: null };
+
     try {
       const query = new URLSearchParams({ period });
 
@@ -870,12 +753,10 @@ class CollaborationService {
     }
   }
 
-  /**
-   * Get user's achievements summary
-   * @param {string} centerId - The center ID
-   * @returns {Promise} Object with success boolean and achievements summary
-   */
   static async getAchievementsSummary(centerId) {
+    // ✅ FIX: Guard clause
+    if (!centerId || centerId === 'undefined') return { success: false, data: null };
+
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/gamification/achievements/${centerId}`, {
         method: 'GET',
