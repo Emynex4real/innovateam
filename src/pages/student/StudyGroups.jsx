@@ -5,6 +5,7 @@ import CreateStudyGroupModal from '../../components/collaboration/CreateStudyGro
 import StudyGroupDetail from '../../components/collaboration/StudyGroupDetail';
 import CollaborationService from '../../services/collaborationService';
 import { useAuth } from '../../App';
+import { API_BASE_URL } from '../../config/api';
 import './StudyGroups.css';
 
 const StudyGroups = () => {
@@ -33,7 +34,13 @@ const StudyGroups = () => {
       if (!user?.id) return;
       
       try {
-        const response = await fetch(`http://localhost:5000/api/users/profile/${user.id}`);
+        const token = CollaborationService.getToken();
+        const response = await fetch(`${API_BASE_URL}/users/profile/${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (response.ok) {
           const data = await response.json();
           setUserProfile(data);

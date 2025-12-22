@@ -284,7 +284,7 @@ class StudyGroupsService {
         .single();
 
       if (existing) {
-        return { success: false, error: 'Already a member of this group' };
+        return { success: false, error: 'Already a member' };
       }
 
       const { error } = await supabase
