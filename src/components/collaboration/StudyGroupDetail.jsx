@@ -65,6 +65,21 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
     }
   };
 
+  const handleLeave = async () => {
+    if (!window.confirm('Are you sure you want to leave this group?')) return;
+    
+    setDeleting(true);
+    const result = await CollaborationService.leaveStudyGroup(groupId);
+    if (result.success) {
+      sessionStorage.removeItem('selectedGroupId');
+      sessionStorage.setItem('studyGroupView', 'browse');
+      onBack();
+    } else {
+      alert(result.error || 'Failed to leave group');
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="detail-loader">
@@ -86,11 +101,18 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
             {group.topic && <span className="badge-tag outline">{group.topic}</span>}
           </div>
         </div>
-        {group.creator_id === user?.id && (
-          <button className="delete-button" onClick={handleDelete} disabled={deleting}>
-            {deleting ? 'Deleting...' : '🗑️ Delete'}
-          </button>
-        )}
+        <div className="banner-actions">
+          {group.isJoined && group.creator_id !== user?.id && (
+            <button className="leave-button" onClick={handleLeave} disabled={deleting}>
+              Leave Group
+            </button>
+          )}
+          {group.creator_id === user?.id && (
+            <button className="delete-button" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Deleting...' : '🗑️ Delete'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="group-content-layout">
@@ -146,12 +168,26 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
             <p>{group.description || 'No description provided.'}</p>
           </div>
           <div className="sidebar-box">
-            <h3>Members</h3>
-            <div className="member-list-placeholder">
-              <div className="member-row">
-                <div className="member-dot"></div>
-                <span>{group.memberCount || 1} Members joined</span>
-              </div>
+            <h3>Members ({group.memberCount})</h3>
+            <div className="member-list">
+              {group.members?.slice(0, 8).map((member) => (
+                <div key={member.user_id} className="member-item">
+                  <div className="member-avatar">
+                    {member.profile?.avatar_url ? (
+                      <img src={member.profile.avatar_url} alt={member.profile?.full_name} />
+                    ) : (
+                      member.profile?.full_name?.charAt(0) || 'U'
+                    )}
+                  </div>
+                  <div className="member-info">
+                    <span className="member-name">{member.profile?.full_name || 'Unknown'}</span>
+                    {member.role === 'admin' && <span className="admin-badge">Admin</span>}
+                  </div>
+                </div>
+              ))}
+              {group.memberCount > 8 && (
+                <div className="more-members">+{group.memberCount - 8} more</div>
+              )}
             </div>
           </div>
         </div>

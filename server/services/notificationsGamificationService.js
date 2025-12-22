@@ -4,6 +4,7 @@
 
 const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
+const notificationHelper = require('./notificationHelper');
 
 class NotificationsService {
   // Get user notifications
@@ -15,7 +16,7 @@ class NotificationsService {
         .eq('user_id', userId);
 
       if (unreadOnly) {
-        query = query.eq('is_read', false);
+        query = query.eq('read', false);
       }
 
       const { data, error } = await query
@@ -38,7 +39,7 @@ class NotificationsService {
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .eq('is_read', false);
+        .eq('read', false);
 
       if (error) throw error;
 
@@ -55,7 +56,7 @@ class NotificationsService {
       const { error } = await supabase
         .from('notifications')
         .update({ 
-          is_read: true,
+          read: true,
           read_at: new Date()
         })
         .eq('id', notificationId);
@@ -75,11 +76,11 @@ class NotificationsService {
       const { error } = await supabase
         .from('notifications')
         .update({ 
-          is_read: true,
+          read: true,
           read_at: new Date()
         })
         .eq('user_id', userId)
-        .eq('is_read', false);
+        .eq('read', false);
 
       if (error) throw error;
 
@@ -311,16 +312,12 @@ class GamificationService {
         await this.addPoints(userId, centerId, userBadge.badge.points, 'badge_earned');
       }
 
-      // Create notification
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type: 'badge_earned',
-          title: 'Badge Earned!',
-          content: `You earned the "${userBadge.badge.name}" badge!`,
-          action_url: '/achievements'
-        });
+      // Create notification using helper
+      await notificationHelper.notifyBadgeEarned(
+        userId,
+        userBadge.badge.name,
+        userBadge.badge.description
+      );
 
       logger.info(`Badge awarded: ${badgeId} to user ${userId}`);
       return { success: true, data: userBadge };

@@ -337,4 +337,28 @@ router.get('/gamification/achievements/:centerId', authenticate, async (req, res
   res.json(result);
 });
 
+// ============================================
+// TEST ROUTE - Remove in production
+// ============================================
+router.post('/test-notification', authenticate, async (req, res) => {
+  try {
+    const notificationHelper = require('../services/notificationHelper');
+    console.log('🧪 Creating test notification for user:', req.user.id);
+    
+    await notificationHelper.create(
+      req.user.id,
+      'info',
+      'Test Notification',
+      'This is a test notification to verify the system is working',
+      '/dashboard'
+    );
+    
+    console.log('✅ Test notification created successfully');
+    res.json({ success: true, message: 'Test notification created' });
+  } catch (error) {
+    console.error('❌ Error creating test notification:', error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

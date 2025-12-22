@@ -1,0 +1,19 @@
+// Add this route temporarily for testing notifications
+
+router.post('/test-notification', authenticate, async (req, res) => {
+  try {
+    const notificationHelper = require('../services/notificationHelper');
+    
+    await notificationHelper.create(
+      req.user.id,
+      'system',
+      'Test Notification',
+      'This is a test notification to verify the system is working',
+      '/dashboard'
+    );
+    
+    res.json({ success: true, message: 'Test notification created' });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});

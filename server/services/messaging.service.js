@@ -1,5 +1,6 @@
 const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
+const notificationHelper = require('./notificationHelper');
 
 const messagingService = {
   // 1. Send message (FIXED: Auto-detects receiver if missing)
@@ -82,13 +83,7 @@ const messagingService = {
         .eq('id', conversationId);
 
       // 5. Create Notification
-      await supabase.from('notifications').insert({
-        user_id: receiverId,
-        type: 'message',
-        title: 'New Message',
-        content: 'You have a new message',
-        action_url: `/messages`
-      });
+      await notificationHelper.notifyNewMessage(receiverId, senderId, messageText);
 
       return { success: true, message: data };
     } catch (error) {

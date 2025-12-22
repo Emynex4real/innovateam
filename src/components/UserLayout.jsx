@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/SupabaseAuthContext';
 import { useWallet } from '../contexts/WalletContext';
 import { toast } from 'react-toastify';
+import NotificationBell from './NotificationBell';
 import {
   HomeIcon,
   WalletIcon,
@@ -168,10 +169,7 @@ const UserLayout = () => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg relative">
-                <BellIcon className="h-6 w-6" />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-              </button>
+              <NotificationBell />
               
               <div className="flex items-center space-x-3">
                 <div className="hidden sm:block text-right">

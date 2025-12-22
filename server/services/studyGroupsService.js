@@ -4,6 +4,7 @@
 
 const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
+const notificationHelper = require('./notificationHelper');
 
 class StudyGroupsService {
   
@@ -194,7 +195,26 @@ class StudyGroupsService {
         .eq('user_id', userId)
         .maybeSingle();
 
-      // Get Member Count
+      // Get Member Count and List
+      const { data: membersList } = await supabase
+        .from('study_group_members')
+        .select('user_id, role, joined_at')
+        .eq('group_id', groupId)
+        .order('joined_at', { ascending: true })
+        .limit(10);
+
+      // Fetch member profiles
+      const members = await Promise.all(
+        (membersList || []).map(async (member) => {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('id, full_name, avatar_url')
+            .eq('id', member.user_id)
+            .maybeSingle();
+          return { ...member, profile };
+        })
+      );
+
       const { count } = await supabase
         .from('study_group_members')
         .select('*', { count: 'exact', head: true })
@@ -206,6 +226,7 @@ class StudyGroupsService {
           ...group,
           creator,
           posts: enrichedPosts,
+          members,
           memberCount: count || 0,
           isJoined: !!membership,
           userRole: membership?.role || null
@@ -297,6 +318,16 @@ class StudyGroupsService {
 
       if (error) throw error;
 
+      // Get group name for notification
+      const { data: group } = await supabase
+        .from('study_groups')
+        .select('name')
+        .eq('id', groupId)
+        .single();
+
+      // Notify group creator
+      await notificationHelper.notifyGroupJoin(groupId, userId, group?.name || 'Study Group');
+
       logger.info(`User ${userId} joined group ${groupId}`);
       return { success: true };
     } catch (error) {
@@ -347,6 +378,16 @@ class StudyGroupsService {
         .select('id, full_name, avatar_url')
         .eq('id', authorId)
         .single();
+
+      // Get group name for notification
+      const { data: group } = await supabase
+        .from('study_groups')
+        .select('name')
+        .eq('id', groupId)
+        .single();
+
+      // Notify all group members about new post
+      await notificationHelper.notifyGroupPost(groupId, authorId, group?.name || 'Study Group', content);
 
       logger.info(`Post created in group ${groupId}: ${post.id}`);
       return { success: true, data: { ...post, author } };

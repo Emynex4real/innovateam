@@ -4,6 +4,7 @@
 
 const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
+const notificationHelper = require('./notificationHelper');
 
 class MessagingService {
   // Get all conversations for a user
@@ -127,8 +128,8 @@ class MessagingService {
         })
         .eq('id', conversationId);
 
-      // Create notification
-      await this.createNotification(receiverId, 'message', 'New Message', `${messageText.substring(0, 50)}...`, message.id, `/messages/${conversationId}`);
+      // Create notification using helper
+      await notificationHelper.notifyNewMessage(receiverId, senderId, messageText);
 
       logger.info(`Message sent: ${message.id}`);
       return { success: true, message };
@@ -232,24 +233,6 @@ class MessagingService {
     } catch (error) {
       logger.error('Error starting conversation:', error);
       return { success: false, error: error.message };
-    }
-  }
-
-  // Helper: Create notification
-  async createNotification(userId, type, title, description, relatedId, actionUrl) {
-    try {
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type,
-          title,
-          description,
-          related_id: relatedId,
-          action_url: actionUrl
-        });
-    } catch (error) {
-      logger.error('Error creating notification:', error);
     }
   }
 }

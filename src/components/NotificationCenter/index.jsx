@@ -22,6 +22,7 @@ const NotificationCenter = () => {
 
   const fetchNotifications = async () => {
     try {
+      console.log('🔔 Fetching notifications for user:', user.id);
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -29,11 +30,13 @@ const NotificationCenter = () => {
         .order('created_at', { ascending: false })
         .limit(20);
 
+      console.log('🔔 Notifications response:', { data, error });
       if (error) throw error;
       setNotifications(data || []);
       setUnreadCount(data?.filter(n => !n.read).length || 0);
+      console.log('🔔 Set notifications:', data?.length, 'Unread:', data?.filter(n => !n.read).length);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error('❌ Failed to fetch notifications:', error);
     }
   };
 
@@ -111,6 +114,8 @@ const NotificationCenter = () => {
     }
   };
 
+  console.log('🔔 NotificationCenter render - unreadCount:', unreadCount, 'notifications:', notifications.length);
+
   return (
     <div className="relative">
       <Button
@@ -121,9 +126,9 @@ const NotificationCenter = () => {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+          <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold">
             {unreadCount > 9 ? '9+' : unreadCount}
-          </Badge>
+          </span>
         )}
       </Button>
 
