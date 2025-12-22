@@ -152,16 +152,17 @@ class StudyGroupsService {
         .from('study_groups')
         .select('*')
         .eq('id', groupId)
-        .single();
+        .maybeSingle();
 
       if (groupError) throw groupError;
+      if (!group) return { success: false, error: 'Group not found', data: null };
 
       // Fetch creator info
       const { data: creator } = await supabase
         .from('user_profiles')
         .select('id, full_name, avatar_url')
         .eq('id', group.creator_id)
-        .single();
+        .maybeSingle();
 
       // Fetch Posts with author info
       const { data: posts, error: postsError } = await supabase
@@ -180,7 +181,7 @@ class StudyGroupsService {
             .from('user_profiles')
             .select('id, full_name, avatar_url')
             .eq('id', post.author_id)
-            .single();
+            .maybeSingle();
           return { ...post, author };
         })
       );
@@ -191,7 +192,7 @@ class StudyGroupsService {
         .select('role')
         .eq('group_id', groupId)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       // Get Member Count
       const { count } = await supabase
