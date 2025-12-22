@@ -398,6 +398,38 @@ class StudyGroupsService {
       return { success: false, error: error.message, data: [] };
     }
   }
+
+  // 9. Delete group
+  async deleteGroup(groupId, userId) {
+    try {
+      // Check if user is the creator
+      const { data: group, error: fetchError } = await supabase
+        .from('study_groups')
+        .select('creator_id')
+        .eq('id', groupId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (group.creator_id !== userId) {
+        return { success: false, error: 'Only the creator can delete this group' };
+      }
+
+      // Delete group (cascade will handle members and posts)
+      const { error } = await supabase
+        .from('study_groups')
+        .delete()
+        .eq('id', groupId);
+
+      if (error) throw error;
+
+      logger.info(`Group ${groupId} deleted by user ${userId}`);
+      return { success: true };
+    } catch (error) {
+      logger.error('Error deleting group:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = new StudyGroupsService();

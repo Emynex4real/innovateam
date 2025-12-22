@@ -11,6 +11,8 @@
   color: white;
   padding: 30px;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .back-button {
@@ -22,10 +24,34 @@
   cursor: pointer;
   margin-bottom: 15px;
   font-size: 14px;
+  align-self: flex-start;
 }
 
 .back-button:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.delete-button {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.delete-button:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 1);
+}
+
+.delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .banner-content h1 {
@@ -211,4 +237,41 @@
   .group-sidebar {
     order: -1; /* Sidebar on top on mobile */
   }
+}
+
+.detail-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 15px;
+}
+
+.detail-loader .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.detail-loader p {
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.detail-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #ef4444;
+  font-size: 18px;
 }

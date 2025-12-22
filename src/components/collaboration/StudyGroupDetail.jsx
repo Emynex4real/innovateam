@@ -10,14 +10,24 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState('');
   const [posting, setPosting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
     fetchDetails();
+    const interval = setInterval(() => {
+      // Silent refresh without showing loading state
+      CollaborationService.getStudyGroupDetail(groupId).then(result => {
+        if (result.success && result.data) {
+          setGroup(result.data);
+          setPosts(result.data.posts || []);
+        }
+      });
+    }, 10000); // Refresh every 10 seconds
+    return () => clearInterval(interval);
   }, [groupId]);
 
   const fetchDetails = async () => {
-    setLoading(true);
     const result = await CollaborationService.getStudyGroupDetail(groupId);
     if (result.success && result.data) {
       setGroup(result.data);
@@ -39,7 +49,30 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
     setPosting(false);
   };
 
-  if (loading) return <div className="detail-loader">Loading group...</div>;
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this group? This action cannot be undone.')) return;
+    
+    setDeleting(true);
+    const result = await CollaborationService.deleteStudyGroup(groupId);
+    if (result.success) {
+      // Clear sessionStorage before redirecting
+      sessionStorage.removeItem('selectedGroupId');
+      sessionStorage.setItem('studyGroupView', 'browse');
+      window.location.href = '/student/study-groups';
+    } else {
+      alert(result.error || 'Failed to delete group');
+      setDeleting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="detail-loader">
+        <div className="spinner"></div>
+        <p>Loading group...</p>
+      </div>
+    );
+  }
   if (!group) return <div className="detail-error">Group not found</div>;
 
   return (
@@ -53,6 +86,11 @@ const StudyGroupDetail = ({ groupId, onBack }) => {
             {group.topic && <span className="badge-tag outline">{group.topic}</span>}
           </div>
         </div>
+        {group.creator_id === user?.id && (
+          <button className="delete-button" onClick={handleDelete} disabled={deleting}>
+            {deleting ? 'Deleting...' : '🗑️ Delete'}
+          </button>
+        )}
       </div>
 
       <div className="group-content-layout">

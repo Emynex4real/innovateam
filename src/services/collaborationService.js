@@ -270,6 +270,31 @@ class CollaborationService {
     }
   }
 
+  static async deleteStudyGroup(groupId) {
+    if (!groupId || groupId === 'undefined') return { success: false, error: 'Invalid Group ID' };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
   // ==================== PEER TUTORING ====================
 
   static async getTutors(centerId, subject = null, page = 1, limit = 20) {

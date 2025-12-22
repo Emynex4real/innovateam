@@ -10,8 +10,14 @@ import './StudyGroups.css';
 const StudyGroups = () => {
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState(null);
-  const [view, setView] = useState('browse');
-  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [view, setView] = useState(() => {
+    // Restore view from sessionStorage
+    return sessionStorage.getItem('studyGroupView') || 'browse';
+  });
+  const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    // Restore selected group from sessionStorage
+    return sessionStorage.getItem('selectedGroupId') || null;
+  });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -43,6 +49,23 @@ const StudyGroups = () => {
   useEffect(() => {
     fetchAllData();
   }, [userProfile?.center_id]);
+
+  // Check if selected group exists, if not reset to browse
+  useEffect(() => {
+    if (view === 'detail' && selectedGroupId) {
+      const checkGroupExists = async () => {
+        const result = await CollaborationService.getStudyGroupDetail(selectedGroupId);
+        if (!result.success || !result.data) {
+          // Group doesn't exist, reset to browse
+          setSelectedGroupId(null);
+          setView('browse');
+          sessionStorage.removeItem('selectedGroupId');
+          sessionStorage.setItem('studyGroupView', 'browse');
+        }
+      };
+      checkGroupExists();
+    }
+  }, [view, selectedGroupId]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -153,7 +176,9 @@ const StudyGroups = () => {
         onBack={() => {
           setSelectedGroupId(null);
           setView('browse');
-          setRefreshKey(prev => prev + 1);
+          sessionStorage.removeItem('selectedGroupId');
+          sessionStorage.setItem('studyGroupView', 'browse');
+          fetchAllData();
         }}
       />
     );
@@ -186,6 +211,7 @@ const StudyGroups = () => {
               console.log('🔍 Switching to Explore tab');
               console.log('🔍 Current groups state:', groups);
               setView('browse');
+              sessionStorage.setItem('studyGroupView', 'browse');
             }}
           >
             Explore
@@ -196,6 +222,7 @@ const StudyGroups = () => {
               console.log('🔍 Switching to My Groups tab');
               console.log('🔍 Current userGroups state:', userGroups);
               setView('my-groups');
+              sessionStorage.setItem('studyGroupView', 'my-groups');
             }}
           >
             My Groups <span className="badge">{userGroups.length}</span>
@@ -236,7 +263,12 @@ const StudyGroups = () => {
               <div 
                 key={group.id} 
                 className="sg-card"
-                onClick={() => { setSelectedGroupId(group.id); setView('detail'); }}
+                onClick={() => { 
+                  setSelectedGroupId(group.id); 
+                  setView('detail');
+                  sessionStorage.setItem('selectedGroupId', group.id);
+                  sessionStorage.setItem('studyGroupView', 'detail');
+                }}
               >
                 <div className="sg-card-cover" style={{ background: group.image_url ? `url(${group.image_url})` : getGradient(group.name) }}>
                   {group.image_url && <img src={group.image_url} alt={group.name} />}

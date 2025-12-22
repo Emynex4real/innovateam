@@ -198,6 +198,13 @@ router.post('/study-groups/:groupId/posts', authenticate, async (req, res) => {
   res.json(result);
 });
 
+// 9. Delete group
+router.delete('/study-groups/:groupId', authenticate, async (req, res) => {
+  const { groupId } = req.params;
+  const result = await studyGroupsService.deleteGroup(groupId, req.user.id);
+  res.json(result);
+});
+
 // ============================================
 // PEER TUTORING ROUTES
 // ============================================
