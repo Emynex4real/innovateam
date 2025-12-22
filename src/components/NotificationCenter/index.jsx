@@ -12,12 +12,28 @@ const NotificationCenter = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
+  const pollIntervalRef = React.useRef(null);
+  const subscriptionRef = React.useRef(null);
 
   useEffect(() => {
     if (user?.id) {
       fetchNotifications();
-      subscribeToNotifications();
+      subscriptionRef.current = subscribeToNotifications();
+      
+      // Add polling fallback every 5 seconds to catch missed notifications
+      pollIntervalRef.current = setInterval(() => {
+        fetchNotifications();
+      }, 5000);
     }
+
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current();
+      }
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
   }, [user]);
 
   const fetchNotifications = async () => {
@@ -49,13 +65,17 @@ const NotificationCenter = () => {
         table: 'notifications',
         filter: `user_id=eq.${user.id}`
       }, (payload) => {
+        console.log('🔔 New notification received via WebSocket:', payload.new);
         setNotifications(prev => [payload.new, ...prev]);
         setUnreadCount(prev => prev + 1);
         toast.success(payload.new.title);
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      console.log('🔔 Unsubscribing from notifications channel');
+      supabase.removeChannel(channel);
+    };
   };
 
   const markAsRead = async (id) => {
@@ -188,7 +208,7 @@ const NotificationCenter = () => {
                               )}
                             </div>
                             <h4 className="font-medium text-sm mb-1">{notification.title}</h4>
-                            <p className="text-sm text-muted-foreground">{notification.message}</p>
+                            <p className="text-sm text-muted-foreground">{notification.content}</p>
                             <p className="text-xs text-muted-foreground mt-2">
                               {new Date(notification.created_at).toLocaleString()}
                             </p>

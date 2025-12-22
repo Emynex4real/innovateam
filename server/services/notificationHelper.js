@@ -20,9 +20,9 @@ class NotificationHelper {
           user_id: userId,
           type,
           title,
-          message: content, // Column is 'message' not 'content'
+          content, // Using correct column name 'content'
           action_url: actionUrl,
-          read: false // Column is 'read' not 'is_read'
+          read: false // Using correct column name 'read'
         });
 
       if (error) {
@@ -67,7 +67,7 @@ class NotificationHelper {
         user_id: member.user_id,
         type: 'info',
         title: `New post in ${groupName}`,
-        message: `${authorName}: ${preview}`,
+        content: `${authorName}: ${preview}`,
         action_url: `/student/study-groups?group=${groupId}`,
         read: false
       }));
@@ -169,7 +169,7 @@ class NotificationHelper {
         title: n.title,
         content: n.content,
         action_url: n.actionUrl || null,
-        is_read: false
+        read: false
       }));
 
       await supabase.from('notifications').insert(notificationData);

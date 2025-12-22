@@ -67,10 +67,10 @@ const MessageBubble = ({
           </div>
         )}
 
-        {isOwn && message.is_read && (
+        {isOwn && message.read && (
           <div className="message-read-receipt">✓✓</div>
         )}
-        {isOwn && !message.is_read && (
+        {isOwn && !message.read && (
           <div className="message-unread-receipt">✓</div>
         )}
       </div>

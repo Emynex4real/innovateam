@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config/api';
+import { supabase } from '../lib/supabase'; // ✅ Ensure this path points to your actual supabase.js file
 
 /**
  * Collaboration Service
@@ -9,16 +10,13 @@ class CollaborationService {
   
   // ✅ HELPER: Robustly retrieve token from various possible storage keys
   static getToken() {
-    // Check standard keys
     const token = 
       localStorage.getItem('authToken') || 
       localStorage.getItem('auth_token') || 
       localStorage.getItem('token') ||
       localStorage.getItem('access_token');
 
-    // If not found, check Supabase specific session key (common cause of 401s)
     if (!token) {
-      // Adjust this key if your project uses a different specific Supabase ID
       const sbSession = localStorage.getItem('sb-jdedscbvbkjvqmmdabig-auth-token');
       if (sbSession) {
         try {
@@ -29,7 +27,6 @@ class CollaborationService {
         }
       }
     }
-
     return token;
   }
 
@@ -51,7 +48,6 @@ class CollaborationService {
         limit: limit.toString(),
       });
 
-      // Use dedicated 'all/explore' endpoint if no centerId
       let url;
       if (!centerId || centerId === 'undefined' || centerId === 'null') {
         url = `${API_BASE_URL}/phase2/study-groups/all/explore?${query}`;
@@ -84,7 +80,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/user/my-groups`, {
         method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed: Use centralized headers
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -109,7 +105,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/detail`, {
         method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -130,10 +126,9 @@ class CollaborationService {
 
   static async createStudyGroup(groupData) {
     try {
-      // Expecting groupData to contain { name, description, subject, topic, centerId, imageUrl }
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed: This ensures token is sent
+        headers: this.getHeaders(),
         body: JSON.stringify(groupData),
       });
 
@@ -163,12 +158,11 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/join`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        // If already a member, return specific error message but treat as partly successful flow logic in UI
         if (errData.error === 'Already a member') {
              return { success: false, error: 'Already a member' };
         }
@@ -192,7 +186,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/leave`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -216,7 +210,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${groupId}/posts`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
         body: JSON.stringify({
           content,
           resourceType,
@@ -251,7 +245,7 @@ class CollaborationService {
 
       const response = await fetch(`${API_BASE_URL}/phase2/study-groups/search/${centerId}?${params}`, {
         method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -316,7 +310,7 @@ class CollaborationService {
         `${API_BASE_URL}/phase2/tutoring/tutors/${centerId}?${query}`,
         {
           method: 'GET',
-          headers: this.getHeaders(), // ✅ Fixed
+          headers: this.getHeaders(),
         }
       );
 
@@ -342,7 +336,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/tutors/${tutorId}/profile`, {
         method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -371,7 +365,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/profile`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
         body: JSON.stringify({
           bio,
           hourlyRate,
@@ -408,7 +402,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/requests`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
         body: JSON.stringify({
           tutorId,
           subject,
@@ -439,7 +433,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/requests/${requestId}/accept`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -461,7 +455,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/requests/${requestId}/decline`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -483,7 +477,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/sessions`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
         body: JSON.stringify({
           requestId,
           scheduledAt,
@@ -510,7 +504,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/sessions/${sessionId}/complete`, {
         method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
         body: JSON.stringify({
           rating,
           feedback,
@@ -536,7 +530,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/tutoring/sessions`, {
         method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -555,103 +549,92 @@ class CollaborationService {
     }
   }
 
-  // ==================== NOTIFICATIONS ====================
+  // ==================== NOTIFICATIONS (FIXED SCHEMA) ====================
 
   static async getNotifications(unreadOnly = false, limit = 50) {
+    // ✅ Updated: Uses "read" (from your DB image) instead of "is_read"
     try {
-      const query = new URLSearchParams({
-        unreadOnly: unreadOnly.toString(),
-        limit: limit.toString(),
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user logged in');
 
-      const response = await fetch(`${API_BASE_URL}/phase2/notifications?${query}`, {
-        method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
-      });
+      let query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (unreadOnly) {
+        query = query.eq('read', false); // ✅ Matched DB Column
       }
 
-      const data = await response.json();
-      return data;
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return { success: true, data: data || [] };
+
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: [],
-      };
+      return { success: false, error: error.message, data: [] };
     }
   }
 
   static async getUnreadNotificationCount() {
+    // ✅ Updated: Uses "read" instead of "is_read"
     try {
-      const response = await fetch(`${API_BASE_URL}/phase2/notifications/count`, {
-        method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { success: true, data: 0 };
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false); // ✅ Matched DB Column
 
-      const data = await response.json();
-      return data;
+      if (error) throw error;
+      return { success: true, data: count || 0 };
+
     } catch (error) {
       console.error('Error fetching unread count:', error);
-      return {
-        success: false,
-        error: error.message,
-        data: 0,
-      };
+      return { success: false, error: error.message, data: 0 };
     }
   }
 
   static async markNotificationAsRead(notificationId) {
+    // ✅ Updated: Updates "read" column
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/phase2/notifications/${notificationId}/read`,
-        {
-          method: 'POST',
-          headers: this.getHeaders(), // ✅ Fixed
-        }
-      );
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true }) // ✅ Matched DB Column
+        .eq('id', notificationId);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (error) throw error;
+      return { success: true };
 
-      const data = await response.json();
-      return data;
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
   }
 
   static async markAllNotificationsAsRead() {
+    // ✅ Updated: Updates "read" column
     try {
-      const response = await fetch(`${API_BASE_URL}/phase2/notifications/mark-all-read`, {
-        method: 'POST',
-        headers: this.getHeaders(), // ✅ Fixed
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user logged in');
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true }) // ✅ Matched DB Column
+        .eq('user_id', user.id)
+        .eq('read', false);     // ✅ Matched DB Column
 
-      const data = await response.json();
-      return data;
+      if (error) throw error;
+      return { success: true };
+
     } catch (error) {
       console.error('Error marking all as read:', error);
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
   }
 
@@ -663,7 +646,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/gamification/badges/${centerId}`, {
         method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {
@@ -695,7 +678,7 @@ class CollaborationService {
         `${API_BASE_URL}/phase2/gamification/leaderboard/${centerId}?${query}`,
         {
           method: 'GET',
-          headers: this.getHeaders(), // ✅ Fixed
+          headers: this.getHeaders(),
         }
       );
 
@@ -725,7 +708,7 @@ class CollaborationService {
         `${API_BASE_URL}/phase2/gamification/rank/${centerId}?${query}`,
         {
           method: 'GET',
-          headers: this.getHeaders(), // ✅ Fixed
+          headers: this.getHeaders(),
         }
       );
 
@@ -751,7 +734,7 @@ class CollaborationService {
     try {
       const response = await fetch(`${API_BASE_URL}/phase2/gamification/achievements/${centerId}`, {
         method: 'GET',
-        headers: this.getHeaders(), // ✅ Fixed
+        headers: this.getHeaders(),
       });
 
       if (!response.ok) {

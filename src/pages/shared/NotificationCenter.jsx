@@ -8,9 +8,21 @@ const NotificationCenter = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const pollIntervalRef = React.useRef(null);
 
   useEffect(() => {
     loadNotifications();
+    
+    // Add polling every 5 seconds to catch new notifications
+    pollIntervalRef.current = setInterval(() => {
+      loadNotifications();
+    }, 5000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
   }, []);
 
   const loadNotifications = async () => {
@@ -21,9 +33,9 @@ const NotificationCenter = () => {
       ]);
       if (notifRes.success) setNotifications(notifRes.data);
       if (countRes.success) setUnreadCount(countRes.data);
+      setLoading(false);
     } catch (error) {
       toast.error('Failed to load notifications');
-    } finally {
       setLoading(false);
     }
   };
@@ -119,7 +131,7 @@ const NotificationCenter = () => {
                       )}
                     </div>
                     <p className="text-sm text-gray-600">
-                      {notif.message}
+                      {notif.content || notif.message}
                     </p>
                     <p className="text-xs mt-2 text-gray-400">
                       {new Date(notif.created_at).toLocaleString()}
