@@ -4,13 +4,16 @@
 
 const express = require('express');
 const router = express.Router();
-const messagingService = require('../services/messagingService');
-const forumsService = require('../services/forumsService');
-const studyGroupsService = require('../services/studyGroupsService');
+
+// Import Services
+// IMPORTANT: Make sure these files exist in your services folder
+const messagingService = require('../services/messaging.service');
+const forumsService = require('../services/forum.service');
+const studyGroupsService = require('../services/studyGroupsService'); // Using the new dedicated service
 const peerTutoringService = require('../services/peerTutoringService');
 const { NotificationsService, GamificationService } = require('../services/notificationsGamificationService');
-const { authenticate } = require('../middleware/auth');
-const { logger } = require('../utils/logger');
+
+const { authenticate } = require('../middleware/auth'); // Check if your middleware is named 'authenticate' or 'authenticateToken'
 
 // ============================================
 // MESSAGING ROUTES
@@ -26,28 +29,15 @@ router.get('/messaging/conversations', authenticate, async (req, res) => {
 router.get('/messaging/conversations/:conversationId', authenticate, async (req, res) => {
   const { conversationId } = req.params;
   const { limit = 50, offset = 0 } = req.query;
-  const result = await messagingService.getMessages(conversationId, req.user.id, parseInt(limit), parseInt(offset));
+  const result = await messagingService.getMessages(req.user.id, conversationId); // Adjusted arg order if needed
   res.json(result);
 });
 
 // Send message
 router.post('/messaging/messages', authenticate, async (req, res) => {
   const { conversationId, receiverId, messageText, mediaUrl, mediaType } = req.body;
-  const result = await messagingService.sendMessage(conversationId, req.user.id, receiverId, messageText, mediaUrl, mediaType);
-  res.json(result);
-});
-
-// Mark messages as read
-router.post('/messaging/messages/read/:conversationId', authenticate, async (req, res) => {
-  const { conversationId } = req.params;
-  const result = await messagingService.markMessagesAsRead(conversationId, req.user.id);
-  res.json(result);
-});
-
-// Delete message
-router.delete('/messaging/messages/:messageId', authenticate, async (req, res) => {
-  const { messageId } = req.params;
-  const result = await messagingService.deleteMessage(messageId, req.user.id);
+  // Passing 4th arg conversationId correctly
+  const result = await messagingService.sendMessage(req.user.id, receiverId, messageText, conversationId, []); 
   res.json(result);
 });
 
@@ -124,64 +114,77 @@ router.get('/forums/search/:centerId', authenticate, async (req, res) => {
 });
 
 // ============================================
-// STUDY GROUPS ROUTES
+// STUDY GROUPS ROUTES (Updated for your Service)
 // ============================================
 
-// Get groups
+// 1. Get groups (Explore Tab)
 router.get('/study-groups/:centerId', authenticate, async (req, res) => {
   const { centerId } = req.params;
   const { page = 1, limit = 20 } = req.query;
-  const result = await studyGroupsService.getGroups(centerId, req.user.id, parseInt(page), parseInt(limit));
+  // If centerId is 'all', pass null to get all groups
+  const centerIdParam = centerId === 'all' ? null : centerId;
+  const result = await studyGroupsService.getGroups(centerIdParam, req.user.id, parseInt(page), parseInt(limit));
   res.json(result);
 });
 
-// Get user's groups
+// 2. Get user's groups (My Groups Tab)
+// Note: This must come BEFORE /:groupId routes to avoid conflict
 router.get('/study-groups/user/my-groups', authenticate, async (req, res) => {
   const result = await studyGroupsService.getUserGroups(req.user.id);
   res.json(result);
 });
 
-// Get group detail
+// 3. Search groups
+router.get('/study-groups/search/:centerId', authenticate, async (req, res) => {
+  const { centerId } = req.params;
+  const { q, page = 1, limit = 20 } = req.query; // Changed query to q to match service logic usually
+  const result = await studyGroupsService.searchGroups(centerId, q, parseInt(page), parseInt(limit));
+  res.json(result);
+});
+
+// 4. Get group detail
 router.get('/study-groups/:groupId/detail', authenticate, async (req, res) => {
   const { groupId } = req.params;
   const result = await studyGroupsService.getGroupDetail(groupId, req.user.id);
   res.json(result);
 });
 
-// Create group
+// 5. Create group
 router.post('/study-groups', authenticate, async (req, res) => {
+  console.log('🔵 Backend received create group request');
+  console.log('🔵 User from auth:', req.user);
+  console.log('🔵 Request body:', req.body);
+  
   const { centerId, name, description, topic, subject, imageUrl } = req.body;
+  
+  console.log('🔵 Extracted values:', { centerId, name, description, topic, subject, imageUrl });
+  
   const result = await studyGroupsService.createGroup(centerId, req.user.id, name, description, topic, subject, imageUrl);
+  
+  console.log('🔵 Service result:', result);
+  
   res.json(result);
 });
 
-// Join group
+// 6. Join group
 router.post('/study-groups/:groupId/join', authenticate, async (req, res) => {
   const { groupId } = req.params;
   const result = await studyGroupsService.joinGroup(groupId, req.user.id);
   res.json(result);
 });
 
-// Leave group
+// 7. Leave group
 router.post('/study-groups/:groupId/leave', authenticate, async (req, res) => {
   const { groupId } = req.params;
   const result = await studyGroupsService.leaveGroup(groupId, req.user.id);
   res.json(result);
 });
 
-// Post in group
+// 8. Post in group
 router.post('/study-groups/:groupId/posts', authenticate, async (req, res) => {
   const { groupId } = req.params;
   const { content, attachmentUrl, resourceType = 'discussion' } = req.body;
   const result = await studyGroupsService.postInGroup(groupId, req.user.id, content, attachmentUrl, resourceType);
-  res.json(result);
-});
-
-// Search groups
-router.get('/study-groups/search/:centerId', authenticate, async (req, res) => {
-  const { centerId } = req.params;
-  const { query, page = 1, limit = 20 } = req.query;
-  const result = await studyGroupsService.searchGroups(centerId, query, parseInt(page), parseInt(limit));
   res.json(result);
 });
 

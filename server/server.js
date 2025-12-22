@@ -33,10 +33,10 @@ const tcAttemptsRoutes = require('./routes/tcAttempts.routes');
 
 // Phase 1 & 2 routes
 const subscriptionRoutes = require('./routes/subscription.routes');
-const messagingRoutes = require('./routes/messaging.routes'); // Ensure this file exists
+const messagingRoutes = require('./routes/messaging.routes'); 
 const analyticsRoutes = require('./routes/analytics.routes');
 const gamificationRoutes = require('./routes/gamification.routes');
-const phase2Routes = require('./routes/phase2Routes');
+const phase2Routes = require('./routes/phase2Routes'); // Ensure this matches your filename exactly
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -190,7 +190,6 @@ app.use('/api/', apiLimiter);
 const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254'];
 
 app.use('/api', (req, res, next) => {
-  // Check for suspicious URLs in request body
   const checkForSSRF = (obj) => {
     if (typeof obj === 'string') {
       try {
@@ -225,7 +224,7 @@ app.get('/api/csrf-token', (req, res) => {
   const token = Math.random().toString(36).substring(2);
   csrfTokens.set(token, Date.now());
   
-  // Clean old tokens (older than 1 hour)
+  // Clean old tokens
   for (const [key, time] of csrfTokens.entries()) {
     if (Date.now() - time > 3600000) {
       csrfTokens.delete(key);
@@ -235,7 +234,6 @@ app.get('/api/csrf-token', (req, res) => {
   res.json({ csrfToken: token });
 });
 
-// Apply CSRF to state-changing routes (except AI Examiner for now)
 const csrfProtection = (req, res, next) => {
   if (process.env.NODE_ENV === 'development') return next();
   
@@ -253,15 +251,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    security: {
-      helmet: true,
-      cors: true,
-      xss: true,
-      csrf: true,
-      ssrf: true,
-      rateLimit: true
-    }
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -280,12 +270,12 @@ app.get('/', (req, res) => {
 // Public routes (no CSRF)
 app.use('/api/auth', authRoutes);
 
-// Protected routes (with CSRF in production)
+// Protected routes
 app.use('/api/profile', csrfProtection, profileRoutes);
 app.use('/api/wallet', csrfProtection, walletRoutes);
 app.use('/api/services', csrfProtection, servicesRoutes);
 
-// AI routes (no CSRF for now - can add later)
+// AI routes
 app.use('/api/ai-examiner', aiExaminerRoutes);
 app.use('/api/admin/ai-questions', aiQuestionsRoutes);
 
@@ -295,7 +285,7 @@ app.use('/api', courseRecommendationRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', csrfProtection, adminRoutes);
 
-// Tutorial Center routes (no CSRF for now)
+// Tutorial Center routes
 app.use('/api/tutorial-centers', tutorialCenterRoutes);
 app.use('/api/tc-enrollments', tcEnrollmentsRoutes);
 app.use('/api/tc-questions', tcQuestionsRoutes);
@@ -308,20 +298,17 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/gamification', gamificationRoutes);
 
 // ============================================
-// 12. MESSAGING ROUTE FIX (CRITICAL)
+// 12. MESSAGING & COLLABORATION ROUTE FIX
 // ============================================
-// 1. Mount at /api/messages (Standard)
+// Mount at /api/messages (Standard)
 app.use('/api/messages', messagingRoutes);
 
-// 2. Mount at /phase2/messaging (Fixes your Frontend 404)
-// The frontend requests http://localhost:5000/phase2/messaging/conversations
-// This bypasses the /api prefix, so we handle it explicitly here.
+// Mount at /phase2/messaging (Fixes Legacy Frontend Calls)
 app.use('/phase2/messaging', messagingRoutes);
 
-// 3. Mount Phase 2 routes at /phase2 (Fixes Frontend 404s)
+// Mount Phase 2 routes (Collaboration, Study Groups, Forums)
+// IMPORTANT: This handles your study groups
 app.use('/phase2', phase2Routes);
-
-// 3. Keep Phase 2 general route
 app.use('/api/phase2', phase2Routes);
 
 // ============================================
@@ -351,15 +338,7 @@ app.listen(PORT, HOST, () => {
   console.log('='.repeat(60));
   console.log(`📍 URL: http://${HOST}:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ Started: ${new Date().toLocaleString()}`);
-  console.log('\n🛡️  Security Features:');
-  console.log('   ✅ Helmet (Security Headers)');
-  console.log('   ✅ CORS (Cross-Origin Protection)');
-  console.log('   ✅ XSS (Cross-Site Scripting Protection)');
-  console.log('   ✅ CSRF (Cross-Site Request Forgery Protection)');
-  console.log('   ✅ SSRF (Server-Side Request Forgery Protection)');
-  console.log('   ✅ Rate Limiting (DDoS Protection)');
-  console.log('   ✅ Input Sanitization');
+  console.log('\n🛡️  Security Features Active');
   console.log('='.repeat(60) + '\n');
   
   logger.info('Secure server started successfully');

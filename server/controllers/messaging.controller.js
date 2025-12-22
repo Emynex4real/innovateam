@@ -70,14 +70,14 @@ exports.sendMessage = async (req, res) => {
   try {
     // Extract conversationId from body (sent by frontend)
     const { conversationId, messageText, mediaUrl, mediaType } = req.body; 
-    const receiverId = req.body.receiverId; // Might be null/undefined for existing chats
+    const receiverId = req.body.receiverId; 
     
     // ✅ CRITICAL FIX: Pass conversationId as the 4th argument
     const result = await messagingService.sendMessage(
         req.user.id, 
         receiverId, 
         messageText, 
-        conversationId, // <--- This was missing/null before
+        conversationId, 
         [] // attachments placeholder
     );
     
@@ -100,7 +100,7 @@ exports.getConversations = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { partnerId } = req.params; // In the route /conversations/:id, this is the conversation ID
+    const { partnerId } = req.params; 
     const result = await messagingService.getMessages(req.user.id, partnerId);
     res.json(result);
   } catch (error) {

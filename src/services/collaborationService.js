@@ -45,17 +45,16 @@ class CollaborationService {
   // ==================== STUDY GROUPS ====================
 
   static async getStudyGroups(centerId, page = 1, limit = 20) {
-    if (!centerId || centerId === 'undefined' || centerId === 'null') {
-      return { success: false, data: [], error: 'Center ID not provided' };
-    }
-
     try {
       const query = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
       });
 
-      const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${centerId}?${query}`, {
+      // Use 'all' as centerId if not provided to fetch all groups
+      const centerParam = centerId && centerId !== 'undefined' && centerId !== 'null' ? centerId : 'all';
+
+      const response = await fetch(`${API_BASE_URL}/phase2/study-groups/${centerParam}?${query}`, {
         method: 'GET',
         headers: this.getHeaders(),
       });

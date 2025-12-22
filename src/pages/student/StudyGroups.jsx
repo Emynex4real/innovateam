@@ -9,35 +9,57 @@ import './StudyGroups.css';
 
 const StudyGroups = () => {
   const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState(null);
   const [view, setView] = useState('browse');
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const [groups, setGroups] = useState([]);
   const [userGroups, setUserGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Fetch user profile to get center_id
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const response = await fetch(`http://localhost:5000/api/users/profile/${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUserProfile(data);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.id]);
 
   useEffect(() => {
-    if (user?.center_id) {
-      fetchAllData();
-    }
-  }, [user, refreshKey]);
+    fetchAllData();
+  }, [userProfile?.center_id]);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
+      console.log('🔍 Fetching all groups and user groups');
       const [allRes, myRes] = await Promise.all([
-        CollaborationService.getStudyGroups(user.center_id),
+        CollaborationService.getStudyGroups(userProfile?.center_id || null),
         CollaborationService.getUserStudyGroups()
       ]);
+
+      console.log('🔍 All groups response:', allRes);
+      console.log('🔍 My groups response:', myRes);
 
       if (allRes.success) setGroups(allRes.data || []);
       if (myRes.success) setUserGroups(myRes.data || []);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching groups:', err);
       toast.error("Failed to load groups");
     } finally {
       setLoading(false);
@@ -46,12 +68,14 @@ const StudyGroups = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    if (!userProfile?.center_id) return;
+    
     setLoading(true);
     if (!searchQuery.trim()) {
       fetchAllData();
       return;
     }
-    const res = await CollaborationService.searchStudyGroups(user.center_id, searchQuery);
+    const res = await CollaborationService.searchStudyGroups(userProfile.center_id, searchQuery);
     if (res.success) {
       setGroups(res.data || []);
     }
@@ -61,18 +85,27 @@ const StudyGroups = () => {
   const handleCreateGroup = async (groupData) => {
     setCreating(true);
     
-    // ✅ FIX: Ensure centerId is attached
+    console.log('🔵 Creating group with data:', groupData);
+    console.log('🔵 User object:', user);
+    console.log('🔵 User profile:', userProfile);
+    
     const payload = {
       ...groupData,
-      centerId: user.center_id
+      centerId: userProfile?.center_id || null // Allow null for now
     };
 
+    console.log('🔵 Final payload:', payload);
+
     const result = await CollaborationService.createStudyGroup(payload);
+    
+    console.log('🔵 Create result:', result);
     
     if (result.success) {
       toast.success('Study Group Created!');
       setShowCreateModal(false);
-      setRefreshKey(prev => prev + 1); 
+      // Force refresh by fetching user groups directly
+      const myRes = await CollaborationService.getUserStudyGroups();
+      if (myRes.success) setUserGroups(myRes.data || []);
       setView('my-groups'); 
     } else {
       toast.error(result.error || 'Failed to create group');
