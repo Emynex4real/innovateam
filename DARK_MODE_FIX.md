@@ -1,78 +1,51 @@
-# Dark Mode Error Fix - RESOLVED ✅
+# Dark Mode Fix for Messaging Component
 
-## Issue
-Error: `useTheme must be used within a ThemeProvider`
+## Issues Fixed
 
-## Root Cause
-The application was using two different theme contexts:
-1. **DarkModeContext** - Used by the main app (App.js)
-2. **ThemeContext** - Incorrectly used by some components
+1. **Text Color Issues in Dark Mode**: Added proper color transitions and dark mode variants for all text elements in the messaging component.
 
-## Files Fixed
+2. **Dark Mode Toggle**: The dark mode toggle button is already implemented in the EducationalSidebar component and should be working.
 
-### 1. ✅ All Tutor Pages (7 files)
-- Dashboard.jsx
-- AIGenerator.jsx
-- Questions.jsx
-- Students.jsx
-- Tests.jsx
-- TestBuilder.jsx
-- Leaderboard.jsx
+## Changes Made
 
-**Changes:**
-- Changed: `import { useTheme } from '../../contexts/ThemeContext'`
-- To: `import { useDarkMode } from '../../contexts/DarkModeContext'`
-- Changed: `const { isDark } = useTheme()`
-- To: `const { isDarkMode } = useDarkMode()`
+### 1. Updated Messaging.css
+- Added comprehensive dark mode support using `.dark` class prefix
+- Fixed text colors for all messaging elements:
+  - Conversation names, times, and previews
+  - Chat headers and user names
+  - Message bubbles and input fields
+  - Modal components
+  - Loading states and empty states
 
-### 2. ✅ Theme Toggle Component
-**File:** `src/components/ui/theme-toggle.jsx`
+### 2. Key Dark Mode Classes Added
+- `.dark .messaging-layout` - Dark background for main layout
+- `.dark .messaging-sidebar` - Dark sidebar background
+- `.dark .conv-name` - White text for conversation names
+- `.dark .msg-row.them .msg-bubble` - Dark message bubbles with white text
+- `.dark .chat-input-wrapper input` - Dark input fields with white text
+- And many more...
 
-**Changes:**
-- Updated to use `useDarkMode` instead of `useTheme`
-- Changed `theme === 'light'` to `!isDarkMode`
-- Changed `toggleTheme` to `toggleDarkMode`
+## How to Test
 
-### 3. ✅ Admin Dashboard
-**File:** `src/pages/admin/AdminDashboard.jsx`
+1. Open the messaging page (`/student/messaging`)
+2. Click the sun/moon icon in the top navigation bar
+3. Verify that:
+   - All text is readable in both light and dark modes
+   - Background colors change appropriately
+   - Input fields have proper contrast
+   - Modal dialogs respect the theme
 
-**Changes:**
-- Removed `ThemeProvider` wrapper
-- Updated to use `useDarkMode` hook
-- Changed all `isDark` references to `isDarkMode`
-- Changed `toggleTheme` to `toggleDarkMode`
+## Dark Mode Toggle Location
 
-## Solution Summary
+The dark mode toggle button is located in the top navigation bar (EducationalSidebar component) and appears as:
+- 🌙 (Moon icon) in light mode
+- ☀️ (Sun icon) in dark mode
 
-All components now use the **DarkModeContext** which is already provided at the app level in `App.js`:
+## Technical Details
 
-```jsx
-<DarkModeProvider>
-  <SupabaseAuthProvider>
-    <WalletProvider>
-      {/* All app content */}
-    </WalletProvider>
-  </SupabaseAuthProvider>
-</DarkModeProvider>
-```
+- Uses CSS custom properties defined in `index.css`
+- Implements smooth transitions (0.2s ease) for theme switching
+- Maintains accessibility with proper color contrast ratios
+- Supports all messaging components including modals and dropdowns
 
-## How It Works Now
-
-1. **App.js** wraps everything with `DarkModeProvider`
-2. All components use `useDarkMode()` hook
-3. Hook returns: `{ isDarkMode, toggleDarkMode }`
-4. Dark mode state is persisted in localStorage
-5. All pages automatically sync with the same dark mode state
-
-## Testing
-
-1. ✅ Start the app: `npm start`
-2. ✅ Navigate to any tutor page
-3. ✅ Toggle dark mode - should work without errors
-4. ✅ Refresh page - dark mode preference should persist
-5. ✅ Navigate between pages - dark mode should stay consistent
-
-## No More Errors! 🎉
-
-The error `useTheme must be used within a ThemeProvider` is now completely resolved.
-All pages use the correct context and dark mode works perfectly across the entire application.
+The dark mode feature should now work correctly across the entire messaging interface!
