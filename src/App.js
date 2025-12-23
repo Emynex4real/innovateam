@@ -54,7 +54,7 @@ import Results from './pages/student/tutorial-center/Results';
 import ReviewAnswers from './pages/student/tutorial-center/ReviewAnswers';
 import StudentAnalytics from './pages/student/analytics/MyAnalytics';
 import Messaging from './pages/student/Messaging';
-import Forums from './pages/student/Forums';
+import ForumsWrapper from './pages/student/ForumsWrapper';
 import StudyGroups from './pages/student/StudyGroups';
 import TutoringMarketplace from './pages/student/TutoringMarketplace';
 
@@ -306,7 +306,7 @@ function App() {
               {/* Collaboration Routes (Accessible by Students AND Admins) */}
               {/* This explains your issue: allowedRoles includes 'admin', RoleProtectedRoute must support it */}
               <Route path="/student/messaging" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><Messaging /></EducationalSidebar></RoleProtectedRoute>} />
-              <Route path="/student/forums" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><Forums /></EducationalSidebar></RoleProtectedRoute>} />
+              <Route path="/student/forums" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><ForumsWrapper /></EducationalSidebar></RoleProtectedRoute>} />
               <Route path="/student/study-groups" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><StudyGroups /></EducationalSidebar></RoleProtectedRoute>} />
               <Route path="/student/tutoring" element={<RoleProtectedRoute allowedRoles={['student', 'admin']}><EducationalSidebar><TutoringMarketplace /></EducationalSidebar></RoleProtectedRoute>} />
               

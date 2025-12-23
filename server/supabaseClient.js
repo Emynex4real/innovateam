@@ -52,7 +52,7 @@ const initializeSupabase = () => {
   try {
     console.log('🚀 Initializing Supabase client...');
     
-    // Basic configuration
+    // Basic configuration with connection pooling and retry
     const options = {
       auth: {
         autoRefreshToken: false,
@@ -60,22 +60,23 @@ const initializeSupabase = () => {
         detectSessionInUrl: false,
         storageKey: 'sb-auth-token',
         storage: {
-          getItem: (key) => {
-            console.log(`🔑 Storage get: ${key}`);
-            return null; // Don't persist sessions
-          },
-          setItem: (key, value) => {
-            console.log(`🔑 Storage set: ${key} = ${value ? '***' : 'null'}`);
-          },
-          removeItem: (key) => {
-            console.log(`🔑 Storage remove: ${key}`);
-          }
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {}
         }
       },
       global: {
         headers: { 
           'x-application-name': 'innovateam-backend',
-          'x-client-info': 'innovateam/1.0.0'
+          'x-client-info': 'innovateam/1.0.0',
+          'Connection': 'keep-alive'
+        },
+        fetch: (url, options = {}) => {
+          return fetch(url, {
+            ...options,
+            keepalive: true,
+            signal: AbortSignal.timeout(30000)
+          });
         }
       },
       db: {
@@ -131,12 +132,14 @@ const initializeSupabase = () => {
             removeItem: (key) => {}
           }
         },
-        // Add global headers for admin operations
         global: {
           ...options.global,
-          'x-application-name': 'innovateam-backend-admin',
-          'x-client-info': 'innovateam/1.0.0-admin',
-          'x-request-origin': 'server-side'
+          headers: {
+            ...options.global.headers,
+            'x-application-name': 'innovateam-backend-admin',
+            'x-client-info': 'innovateam/1.0.0-admin',
+            'x-request-origin': 'server-side'
+          }
         }
       }
     );
@@ -220,11 +223,36 @@ const initialize = async () => {
 // Run the initialization
 initialize();
 
-// Simple logging for database operations
+// Wrap queries with retry logic
 const originalFrom = supabase.from;
 supabase.from = function(table) {
   console.log(`🔍 Executing query on ${table}`);
-  return originalFrom.apply(this, [table]);
+  const builder = originalFrom.apply(this, [table]);
+  const originalMethods = {};
+  
+  ['select', 'insert', 'update', 'delete', 'upsert'].forEach(method => {
+    originalMethods[method] = builder[method];
+    builder[method] = function(...args) {
+      const query = originalMethods[method].apply(this, args);
+      const originalThen = query.then;
+      
+      query.then = async function(resolve, reject) {
+        let retries = 2;
+        while (retries >= 0) {
+          try {
+            return await originalThen.call(this, resolve, reject);
+          } catch (error) {
+            if (retries === 0 || !error.message?.includes('fetch failed')) throw error;
+            retries--;
+            await new Promise(r => setTimeout(r, 300));
+          }
+        }
+      };
+      return query;
+    };
+  });
+  
+  return builder;
 };
 
 module.exports = supabase;

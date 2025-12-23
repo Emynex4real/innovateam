@@ -37,17 +37,20 @@ const EducationalSidebar = ({ children }) => {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // --- Logic: Check Admin Status ---
+  const [userRole, setUserRole] = useState('student');
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const checkUserRole = async () => {
       if (!user) return;
       const { data } = await supabase
         .from('user_profiles')
         .select('role')
         .eq('id', user.id)
         .single();
-      setIsAdmin(data?.role === 'admin');
+      const role = data?.role || 'student';
+      setUserRole(role);
+      setIsAdmin(role === 'admin');
     };
-    checkAdminStatus();
+    checkUserRole();
   }, [user]);
 
   // --- Logic: Click Outside to Close Mobile Menu ---
@@ -91,7 +94,7 @@ const EducationalSidebar = ({ children }) => {
         { label: 'Tutoring', path: '/student/tutoring' }
       ]
     },
-    { id: 'tutorial-center', label: 'Tutorial Center', icon: LightBulbIcon, path: '/tutor' },
+    { id: 'tutorial-center', label: 'Tutorial Center', icon: LightBulbIcon, path: userRole === 'student' ? '/student/centers' : '/tutor' },
     { id: 'transactions', label: 'Transactions', icon: ClipboardDocumentListIcon, path: '/dashboard/transactions' },
     { id: 'support', label: 'Support', icon: QuestionMarkCircleIcon, path: '/dashboard/support' }
   ];

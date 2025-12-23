@@ -6,10 +6,9 @@ const express = require('express');
 const router = express.Router();
 
 // Import Services
-// IMPORTANT: Make sure these files exist in your services folder
 const messagingService = require('../services/messaging.service');
-const forumsService = require('../services/forum.service');
-const studyGroupsService = require('../services/studyGroupsService'); // Using the new dedicated service
+const forumsService = require('../services/forums.service'); // ✅ FIXED: Using correct service
+const studyGroupsService = require('../services/studyGroupsService');
 const peerTutoringService = require('../services/peerTutoringService');
 const { NotificationsService, GamificationService } = require('../services/notificationsGamificationService');
 
@@ -52,65 +51,180 @@ router.post('/messaging/conversations', authenticate, async (req, res) => {
 // FORUMS ROUTES
 // ============================================
 
+// ============================================
+// FORUMS ROUTES (ENHANCED)
+// ============================================
+
 // Get categories
 router.get('/forums/categories/:centerId', authenticate, async (req, res) => {
-  const { centerId } = req.params;
-  const result = await forumsService.getCategories(centerId);
-  res.json(result);
+  try {
+    const { centerId } = req.params;
+    if (!centerId || centerId === 'undefined') {
+      return res.status(400).json({ success: false, error: 'Invalid center ID' });
+    }
+    const result = await forumsService.getCategories(centerId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Get threads in category
 router.get('/forums/categories/:categoryId/threads', authenticate, async (req, res) => {
-  const { categoryId } = req.params;
-  const { page = 1, limit = 20 } = req.query;
-  const result = await forumsService.getThreads(categoryId, parseInt(page), parseInt(limit));
-  res.json(result);
+  try {
+    const { categoryId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    const result = await forumsService.getThreads(
+      categoryId, 
+      parseInt(page), 
+      Math.min(parseInt(limit), 50) // Max 50 per page
+    );
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Get thread with posts
 router.get('/forums/threads/:threadId', authenticate, async (req, res) => {
-  const { threadId } = req.params;
-  const result = await forumsService.getThread(threadId, req.user.id);
-  res.json(result);
+  try {
+    const { threadId } = req.params;
+    const result = await forumsService.getThread(threadId, req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Create thread
 router.post('/forums/threads', authenticate, async (req, res) => {
-  const { categoryId, centerId, title, description } = req.body;
-  const result = await forumsService.createThread(categoryId, centerId, req.user.id, title, description);
-  res.json(result);
+  try {
+    const { categoryId, centerId, title, description, tags } = req.body;
+    
+    // Validation
+    if (!title?.trim() || title.length < 10) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Title must be at least 10 characters' 
+      });
+    }
+    if (!description?.trim() || description.length < 20) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Description must be at least 20 characters' 
+      });
+    }
+    
+    const result = await forumsService.createThread(
+      categoryId, 
+      centerId, 
+      req.user.id, 
+      title, 
+      description,
+      tags
+    );
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Create post in thread
 router.post('/forums/threads/:threadId/posts', authenticate, async (req, res) => {
-  const { threadId } = req.params;
-  const { content, parentPostId } = req.body;
-  const result = await forumsService.createPost(threadId, req.user.id, content, parentPostId);
-  res.json(result);
+  try {
+    const { threadId } = req.params;
+    const { content, parentPostId } = req.body;
+    
+    if (!content?.trim() || content.length < 5) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Post must be at least 5 characters' 
+      });
+    }
+    
+    const result = await forumsService.createPost(threadId, req.user.id, content, parentPostId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Vote on post
 router.post('/forums/posts/:postId/vote', authenticate, async (req, res) => {
-  const { postId } = req.params;
-  const { voteType } = req.body;
-  const result = await forumsService.votePost(postId, req.user.id, voteType);
-  res.json(result);
+  try {
+    const { postId } = req.params;
+    const { voteType } = req.body;
+    
+    if (!['upvote', 'downvote'].includes(voteType)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid vote type' 
+      });
+    }
+    
+    const result = await forumsService.votePost(postId, req.user.id, voteType);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Mark post as answer
 router.post('/forums/posts/:postId/mark-answer', authenticate, async (req, res) => {
-  const { postId } = req.params;
-  const { threadId } = req.body;
-  const result = await forumsService.markAsAnswer(postId, threadId, req.user.id);
-  res.json(result);
+  try {
+    const { postId } = req.params;
+    const { threadId } = req.body;
+    const result = await forumsService.markAsAnswer(postId, threadId, req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Search threads
 router.get('/forums/search/:centerId', authenticate, async (req, res) => {
-  const { centerId } = req.params;
-  const { query, page = 1, limit = 20 } = req.query;
-  const result = await forumsService.searchThreads(centerId, query, parseInt(page), parseInt(limit));
-  res.json(result);
+  try {
+    const { centerId } = req.params;
+    const { q, page = 1, limit = 20 } = req.query;
+    
+    if (!q?.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Search query is required' 
+      });
+    }
+    
+    const result = await forumsService.searchThreads(
+      centerId, 
+      q, 
+      parseInt(page), 
+      Math.min(parseInt(limit), 50)
+    );
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Follow/Unfollow thread (NEW FEATURE)
+router.post('/forums/threads/:threadId/follow', authenticate, async (req, res) => {
+  try {
+    const { threadId } = req.params;
+    const result = await forumsService.followThread(threadId, req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/forums/threads/:threadId/unfollow', authenticate, async (req, res) => {
+  try {
+    const { threadId } = req.params;
+    const result = await forumsService.unfollowThread(threadId, req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // ============================================
@@ -362,3 +476,120 @@ router.post('/test-notification', authenticate, async (req, res) => {
 });
 
 module.exports = router;
+
+// ============================================
+// NEW FORUM ENDPOINTS - Industry Standard Features
+// ============================================
+
+// Edit post
+router.put('/forums/posts/:postId', authenticate, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    if (!content?.trim() || content.length < 5) {
+      return res.status(400).json({ success: false, error: 'Post must be at least 5 characters' });
+    }
+
+    const { data: post } = await require('../supabaseClient')
+      .from('forum_posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single();
+
+    if (!post || post.author_id !== userId) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { data, error } = await require('../supabaseClient')
+      .from('forum_posts')
+      .update({ content, is_edited: true, edited_at: new Date().toISOString() })
+      .eq('id', postId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete post
+router.delete('/forums/posts/:postId', authenticate, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    const { data: post } = await require('../supabaseClient')
+      .from('forum_posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single();
+
+    if (!post || (post.author_id !== userId && !req.user.isAdmin)) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { error } = await require('../supabaseClient')
+      .from('forum_posts')
+      .update({ is_deleted: true })
+      .eq('id', postId);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Bookmark post
+router.post('/forums/posts/:postId/bookmark', authenticate, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.id;
+    const supabase = require('../supabaseClient');
+
+    const { data: existing } = await supabase
+      .from('forum_post_bookmarks')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existing) {
+      await supabase.from('forum_post_bookmarks').delete().eq('id', existing.id);
+      return res.json({ success: true, bookmarked: false });
+    }
+
+    await supabase.from('forum_post_bookmarks').insert({ post_id: postId, user_id: userId });
+    res.json({ success: true, bookmarked: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Report post
+router.post('/forums/posts/:postId/report', authenticate, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    if (!reason?.trim()) {
+      return res.status(400).json({ success: false, error: 'Reason is required' });
+    }
+
+    const { data, error } = await require('../supabaseClient')
+      .from('forum_post_reports')
+      .insert({ post_id: postId, reporter_id: userId, reason })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});

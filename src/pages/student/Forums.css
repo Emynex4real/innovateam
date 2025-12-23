@@ -86,6 +86,32 @@
   background-color: #0074e8;
 }
 
+.follow-btn {
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.follow-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.follow-btn.following {
+  background-color: #0084ff;
+  color: white;
+  border-color: #0084ff;
+}
+
+.follow-btn.following:hover {
+  background-color: #0074e8;
+}
+
 .loading,
 .error-message {
   padding: 20px;
@@ -234,11 +260,29 @@
   color: #999;
   border-top: 1px solid #f0f0f0;
   padding-top: 10px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .thread-author {
   color: #0084ff;
   font-weight: 500;
+}
+
+.solved-badge {
+  background-color: #10b981;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.reputation {
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 500;
+  margin-top: 4px;
 }
 
 /* Thread Detail */
@@ -462,4 +506,36 @@
   .modal-content {
     width: 95%;
   }
+}
+
+/* Enhanced Thread Item Styles */
+.thread-badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.badge-icon {
+  color: #64748b;
+}
+
+.badge-icon.pinned {
+  color: #f59e0b;
+}
+
+.badge-icon.locked {
+  color: #ef4444;
+}
+
+.thread-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 20px;
+  color: #64748b;
+  font-size: 14px;
 }

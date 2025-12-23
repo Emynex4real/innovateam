@@ -25,8 +25,29 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // 3. Verify Token with Supabase
-    const { data, error } = await supabase.auth.getUser(token);
+    // 3. Verify Token with Supabase (with retry)
+    let data, error;
+    let retries = 3;
+    
+    while (retries > 0) {
+      try {
+        const result = await supabase.auth.getUser(token);
+        data = result.data;
+        error = result.error;
+        break;
+      } catch (fetchError) {
+        retries--;
+        if (retries === 0) {
+          console.error('Auth verification failed after retries:', fetchError.message);
+          return res.status(503).json({
+            success: false,
+            error: 'Authentication service temporarily unavailable',
+            code: 'AUTH_SERVICE_UNAVAILABLE'
+          });
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
     
     if (error || !data.user) {
       console.error('Auth verification failed:', error?.message);

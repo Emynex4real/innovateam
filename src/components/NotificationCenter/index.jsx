@@ -38,7 +38,6 @@ const NotificationCenter = () => {
 
   const fetchNotifications = async () => {
     try {
-      console.log('🔔 Fetching notifications for user:', user.id);
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -46,13 +45,11 @@ const NotificationCenter = () => {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      console.log('🔔 Notifications response:', { data, error });
       if (error) throw error;
       setNotifications(data || []);
       setUnreadCount(data?.filter(n => !n.read).length || 0);
-      console.log('🔔 Set notifications:', data?.length, 'Unread:', data?.filter(n => !n.read).length);
     } catch (error) {
-      console.error('❌ Failed to fetch notifications:', error);
+      console.error('Failed to fetch notifications:', error);
     }
   };
 
@@ -65,7 +62,6 @@ const NotificationCenter = () => {
         table: 'notifications',
         filter: `user_id=eq.${user.id}`
       }, (payload) => {
-        console.log('🔔 New notification received via WebSocket:', payload.new);
         setNotifications(prev => [payload.new, ...prev]);
         setUnreadCount(prev => prev + 1);
         toast.success(payload.new.title);
@@ -73,7 +69,6 @@ const NotificationCenter = () => {
       .subscribe();
 
     return () => {
-      console.log('🔔 Unsubscribing from notifications channel');
       supabase.removeChannel(channel);
     };
   };
@@ -133,8 +128,6 @@ const NotificationCenter = () => {
       default: return 'bg-blue-100 text-blue-800 border-blue-300';
     }
   };
-
-  console.log('🔔 NotificationCenter render - unreadCount:', unreadCount, 'notifications:', notifications.length);
 
   return (
     <div className="relative">

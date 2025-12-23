@@ -1,5 +1,5 @@
 const messagingService = require('../services/messaging.service');
-const forumService = require('../services/forum.service');
+const forumService = require('../services/forums.service');
 const { logger } = require('../utils/logger');
 const supabase = require('../supabaseClient'); 
 
