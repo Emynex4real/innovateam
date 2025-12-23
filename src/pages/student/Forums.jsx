@@ -51,10 +51,10 @@ const Forums = ({ centerId, userId, userName, userAvatar }) => {
   }, [sortBy, filterBy]);
 
   useEffect(() => {
-    if (view === 'thread-detail' && selectedThread) {
+    if (view === 'thread-detail' && selectedThread?.id) {
       fetchThread(selectedThread.id);
     }
-  }, [view, selectedThread]);
+  }, [view, selectedThread?.id]);
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -98,10 +98,11 @@ const Forums = ({ centerId, userId, userName, userAvatar }) => {
     if (result.success) {
       setSelectedThread(result.data);
       setError(null);
+      setLoading(false);
     } else {
       setError(result.error || 'Failed to load thread');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSearchThreads = async (e) => {
@@ -185,8 +186,8 @@ const Forums = ({ centerId, userId, userName, userAvatar }) => {
     setPosting(false);
   };
 
-  const handleVotePost = async (postId) => {
-    const result = await ForumsService.votePost(postId, 'upvote');
+  const handleVotePost = async (postId, voteType) => {
+    const result = await ForumsService.votePost(postId, voteType);
     if (result.success) {
       fetchThread(selectedThread.id);
       return { success: true };

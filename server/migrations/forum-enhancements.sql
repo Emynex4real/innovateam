@@ -67,16 +67,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 6. Notification trigger for thread followers
+-- 6. Notification trigger for thread followers (fixed column names)
 CREATE OR REPLACE FUNCTION notify_thread_followers()
 RETURNS TRIGGER AS $$
+DECLARE
+  thread_title TEXT;
 BEGIN
-  INSERT INTO notifications (user_id, type, title, content, created_at)
+  -- Get thread title
+  SELECT title INTO thread_title FROM forum_threads WHERE id = NEW.thread_id;
+  
+  -- Insert notifications with correct column names
+  INSERT INTO notifications (user_id, type, title, message, created_at)
   SELECT 
     f.user_id,
     'info',
-    'New reply in thread you follow',
-    'Someone replied to: ' || (SELECT title FROM forum_threads WHERE id = NEW.thread_id),
+    'New reply in thread',
+    'Someone replied to: ' || thread_title,
     NOW()
   FROM forum_thread_followers f
   WHERE f.thread_id = NEW.thread_id 
@@ -84,6 +90,10 @@ BEGIN
     AND f.notify_on_reply = true;
   
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Silently fail to not block post creation
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 

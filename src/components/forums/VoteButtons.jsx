@@ -43,10 +43,10 @@ const VoteButtons = ({ postId, upvotes = 0, downvotes = 0, userVote = null, onVo
       setLocalUserVote(voteType);
     }
 
-    // Call the callback
+    // Call the callback with postId
     if (onVote) {
-      const result = await onVote(voteType);
-      if (!result.success) {
+      const result = await onVote(postId, voteType);
+      if (!result?.success) {
         // Revert on error
         setLocalUpvotes(upvotes);
         setLocalDownvotes(downvotes);

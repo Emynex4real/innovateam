@@ -70,13 +70,6 @@ const initializeSupabase = () => {
           'x-application-name': 'innovateam-backend',
           'x-client-info': 'innovateam/1.0.0',
           'Connection': 'keep-alive'
-        },
-        fetch: (url, options = {}) => {
-          return fetch(url, {
-            ...options,
-            keepalive: true,
-            signal: AbortSignal.timeout(30000)
-          });
         }
       },
       db: {

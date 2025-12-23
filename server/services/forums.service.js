@@ -5,6 +5,7 @@
 
 const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
+const cache = require('../utils/cache');
 
 class ForumService {
   
@@ -74,7 +75,17 @@ class ForumService {
     try {
       if (!threadId) throw new Error('Thread ID is required');
 
-      // Get thread with creator info
+      // Check cache first
+      const cacheKey = `thread:${threadId}:${userId || 'anon'}`;
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        console.log('✅ Thread from cache');
+        return { success: true, data: cached };
+      }
+
+      console.log('🔍 Getting thread:', threadId);
+
+      // Get thread
       const { data: thread, error: threadError } = await supabase
         .from('forum_threads_with_author')
         .select('*')
@@ -84,51 +95,86 @@ class ForumService {
       if (threadError) throw threadError;
       if (!thread) throw new Error('Thread not found');
 
-      // Increment view count (async, don't wait)
-      this.recordThreadView(threadId, userId).catch(err => 
-        logger.error('Error recording view:', err)
-      );
+      // Record view (async)
+      this.recordThreadView(threadId, userId).catch(() => {});
 
-      // Get posts with author info and user votes
-      const { data: posts, error: postsError } = await supabase
+      // Get all posts at once
+      const { data: allPosts, error: postsError } = await supabase
         .from('forum_posts')
-        .select(`
-          *,
-          author:user_profiles!author_id(id, name, email),
-          user_vote:forum_votes!post_id(vote_type)
-        `)
+        .select('*')
         .eq('thread_id', threadId)
         .eq('is_deleted', false)
-        .is('parent_post_id', null)
-        .order('is_marked_answer', { ascending: false })
-        .order('upvote_count', { ascending: false })
         .order('created_at', { ascending: true });
 
       if (postsError) throw postsError;
 
-      // Get replies for each post
-      const enrichedPosts = await Promise.all(
-        (posts || []).map(async (post) => {
-          const { data: replies } = await supabase
-            .from('forum_posts')
-            .select(`
-              *,
-              author:user_profiles!author_id(id, name, email)
-            `)
-            .eq('parent_post_id', post.id)
-            .eq('is_deleted', false)
-            .order('created_at', { ascending: true });
+      // Get all unique author IDs
+      const authorIds = [...new Set(allPosts?.map(p => p.author_id) || [])];
+      
+      // Fetch all authors in one query
+      const { data: authors } = await supabase
+        .from('user_profiles')
+        .select('id, name, email')
+        .in('id', authorIds);
 
-          return {
-            ...post,
-            author: post.author || {},
-            user_vote: userId && post.user_vote?.[0]?.vote_type || null,
-            replies: replies || []
-          };
-        })
-      );
+      const authorsMap = (authors || []).reduce((acc, author) => {
+        acc[author.id] = author;
+        return acc;
+      }, {});
 
-      // Check if user is following
+      // Get user votes in one query if userId provided
+      let votesMap = {};
+      if (userId) {
+        const postIds = allPosts?.map(p => p.id) || [];
+        const { data: votes } = await supabase
+          .from('forum_votes')
+          .select('post_id, vote_type')
+          .in('post_id', postIds)
+          .eq('user_id', userId);
+        
+        votesMap = (votes || []).reduce((acc, vote) => {
+          acc[vote.post_id] = vote.vote_type;
+          return acc;
+        }, {});
+      }
+
+      // Organize posts into parent-child structure
+      const postsMap = {};
+      const rootPosts = [];
+
+      allPosts?.forEach(post => {
+        const enrichedPost = {
+          ...post,
+          author: authorsMap[post.author_id] || {},
+          user_vote: votesMap[post.id] || null,
+          replies: []
+        };
+        postsMap[post.id] = enrichedPost;
+
+        if (!post.parent_post_id) {
+          rootPosts.push(enrichedPost);
+        }
+      });
+
+      // Attach replies to parents
+      allPosts?.forEach(post => {
+        if (post.parent_post_id && postsMap[post.parent_post_id]) {
+          postsMap[post.parent_post_id].replies.push(postsMap[post.id]);
+        }
+      });
+
+      // Sort root posts
+      rootPosts.sort((a, b) => {
+        if (a.is_marked_answer !== b.is_marked_answer) {
+          return b.is_marked_answer ? 1 : -1;
+        }
+        if (a.upvote_count !== b.upvote_count) {
+          return b.upvote_count - a.upvote_count;
+        }
+        return new Date(a.created_at) - new Date(b.created_at);
+      });
+
+      // Check if following
       let isFollowing = false;
       if (userId) {
         const { data: follow } = await supabase
@@ -136,19 +182,24 @@ class ForumService {
           .select('id')
           .eq('thread_id', threadId)
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
         isFollowing = !!follow;
       }
 
-      return { 
-        success: true, 
-        data: {
-          ...thread,
-          posts: enrichedPosts,
-          is_following: isFollowing
-        }
+      const result = {
+        ...thread,
+        posts: rootPosts,
+        is_following: isFollowing
       };
+
+      // Cache the result
+      cache.set(cacheKey, result);
+
+      console.log('✅ Thread loaded with', rootPosts.length, 'posts');
+
+      return { success: true, data: result };
     } catch (error) {
+      console.error('❌ Error:', error.message);
       logger.error('Error getting thread:', error);
       return { success: false, error: error.message, data: null };
     }
@@ -262,13 +313,26 @@ class ForumService {
           content: content.trim(),
           parent_post_id: parentPostId
         })
-        .select(`
-          *,
-          author:user_profiles!author_id(id, name, email)
-        `)
+        .select()
         .single();
 
       if (error) throw error;
+
+      // Fetch author info separately
+      const { data: author } = await supabase
+        .from('user_profiles')
+        .select('id, name, email')
+        .eq('id', authorId)
+        .single();
+
+      const enrichedPost = {
+        ...post,
+        author: author || {}
+      };
+
+      // Invalidate thread cache
+      cache.delete(`thread:${threadId}:${authorId}`);
+      cache.delete(`thread:${threadId}:anon`);
 
       // Notify thread followers (async)
       this.notifyThreadFollowers(threadId, authorId, post.id).catch(err =>
@@ -276,7 +340,7 @@ class ForumService {
       );
 
       logger.info(`Post created: ${post.id} by user ${authorId}`);
-      return { success: true, data: post };
+      return { success: true, data: enrichedPost };
     } catch (error) {
       logger.error('Error creating post:', error);
       return { success: false, error: error.message };
