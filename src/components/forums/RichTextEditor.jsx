@@ -1,67 +1,78 @@
 import React, { useState, useRef } from 'react';
-import { Bold, Italic, Link as LinkIcon, Image, Code, List, ListOrdered, Quote, Undo, Redo } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { Bold, Italic, Image, Code, Eye, EyeOff, Sigma } from 'lucide-react';
+import 'katex/dist/katex.min.css'; // You must import the CSS
 import './RichTextEditor.css';
 
 const RichTextEditor = ({ value, onChange, placeholder, minHeight = '150px' }) => {
-  const [showPreview, setShowPreview] = useState(false);
+  const [preview, setPreview] = useState(false);
   const textareaRef = useRef(null);
 
-  const insertMarkdown = (before, after = '') => {
+  const insertText = (before, after = '') => {
     const textarea = textareaRef.current;
+    if (!textarea) return;
+    
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
-    const newText = value.substring(0, start) + before + selectedText + after + value.substring(end);
+    const previousText = textarea.value;
+    const selected = previousText.substring(start, end);
+    
+    const newText = previousText.substring(0, start) + before + selected + after + previousText.substring(end);
     onChange(newText);
+    
+    // Reset cursor position
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
-    }, 0);
-  };
-
-  const formatMarkdown = (text) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
-      .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
-      .replace(/\n/g, '<br/>');
+      textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+    }, 10);
   };
 
   return (
-    <div className="rich-text-editor">
-      <div className="editor-toolbar">
-        <button type="button" onClick={() => insertMarkdown('**', '**')} title="Bold"><Bold size={16} /></button>
-        <button type="button" onClick={() => insertMarkdown('*', '*')} title="Italic"><Italic size={16} /></button>
-        <button type="button" onClick={() => insertMarkdown('[', '](url)')} title="Link"><LinkIcon size={16} /></button>
-        <button type="button" onClick={() => insertMarkdown('![alt](', ')')} title="Image"><Image size={16} /></button>
-        <button type="button" onClick={() => insertMarkdown('`', '`')} title="Code"><Code size={16} /></button>
-        <button type="button" onClick={() => insertMarkdown('\n- ')} title="List"><List size={16} /></button>
-        <button type="button" onClick={() => insertMarkdown('\n1. ')} title="Numbered List"><ListOrdered size={16} /></button>
-        <button type="button" onClick={() => insertMarkdown('\n> ')} title="Quote"><Quote size={16} /></button>
-        <div className="toolbar-divider" />
-        <button type="button" onClick={() => setShowPreview(!showPreview)} className={showPreview ? 'active' : ''}>
-          {showPreview ? 'Edit' : 'Preview'}
+    <div className="rich-editor-container border rounded-lg overflow-hidden bg-white">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 p-2 bg-gray-50 border-b">
+        <button onClick={() => insertText('**', '**')} className="p-1 hover:bg-gray-200 rounded" title="Bold"><Bold size={18}/></button>
+        <button onClick={() => insertText('*', '*')} className="p-1 hover:bg-gray-200 rounded" title="Italic"><Italic size={18}/></button>
+        <button onClick={() => insertText('`', '`')} className="p-1 hover:bg-gray-200 rounded" title="Code"><Code size={18}/></button>
+        {/* Math Button for JAMB Students */}
+        <button onClick={() => insertText('$', '$')} className="p-1 hover:bg-gray-200 rounded text-blue-600 font-bold" title="Insert Math Equation"><Sigma size={18}/></button>
+        <button onClick={() => insertText('![Alt text](', ')')} className="p-1 hover:bg-gray-200 rounded" title="Image"><Image size={18}/></button>
+        
+        <div className="flex-grow"></div>
+        <button 
+          onClick={() => setPreview(!preview)} 
+          className={`flex items-center gap-1 px-3 py-1 rounded text-sm ${preview ? 'bg-blue-100 text-blue-700' : 'bg-gray-200'}`}
+        >
+          {preview ? <><EyeOff size={14}/> Edit</> : <><Eye size={14}/> Preview</>}
         </button>
       </div>
-      
-      {showPreview ? (
-        <div className="editor-preview" style={{ minHeight }} dangerouslySetInnerHTML={{ __html: formatMarkdown(value) }} />
-      ) : (
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="editor-textarea"
-          style={{ minHeight }}
-        />
-      )}
-      
-      <div className="editor-footer">
-        <span className="char-count">{value.length} characters</span>
-        <span className="markdown-hint">Markdown supported</span>
+
+      {/* Editor / Preview Area */}
+      <div className="relative" style={{ minHeight }}>
+        {preview ? (
+          <div className="p-4 prose max-w-none overflow-y-auto" style={{ height: minHeight }}>
+            <ReactMarkdown 
+              remarkPlugins={[remarkMath]} 
+              rehypePlugins={[rehypeKatex]}
+            >
+              {value || '*Nothing to preview*'}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <textarea
+            ref={textareaRef}
+            className="w-full h-full p-4 resize-y focus:outline-none"
+            style={{ minHeight }}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder || "Type here... Use $ for math equations (e.g. $x^2 + y^2 = z^2$)"}
+          />
+        )}
+      </div>
+      <div className="text-xs text-gray-400 p-2 bg-gray-50 text-right">
+        Supports Markdown & LaTeX Math
       </div>
     </div>
   );

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { MoreVertical, Edit2, Trash2, Flag, Bookmark, Reply, Award, Share2 } from 'lucide-react';
 import VoteButtons from './VoteButtons';
 import RichTextEditor from './RichTextEditor';
+import 'katex/dist/katex.min.css';
 import './EnhancedPostCard.css';
 
 const EnhancedPostCard = ({
@@ -41,15 +45,7 @@ const EnhancedPostCard = ({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const formatContent = (text) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-      .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
-      .replace(/\n/g, '<br/>');
-  };
+
 
   const handleEdit = async () => {
     if (!editContent.trim()) return;
@@ -156,7 +152,11 @@ const EnhancedPostCard = ({
               </div>
             </div>
           ) : (
-            <div dangerouslySetInnerHTML={{ __html: formatContent(post.content) }} />
+            <div className="prose max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {post.content}
+              </ReactMarkdown>
+            </div>
           )}
         </div>
 

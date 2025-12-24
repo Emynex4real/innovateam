@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Forums from './Forums';
+import ForumsLayout from './ForumsLayout';
 import { useAuth } from '../../App';
 import supabase from '../../config/supabase';
 
@@ -12,6 +12,11 @@ const ForumsWrapper = () => {
   useEffect(() => {
     if (user) loadForum();
   }, [user]);
+
+  useEffect(() => {
+    // Update page title for SEO
+    document.title = 'JAMB Forum - Ask Questions & Get Answers | InnovaTeam';
+  }, []);
 
   const loadForum = async () => {
     try {
@@ -64,7 +69,7 @@ const ForumsWrapper = () => {
   }
 
   return (
-    <Forums
+    <ForumsLayout
       centerId={centerId}
       userId={user.id}
       userName={user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
