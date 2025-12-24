@@ -255,7 +255,7 @@ const AIExaminer = () => {
         
         // Deduct cost from wallet
         await addTransaction({
-          type: 'expense',
+          type: 'debit',
           category: 'AI Examiner',
           amount: 300,
           description: `AI Exam: ${documentTitle} (${examConfig.questionCount} questions)`
