@@ -1,340 +1,230 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { supabase } from '../../config/supabase';
+import ForumsService from '../../services/forumsService';
 import EnhancedPostCard from './EnhancedPostCard';
 import RichTextEditor from './RichTextEditor';
-import ForumsService from '../../services/forumsService';
-import { ArrowLeft, Bell, BellOff, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Bell, BellOff, CheckCircle } from 'lucide-react';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 import 'katex/dist/katex.min.css';
 
-const ThreadDetail = ({ userId, userName, userAvatar }) => {
+const ThreadDetail = ({ userId }) => {
   const { threadId } = useParams();
   const navigate = useNavigate();
+  const bottomRef = useRef(null);
+  const { isDarkMode } = useDarkMode();
+
   const [thread, setThread] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newPostContent, setNewPostContent] = useState('');
   const [posting, setPosting] = useState(false);
-  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [isLive, setIsLive] = useState(false);
 
+  // 1. Initial Load
   useEffect(() => {
     loadThreadData();
-    // Update page title
-    return () => {
-      document.title = 'JAMB Forum | InnovaTeam';
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
-  useEffect(() => {
-    if (thread?.title) {
-      document.title = `${thread.title} - JAMB Forum | InnovaTeam`;
-    }
-  }, [thread]);
-
-  // REAL-TIME LISTENER with connection status
+  // 2. Real-time Subscription
   useEffect(() => {
     const channel = supabase
-      .channel(`thread-${threadId}`)
+      .channel(`room-${threadId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen for INSERT (replies) and UPDATE (votes/edits)
           schema: 'public',
           table: 'forum_posts',
           filter: `thread_id=eq.${threadId}`,
         },
         (payload) => {
-          console.log('✅ Real-time update received:', payload.eventType);
-          if (payload.eventType === 'INSERT') {
-            loadThreadData();
-          }
+          loadThreadData(true); 
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setRealtimeConnected(true);
-          console.log('✅ Real-time connected for thread:', threadId);
-        } else if (status === 'CLOSED') {
-          setRealtimeConnected(false);
-          console.log('❌ Real-time disconnected');
-        }
+        setIsLive(status === 'SUBSCRIBED');
       });
 
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
-  const loadThreadData = async () => {
+  const loadThreadData = async (isBackgroundUpdate = false) => {
+    if (!isBackgroundUpdate) setLoading(true);
+    
     try {
       const result = await ForumsService.getThread(threadId);
       if (result.success) {
         setThread(result.data);
         setPosts(result.data.posts || []);
-        setError(null);
+        document.title = `${result.data.title} | Forum`;
       } else {
         setError(result.error || 'Failed to load thread');
       }
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred');
+      setError('Network error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreatePost = async () => {
-    if (!newPostContent.trim()) {
-      setError('Please enter a message');
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-
-    if (newPostContent.length < 5) {
-      setError('Post must be at least 5 characters');
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-
+    if (!newPostContent.trim()) return;
     setPosting(true);
-    setError(null);
     
-    try {
-      const result = await ForumsService.createPost(threadId, newPostContent);
-
-      if (result.success) {
-        setNewPostContent('');
-        await loadThreadData();
-        // Scroll to bottom to show new post
-        setTimeout(() => {
-          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }, 100);
-      } else {
-        setError(result.error || 'Failed to create post');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to create post');
-    } finally {
-      setPosting(false);
+    const result = await ForumsService.createPost(threadId, newPostContent);
+    
+    if (result.success) {
+      setNewPostContent('');
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 500);
+    } else {
+      alert(result.error || 'Failed to post reply');
     }
+    setPosting(false);
   };
 
-  const handleVotePost = async (postId, voteType) => {
-    const result = await ForumsService.votePost(postId, voteType);
-    if (result.success) {
-      await loadThreadData();
-      return { success: true };
-    }
-    return { success: false };
+  const handleVote = async (postId, type) => {
+    await ForumsService.votePost(postId, type);
   };
 
   const handleMarkAnswer = async (postId) => {
-    const result = await ForumsService.markAsAnswer(postId, threadId);
-    if (result.success) {
-      await loadThreadData();
-      setError(null);
-    } else {
-      setError(result.error || 'Failed to mark answer');
-      setTimeout(() => setError(null), 3000);
-    }
+    await ForumsService.markAsAnswer(postId, threadId);
   };
 
-  const handleFollowThread = async () => {
-    if (!thread) return;
-    
-    const result = thread.is_following 
-      ? await ForumsService.unfollowThread(threadId)
-      : await ForumsService.followThread(threadId);
-    
-    if (result.success) {
-      await loadThreadData();
-    } else {
-      setError(result.error || 'Failed to update follow status');
-      setTimeout(() => setError(null), 3000);
-    }
+  const handleFollow = async () => {
+    const action = thread.is_following ? ForumsService.unfollowThread : ForumsService.followThread;
+    await action(threadId);
+    loadThreadData(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading thread...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!thread) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg">
-          <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Thread Not Found</h2>
-          <p className="text-gray-600 mb-6">This thread may have been deleted or doesn't exist.</p>
-          <button
-            onClick={() => navigate('/student/forums')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold"
-          >
-            Back to Forums
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className={`p-8 text-center animate-pulse ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+      Loading discussion...
+    </div>
+  );
+  
+  if (error || !thread) return (
+    <div className={`p-8 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+      <h2 className="text-xl font-bold text-red-600">Error</h2>
+      <p>{error || "Thread not found"}</p>
+      <button onClick={() => navigate(-1)} className="mt-4 text-blue-500 underline">Go Back</button>
+    </div>
+  );
 
   return (
-    <div className="forums-page">
-      {/* Header with breadcrumb navigation */}
-      <div className="forums-header flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+    <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="max-w-5xl mx-auto p-2 sm:p-4 md:p-6 pb-20">
+        {/* Navigation Header */}
+        <div className={`flex justify-between items-center mb-3 sm:mb-6 sticky top-0 py-2 sm:py-4 z-10 backdrop-blur ${isDarkMode ? 'bg-gray-900/90' : 'bg-gray-50/90'}`}>
           <button 
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition"
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
+            onClick={() => navigate(-1)} 
+            className={`flex items-center gap-1 sm:gap-2 font-medium transition-colors text-sm sm:text-base ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back</span>
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" /> <span className="hidden xs:inline">Back</span>
           </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {isLive && <span className="text-xs font-bold text-green-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> <span className="hidden sm:inline">LIVE</span></span>}
+            <button 
+              onClick={handleFollow}
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                thread.is_following 
+                  ? 'bg-blue-600/20 text-blue-500 border border-blue-500/20' 
+                  : isDarkMode 
+                    ? 'bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700' 
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {thread.is_following ? <Bell className="w-3 h-3 sm:w-4 sm:h-4" /> : <BellOff className="w-3 h-3 sm:w-4 sm:h-4" />}
+              <span className="hidden xs:inline">{thread.is_following ? 'Following' : 'Follow'}</span>
+            </button>
+          </div>
         </div>
-        <button 
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-            thread.is_following 
-              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-          onClick={handleFollowThread}
-          aria-label={thread.is_following ? 'Unfollow thread' : 'Follow thread'}
-        >
-          {thread.is_following ? <Bell size={18} /> : <BellOff size={18} />}
-          <span className="font-medium">{thread.is_following ? 'Following' : 'Follow'}</span>
-        </button>
-      </div>
 
-      {/* Real-time connection indicator */}
-      {realtimeConnected && (
-        <div className="mb-4 px-4 py-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-700">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span>Live updates enabled</span>
-        </div>
-      )}
-
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
-          <AlertCircle size={18} />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="thread-detail-container">
-        {/* Original Post */}
-        <article className="thread-original-post bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-          <header className="thread-header mb-4">
-            <div className="author-info flex items-start gap-3">
-              <div className="author-avatar">
-                {thread.creator_name ? (
-                  <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                    {thread.creator_name.charAt(0).toUpperCase()}
-                  </div>
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold text-lg">
-                    ?
-                  </div>
+        {/* Main Question (Thread Starter) */}
+        <article className={`rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-6 mb-4 sm:mb-8 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <header className="flex gap-2 sm:gap-4 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-md flex-shrink-0">
+              {thread.creator_name?.[0] || '?'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className={`text-lg sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2 leading-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{thread.title}</h1>
+              <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <span className={`font-medium truncate max-w-[120px] sm:max-w-none ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{thread.creator_name}</span>
+                <span className="hidden xs:inline">•</span>
+                <span className="text-xs">{new Date(thread.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                {thread.is_solved && (
+                  <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 sm:px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1">
+                    <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3"/> <span className="hidden xs:inline">Solved</span>
+                  </span>
                 )}
-              </div>
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{thread.title}</h1>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <span className="font-medium">{thread.creator_name || 'Unknown'}</span>
-                  <span>•</span>
-                  <time dateTime={thread.created_at}>
-                    {new Date(thread.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </time>
-                  {thread.creator_reputation > 0 && (
-                    <>
-                      <span>•</span>
-                      <span className="text-yellow-600 font-medium">⭐ {thread.creator_reputation} rep</span>
-                    </>
-                  )}
-                </div>
               </div>
             </div>
           </header>
 
-          <div className="prose max-w-none mt-4">
+          <div className={`prose prose-sm sm:prose-lg max-w-none ${isDarkMode ? 'prose-invert' : 'text-gray-800'}`}>
             <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
               {thread.description}
             </ReactMarkdown>
           </div>
 
-          <footer className="thread-meta mt-4 pt-4 border-t border-gray-200">
-            <span className="text-sm text-gray-600">
-              {thread.reply_count || 0} {thread.reply_count === 1 ? 'reply' : 'replies'}
-            </span>
-          </footer>
+          <div className={`mt-3 sm:mt-6 pt-3 sm:pt-4 border-t flex gap-3 sm:gap-4 text-xs sm:text-sm ${isDarkMode ? 'border-gray-700 text-gray-400' : 'border-gray-100 text-gray-500'}`}>
+             <span>{thread.view_count} views</span>
+             <span>{posts.length} replies</span>
+          </div>
         </article>
 
         {/* Answers Section */}
-        {posts.length > 0 && (
-          <section className="posts-section mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {posts.length} {posts.length === 1 ? 'Answer' : 'Answers'}
-            </h2>
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <EnhancedPostCard
-                  key={post.id}
-                  post={{
-                    ...post,
-                    author_name: post.author?.name || 'Unknown',
-                    author_avatar: post.author?.avatar_url,
-                    is_answer: post.is_marked_answer,
-                    upvotes: post.upvote_count || 0,
-                    downvotes: post.downvote_count || 0
-                  }}
-                  isAnswer={post.is_marked_answer}
-                  canMarkAnswer={thread.creator_id === userId}
-                  canEdit={post.author_id === userId}
-                  onVote={handleVotePost}
-                  onMarkAnswer={handleMarkAnswer}
-                  currentUserId={userId}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        <div className="mb-4 sm:mb-8">
+          <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 px-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+            {posts.length} Answers
+          </h3>
+          <div className="space-y-3 sm:space-y-4">
+            {posts.map(post => (
+              <EnhancedPostCard 
+                key={post.id}
+                post={post}
+                currentUserId={userId}
+                isAnswer={post.is_marked_answer}
+                canMarkAnswer={thread.creator_id === userId}
+                canEdit={post.author_id === userId}
+                onVote={handleVote}
+                onMarkAnswer={handleMarkAnswer}
+                isDarkMode={isDarkMode} // <--- Passing Dark Mode
+              />
+            ))}
+          </div>
+        </div>
 
-        {/* Reply Form */}
-        <section className="reply-form bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Your Answer</h3>
-          <RichTextEditor
-            value={newPostContent}
+        {/* Reply Input */}
+        <div className={`rounded-lg sm:rounded-xl shadow-lg border p-3 sm:p-6 sticky bottom-2 sm:bottom-4 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <h4 className={`font-semibold mb-2 sm:mb-3 text-sm sm:text-base ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Post your answer</h4>
+          <RichTextEditor 
+            value={newPostContent} 
             onChange={setNewPostContent}
-            placeholder="Share your knowledge and help others..."
-            minHeight="150px"
+            placeholder="Help them out! Use $ for math..."
+            minHeight="100px"
+            isDarkMode={isDarkMode}
           />
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Tip: Use $ for math equations (e.g., $x^2 + y^2 = z^2$)
-            </p>
-            <button
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          <div className="flex justify-end mt-2 sm:mt-3">
+            <button 
               onClick={handleCreatePost}
               disabled={posting || !newPostContent.trim()}
-              aria-label="Post your answer"
+              className="bg-blue-600 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {posting ? 'Posting...' : 'Post Answer'}
+              {posting ? 'Publishing...' : 'Post Answer'}
             </button>
           </div>
-        </section>
+        </div>
+        
+        <div ref={bottomRef} />
       </div>
     </div>
   );

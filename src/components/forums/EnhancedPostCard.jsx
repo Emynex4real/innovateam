@@ -2,215 +2,133 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { MoreVertical, Edit2, Trash2, Flag, Bookmark, Reply, Award, Share2 } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Flag, Bookmark, Award, Check } from 'lucide-react';
 import VoteButtons from './VoteButtons';
-import RichTextEditor from './RichTextEditor';
 import 'katex/dist/katex.min.css';
 import './EnhancedPostCard.css';
 
 const EnhancedPostCard = ({
   post,
-  isAnswer = false,
-  canMarkAnswer = false,
-  canEdit = false,
+  currentUserId,
+  isAnswer,
+  canMarkAnswer,
+  canEdit,
   onVote,
   onMarkAnswer,
-  onReply,
-  onEdit,
   onDelete,
-  onReport,
-  onBookmark,
-  depth = 0,
-  currentUserId
+  isDarkMode = false
 }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(post.content);
-  const [showReplyBox, setShowReplyBox] = useState(false);
-  const [replyContent, setReplyContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const formatDate = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-
-
-  const handleEdit = async () => {
-    if (!editContent.trim()) return;
-    setIsSubmitting(true);
-    await onEdit?.(post.id, editContent);
-    setIsEditing(false);
-    setIsSubmitting(false);
-  };
-
-  const handleReply = async () => {
-    if (!replyContent.trim()) return;
-    setIsSubmitting(true);
-    await onReply?.(post.id, replyContent);
-    setReplyContent('');
-    setShowReplyBox(false);
-    setIsSubmitting(false);
-  };
-
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href + '#post-' + post.id);
-    alert('Link copied to clipboard!');
+  // THIS IS THE MISSING PIECE: 
+  // We define the color variables here based on Dark Mode
+  const themeStyles = isDarkMode ? {
+    '--card-bg': '#1f2937',        // Dark Gray
+    '--card-border': '#374151',    // Gray Border
+    '--card-border-hover': '#3b82f6', 
+    '--text-main': '#f3f4f6',      // White text
+    '--text-body': '#d1d5db',      // Light gray text
+    '--text-muted': '#9ca3af',     
+    '--hover-bg': '#374151',       
+    '--code-bg': '#111827',        
+    '--answer-bg': 'rgba(6, 78, 59, 0.4)', 
+    '--answer-border': '#065f46',  
+    '--btn-secondary-bg': '#374151', 
+    '--border-light': '#374151',   
+  } : {
+    '--card-bg': '#ffffff',
+    '--card-border': '#e2e8f0',
+    '--text-main': '#1e293b',
+    '--text-body': '#334155',
+    '--text-muted': '#64748b',
+    '--hover-bg': '#f1f5f9',
+    '--code-bg': '#f1f5f9',
+    '--answer-bg': '#f0fdf4',
+    '--answer-border': '#86efac',
+    '--btn-secondary-bg': '#f1f5f9',
+    '--border-light': '#f1f5f9',
   };
 
   return (
-    <div className={`enhanced-post-card depth-${Math.min(depth, 3)} ${isAnswer ? 'is-answer' : ''}`} id={`post-${post.id}`}>
+    <div 
+      className={`enhanced-post-card ${isAnswer ? 'is-answer' : ''}`} 
+      style={themeStyles}
+    >
+      
+      {/* Left Column: Voting */}
       <div className="post-sidebar">
-        <VoteButtons
+        <VoteButtons 
           postId={post.id}
-          upvotes={post.upvotes || 0}
-          downvotes={post.downvotes || 0}
+          upvotes={post.upvote_count} 
+          downvotes={post.downvote_count}
           userVote={post.user_vote}
           onVote={onVote}
+          isDarkMode={isDarkMode}
         />
-        {post.is_bookmarked && <Bookmark size={16} className="bookmark-icon active" />}
+        {isAnswer && <div className="hidden sm:block" style={{ color: '#10b981', marginTop: '8px' }} title="Accepted Answer"><Check size={20} strokeWidth={3} /></div>}
       </div>
 
+      {/* Right Column: Content */}
       <div className="post-main">
         <div className="post-header">
           <div className="post-author">
             <div className="author-avatar">
-              {post.author_avatar ? (
-                <img src={post.author_avatar} alt={post.author_name} />
+              {post.author?.name?.[0] ? (
+                <div className="avatar-placeholder">{post.author.name[0]}</div>
               ) : (
-                <div className="avatar-placeholder">{post.author_name?.charAt(0) || '?'}</div>
+                <div className="avatar-placeholder">?</div>
               )}
             </div>
             <div className="author-info">
-              <div className="author-name-row">
-                <span className="author-name">{post.author_name || 'Unknown'}</span>
-                {post.author_badges?.map(badge => (
-                  <span key={badge} className="author-badge">{badge}</span>
-                ))}
-              </div>
-              <div className="post-meta">
-                <span className="post-date">{formatDate(post.created_at)}</span>
-                {post.reputation > 0 && <span className="author-rep">• {post.reputation} rep</span>}
-                {post.is_edited && <span className="edited-tag">• edited</span>}
-              </div>
+              <span className="author-name">{post.author?.name || 'Unknown User'}</span>
+              <span className="post-meta">{new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}</span>
             </div>
           </div>
 
           <div className="post-actions-menu">
-            {isAnswer && <div className="answer-badge">✓ Accepted Answer</div>}
-            <button className="menu-btn" onClick={() => setShowMenu(!showMenu)}>
-              <MoreVertical size={18} />
+            <button 
+              onClick={() => setShowMenu(!showMenu)} 
+              className="menu-btn"
+            >
+              <MoreVertical className="w-4 h-4" />
             </button>
+            
             {showMenu && (
               <div className="dropdown-menu">
                 {canEdit && (
-                  <button onClick={() => { setIsEditing(true); setShowMenu(false); }}>
-                    <Edit2 size={14} /> Edit
+                  <button onClick={() => {}}>
+                    <Edit2 size={14}/> Edit
                   </button>
                 )}
-                {canEdit && (
-                  <button onClick={() => { onDelete?.(post.id); setShowMenu(false); }} className="danger">
-                    <Trash2 size={14} /> Delete
-                  </button>
-                )}
-                <button onClick={() => { onBookmark?.(post.id); setShowMenu(false); }}>
-                  <Bookmark size={14} /> {post.is_bookmarked ? 'Unbookmark' : 'Bookmark'}
+                <button>
+                   <Bookmark size={14}/> Bookmark
                 </button>
-                <button onClick={() => { handleShare(); setShowMenu(false); }}>
-                  <Share2 size={14} /> Share
+                <button className="danger">
+                   <Flag size={14}/> Report
                 </button>
-                {!canEdit && (
-                  <button onClick={() => { onReport?.(post.id); setShowMenu(false); }} className="danger">
-                    <Flag size={14} /> Report
-                  </button>
-                )}
               </div>
             )}
           </div>
         </div>
 
-        <div className="post-content">
-          {isEditing ? (
-            <div className="edit-form">
-              <RichTextEditor value={editContent} onChange={setEditContent} minHeight="100px" />
-              <div className="edit-actions">
-                <button onClick={() => setIsEditing(false)} className="btn-secondary">Cancel</button>
-                <button onClick={handleEdit} disabled={isSubmitting} className="btn-primary">
-                  {isSubmitting ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="prose max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {post.content}
-              </ReactMarkdown>
-            </div>
-          )}
+        {/* Content Body - Markdown Render */}
+        <div className={`post-content ${isDarkMode ? 'prose-invert' : ''}`}>
+          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+            {post.content}
+          </ReactMarkdown>
         </div>
 
+        {/* Footer Actions */}
         <div className="post-footer">
-          <button className="action-btn" onClick={() => setShowReplyBox(!showReplyBox)}>
-            <Reply size={14} /> Reply
-          </button>
-          {canMarkAnswer && !isAnswer && (
-            <button className="action-btn mark-answer" onClick={() => onMarkAnswer?.(post.id)}>
-              <Award size={14} /> Mark as Answer
-            </button>
-          )}
-          <button className="action-btn" onClick={handleShare}>
-            <Share2 size={14} /> Share
-          </button>
+           {canMarkAnswer && !isAnswer && (
+             <button 
+               onClick={() => onMarkAnswer(post.id)}
+               className="action-btn mark-answer"
+             >
+               <Award className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">Mark as Solution</span>
+             </button>
+           )}
         </div>
-
-        {showReplyBox && (
-          <div className="reply-form">
-            <RichTextEditor 
-              value={replyContent} 
-              onChange={setReplyContent} 
-              placeholder="Write your reply..."
-              minHeight="100px"
-            />
-            <div className="reply-actions">
-              <button onClick={() => setShowReplyBox(false)} className="btn-secondary">Cancel</button>
-              <button onClick={handleReply} disabled={isSubmitting || !replyContent.trim()} className="btn-primary">
-                {isSubmitting ? 'Posting...' : 'Post Reply'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {post.replies && post.replies.length > 0 && (
-          <div className="post-replies">
-            {post.replies.map((reply) => (
-              <EnhancedPostCard
-                key={reply.id}
-                post={reply}
-                isAnswer={reply.is_answer}
-                canEdit={reply.author_id === currentUserId}
-                onVote={onVote}
-                onReply={onReply}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onReport={onReport}
-                onBookmark={onBookmark}
-                depth={depth + 1}
-                currentUserId={currentUserId}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

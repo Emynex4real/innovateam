@@ -5,6 +5,10 @@
   background: white;
 }
 
+html.dark .forums-page {
+  background: #1f2937;
+}
+
 .forums-header {
   padding: 20px;
   background: white;
@@ -16,11 +20,20 @@
   flex-wrap: wrap;
 }
 
+html.dark .forums-header {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
 .forums-header h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
   flex: 1;
+}
+
+html.dark .forums-header h1 {
+  color: #d1d5db;
 }
 
 .search-bar {
@@ -40,6 +53,12 @@
   border-radius: 20px;
   font-size: 14px;
   transition: border-color 0.2s;
+}
+
+html.dark .search-input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
 }
 
 .search-input:focus {
@@ -69,6 +88,14 @@
 
 .back-btn:hover {
   background-color: #f0f0f0;
+}
+
+html.dark .back-btn {
+  color: #60a5fa;
+}
+
+html.dark .back-btn:hover {
+  background-color: #374151;
 }
 
 .create-btn {
@@ -119,12 +146,21 @@
   color: #666;
 }
 
+html.dark .loading {
+  color: #9ca3af;
+}
+
 .error-message {
   background-color: #ffe0e0;
   border-left: 4px solid #ff4757;
   color: #d32f2f;
   border-radius: 4px;
   margin: 16px;
+}
+
+html.dark .error-message {
+  background-color: #7f1d1d;
+  color: #fca5a5;
 }
 
 .empty-state {
@@ -183,6 +219,11 @@
   background: white;
 }
 
+html.dark .category-card {
+  background: #374151;
+  border-color: #4b5563;
+}
+
 .category-card:hover {
   border-color: #0084ff;
   box-shadow: 0 4px 12px rgba(0, 132, 255, 0.15);
@@ -196,11 +237,19 @@
   color: #000;
 }
 
+html.dark .category-card h3 {
+  color: #f3f4f6;
+}
+
 .category-card p {
   margin: 0 0 12px 0;
   font-size: 13px;
   color: #666;
   line-height: 1.4;
+}
+
+html.dark .category-card p {
+  color: #9ca3af;
 }
 
 .category-meta {
@@ -210,6 +259,11 @@
   color: #999;
   border-top: 1px solid #f0f0f0;
   padding-top: 12px;
+}
+
+html.dark .category-meta {
+  border-top-color: #4b5563;
+  color: #6b7280;
 }
 
 /* Threads List */
@@ -229,6 +283,11 @@
   background: white;
 }
 
+html.dark .thread-item {
+  background: #374151;
+  border-color: #4b5563;
+}
+
 .thread-item:hover {
   border-color: #0084ff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -239,6 +298,10 @@
   font-weight: 600;
   color: #000;
   margin-bottom: 8px;
+}
+
+html.dark .thread-title {
+  color: #f3f4f6;
 }
 
 .thread-preview {
@@ -253,6 +316,10 @@
   -webkit-box-orient: vertical;
 }
 
+html.dark .thread-preview {
+  color: #9ca3af;
+}
+
 .thread-meta {
   display: flex;
   gap: 12px;
@@ -262,6 +329,11 @@
   padding-top: 10px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+html.dark .thread-meta {
+  border-top-color: #4b5563;
+  color: #6b7280;
 }
 
 .thread-author {
@@ -298,6 +370,11 @@
   padding: 20px;
   margin-bottom: 24px;
   background: white;
+}
+
+html.dark .thread-original-post {
+  background: #374151;
+  border-color: #4b5563;
 }
 
 .thread-header {
@@ -344,10 +421,18 @@
   color: #000;
 }
 
+html.dark .author-name {
+  color: #f3f4f6;
+}
+
 .post-date {
   font-size: 12px;
   color: #999;
   margin-top: 2px;
+}
+
+html.dark .post-date {
+  color: #6b7280;
 }
 
 .thread-description {
@@ -355,6 +440,10 @@
   line-height: 1.6;
   color: #333;
   margin-bottom: 16px;
+}
+
+html.dark .thread-description {
+  color: #d1d5db;
 }
 
 .thread-meta {
@@ -384,6 +473,10 @@
   padding-bottom: 8px;
 }
 
+html.dark .posts-section h3 {
+  color: #f3f4f6;
+}
+
 /* Reply Form */
 .reply-form {
   background: white;
@@ -393,10 +486,19 @@
   margin-top: 24px;
 }
 
+html.dark .reply-form {
+  background: #374151;
+  border-color: #4b5563;
+}
+
 .reply-form h3 {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
+}
+
+html.dark .reply-form h3 {
+  color: #f3f4f6;
 }
 
 .input-field {
@@ -412,6 +514,12 @@
   transition: border-color 0.2s;
 }
 
+html.dark .input-field {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
 .input-field:focus {
   outline: none;
   border-color: #0084ff;
@@ -421,6 +529,11 @@
 .input-field:disabled {
   background-color: #f5f5f5;
   color: #999;
+}
+
+html.dark .input-field:disabled {
+  background-color: #1f2937;
+  color: #6b7280;
 }
 
 /* Modal */
@@ -447,6 +560,10 @@
   animation: modalSlideUp 0.3s ease-out;
 }
 
+html.dark .modal-content {
+  background: #374151;
+}
+
 @keyframes modalSlideUp {
   from {
     opacity: 0;
@@ -464,6 +581,10 @@
   font-weight: 600;
 }
 
+html.dark .modal-content h2 {
+  color: #f3f4f6;
+}
+
 .modal-footer {
   display: flex;
   gap: 8px;
@@ -471,6 +592,10 @@
   margin-top: 20px;
   border-top: 1px solid #e0e0e0;
   padding-top: 16px;
+}
+
+html.dark .modal-footer {
+  border-top-color: #4b5563;
 }
 
 .secondary-btn {
@@ -484,8 +609,17 @@
   transition: background-color 0.2s;
 }
 
+html.dark .secondary-btn {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
 .secondary-btn:hover {
   background-color: #d0d0d0;
+}
+
+html.dark .secondary-btn:hover {
+  background-color: #6b7280;
 }
 
 /* Responsive */
@@ -538,4 +672,92 @@
   padding: 20px;
   color: #64748b;
   font-size: 14px;
+}
+
+html.dark .loading-more {
+  color: #9ca3af;
+}
+/* =========================================
+   1. General Layout & Animations
+   ========================================= */
+.forums-container {
+  animation: fadeIn 0.3s ease-in-out;
+  width: 100%;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   2. Rich Text Editor & Markdown Styles
+   ========================================= */
+/* Custom Scrollbar for Editor Preview */
+.editor-preview::-webkit-scrollbar {
+  width: 6px;
+}
+.editor-preview::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.editor-preview::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.editor-preview::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Blockquote Styling within posts */
+.prose blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #4b5563;
+  background: #f8fafc;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Code block styling */
+.prose pre {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+/* =========================================
+   3. Math (KaTeX) Adjustments
+   ========================================= */
+/* Prevents long formulas from breaking mobile layout */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  max-width: 100%;
+}
+
+/* =========================================
+   4. Vote Buttons (Custom Interactive)
+   ========================================= */
+.vote-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vote-btn:active {
+  transform: scale(0.95);
+}
+
+.vote-btn.upvote.active {
+  color: #10b981; /* Green-500 */
+  background-color: #ecfdf5; /* Green-50 */
+  border-color: #10b981;
+}
+
+.vote-btn.downvote.active {
+  color: #ef4444; /* Red-500 */
+  background-color: #fef2f2; /* Red-50 */
+  border-color: #ef4444;
 }

@@ -156,13 +156,13 @@ const NotificationCenter = () => {
               onClick={() => setIsOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-xl border z-50 max-h-[600px] flex flex-col"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="fixed inset-x-4 top-16 sm:absolute sm:right-0 sm:left-auto sm:top-auto sm:mt-2 sm:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-xl border z-50 max-h-[calc(100vh-5rem)] sm:max-h-[600px] flex flex-col"
             >
-              <div className="p-4 border-b flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Notifications</h3>
+              <div className="p-3 sm:p-4 border-b flex items-center justify-between">
+                <h3 className="font-semibold text-base sm:text-lg">Notifications</h3>
                 <div className="flex items-center space-x-2">
                   {unreadCount > 0 && (
                     <Button variant="ghost" size="sm" onClick={markAllAsRead}>
@@ -177,41 +177,42 @@ const NotificationCenter = () => {
 
               <div className="overflow-y-auto flex-1">
                 {notifications.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No notifications yet</p>
+                  <div className="p-6 sm:p-8 text-center text-muted-foreground">
+                    <Bell className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No notifications yet</p>
                   </div>
                 ) : (
                   <div className="divide-y">
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                        className={`p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                           !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                         }`}
                       >
-                        <div className="flex items-start justify-between space-x-2">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <Badge className={getTypeColor(notification.type)}>
                                 {notification.type}
                               </Badge>
                               {!notification.read && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
                               )}
                             </div>
-                            <h4 className="font-medium text-sm mb-1">{notification.title}</h4>
-                            <p className="text-sm text-muted-foreground">{notification.content}</p>
+                            <h4 className="font-medium text-sm mb-1 break-words">{notification.title}</h4>
+                            <p className="text-sm text-muted-foreground break-words">{notification.content}</p>
                             <p className="text-xs text-muted-foreground mt-2">
                               {new Date(notification.created_at).toLocaleString()}
                             </p>
                           </div>
-                          <div className="flex flex-col space-y-1">
+                          <div className="flex flex-col gap-1 flex-shrink-0">
                             {!notification.read && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => markAsRead(notification.id)}
+                                className="h-8 w-8 p-0"
                               >
                                 <Check className="h-4 w-4" />
                               </Button>
@@ -220,6 +221,7 @@ const NotificationCenter = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => deleteNotification(notification.id)}
+                              className="h-8 w-8 p-0"
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>

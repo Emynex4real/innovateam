@@ -829,3 +829,10 @@ aside:hover::-webkit-scrollbar-track {
   background: #4b5563;
   border-radius: 4px;
 }
+
+/* Mobile breakpoint helper */
+@media (min-width: 475px) {
+  .xs\:inline {
+    display: inline;
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 import './VoteButtons.css';
 
 /**
@@ -10,6 +11,7 @@ const VoteButtons = ({ postId, upvotes = 0, downvotes = 0, userVote = null, onVo
   const [localUpvotes, setLocalUpvotes] = useState(upvotes);
   const [localDownvotes, setLocalDownvotes] = useState(downvotes);
   const [localUserVote, setLocalUserVote] = useState(userVote);
+  const { isDarkMode } = useDarkMode();
 
   const handleVote = async (voteType) => {
     if (voting) return;
@@ -60,7 +62,7 @@ const VoteButtons = ({ postId, upvotes = 0, downvotes = 0, userVote = null, onVo
   return (
     <div className="vote-buttons">
       <button
-        className={`vote-btn upvote ${localUserVote === 'upvote' ? 'active' : ''}`}
+        className={`vote-btn upvote ${localUserVote === 'upvote' ? 'active' : ''} ${isDarkMode ? 'dark' : ''}`}
         onClick={() => handleVote('upvote')}
         disabled={voting}
         title="Upvote this post"
@@ -69,7 +71,7 @@ const VoteButtons = ({ postId, upvotes = 0, downvotes = 0, userVote = null, onVo
         <span className="vote-count">{localUpvotes}</span>
       </button>
       <button
-        className={`vote-btn downvote ${localUserVote === 'downvote' ? 'active' : ''}`}
+        className={`vote-btn downvote ${localUserVote === 'downvote' ? 'active' : ''} ${isDarkMode ? 'dark' : ''}`}
         onClick={() => handleVote('downvote')}
         disabled={voting}
         title="Downvote this post"
