@@ -42,7 +42,7 @@ const Forums = ({ centerId, userId, userName, userAvatar }) => {
       fetchThreads(selectedCategory.id, page, true);
     }
   }, [page]);
-
+ 
   useEffect(() => {
     if (view === 'threads' && selectedCategory) {
       setPage(1);

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { API_BASE_URL, ERROR_MESSAGES, LOCAL_STORAGE_KEYS } from '../config/constants';
+import { supabase } from '../lib/supabase';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,11 +12,18 @@ const api = axios.create({
 
 // Request interceptor
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    try {
+      // Always get fresh session from Supabase
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+        // Update localStorage with fresh token
+        localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, session.access_token);
+      }
+    } catch (err) {
+      console.error('Auth interceptor error:', err);
     }
     return config;
   },
@@ -27,26 +35,41 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const { response } = error;
+  async (error) => {
+    const { response, config } = error;
     
     if (!response) {
       toast.error(ERROR_MESSAGES.NETWORK_ERROR);
       return Promise.reject(error);
     }
 
-    switch (response.status) {
-      case 401:
-        if (response.data?.message === 'Token expired') {
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.REFRESH_TOKEN);
-          localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
-          window.location.href = '/login';
-          toast.error(ERROR_MESSAGES.SESSION_EXPIRED);
-        } else {
-          toast.error(response.data?.message || ERROR_MESSAGES.AUTH_REQUIRED);
+    // Handle 401 with token refresh
+    if (response.status === 401 && !config._retry) {
+      config._retry = true;
+      
+      try {
+        // Try to refresh the session
+        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (session?.access_token) {
+          // Update token and retry request
+          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, session.access_token);
+          config.headers.Authorization = `Bearer ${session.access_token}`;
+          return api(config);
         }
-        break;
+      } catch (refreshErr) {
+        console.error('Token refresh failed:', refreshErr);
+      }
+      
+      // If refresh fails, logout
+      await supabase.auth.signOut();
+      localStorage.clear();
+      window.location.href = '/login';
+      toast.error('Session expired. Please login again.');
+      return Promise.reject(error);
+    }
+
+    switch (response.status) {
       case 403:
         toast.error(response.data?.message || 'Access denied');
         break;
@@ -60,7 +83,11 @@ api.interceptors.response.use(
         toast.error('Too many requests. Please try again later.');
         break;
       default:
-        toast.error(response.data?.message || ERROR_MESSAGES.GENERIC);
+        if (response.status >= 500) {
+          toast.error(ERROR_MESSAGES.SERVER_ERROR);
+        } else {
+          toast.error(response.data?.message || ERROR_MESSAGES.GENERIC);
+        }
     }
 
     return Promise.reject(error);
