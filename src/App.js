@@ -68,6 +68,9 @@ import BulkQuestionImport from './pages/tutor/BulkQuestionImport';
 import TestBuilder from './pages/tutor/TestBuilder';
 import Tests from './pages/tutor/Tests';
 import Students from './pages/tutor/Students';
+import StudentProfile from './pages/tutor/StudentProfile';
+import StudentAlerts from './pages/tutor/StudentAlerts';
+import ComparativeAnalytics from './pages/tutor/ComparativeAnalytics';
 import TutorLeaderboard from './pages/tutor/Leaderboard';
 import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
 import AdvancedAnalyticsDashboard from './pages/tutor/AdvancedAnalyticsDashboard';
@@ -294,6 +297,9 @@ function App() {
               <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Tests /></RoleProtectedRoute>} />
               <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestBuilder /></RoleProtectedRoute>} />
               <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Students /></RoleProtectedRoute>} />
+              <Route path="/tutor/students/:studentId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><StudentProfile /></RoleProtectedRoute>} />
+              <Route path="/tutor/students/alerts/all" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><StudentAlerts /></RoleProtectedRoute>} />
+              <Route path="/tutor/analytics/comparative" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><ComparativeAnalytics /></RoleProtectedRoute>} />
               <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorLeaderboard /></RoleProtectedRoute>} />
               <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />
               <Route path="/tutor/analytics/advanced" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />

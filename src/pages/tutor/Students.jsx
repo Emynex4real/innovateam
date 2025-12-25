@@ -63,7 +63,11 @@ const Students = () => {
               </thead>
               <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {students.map((student) => (
-                  <tr key={student.id} className={`${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition`}>
+                  <tr 
+                    key={student.id} 
+                    onClick={() => navigate(`/tutor/students/${student.id}`)}
+                    className={`${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition cursor-pointer`}
+                  >
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                       <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{student.name}</div>
                     </td>

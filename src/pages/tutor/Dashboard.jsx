@@ -268,6 +268,22 @@ const TutorDashboard = () => {
               <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">📊</div>
               <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Analytics</p>
             </button>
+
+            <button
+              onClick={() => navigate('/tutor/students/alerts/all')}
+              className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-red-500 hover:bg-red-900/20' : 'border-gray-200 hover:border-red-500 hover:bg-red-50'}`}
+            >
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">🚨</div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Student Alerts</p>
+            </button>
+
+            <button
+              onClick={() => navigate('/tutor/analytics/comparative')}
+              className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20' : 'border-gray-200 hover:border-cyan-500 hover:bg-cyan-50'}`}
+            >
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">📈</div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Compare Students</p>
+            </button>
           </div>
         </div>
 

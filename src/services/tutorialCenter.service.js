@@ -116,6 +116,46 @@ export const tutorialCenterService = {
   getAllAchievements: async () => {
     const response = await api.get(`${API_BASE}/achievements/all`);
     return response.data;
+  },
+
+  getStudentProfile: async (studentId) => {
+    const response = await api.get(`${API_BASE}/students/${studentId}/profile`);
+    return response.data;
+  },
+
+  getStudentTestHistory: async (studentId) => {
+    const response = await api.get(`${API_BASE}/students/${studentId}/test-history`);
+    return response.data;
+  },
+
+  getStudentAnalytics: async (studentId) => {
+    const response = await api.get(`${API_BASE}/students/${studentId}/analytics`);
+    return response.data;
+  },
+
+  getStudentProgress: async (studentId, period = 'month') => {
+    const response = await api.get(`${API_BASE}/students/${studentId}/progress?period=${period}`);
+    return response.data;
+  },
+
+  generateStudentReport: async (studentId, period = 'week') => {
+    const response = await api.post(`${API_BASE}/students/${studentId}/report`, { period });
+    return response.data;
+  },
+
+  getStudentNotes: async (studentId) => {
+    const response = await api.get(`${API_BASE}/students/${studentId}/notes`);
+    return response.data;
+  },
+
+  addStudentNote: async (studentId, note) => {
+    const response = await api.post(`${API_BASE}/students/${studentId}/notes`, { note });
+    return response.data;
+  },
+
+  getStudentAlerts: async () => {
+    const response = await api.get(`${API_BASE}/students/alerts/all`);
+    return response.data;
   }
 };
 

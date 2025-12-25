@@ -194,4 +194,212 @@ exports.getAllAchievements = async (req, res) => {
   }
 };
 
+// ===== ENHANCED STUDENT MANAGEMENT =====
+
+// Get individual student profile
+exports.getStudentProfile = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const tutorId = req.user.id;
+
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const { data: enrollment } = await supabase.from('tc_enrollments').select('*').eq('center_id', center.id).eq('student_id', studentId).single();
+    if (!enrollment) return res.status(403).json({ success: false, error: 'Student not enrolled' });
+
+    const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', studentId).single();
+    const { data: attempts } = await supabase.from('tc_student_attempts').select('*').eq('student_id', studentId);
+
+    const avgScore = attempts?.length ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0;
+    const totalXP = attempts?.reduce((sum, a) => sum + (a.xp_earned || 0), 0) || 0;
+
+    res.json({
+      success: true,
+      student: {
+        id: studentId,
+        name: profile?.full_name || 'Unknown',
+        email: profile?.email,
+        enrolled_at: enrollment.enrolled_at,
+        total_tests: attempts?.length || 0,
+        average_score: avgScore,
+        total_xp: totalXP,
+        level: Math.floor(totalXP / 100) + 1,
+        tier: totalXP > 1000 ? 'gold' : totalXP > 500 ? 'silver' : 'bronze'
+      }
+    });
+  } catch (error) {
+    logger.error('Get student profile error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student test history
+exports.getStudentTestHistory = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const tutorId = req.user.id;
+
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const { data: attempts } = await supabase
+      .from('tc_student_attempts')
+      .select('*, tc_question_sets(title, subject)')
+      .eq('student_id', studentId)
+      .order('completed_at', { ascending: false });
+
+    res.json({ success: true, attempts: attempts || [] });
+  } catch (error) {
+    logger.error('Get test history error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student detailed analytics
+exports.getStudentDetailedAnalytics = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { data: attempts } = await supabase.from('tc_student_attempts').select('*').eq('student_id', studentId);
+
+    const subjectPerformance = {};
+    attempts?.forEach(a => {
+      const subject = a.subject || 'General';
+      if (!subjectPerformance[subject]) subjectPerformance[subject] = { total: 0, count: 0 };
+      subjectPerformance[subject].total += a.score;
+      subjectPerformance[subject].count++;
+    });
+
+    const analytics = Object.entries(subjectPerformance).map(([subject, data]) => ({
+      subject,
+      avgScore: Math.round(data.total / data.count),
+      attempts: data.count
+    }));
+
+    res.json({ success: true, analytics });
+  } catch (error) {
+    logger.error('Get analytics error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student progress over time
+exports.getStudentProgress = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { period = 'month' } = req.query;
+
+    const daysAgo = period === 'week' ? 7 : period === 'month' ? 30 : 90;
+    const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: attempts } = await supabase
+      .from('tc_student_attempts')
+      .select('score, completed_at')
+      .eq('student_id', studentId)
+      .gte('completed_at', startDate)
+      .order('completed_at');
+
+    res.json({ success: true, progress: attempts || [] });
+  } catch (error) {
+    logger.error('Get progress error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Generate student report
+exports.generateStudentReport = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { period = 'week' } = req.body;
+
+    const daysAgo = period === 'week' ? 7 : period === 'month' ? 30 : 90;
+    const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', studentId).single();
+    const { data: attempts } = await supabase.from('tc_student_attempts').select('*').eq('student_id', studentId).gte('completed_at', startDate);
+
+    const avgScore = attempts?.length ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0;
+
+    const report = {
+      student: { name: profile?.full_name, email: profile?.email },
+      period,
+      generated_at: new Date().toISOString(),
+      summary: {
+        tests_taken: attempts?.length || 0,
+        average_score: avgScore,
+        highest_score: Math.max(...(attempts?.map(a => a.score) || [0])),
+        lowest_score: Math.min(...(attempts?.map(a => a.score) || [100]))
+      },
+      attempts: attempts || []
+    };
+
+    res.json({ success: true, report });
+  } catch (error) {
+    logger.error('Generate report error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student notes
+exports.getStudentNotes = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const tutorId = req.user.id;
+
+    const { data: notes } = await supabase
+      .from('tutor_notes')
+      .select('*')
+      .eq('tutor_id', tutorId)
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: false });
+
+    res.json({ success: true, notes: notes || [] });
+  } catch (error) {
+    logger.error('Get notes error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Add student note
+exports.addStudentNote = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { note } = req.body;
+    const tutorId = req.user.id;
+
+    const { data, error } = await supabase
+      .from('tutor_notes')
+      .insert([{ tutor_id: tutorId, student_id: studentId, note }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, note: data });
+  } catch (error) {
+    logger.error('Add note error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student alerts
+exports.getStudentAlerts = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentAttempts } = await supabase.from('tc_student_attempts').select('student_id').gte('completed_at', sevenDaysAgo);
+    const activeStudentIds = [...new Set(recentAttempts?.map(a => a.student_id) || [])];
+
+    const { data: enrollments } = await supabase.from('tc_enrollments').select('student_id').eq('center_id', center.id);
+    const inactiveStudents = enrollments?.filter(e => !activeStudentIds.includes(e.student_id)) || [];
+
+    res.json({ success: true, alerts: { inactive_count: inactiveStudents.length, inactive_students: inactiveStudents } });
+  } catch (error) {
+    logger.error('Get alerts error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = exports;
