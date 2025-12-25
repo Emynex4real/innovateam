@@ -92,24 +92,34 @@ class SupabaseAuthService {
         throw new Error('Login failed: ' + error.message);
       }
 
-      // Get user profile
-      const { data: profile } = await supabase
+      // Get user profile with wallet balance
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
 
+      if (profileError) {
+        console.warn('Profile fetch failed:', profileError);
+      }
+
+      const walletBalance = profile?.wallet_balance || 0;
+      
       const user = {
         id: data.user.id,
         email: data.user.email,
         name: profile?.full_name || data.user.user_metadata?.full_name || 'User',
         role: profile?.role || 'user',
         isAdmin: profile?.role === 'admin',
-        walletBalance: profile?.wallet_balance || 0
+        walletBalance: walletBalance
       };
 
       this.setUser(user);
       this.setToken(data.session.access_token);
+      
+      // Store wallet balance and user data for wallet context
+      localStorage.setItem('wallet_balance', String(walletBalance));
+      localStorage.setItem('confirmedUser', JSON.stringify(user));
       
       logger.auth('Supabase login successful');
       return { success: true, user };

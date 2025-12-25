@@ -17,14 +17,30 @@ export const WalletProvider = ({ children }) => {
     
     try {
       setIsFetching(true);
-      // Only show global loading on first fetch if needed, 
-      // otherwise we just update in background
       if (transactions.length === 0) setLoading(true);
       
-      const currentUser = JSON.parse(localStorage.getItem('confirmedUser') || '{}');
+      // Get user from multiple sources after database changes
+      let currentUser = null;
       
-      if (!currentUser.id) {
-        // console.warn('No user ID found during wallet fetch');
+      // Try confirmedUser first (most up to date)
+      const confirmedUserStr = localStorage.getItem('confirmedUser');
+      if (confirmedUserStr) {
+        currentUser = JSON.parse(confirmedUserStr);
+      } else {
+        // Fallback to regular user storage
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          currentUser = JSON.parse(userStr);
+        }
+      }
+      
+      // If still no user, try to get from auth context
+      if (!currentUser?.id && user?.id) {
+        currentUser = user;
+      }
+      
+      if (!currentUser?.id) {
+        console.warn('No user ID found during wallet fetch');
         return;
       }
       
@@ -32,6 +48,13 @@ export const WalletProvider = ({ children }) => {
       const balanceResult = await simpleWalletService.getUserBalance(currentUser.id);
       if (balanceResult.success) {
         setWalletBalance(balanceResult.balance);
+        // Update localStorage with latest balance
+        const updatedUser = { ...currentUser, walletBalance: balanceResult.balance };
+        localStorage.setItem('confirmedUser', JSON.stringify(updatedUser));
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem('wallet_balance', String(balanceResult.balance));
+      } else {
+        console.error('Failed to fetch balance:', balanceResult.error);
       }
       
       // Get user transactions from Supabase
@@ -197,10 +220,18 @@ export const WalletProvider = ({ children }) => {
 
   // Fetch data when authentication state changes
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.id) {
       fetchWalletData();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
+  
+  // Initialize wallet balance from localStorage on mount
+  useEffect(() => {
+    const storedBalance = localStorage.getItem('wallet_balance');
+    if (storedBalance) {
+      setWalletBalance(Number(storedBalance));
+    }
+  }, []);
   
   return (
     <WalletContext.Provider

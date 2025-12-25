@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
+import { useWallet } from '../contexts/WalletContext';
 import supabase from '../config/supabase';
 import NotificationCenter from './NotificationCenter';
 import {
@@ -33,8 +34,8 @@ const EducationalSidebar = ({ children }) => {
   
   const { user, signOut } = useAuth();
   const { unreadCount } = useUnreadMessages();
-  const walletBalance = 0; // In a real app, fetch from context
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { walletBalance } = useWallet();
 
   // --- Logic: Check Admin Status ---
   const [userRole, setUserRole] = useState('student');

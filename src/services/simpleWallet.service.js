@@ -44,15 +44,20 @@ class SimpleWalletService {
       if (error) throw error;
 
       // 2. Get current balance to calculate new balance
-      const { data: currentProfile } = await supabase
+      const { data: currentProfile, error: balanceError } = await supabase
         .from('user_profiles')
         .select('wallet_balance')
         .eq('id', currentUser.id)
         .single();
 
+      if (balanceError || !currentProfile) {
+        throw new Error(`Failed to get current balance: ${balanceError?.message || 'Profile not found'}`);
+      }
+
+      const currentBalance = currentProfile.wallet_balance || 0;
       const newBalance = type === 'credit' 
-        ? (currentProfile.wallet_balance || 0) + amount
-        : (currentProfile.wallet_balance || 0) - amount;
+        ? currentBalance + amount
+        : currentBalance - amount;
 
       // 3. Update user wallet balance
       const { error: updateError } = await supabase
@@ -103,9 +108,18 @@ class SimpleWalletService {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Balance fetch error:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('User profile not found');
+      }
+      
       return { success: true, balance: data.wallet_balance || 0 };
     } catch (error) {
+      console.error('getUserBalance failed:', error);
       return { success: false, error: error.message };
     }
   }
