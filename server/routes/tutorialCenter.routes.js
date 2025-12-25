@@ -15,6 +15,7 @@ router.get('/students', tutorialCenterController.getCenterStudents);
 // Analytics and gamification
 router.get('/leaderboard/:testId', tutorialCenterController.getLeaderboard);
 router.get('/analytics/:centerId', tutorialCenterController.getStudentAnalytics);
+router.get('/advanced-analytics', tutorialCenterController.getAdvancedAnalytics);
 router.get('/achievements', tutorialCenterController.getMyAchievements);
 router.get('/achievements/all', tutorialCenterController.getAllAchievements);
 

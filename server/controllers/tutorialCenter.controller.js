@@ -159,6 +159,19 @@ exports.getStudentAnalytics = async (req, res) => {
   }
 };
 
+// Get advanced analytics
+exports.getAdvancedAnalytics = async (req, res) => {
+  try {
+    const { timeRange } = req.query;
+    const advancedAnalyticsService = require('../services/advancedAnalytics.service');
+    const result = await advancedAnalyticsService.getAdvancedAnalytics(req.user.id, timeRange);
+    res.json(result);
+  } catch (error) {
+    logger.error('Get advanced analytics error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Get student achievements
 exports.getMyAchievements = async (req, res) => {
   try {

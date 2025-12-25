@@ -15,7 +15,14 @@ const TestBuilder = () => {
     time_limit: 60,
     passing_score: 70,
     show_answers: false,
-    visibility: 'private'
+    visibility: 'private',
+    scheduled_start: '',
+    scheduled_end: '',
+    auto_activate: false,
+    auto_deactivate: false,
+    is_recurring: false,
+    recurrence_pattern: 'daily',
+    recurrence_days: []
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -154,6 +161,105 @@ const TestBuilder = () => {
                   <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Show answers to students after submission</span>
                 </label>
               </div>
+            </div>
+          </div>
+
+          {/* Scheduling Section */}
+          <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow-lg p-4 md:p-6 mb-6`}>
+            <h2 className="text-lg md:text-xl font-bold mb-4">📅 Scheduling (Optional)</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Start Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={formData.scheduled_start}
+                  onChange={(e) => setFormData({ ...formData, scheduled_start: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>End Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={formData.scheduled_end}
+                  onChange={(e) => setFormData({ ...formData, scheduled_end: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.auto_activate}
+                  onChange={(e) => setFormData({ ...formData, auto_activate: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <span className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Auto-activate at start time</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.auto_deactivate}
+                  onChange={(e) => setFormData({ ...formData, auto_deactivate: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <span className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Auto-deactivate at end time</span>
+              </label>
+            </div>
+
+            <div className="border-t pt-4 mt-4">
+              <label className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  checked={formData.is_recurring}
+                  onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>🔄 Recurring Test</span>
+              </label>
+
+              {formData.is_recurring && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Repeat</label>
+                    <select
+                      value={formData.recurrence_pattern}
+                      onChange={(e) => setFormData({ ...formData, recurrence_pattern: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                  {formData.recurrence_pattern === 'weekly' && (
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Days</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
+                          <label key={day} className="flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              checked={formData.recurrence_days.includes(idx + 1)}
+                              onChange={(e) => {
+                                const days = e.target.checked
+                                  ? [...formData.recurrence_days, idx + 1]
+                                  : formData.recurrence_days.filter(d => d !== idx + 1);
+                                setFormData({ ...formData, recurrence_days: days.sort() });
+                              }}
+                              className="w-3 h-3"
+                            />
+                            <span className="text-xs">{day}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

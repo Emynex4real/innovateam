@@ -109,6 +109,12 @@ const Questions = () => {
           </div>
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
             <button
+              onClick={() => navigate('/tutor/questions/bulk-import')}
+              className="flex-1 sm:flex-none bg-purple-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm md:text-base"
+            >
+              📋 Bulk Import
+            </button>
+            <button
               onClick={() => navigate('/tutor/questions/generate')}
               className="flex-1 sm:flex-none bg-green-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm md:text-base"
             >

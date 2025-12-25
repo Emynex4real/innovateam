@@ -262,7 +262,7 @@ const TutorDashboard = () => {
             </button>
 
             <button
-              onClick={() => navigate('/tutor/analytics')}
+              onClick={() => navigate('/tutor/analytics/advanced')}
               className={`group p-5 border-2 rounded-xl transition-all hover:scale-105 ${isDarkMode ? 'border-gray-700 hover:border-pink-500 hover:bg-pink-900/20' : 'border-gray-200 hover:border-pink-500 hover:bg-pink-50'}`}
             >
               <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">📊</div>

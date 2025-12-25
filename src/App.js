@@ -64,11 +64,13 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import TutorDashboard from './pages/tutor/Dashboard';
 import TutorQuestions from './pages/tutor/Questions';
 import AIGenerator from './pages/tutor/AIGenerator';
+import BulkQuestionImport from './pages/tutor/BulkQuestionImport';
 import TestBuilder from './pages/tutor/TestBuilder';
 import Tests from './pages/tutor/Tests';
 import Students from './pages/tutor/Students';
 import TutorLeaderboard from './pages/tutor/Leaderboard';
 import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
+import AdvancedAnalyticsDashboard from './pages/tutor/AdvancedAnalyticsDashboard';
 
 import supabase from './config/supabase';
 
@@ -288,11 +290,13 @@ function App() {
               <Route path="/tutor/dashboard" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorDashboard /></RoleProtectedRoute>} />
               <Route path="/tutor/questions" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorQuestions /></RoleProtectedRoute>} />
               <Route path="/tutor/questions/generate" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AIGenerator /></RoleProtectedRoute>} />
+              <Route path="/tutor/questions/bulk-import" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><BulkQuestionImport /></RoleProtectedRoute>} />
               <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Tests /></RoleProtectedRoute>} />
               <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestBuilder /></RoleProtectedRoute>} />
               <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Students /></RoleProtectedRoute>} />
               <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorLeaderboard /></RoleProtectedRoute>} />
-              <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorAnalyticsDashboard /></RoleProtectedRoute>} />
+              <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />
+              <Route path="/tutor/analytics/advanced" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />
               
               {/* Student Tutorial Center Routes (Students only) */}
               <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><MyCenters /></RoleProtectedRoute>} />

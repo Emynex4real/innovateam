@@ -352,6 +352,116 @@ Generate exactly ${currentBatchSize} questions now based on the document content
   }
 
   /**
+   * 📋 PARSE BULK QUESTIONS FROM TEXT
+   * Uses AI to intelligently parse pasted questions with answers
+   * 
+   * @param {Object} params - Parsing parameters
+   * @param {string} params.text - The bulk text containing questions and answers
+   * @param {string} params.subject - Subject for categorization
+   * @param {string} params.topic - Topic for categorization
+   * @param {string} params.difficulty - Default difficulty level
+   * @param {string} params.category - Category for questions
+   * @returns {Promise<Array>} Array of parsed question objects
+   */
+  async parseBulkQuestions(params) {
+    const { text, subject, topic, difficulty = 'medium', category } = params;
+    
+    if (!text || text.length < 10) {
+      throw new Error('Text content is required and must be at least 10 characters');
+    }
+
+    console.log('📋 Parsing bulk questions:', {
+      textLength: text.length,
+      subject,
+      topic,
+      difficulty
+    });
+
+    const modelName = await this.getBestModelName();
+    const model = this.genAI.getGenerativeModel({ 
+      model: modelName,
+      generationConfig: { 
+        responseMimeType: "application/json",
+        temperature: 0.3,
+      }
+    });
+
+    const prompt = `
+ACT AS: Expert Question Parser
+
+TASK: Parse the following text containing multiple choice questions and convert them into a structured format.
+
+TEXT TO PARSE:
+${text}
+
+METADATA:
+- Subject: ${subject}
+- Topic: ${topic || 'General'}
+- Default Difficulty: ${difficulty}
+- Category: ${category || 'General'}
+
+PARSING INSTRUCTIONS:
+1. Identify each question (usually numbered or starts with "Q:")
+2. Extract all 4 options (A, B, C, D)
+3. Find the correct answer (look for "Answer:", "Correct:", or similar indicators)
+4. Extract explanation if provided
+5. If no explanation is provided, generate a brief one
+6. Handle various formats (numbered, lettered, with/without punctuation)
+7. Clean up formatting and whitespace
+
+STRICTLY RETURN A JSON ARRAY IN THIS EXACT FORMAT:
+[
+  {
+    "question_text": "The parsed question text",
+    "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
+    "correct_answer": "A",
+    "explanation": "Brief explanation",
+    "subject": "${subject}",
+    "topic": "${topic || ''}",
+    "difficulty": "${difficulty}",
+    "category": "${category || ''}"
+  }
+]
+
+IMPORTANT:
+- Extract ALL questions found in the text
+- Ensure options array always has exactly 4 items
+- correct_answer must be A, B, C, or D
+- If answer is not explicitly stated, make your best inference
+- Clean up any formatting issues
+- Preserve mathematical notation and special characters
+
+Parse the text now and return the structured questions.
+    `.trim();
+
+    try {
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const parsedQuestions = this.cleanAndParseJSON(response.text());
+      
+      if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
+        throw new Error('No questions could be parsed from the text');
+      }
+
+      const validQuestions = parsedQuestions.filter(q => 
+        q.question_text && 
+        Array.isArray(q.options) && 
+        q.options.length === 4 && 
+        q.correct_answer &&
+        ['A', 'B', 'C', 'D'].includes(q.correct_answer) &&
+        q.explanation
+      );
+
+      console.log(`✅ Successfully parsed ${validQuestions.length} questions from bulk text`);
+      return validQuestions;
+
+    } catch (error) {
+      console.error('❌ Bulk parsing failed:', error.message);
+      throw new Error('Failed to parse questions. Please check the format and try again.');
+    }
+  }
+
+  /**
    * 🎓 GENERATE QUESTIONS (Legacy method for backward compatibility)
    * Main method to generate examination questions
    * 

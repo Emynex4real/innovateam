@@ -30,6 +30,7 @@ const tcEnrollmentsRoutes = require('./routes/tcEnrollments.routes');
 const tcQuestionsRoutes = require('./routes/tcQuestions.routes');
 const tcQuestionSetsRoutes = require('./routes/tcQuestionSets.routes');
 const tcAttemptsRoutes = require('./routes/tcAttempts.routes');
+const schedulerRoutes = require('./routes/scheduler.routes');
 
 // Phase 1 & 2 routes
 const subscriptionRoutes = require('./routes/subscription.routes');
@@ -291,6 +292,7 @@ app.use('/api/tc-enrollments', tcEnrollmentsRoutes);
 app.use('/api/tc-questions', tcQuestionsRoutes);
 app.use('/api/tc-question-sets', tcQuestionSetsRoutes);
 app.use('/api/tc-attempts', tcAttemptsRoutes);
+app.use('/api/scheduler', schedulerRoutes);
 
 // Phase 1 routes
 app.use('/api/subscriptions', subscriptionRoutes);
@@ -342,6 +344,18 @@ app.listen(PORT, HOST, () => {
   console.log('='.repeat(60) + '\n');
   
   logger.info('Secure server started successfully');
+  
+  // Start test scheduler (runs every minute)
+  const testSchedulerService = require('./services/testScheduler.service');
+  setInterval(async () => {
+    try {
+      await testSchedulerService.runScheduler();
+    } catch (error) {
+      logger.error('Scheduler error:', error);
+    }
+  }, 60000); // Run every minute
+  
+  logger.info('📅 Test scheduler started (runs every minute)');
 });
 
 // ============================================

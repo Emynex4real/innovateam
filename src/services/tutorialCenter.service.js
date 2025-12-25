@@ -51,6 +51,13 @@ export const tutorialCenterService = {
     return response.data;
   },
 
+  parseBulkQuestions: async (data) => {
+    const response = await axios.post(`${API_BASE}/tc-questions/parse-bulk`, data, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
+  },
+
   saveBulkQuestions: async (questions) => {
     const response = await axios.post(`${API_BASE}/tc-questions/save-bulk`, { questions }, {
       headers: await getAuthHeader()
@@ -139,6 +146,13 @@ export const tutorialCenterService = {
 
   getMyAnalytics: async (centerId) => {
     const response = await axios.get(`${API_BASE}/tutorial-centers/analytics/${centerId}`, {
+      headers: await getAuthHeader()
+    });
+    return response.data;
+  },
+
+  getAdvancedAnalytics: async (timeRange = 'week') => {
+    const response = await axios.get(`${API_BASE}/tutorial-centers/advanced-analytics?timeRange=${timeRange}`, {
       headers: await getAuthHeader()
     });
     return response.data;

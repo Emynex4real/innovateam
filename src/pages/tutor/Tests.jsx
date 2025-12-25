@@ -77,10 +77,10 @@ const Tests = () => {
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <button
-              onClick={() => navigate('/tutor/analytics')}
+              onClick={() => navigate('/tutor/analytics/advanced')}
               className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold"
             >
-              📈 Analytics
+              📊 Advanced Analytics
             </button>
             <button
               onClick={() => navigate('/tutor/tests/create')}
@@ -129,6 +129,24 @@ const Tests = () => {
                         {test.show_answers ? '✓ Answers visible' : '✗ Answers hidden'}
                       </span>
                     </div>
+                    {(test.scheduled_start || test.is_recurring) && (
+                      <div className={`mt-2 p-2 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} text-xs`}>
+                        {test.scheduled_start && (
+                          <div className="flex items-center gap-2">
+                            <span>📅</span>
+                            <span>Start: {new Date(test.scheduled_start).toLocaleString()}</span>
+                            {test.scheduled_end && <span>• End: {new Date(test.scheduled_end).toLocaleString()}</span>}
+                          </div>
+                        )}
+                        {test.is_recurring && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span>🔄</span>
+                            <span>Recurring: {test.recurrence_pattern}</span>
+                            {test.next_activation_at && <span>• Next: {new Date(test.next_activation_at).toLocaleString()}</span>}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="w-full lg:w-auto">
                     <button

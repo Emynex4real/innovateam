@@ -77,6 +77,31 @@ exports.generateQuestions = async (req, res) => {
   }
 };
 
+// Parse bulk questions from text
+exports.parseBulkQuestions = async (req, res) => {
+  try {
+    const { text, subject, topic, difficulty, category } = req.body;
+
+    if (!text || !subject) {
+      return res.status(400).json({ success: false, error: 'Text and subject are required' });
+    }
+
+    // Use Gemini service to parse
+    const questions = await geminiService.parseBulkQuestions({
+      text,
+      subject,
+      topic,
+      difficulty,
+      category
+    });
+
+    res.json({ success: true, questions });
+  } catch (error) {
+    logger.error('Parse bulk questions error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Save bulk questions (after AI generation and editing)
 exports.saveBulkQuestions = async (req, res) => {
   try {
