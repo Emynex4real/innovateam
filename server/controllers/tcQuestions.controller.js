@@ -176,14 +176,24 @@ exports.saveBulkQuestions = async (req, res) => {
 exports.getQuestions = async (req, res) => {
   try {
     const { subject, difficulty, category } = req.query;
+    
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    
     const tutorId = req.user.id;
 
     // Get tutor's center
-    const { data: center } = await supabase
+    const { data: center, error: centerError } = await supabase
       .from('tutorial_centers')
       .select('id')
       .eq('tutor_id', tutorId)
-      .single();
+      .maybeSingle();
+
+    if (centerError) {
+      logger.error('Get center error:', centerError);
+      return res.status(500).json({ success: false, error: centerError.message });
+    }
 
     if (!center) {
       return res.json({ success: true, questions: [] });
@@ -202,7 +212,7 @@ exports.getQuestions = async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    res.json({ success: true, questions: data });
+    res.json({ success: true, questions: data || [] });
   } catch (error) {
     logger.error('Get questions error:', error);
     res.status(500).json({ success: false, error: error.message });

@@ -7,8 +7,8 @@ import emailService from './services/email/emailService';
 
 // Pages
 import Home from './pages/Home';
-import Login from './pages/login';
-import Register from './pages/register';
+import Login from './pages/login/EnterpriseLogin.jsx';
+import Register from './pages/register/EnterpriseRegister.jsx';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import CourseAdvisor from './pages/course-advisor';
@@ -47,10 +47,10 @@ import PerformanceAnalytics from './pages/student/PerformanceAnalytics';
 import Leaderboard from './pages/student/Leaderboard';
 import JoinCenter from './pages/student/tutorial-center/JoinCenter';
 import MyCenters from './pages/student/tutorial-center/MyCenters';
-import StudentTests from './pages/student/tutorial-center/Tests';
+import StudentTests from './pages/student/tutorial-center/EnterpriseTestList.jsx';
 import PublicTests from './pages/student/tutorial-center/PublicTests';
-import TakeTest from './pages/student/tutorial-center/TakeTest';
-import Results from './pages/student/tutorial-center/Results';
+import TakeTest from './pages/student/tutorial-center/EnterpriseTakeTest.jsx';
+import Results from './pages/student/tutorial-center/EnterpriseResults.jsx';
 import ReviewAnswers from './pages/student/tutorial-center/ReviewAnswers';
 import StudentAnalytics from './pages/student/analytics/MyAnalytics';
 import Messaging from './pages/student/Messaging';
@@ -61,19 +61,22 @@ import TutoringMarketplace from './pages/student/TutoringMarketplace';
 
 // Tutor & Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
-import TutorDashboard from './pages/tutor/Dashboard';
+import TutorDashboard from './pages/tutor/EnterpriseDashboard.jsx';
 import TutorQuestions from './pages/tutor/Questions';
 import AIGenerator from './pages/tutor/AIGenerator';
 import BulkQuestionImport from './pages/tutor/BulkQuestionImport';
 import TestBuilder from './pages/tutor/TestBuilder';
 import Tests from './pages/tutor/Tests';
 import Students from './pages/tutor/Students';
+import StudentDetail from './pages/tutor/StudentDetail';
 import StudentProfile from './pages/tutor/StudentProfile';
 import StudentAlerts from './pages/tutor/StudentAlerts';
 import ComparativeAnalytics from './pages/tutor/ComparativeAnalytics';
 import TutorLeaderboard from './pages/tutor/Leaderboard';
 import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
 import AdvancedAnalyticsDashboard from './pages/tutor/AdvancedAnalyticsDashboard';
+import StudentDashboard from './pages/student/tutorial-center/EnterpriseDashboard.jsx';
+import ThemeEditor from './pages/tutor/ThemeEditor';
 
 import supabase from './config/supabase';
 
@@ -280,14 +283,16 @@ function App() {
               <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Tests /></RoleProtectedRoute>} />
               <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestBuilder /></RoleProtectedRoute>} />
               <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Students /></RoleProtectedRoute>} />
-              <Route path="/tutor/students/:studentId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><StudentProfile /></RoleProtectedRoute>} />
+              <Route path="/tutor/students/:studentId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><StudentDetail /></RoleProtectedRoute>} />
               <Route path="/tutor/students/alerts/all" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><StudentAlerts /></RoleProtectedRoute>} />
               <Route path="/tutor/analytics/comparative" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><ComparativeAnalytics /></RoleProtectedRoute>} />
               <Route path="/tutor/leaderboard/:testId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TutorLeaderboard /></RoleProtectedRoute>} />
               <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />
               <Route path="/tutor/analytics/advanced" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />
+              <Route path="/tutor/theme" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><ThemeEditor /></RoleProtectedRoute>} />
               
               {/* Student Tutorial Center Routes (Students only) */}
+              <Route path="/student/dashboard" element={<RoleProtectedRoute allowedRoles={['student']}><StudentDashboard /></RoleProtectedRoute>} />
               <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><MyCenters /></RoleProtectedRoute>} />
               <Route path="/student/centers/join" element={<RoleProtectedRoute allowedRoles={['student']}><JoinCenter /></RoleProtectedRoute>} />
               <Route path="/student/tests" element={<RoleProtectedRoute allowedRoles={['student']}><StudentTests /></RoleProtectedRoute>} />

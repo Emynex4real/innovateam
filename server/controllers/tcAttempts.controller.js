@@ -80,6 +80,11 @@ exports.submitAttempt = async (req, res) => {
 
     if (saveError) throw saveError;
 
+    // Award points for league
+    const gamification = require('../services/gamification.service');
+    const points = Math.round(score / 10); // 10 points per 10% score
+    await gamification.awardPoints(studentId, questionSet.center_id, points);
+
     logger.info('Test submitted', { 
       attemptId: attempt.id, 
       studentId, 
@@ -268,6 +273,33 @@ exports.getCenterAttempts = async (req, res) => {
     res.json({ success: true, attempts: data });
   } catch (error) {
     logger.error('Get center attempts error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student attempts (for tutor viewing specific student)
+exports.getStudentAttempts = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const tutorId = req.user.id;
+
+    const { data, error } = await supabase
+      .from('tc_student_attempts')
+      .select(`
+        *,
+        question_set:question_set_id(title, tutor_id)
+      `)
+      .eq('student_id', studentId)
+      .order('completed_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Filter only attempts from tutor's tests
+    const tutorAttempts = data.filter(a => a.question_set?.tutor_id === tutorId);
+
+    res.json({ success: true, attempts: tutorAttempts });
+  } catch (error) {
+    logger.error('Get student attempts error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -56,5 +56,20 @@ router.get('/tc-question-sets/:id/questions', uuidValidation('id'), tutorialCent
 
 // Attempts
 router.get('/tc-attempts/center-attempts', tutorialCenterController.getCenterAttempts);
+router.get('/students/:studentId/attempts', tutorialCenterController.getStudentAttempts);
+
+// Adaptive Learning
+const adaptiveLearning = require('../services/adaptiveLearning.service');
+router.get('/tests/:question_set_id/access', adaptiveLearning.checkTestAccess);
+router.get('/mastery', adaptiveLearning.getStudentMastery);
+router.post('/remedial/generate', adaptiveLearning.generateRemedialTest);
+
+// Gamification
+const gamification = require('../services/gamification.service');
+router.get('/streak/:centerId', gamification.getMyStreak);
+router.get('/league/:centerId', gamification.getMyLeague);
+
+// White Label
+router.put('/theme', tutorialCenterController.updateTheme);
 
 module.exports = router;

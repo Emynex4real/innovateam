@@ -467,13 +467,35 @@ exports.createQuestion = async (req, res) => {
 
 exports.getQuestions = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      console.log('❌ No user in request');
+      return res.status(401).json({ success: false, error: 'Unauthorized - No user found' });
+    }
+    
     const tutorId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
 
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+    console.log('📝 getQuestions called:', { tutorId, page, limit });
+
+    const { data: center, error: centerError } = await supabase
+      .from('tutorial_centers')
+      .select('id')
+      .eq('tutor_id', tutorId)
+      .maybeSingle();
+
+    if (centerError) {
+      console.log('❌ Center query error:', centerError);
+      return res.status(500).json({ success: false, error: centerError.message });
+    }
+
+    if (!center) {
+      console.log('✅ No center found, returning empty array');
+      return res.json({ success: true, questions: [], pagination: { page, limit, total: 0, totalPages: 0 } });
+    }
+
+    console.log('✅ Center found:', center.id);
 
     const { data, error, count } = await supabase
       .from('tc_questions')
@@ -482,7 +504,12 @@ exports.getQuestions = async (req, res) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) throw error;
+    if (error) {
+      console.log('❌ Questions query error:', error);
+      throw error;
+    }
+
+    console.log(`✅ Found ${data?.length || 0} questions`);
 
     res.json({
       success: true,
@@ -490,11 +517,12 @@ exports.getQuestions = async (req, res) => {
       pagination: {
         page,
         limit,
-        total: count,
-        totalPages: Math.ceil(count / limit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
       }
     });
   } catch (error) {
+    console.error('❌ getQuestions error:', error);
     logger.error('Get questions error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
@@ -871,6 +899,54 @@ exports.getCenterAttempts = async (req, res) => {
     res.json({ success: true, attempts: data || [] });
   } catch (error) {
     logger.error('Get attempts error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.getStudentAttempts = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const tutorId = req.user.id;
+
+    const { data, error } = await supabase
+      .from('tc_student_attempts')
+      .select(`
+        *,
+        question_set:question_set_id(title, tutor_id)
+      `)
+      .eq('student_id', studentId)
+      .order('completed_at', { ascending: false });
+
+    if (error) throw error;
+
+    const tutorAttempts = data.filter(a => a.question_set?.tutor_id === tutorId);
+
+    res.json({ success: true, attempts: tutorAttempts });
+  } catch (error) {
+    logger.error('Get student attempts error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Update theme
+exports.updateTheme = async (req, res) => {
+  try {
+    const { theme_config } = req.body;
+    const tutorId = req.user.id;
+
+    const { data, error } = await supabase
+      .from('tutorial_centers')
+      .update({ theme_config })
+      .eq('tutor_id', tutorId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    logger.info('Theme updated', { tutorId });
+    res.json({ success: true, center: data });
+  } catch (error) {
+    logger.error('Update theme error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

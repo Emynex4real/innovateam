@@ -177,6 +177,44 @@ export const tutorialCenterService = {
   getTestQuestions: async (testId) => {
     const response = await api.get(`${API_BASE}/tc-question-sets/${testId}/questions`);
     return response.data;
+  },
+
+  getStudentAttempts: async (studentId) => {
+    const response = await api.get(`${API_BASE}/students/${studentId}/attempts`);
+    return response.data;
+  },
+
+  // Adaptive Learning
+  checkTestAccess: async (testId) => {
+    const response = await api.get(`${API_BASE}/tests/${testId}/access`);
+    return response.data;
+  },
+
+  getMyMastery: async () => {
+    const response = await api.get(`${API_BASE}/mastery`);
+    return response.data;
+  },
+
+  generateRemedialTest: async (attemptId) => {
+    const response = await api.post(`${API_BASE}/remedial/generate`, { attempt_id: attemptId });
+    return response.data;
+  },
+
+  // Gamification
+  getMyStreak: async (centerId) => {
+    const response = await api.get(`${API_BASE}/streak/${centerId}`);
+    return response.data;
+  },
+
+  getMyLeague: async (centerId) => {
+    const response = await api.get(`${API_BASE}/league/${centerId}`);
+    return response.data;
+  },
+
+  // White Label
+  updateTheme: async (theme) => {
+    const response = await api.put(`${API_BASE}/theme`, { theme_config: theme });
+    return response.data;
   }
 };
 
