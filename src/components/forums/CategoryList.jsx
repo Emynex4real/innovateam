@@ -19,7 +19,7 @@ const CategoryList = ({ centerId }) => {
       setLoading(false);
     };
     fetchCats();
-  }, [centerId]);
+  }, [centerId]); 
 
   if (loading) return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
