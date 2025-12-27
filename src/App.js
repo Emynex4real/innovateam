@@ -148,30 +148,13 @@ const SupabaseAuthProvider = ({ children }) => {
             full_name: userData?.fullName,
             phone: userData?.phone,
             role: userData?.role || 'student'
-          },
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          }
         }
       });
       
       if (error) throw error;
       
-      if (data.user) {
-        const isStudent = !userData?.role || userData?.role === 'student';
-        await supabase.from('user_profiles').insert({
-          id: data.user.id,
-          email: data.user.email,
-          full_name: userData?.fullName,
-          role: userData?.role || 'student',
-          is_admin: userData?.role === 'admin',
-          is_tutor: userData?.role === 'tutor',
-          is_student: isStudent,
-          wallet_balance: 0,
-          status: 'active'
-        });
-        
-        emailService.sendWelcomeEmail(email, userData?.fullName || email.split('@')[0]);
-      }
-      
+      // Profile creation is handled by database trigger
       return { success: true, data, needsEmailConfirmation: !data.user?.email_confirmed_at };
     } catch (error) {
       console.error('SignUp error:', error);

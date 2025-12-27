@@ -96,8 +96,13 @@ const AdminDashboardContent = () => {
   };
 
   const loadCreditRequests = async () => {
-    const result = await directSupabaseService.getCreditRequests();
-    if (result.success) setCreditRequests(result.requests);
+    try {
+      const result = await directSupabaseService.getCreditRequests();
+      if (result.success) setCreditRequests(result.requests);
+    } catch (error) {
+      // Credit requests table doesn't exist - skip silently
+      setCreditRequests([]);
+    }
   };
 
   const loadTableData = async () => {
@@ -152,38 +157,26 @@ const AdminDashboardContent = () => {
 
     const loadingToast = toast.loading('Updating wallet...');
     try {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('wallet_balance')
-        .eq('id', walletModalUser.id)
-        .single();
-
-      const currentBalance = profile?.wallet_balance || 0;
-      const newBalance = walletType === 'credit' ? currentBalance + amount : currentBalance - amount;
-
-      if (newBalance < 0) throw new Error('Insufficient balance for debit');
-
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ wallet_balance: newBalance })
-        .eq('id', walletModalUser.id);
-
-      if (error) throw error;
-
-      await supabase.from('transactions').insert({
-        user_id: walletModalUser.id,
-        amount: amount,
-        type: walletType,
-        status: 'successful',
-        description: `Admin ${walletType} - Manual adjustment`
+      // Call the secure stored procedure
+      const { data, error } = await supabase.rpc('admin_adjust_wallet', {
+        target_user_id: walletModalUser.id,
+        adjustment_amount: amount,
+        adjustment_type: walletType,
+        admin_notes: `Admin ${walletType} - Manual adjustment`
       });
 
+      if (error) throw error;
+      
+      if (data && !data.success) {
+        throw new Error(data.error || 'Failed to update wallet');
+      }
+
       toast.dismiss(loadingToast);
-      toast.success(`Wallet updated successfully`);
+      toast.success(`Wallet ${walletType}ed successfully`);
       setWalletModalUser(null);
       setWalletAmount('');
       loadTableData(); 
-      loadStats(); // Refresh charts to show new revenue immediately
+      loadStats();
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error(error.message);
@@ -362,6 +355,7 @@ const AdminDashboardContent = () => {
                     <thead className={isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}>
                       <tr>
                         <th className="p-3 text-left">User</th>
+                        <th className="p-3 text-left">Phone</th>
                         <th className="p-3 text-left">Balance</th>
                         <th className="p-3 text-left">Status</th>
                         <th className="p-3 text-left">Actions</th>
@@ -374,6 +368,7 @@ const AdminDashboardContent = () => {
                             <div className="font-medium">{user.name}</div>
                             <div className="text-xs text-gray-500">{user.email}</div>
                           </td>
+                          <td className="p-3 text-sm">{user.phone || 'N/A'}</td>
                           <td className="p-3 font-mono text-green-500">₦{user.walletBalance}</td>
                           <td className="p-3"><Badge variant="outline">{user.status}</Badge></td>
                           <td className="p-3 flex gap-2">
