@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X } from 'lucide-react';
 
 const TagInput = ({ tags = [], onChange, suggestions = [], placeholder = "Add tags..." }) => {
   const [input, setInput] = useState('');
@@ -55,7 +54,7 @@ const TagInput = ({ tags = [], onChange, suggestions = [], placeholder = "Add ta
               onClick={() => removeTag(tag)}
               className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition"
             >
-              <X size={14} />
+              <span className="text-xs font-bold">×</span>
             </button>
           </span>
         ))}

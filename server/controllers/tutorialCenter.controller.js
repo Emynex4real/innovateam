@@ -525,25 +525,123 @@ exports.deleteQuestion = async (req, res) => {
 };
 
 exports.generateQuestionsAI = async (req, res) => {
+  console.log('\n🎯 ========== AI GENERATION REQUEST ==========');
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('User:', req.user?.id);
+  
   try {
-    res.json({ success: true, questions: [], message: 'AI generation not implemented yet' });
+    const { subject, topic, difficulty = 'medium', count = 5 } = req.body;
+
+    console.log('🎯 Parsed params:', { subject, topic, difficulty, count });
+
+    if (!subject || !topic) {
+      console.log('❌ Validation failed: Missing subject or topic');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Subject and topic are required' 
+      });
+    }
+
+    console.log('✅ Validation passed, calling Gemini service...');
+    
+    // Use existing Gemini service
+    const geminiService = require('../services/gemini.service');
+    const questions = await geminiService.generateQuestions({
+      subject,
+      topic,
+      difficulty,
+      totalQuestions: count
+    });
+
+    console.log(`✅ Gemini returned ${questions?.length || 0} questions`);
+
+    if (!questions || questions.length === 0) {
+      console.log('❌ No questions generated');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'No questions were generated. Please try again.' 
+      });
+    }
+
+    // Format for frontend (don't save yet - tutor will edit)
+    const formatted = questions.map(q => ({
+      question_text: q.question,
+      options: q.options,
+      correct_answer: q.answer,
+      explanation: q.explanation,
+      subject,
+      topic,
+      difficulty
+    }));
+
+    console.log(`✅ Formatted ${formatted.length} questions, sending response...`);
+    console.log('========== END AI GENERATION ==========\n');
+    
+    res.json({ success: true, questions: formatted });
   } catch (error) {
+    console.error('❌ Generate questions error:', error.message);
+    console.error('Stack:', error.stack);
+    logger.error('Generate questions error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 exports.parseBulkQuestions = async (req, res) => {
   try {
-    res.json({ success: true, questions: [], message: 'Bulk parse not implemented yet' });
+    const { text, subject, topic, difficulty, category } = req.body;
+
+    if (!text || !subject) {
+      return res.status(400).json({ success: false, error: 'Text and subject are required' });
+    }
+
+    const geminiService = require('../services/gemini.service');
+    const questions = await geminiService.parseBulkQuestions({
+      text,
+      subject,
+      topic,
+      difficulty,
+      category
+    });
+
+    res.json({ success: true, questions });
   } catch (error) {
+    logger.error('Parse bulk questions error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 exports.saveBulkQuestions = async (req, res) => {
   try {
-    res.json({ success: true, message: 'Bulk save not implemented yet' });
+    const { questions } = req.body;
+    const tutorId = req.user.id;
+
+    const { data: center } = await supabase
+      .from('tutorial_centers')
+      .select('id')
+      .eq('tutor_id', tutorId)
+      .single();
+
+    if (!center) {
+      return res.status(404).json({ success: false, error: 'Create a tutorial center first' });
+    }
+
+    const questionsToInsert = questions.map(q => ({
+      ...q,
+      tutor_id: tutorId,
+      center_id: center.id
+    }));
+
+    const { data, error } = await supabase
+      .from('tc_questions')
+      .insert(questionsToInsert)
+      .select();
+
+    if (error) throw error;
+
+    logger.info('Bulk questions saved', { count: data.length, tutorId });
+    res.json({ success: true, questions: data, count: data.length });
   } catch (error) {
+    logger.error('Save bulk questions error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

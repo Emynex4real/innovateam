@@ -48,9 +48,25 @@ exports.createQuestion = async (req, res) => {
 
 // Generate questions with AI
 exports.generateQuestions = async (req, res) => {
+  console.log('\n🎯 ========== AI GENERATION REQUEST ==========');
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('User:', req.user?.id);
+  
   try {
     const { subject, topic, difficulty = 'medium', count = 5 } = req.body;
 
+    console.log('🎯 Parsed params:', { subject, topic, difficulty, count });
+
+    if (!subject || !topic) {
+      console.log('❌ Validation failed: Missing subject or topic');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Subject and topic are required' 
+      });
+    }
+
+    console.log('✅ Validation passed, calling Gemini service...');
+    
     // Use existing Gemini service
     const questions = await geminiService.generateQuestions({
       subject,
@@ -58,6 +74,16 @@ exports.generateQuestions = async (req, res) => {
       difficulty,
       totalQuestions: count
     });
+
+    console.log(`✅ Gemini returned ${questions?.length || 0} questions`);
+
+    if (!questions || questions.length === 0) {
+      console.log('❌ No questions generated');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'No questions were generated. Please try again.' 
+      });
+    }
 
     // Format for frontend (don't save yet - tutor will edit)
     const formatted = questions.map(q => ({
@@ -70,8 +96,13 @@ exports.generateQuestions = async (req, res) => {
       difficulty
     }));
 
+    console.log(`✅ Formatted ${formatted.length} questions, sending response...`);
+    console.log('========== END AI GENERATION ==========\n');
+    
     res.json({ success: true, questions: formatted });
   } catch (error) {
+    console.error('❌ Generate questions error:', error.message);
+    console.error('Stack:', error.stack);
     logger.error('Generate questions error:', error);
     res.status(500).json({ success: false, error: error.message });
   }

@@ -20,14 +20,37 @@ const AIGenerator = () => {
 
   const handleGenerate = async (e) => {
     e.preventDefault();
+    
+    // Validate form data
+    if (!formData.subject || !formData.topic) {
+      toast.error('Please fill in both subject and topic');
+      return;
+    }
+    
+    if (formData.count < 1 || formData.count > 20) {
+      toast.error('Number of questions must be between 1 and 20');
+      return;
+    }
+    
     setGenerating(true);
+    console.log('🚀 Generating questions with:', formData);
+    
     try {
       const response = await tutorialCenterService.generateQuestionsAI(formData);
+      console.log('📦 Response:', response);
+      
       if (response.success) {
-        setQuestions(response.questions);
-        toast.success(`Generated ${response.questions.length} questions`);
+        if (response.questions && response.questions.length > 0) {
+          setQuestions(response.questions);
+          toast.success(`Generated ${response.questions.length} questions`);
+        } else {
+          toast.error('No questions were generated. Please try again.');
+        }
+      } else {
+        toast.error(response.error || 'Failed to generate questions');
       }
     } catch (error) {
+      console.error('❌ Generation error:', error);
       toast.error(error.response?.data?.error || 'Failed to generate questions');
     } finally {
       setGenerating(false);

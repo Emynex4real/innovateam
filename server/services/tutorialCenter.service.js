@@ -253,7 +253,12 @@ const tutorialCenterService = {
           topic: questionData.topic,
           difficulty: questionData.difficulty,
           category: questionData.category,
-          image_url: questionData.image_url || null
+          image_url: questionData.image_url || null,
+          tags: questionData.tags || [],
+          difficulty_level: questionData.difficulty_level || questionData.difficulty,
+          subcategory: questionData.subcategory,
+          year: questionData.year,
+          exam_type: questionData.exam_type
         })
         .select()
         .single();

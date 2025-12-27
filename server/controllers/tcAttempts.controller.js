@@ -25,6 +25,12 @@ exports.submitAttempt = async (req, res) => {
 
     // Calculate score
     let correctCount = 0;
+    const totalQuestions = questionSet.questions?.length || 0;
+    
+    if (totalQuestions === 0) {
+      return res.status(400).json({ success: false, error: 'No questions found in this test' });
+    }
+    
     const results = answers.map(ans => {
       const question = questionSet.questions.find(q => q.question.id === ans.question_id);
       const isCorrect = question && question.question.correct_answer === ans.selected_answer;
@@ -39,7 +45,7 @@ exports.submitAttempt = async (req, res) => {
       };
     });
 
-    const score = Math.round((correctCount / questionSet.questions.length) * 100);
+    const score = Math.round((correctCount / totalQuestions) * 100) || 0;
 
     // Save attempt (is_first_attempt set by trigger)
     const { data: attempt, error } = await supabase
@@ -48,9 +54,9 @@ exports.submitAttempt = async (req, res) => {
         student_id: studentId,
         question_set_id,
         answers,
-        score,
-        total_questions: questionSet.questions.length,
-        time_taken
+        score: score || 0,
+        total_questions: totalQuestions,
+        time_taken: time_taken || 0
       }])
       .select()
       .single();
