@@ -13,6 +13,8 @@ const TutorDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
   const [formData, setFormData] = useState({ name: '', description: '' });
 
   useEffect(() => {
@@ -54,6 +56,20 @@ const TutorDashboard = () => {
       }
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to create center');
+    }
+  };
+
+  const handleDeleteCenter = async () => {
+    try {
+      const response = await tutorialCenterService.deleteCenter({ reason: deleteReason });
+      if (response.success) {
+        toast.success('Tutorial center deleted successfully');
+        setCenter(null);
+        setShowDeleteModal(false);
+        setDeleteReason('');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to delete center');
     }
   };
 
@@ -182,6 +198,12 @@ const TutorDashboard = () => {
                 <p className="text-xs uppercase tracking-wider mb-1 opacity-90">Access Code</p>
                 <p className="text-3xl font-mono font-bold tracking-widest">{center.access_code}</p>
               </div>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-400/50 text-red-100 rounded-lg text-sm font-medium transition"
+              >
+                Delete Center
+              </button>
             </div>
           </div>
         </div>
@@ -335,6 +357,42 @@ const TutorDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Center Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl p-8 max-w-md w-full shadow-2xl`}>
+            <h3 className={`text-2xl font-bold mb-4 text-red-500`}>Delete Tutorial Center</h3>
+            <p className={`mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Are you sure you want to delete <strong>{center?.name}</strong>? This action will be recorded for audit purposes.
+            </p>
+            <div className="mb-6">
+              <label className={`block text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Reason (Optional)</label>
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-red-500 transition ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                rows="3"
+                placeholder="Why are you deleting this center?"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteCenter}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl transition font-semibold"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeleteReason(''); }}
+                className={`flex-1 py-3 rounded-xl transition font-semibold ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

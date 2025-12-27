@@ -18,6 +18,11 @@ export const tutorialCenterService = {
     return response.data;
   },
 
+  deleteCenter: async (data) => {
+    const response = await api.delete(API_BASE, { data });
+    return response.data;
+  },
+
   getStudents: async () => {
     const response = await api.get(`${API_BASE}/students`);
     return response.data;

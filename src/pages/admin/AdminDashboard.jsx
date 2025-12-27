@@ -18,6 +18,99 @@ import AdminLeaderboard from './AdminLeaderboard';
 import toast from 'react-hot-toast';
 import { supabase } from '../../config/supabase'; 
 
+// Deleted Centers Component
+const DeletedCentersTable = ({ isDarkMode }) => {
+  const [deletedCenters, setDeletedCenters] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    loadDeletedCenters();
+  }, []);
+
+  const loadDeletedCenters = async () => {
+    try {
+      // Get deleted centers
+      const { data: centers, error: centersError } = await supabase
+        .from('tutorial_centers')
+        .select('id, name, access_code, deleted_at, deleted_by, deletion_reason, tutor_id')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (centersError) throw centersError;
+
+      // Get tutor details
+      const tutorIds = [...new Set(centers.map(c => c.tutor_id))];
+      const { data: tutors, error: tutorsError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .in('id', tutorIds);
+
+      if (tutorsError) throw tutorsError;
+
+      // Combine data
+      const centersWithTutors = centers.map(center => ({
+        ...center,
+        tutor: tutors.find(t => t.id === center.tutor_id)
+      }));
+
+      setDeletedCenters(centersWithTutors);
+    } catch (error) {
+      console.error('Error loading deleted centers:', error);
+      toast.error('Failed to load deleted centers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+
+  if (deletedCenters.length === 0) {
+    return <div className="text-center py-8 text-gray-500">No deleted centers found</div>;
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+      <table className="w-full text-sm">
+        <thead className={isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}>
+          <tr>
+            <th className="p-3 text-left">Center Name</th>
+            <th className="p-3 text-left">Access Code</th>
+            <th className="p-3 text-left">Tutor</th>
+            <th className="p-3 text-left">Deleted At</th>
+            <th className="p-3 text-left">Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deletedCenters.map(center => (
+            <tr key={center.id} className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+              <td className="p-3 font-medium">{center.name}</td>
+              <td className="p-3 font-mono text-xs">{center.access_code}</td>
+              <td className="p-3">
+                <div>{center.tutor?.full_name || 'Unknown'}</div>
+                <div className="text-xs text-gray-500">{center.tutor?.email}</div>
+              </td>
+              <td className="p-3 text-sm">
+                {new Date(center.deleted_at).toLocaleString()}
+              </td>
+              <td className="p-3 text-sm">
+                <span className={`px-2 py-1 rounded text-xs ${
+                  center.deletion_reason 
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' 
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {center.deletion_reason || 'No reason provided'}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}; 
+
 // --- STAT CARD COMPONENT ---
 const StatCard = ({ title, value, icon: Icon, isDarkMode, subValue }) => (
   <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} hover:shadow-lg transition-all`}>
@@ -59,6 +152,16 @@ const AdminDashboardContent = () => {
   const [walletModalUser, setWalletModalUser] = useState(null);
   const [walletAmount, setWalletAmount] = useState('');
   const [walletType, setWalletType] = useState('credit');
+  const [roleModalUser, setRoleModalUser] = useState(null);
+  const [newRole, setNewRole] = useState('');
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastData, setBroadcastData] = useState({
+    title: '',
+    message: '',
+    type: 'announcement',
+    priority: 'normal',
+    targetAudience: 'all'
+  });
 
   // Pagination & Search
   const [currentPage, setCurrentPage] = useState(1);
@@ -183,6 +286,71 @@ const AdminDashboardContent = () => {
     }
   };
 
+  const handleRoleUpdate = async () => {
+    if (!roleModalUser || !newRole) return toast.error('Please select a role');
+
+    const loadingToast = toast.loading('Updating role...');
+    try {
+      const { data, error } = await supabase.rpc('admin_update_user_role', {
+        target_user_id: roleModalUser.id,
+        new_role: newRole,
+        reason: `Role changed to ${newRole} by admin`
+      });
+
+      if (error) throw error;
+      
+      if (data && !data.success) {
+        throw new Error(data.error || 'Failed to update role');
+      }
+
+      toast.dismiss(loadingToast);
+      toast.success(data.message || 'Role updated successfully');
+      setRoleModalUser(null);
+      setNewRole('');
+      loadTableData();
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error(error.message);
+    }
+  };
+
+  const handleBroadcastNotification = async () => {
+    if (!broadcastData.title || !broadcastData.message) {
+      return toast.error('Title and message are required');
+    }
+
+    const loadingToast = toast.loading('Sending notification...');
+    try {
+      const { data, error } = await supabase.rpc('admin_broadcast_notification', {
+        notification_title: broadcastData.title,
+        notification_message: broadcastData.message,
+        notification_type: broadcastData.type,
+        notification_priority: broadcastData.priority,
+        target_audience: broadcastData.targetAudience
+      });
+
+      if (error) throw error;
+      
+      if (data && !data.success) {
+        throw new Error(data.error || 'Failed to send notification');
+      }
+
+      toast.dismiss(loadingToast);
+      toast.success(data.message || 'Notification sent successfully');
+      setShowBroadcastModal(false);
+      setBroadcastData({
+        title: '',
+        message: '',
+        type: 'announcement',
+        priority: 'normal',
+        targetAudience: 'all'
+      });
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error(error.message);
+    }
+  };
+
   const handleCreditRequest = async (requestId, action, userId, amount) => {
     const loadingToast = toast.loading('Processing request...');
     try {
@@ -243,9 +411,13 @@ const AdminDashboardContent = () => {
             <Button onClick={toggleDarkMode} variant="outline" size="icon" className="rounded-full">
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            <Button onClick={handleRefresh} variant="default" className="flex items-center gap-2">
+            <Button onClick={() => setShowBroadcastModal(true)} variant="default" className="flex items-center gap-2">
+               <Activity className="h-4 w-4" /> 
+               Broadcast Notification
+            </Button>
+            <Button onClick={handleRefresh} variant="outline" className="flex items-center gap-2">
                <Activity className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> 
-               Refresh Data
+               Refresh
             </Button>
           </div>
         </div>
@@ -257,6 +429,7 @@ const AdminDashboardContent = () => {
             { id: 'users', label: 'Users', icon: Users },
             { id: 'transactions', label: 'Transactions', icon: DollarSign },
             { id: 'credit-requests', label: 'Credits', icon: TrendingUp },
+            { id: 'deleted-centers', label: 'Deleted Centers', icon: Activity },
             { id: 'leaderboard', label: 'Leaderboard', icon: TrendingUp },
             { id: 'ai-questions', label: 'AI Studio', icon: Activity }
           ].map(tab => (
@@ -356,6 +529,7 @@ const AdminDashboardContent = () => {
                       <tr>
                         <th className="p-3 text-left">User</th>
                         <th className="p-3 text-left">Phone</th>
+                        <th className="p-3 text-left">Role</th>
                         <th className="p-3 text-left">Balance</th>
                         <th className="p-3 text-left">Status</th>
                         <th className="p-3 text-left">Actions</th>
@@ -369,15 +543,25 @@ const AdminDashboardContent = () => {
                             <div className="text-xs text-gray-500">{user.email}</div>
                           </td>
                           <td className="p-3 text-sm">{user.phone || 'N/A'}</td>
+                          <td className="p-3">
+                            <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                              {user.role}
+                            </Badge>
+                          </td>
                           <td className="p-3 font-mono text-green-500">₦{user.walletBalance}</td>
                           <td className="p-3"><Badge variant="outline">{user.status}</Badge></td>
                           <td className="p-3 flex gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => { setSelectedUser(user); setIsUserModalOpen(true); }}>
+                            <Button size="sm" variant="ghost" onClick={() => { setSelectedUser(user); setIsUserModalOpen(true); }} title="View Details">
                                <Eye className="h-4 w-4"/>
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setWalletModalUser(user)}>
+                            <Button size="sm" variant="ghost" onClick={() => setWalletModalUser(user)} title="Manage Wallet">
                                <Wallet className="h-4 w-4"/>
                             </Button>
+                            {user.email !== 'emynex4real@gmail.com' && (
+                              <Button size="sm" variant="ghost" onClick={() => { setRoleModalUser(user); setNewRole(user.role); }} title="Change Role">
+                                 <Users className="h-4 w-4"/>
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -468,6 +652,16 @@ const AdminDashboardContent = () => {
 
           {activeTab === 'ai-questions' && <AIQuestions />}
           {activeTab === 'leaderboard' && <AdminLeaderboard />}
+          
+          {/* 5. DELETED CENTERS TAB */}
+          {activeTab === 'deleted-centers' && (
+            <Card className={isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-4">Deleted Tutorial Centers (Audit Trail)</h3>
+                <DeletedCentersTable isDarkMode={isDarkMode} />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -494,13 +688,127 @@ const AdminDashboardContent = () => {
         </div>
       )}
 
-      {/* 2. User Detail Modal */}
+      {/* 2. Role Change Modal */}
+      {roleModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`rounded-lg p-6 max-w-md w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <h3 className="text-lg font-bold mb-4">Change Role: {roleModalUser.name}</h3>
+            <p className="mb-4">Current Role: <Badge variant="outline">{roleModalUser.role}</Badge></p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Role</label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ${
+                    isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                  }`}
+                >
+                  <option value="student">Student</option>
+                  <option value="tutor">Tutor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleRoleUpdate} className="flex-1">Update Role</Button>
+                <Button onClick={() => setRoleModalUser(null)} variant="outline" className="flex-1">Cancel</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. User Detail Modal */}
       <UserDetailModal 
         user={selectedUser}
         isOpen={isUserModalOpen}
         onClose={() => { setIsUserModalOpen(false); setSelectedUser(null); }}
         isDarkMode={isDarkMode}
       />
+
+      {/* 4. Broadcast Notification Modal */}
+      {showBroadcastModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`rounded-lg p-6 max-w-lg w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <h3 className="text-lg font-bold mb-4">Broadcast Notification</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Title</label>
+                <Input
+                  placeholder="Notification title"
+                  value={broadcastData.title}
+                  onChange={(e) => setBroadcastData({...broadcastData, title: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Message</label>
+                <textarea
+                  placeholder="Notification message"
+                  value={broadcastData.message}
+                  onChange={(e) => setBroadcastData({...broadcastData, message: e.target.value})}
+                  rows={4}
+                  className={`flex w-full rounded-md border px-3 py-2 text-sm ${
+                    isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                  }`}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Send To</label>
+                <select
+                  value={broadcastData.targetAudience}
+                  onChange={(e) => setBroadcastData({...broadcastData, targetAudience: e.target.value})}
+                  className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ${
+                    isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                  }`}
+                >
+                  <option value="all">All Users</option>
+                  <option value="students">Students Only</option>
+                  <option value="tutors">Tutors Only</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Type</label>
+                  <select
+                    value={broadcastData.type}
+                    onChange={(e) => setBroadcastData({...broadcastData, type: e.target.value})}
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ${
+                      isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <option value="info">Info</option>
+                    <option value="success">Success</option>
+                    <option value="warning">Warning</option>
+                    <option value="error">Error</option>
+                    <option value="announcement">Announcement</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Priority</label>
+                  <select
+                    value={broadcastData.priority}
+                    onChange={(e) => setBroadcastData({...broadcastData, priority: e.target.value})}
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ${
+                      isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleBroadcastNotification} className="flex-1">
+                  Send to {broadcastData.targetAudience === 'all' ? 'All Users' : broadcastData.targetAudience === 'students' ? 'Students' : 'Tutors'}
+                </Button>
+                <Button onClick={() => setShowBroadcastModal(false)} variant="outline" className="flex-1">Cancel</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

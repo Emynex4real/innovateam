@@ -9,9 +9,17 @@ const tutorialCenterService = {
         .from('tutorial_centers')
         .select('*')
         .eq('tutor_id', tutorId)
-        .single();
+        .is('deleted_at', null)
+        .maybeSingle();
 
       if (centerError) throw centerError;
+      if (!center) {
+        return {
+          success: true,
+          center: null,
+          message: 'No tutorial center found. Create one to get started.'
+        };
+      }
 
       // Get counts
       const [studentCount, questionCount, testCount] = await Promise.all([
@@ -89,17 +97,7 @@ const tutorialCenterService = {
     try {
       let query = supabase
         .from('tc_student_attempts')
-        .select(`
-          student_id,
-          score,
-          completed_at,
-          student_analytics!inner(
-            xp_points,
-            level,
-            tier,
-            current_streak
-          )
-        `)
+        .select('student_id, score, completed_at')
         .eq('question_set_id', questionSetId)
         .eq('is_first_attempt', true);
 
@@ -127,12 +125,16 @@ const tutorialCenterService = {
 
       // Get user details
       const studentIds = [...new Set(attempts.map(a => a.student_id))];
-      const { data: users } = await supabase.auth.admin.listUsers();
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .in('id', studentIds);
+
       const userMap = {};
-      users.users.forEach(u => {
-        userMap[u.id] = {
-          email: u.email,
-          name: u.user_metadata?.full_name || u.email.split('@')[0]
+      profiles?.forEach(p => {
+        userMap[p.id] = {
+          email: p.email,
+          name: p.full_name || p.email?.split('@')[0] || 'Unknown'
         };
       });
 
@@ -142,10 +144,6 @@ const tutorialCenterService = {
         studentName: userMap[attempt.student_id]?.name || 'Unknown',
         email: userMap[attempt.student_id]?.email || '',
         score: attempt.score,
-        xpPoints: attempt.student_analytics.xp_points,
-        level: attempt.student_analytics.level,
-        tier: attempt.student_analytics.tier,
-        currentStreak: attempt.student_analytics.current_streak,
         completedAt: attempt.completed_at
       }));
 

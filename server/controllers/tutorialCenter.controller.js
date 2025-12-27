@@ -50,6 +50,53 @@ exports.getMyCenter = async (req, res) => {
   }
 };
 
+// Delete center (soft delete)
+exports.deleteCenter = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const tutorId = req.user.id;
+
+    console.log('Delete request from tutor:', tutorId);
+
+    // Get center ID
+    const { data: center, error: selectError } = await supabase
+      .from('tutorial_centers')
+      .select('id, name, deleted_at')
+      .eq('tutor_id', tutorId);
+
+    console.log('Query result:', { center, selectError });
+
+    if (selectError) throw selectError;
+    
+    if (!center || center.length === 0) {
+      return res.status(404).json({ success: false, error: 'Center not found' });
+    }
+
+    const centerData = center[0];
+
+    // Call stored procedure with tutor_id
+    const { data, error } = await supabase.rpc('delete_tutorial_center', {
+      center_id_param: centerData.id,
+      tutor_id_param: tutorId,
+      reason: reason || 'No reason provided'
+    });
+
+    console.log('RPC result:', { data, error });
+
+    if (error) throw error;
+    
+    if (data && !data.success) {
+      throw new Error(data.error || 'Failed to delete center');
+    }
+
+    logger.info('Tutorial center deleted', { centerId: centerData.id, tutorId });
+    res.json(data);
+  } catch (error) {
+    logger.error('Delete center error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Update center
 exports.updateCenter = async (req, res) => {
   try {
@@ -398,6 +445,222 @@ exports.getStudentAlerts = async (req, res) => {
     res.json({ success: true, alerts: { inactive_count: inactiveStudents.length, inactive_students: inactiveStudents } });
   } catch (error) {
     logger.error('Get alerts error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ===== QUESTIONS MANAGEMENT =====
+
+exports.createQuestion = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const result = await tutorialCenterService.createQuestion(tutorId, center.id, req.body);
+    res.json(result);
+  } catch (error) {
+    logger.error('Create question error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.getQuestions = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const { data, error, count } = await supabase
+      .from('tc_questions')
+      .select('*', { count: 'exact' })
+      .eq('center_id', center.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      questions: data || [],
+      pagination: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
+  } catch (error) {
+    logger.error('Get questions error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.updateQuestion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase.from('tc_questions').update(req.body).eq('id', id).select().single();
+    if (error) throw error;
+    res.json({ success: true, question: data });
+  } catch (error) {
+    logger.error('Update question error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.deleteQuestion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from('tc_questions').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Delete question error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.generateQuestionsAI = async (req, res) => {
+  try {
+    res.json({ success: true, questions: [], message: 'AI generation not implemented yet' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.parseBulkQuestions = async (req, res) => {
+  try {
+    res.json({ success: true, questions: [], message: 'Bulk parse not implemented yet' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.saveBulkQuestions = async (req, res) => {
+  try {
+    res.json({ success: true, message: 'Bulk save not implemented yet' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ===== QUESTION SETS (TESTS) MANAGEMENT =====
+
+exports.createQuestionSet = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const result = await tutorialCenterService.createQuestionSet(tutorId, center.id, req.body);
+    res.json(result);
+  } catch (error) {
+    logger.error('Create question set error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.getQuestionSets = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const { data, error, count } = await supabase
+      .from('tc_question_sets')
+      .select('*', { count: 'exact' })
+      .eq('center_id', center.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      questionSets: data || [],
+      pagination: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
+  } catch (error) {
+    logger.error('Get question sets error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.getQuestionSet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase.from('tc_question_sets').select('*').eq('id', id).single();
+    if (error) throw error;
+    res.json({ success: true, questionSet: data });
+  } catch (error) {
+    logger.error('Get question set error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.updateQuestionSet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase.from('tc_question_sets').update(req.body).eq('id', id).select().single();
+    if (error) throw error;
+    res.json({ success: true, questionSet: data });
+  } catch (error) {
+    logger.error('Update question set error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.toggleAnswers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { show_answers } = req.body;
+    const { data, error } = await supabase.from('tc_question_sets').update({ show_answers }).eq('id', id).select().single();
+    if (error) throw error;
+    res.json({ success: true, questionSet: data });
+  } catch (error) {
+    logger.error('Toggle answers error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.deleteQuestionSet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from('tc_question_sets').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Delete question set error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ===== ATTEMPTS =====
+
+exports.getCenterAttempts = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+
+    const { data, error } = await supabase.from('tc_student_attempts').select('*').order('completed_at', { ascending: false });
+    if (error) throw error;
+    res.json({ success: true, attempts: data || [] });
+  } catch (error) {
+    logger.error('Get attempts error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
