@@ -60,15 +60,20 @@ const TestBuilder = () => {
     }
     setSaving(true);
     try {
-      const response = await tutorialCenterService.createQuestionSet({
-        ...formData,
-        question_ids: selectedQuestions
-      });
+      // Step 1: Create the test
+      const response = await tutorialCenterService.createQuestionSet(formData);
       if (response.success) {
-        toast.success('Test created successfully!');
-        navigate('/tutor/tests');
+        // Step 2: Add questions to the test
+        const addResult = await tutorialCenterService.addQuestionsToTest(response.questionSet.id, selectedQuestions);
+        if (addResult.success) {
+          toast.success(`Test created with ${addResult.added} questions!`);
+          navigate('/tutor/tests');
+        } else {
+          toast.error('Test created but failed to add questions');
+        }
       }
     } catch (error) {
+      console.error('Test creation error:', error);
       toast.error(error.response?.data?.error || 'Failed to create test');
     } finally {
       setSaving(false);

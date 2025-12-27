@@ -161,6 +161,22 @@ export const tutorialCenterService = {
   getStudentAlerts: async () => {
     const response = await api.get(`${API_BASE}/students/alerts/all`);
     return response.data;
+  },
+
+  // Question set questions management
+  addQuestionsToTest: async (testId, questionIds) => {
+    const response = await api.post(`${API_BASE}/tc-question-sets/${testId}/questions`, { question_ids: questionIds });
+    return response.data;
+  },
+
+  removeQuestionFromTest: async (testId, questionId) => {
+    const response = await api.delete(`${API_BASE}/tc-question-sets/${testId}/questions/${questionId}`);
+    return response.data;
+  },
+
+  getTestQuestions: async (testId) => {
+    const response = await api.get(`${API_BASE}/tc-question-sets/${testId}/questions`);
+    return response.data;
   }
 };
 

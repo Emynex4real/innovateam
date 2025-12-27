@@ -648,6 +648,92 @@ exports.deleteQuestionSet = async (req, res) => {
   }
 };
 
+// ===== QUESTION SET QUESTIONS MANAGEMENT =====
+
+exports.addQuestionsToTest = async (req, res) => {
+  try {
+    const { id: testId } = req.params;
+    const { question_ids } = req.body;
+    const tutorId = req.user.id;
+
+    if (!Array.isArray(question_ids) || question_ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'question_ids array required' });
+    }
+
+    const { data, error } = await supabase.rpc('add_questions_to_test', {
+      test_id: testId,
+      question_ids,
+      tutor_user_id: tutorId
+    });
+
+    if (error) throw error;
+    if (data && !data.success) throw new Error(data.error);
+
+    res.json(data);
+  } catch (error) {
+    logger.error('Add questions to test error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.removeQuestionFromTest = async (req, res) => {
+  try {
+    const { testId, questionId } = req.params;
+    const tutorId = req.user.id;
+
+    const { data, error } = await supabase.rpc('remove_question_from_test', {
+      test_id: testId,
+      question_id_param: questionId,
+      tutor_user_id: tutorId
+    });
+
+    if (error) throw error;
+    if (data && !data.success) throw new Error(data.error);
+
+    res.json(data);
+  } catch (error) {
+    logger.error('Remove question from test error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.getTestQuestions = async (req, res) => {
+  try {
+    const { id: testId } = req.params;
+
+    const { data, error } = await supabase
+      .from('tc_question_set_questions')
+      .select(`
+        order_index,
+        points,
+        tc_questions(
+          id,
+          question_text,
+          options,
+          correct_answer,
+          explanation,
+          subject,
+          difficulty
+        )
+      `)
+      .eq('question_set_id', testId)
+      .order('order_index');
+
+    if (error) throw error;
+
+    const questions = data.map(item => ({
+      ...item.tc_questions,
+      order_index: item.order_index,
+      points: item.points
+    }));
+
+    res.json({ success: true, questions });
+  } catch (error) {
+    logger.error('Get test questions error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // ===== ATTEMPTS =====
 
 exports.getCenterAttempts = async (req, res) => {

@@ -4,6 +4,7 @@ import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 import MathText from '../../components/MathText';
+import TagInput from '../../components/TagInput';
 
 const Questions = () => {
   const navigate = useNavigate();
@@ -21,8 +22,20 @@ const Questions = () => {
     subject: '',
     topic: '',
     difficulty: 'medium',
-    category: ''
+    category: '',
+    tags: [],
+    difficulty_level: 'medium',
+    subcategory: '',
+    year: '',
+    exam_type: ''
   });
+  const [tagSuggestions] = useState([
+    'algebra', 'geometry', 'calculus', 'trigonometry', 'statistics',
+    'mechanics', 'electricity', 'waves', 'organic-chemistry', 'inorganic-chemistry',
+    'biology', 'ecology', 'genetics', 'literature', 'grammar', 'comprehension',
+    'jamb-2024', 'jamb-2023', 'waec', 'neco', 'past-questions', 'practice',
+    'difficult', 'frequently-asked'
+  ]);
 
   useEffect(() => {
     loadQuestions();
@@ -84,7 +97,12 @@ const Questions = () => {
       subject: '',
       topic: '',
       difficulty: 'medium',
-      category: ''
+      category: '',
+      tags: [],
+      difficulty_level: 'medium',
+      subcategory: '',
+      year: '',
+      exam_type: ''
     });
     setEditingId(null);
     setShowForm(false);
@@ -254,7 +272,7 @@ const Questions = () => {
                     className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                   />
                 </div>
-                <div className="mb-6">
+                <div className="mb-4">
                   <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Explanation</label>
                   <textarea
                     required
@@ -263,6 +281,36 @@ const Questions = () => {
                     className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     rows="2"
                   />
+                </div>
+                <div className="mb-4">
+                  <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Tags</label>
+                  <TagInput
+                    tags={formData.tags}
+                    onChange={(tags) => setFormData({ ...formData, tags })}
+                    suggestions={tagSuggestions}
+                    placeholder="Add tags (e.g., algebra, jamb-2024)..."
+                  />
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Press Enter or comma to add tags</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Year (Optional)</label>
+                    <input
+                      placeholder="e.g., 2024"
+                      value={formData.year}
+                      onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Exam Type (Optional)</label>
+                    <input
+                      placeholder="e.g., JAMB, WAEC"
+                      value={formData.exam_type}
+                      onChange={(e) => setFormData({ ...formData, exam_type: e.target.value })}
+                      className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-3">
                   <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
@@ -287,10 +335,13 @@ const Questions = () => {
                     <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">{q.subject}</span>
                     {q.topic && <span className={`px-2 py-1 text-xs rounded ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>{q.topic}</span>}
                     <span className={`px-2 py-1 text-xs rounded ${
-                      q.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                      q.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                      (q.difficulty_level || q.difficulty) === 'easy' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                      (q.difficulty_level || q.difficulty) === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
                       'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                    }`}>{q.difficulty}</span>
+                    }`}>{q.difficulty_level || q.difficulty}</span>
+                    {q.tags && q.tags.length > 0 && q.tags.map(tag => (
+                      <span key={tag} className="px-2 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 text-xs rounded">#{tag}</span>
+                    ))}
                   </div>
                   <p className="font-medium mb-3 text-sm md:text-base"><MathText text={q.question_text} /></p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">

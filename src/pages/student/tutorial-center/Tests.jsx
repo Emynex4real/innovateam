@@ -8,6 +8,7 @@ const StudentTests = () => {
   const [tests, setTests] = useState([]);
   const [attempts, setAttempts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [centerId, setCenterId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -15,9 +16,10 @@ const StudentTests = () => {
 
   const loadData = async () => {
     try {
-      const [testsRes, attemptsRes] = await Promise.all([
+      const [testsRes, attemptsRes, centersRes] = await Promise.all([
         studentTCService.getAvailableTests(),
-        studentTCService.getMyAttempts()
+        studentTCService.getMyAttempts(),
+        studentTCService.getMyCenters()
       ]);
       
       if (testsRes.success) {
@@ -32,6 +34,9 @@ const StudentTests = () => {
           attemptsMap[att.question_set_id].push(att);
         });
         setAttempts(attemptsMap);
+      }
+      if (centersRes.success && centersRes.centers?.length > 0) {
+        setCenterId(centersRes.centers[0].center_id);
       }
     } catch (error) {
       toast.error('Failed to load tests');
@@ -60,11 +65,10 @@ const StudentTests = () => {
         <h1 className="text-3xl font-bold">Available Tests</h1>
         <button
           onClick={() => {
-            const centerId = localStorage.getItem('currentCenterId');
             if (centerId) {
               navigate(`/student/analytics/${centerId}`);
             } else {
-              toast.error('Center not found');
+              toast.error('Join a tutorial center first');
             }
           }}
           className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold flex items-center gap-2"

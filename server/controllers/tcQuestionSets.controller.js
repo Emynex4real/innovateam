@@ -40,11 +40,11 @@ exports.createQuestionSet = async (req, res) => {
       const items = question_ids.map((qid, index) => ({
         question_set_id: questionSet.id,
         question_id: qid,
-        order_number: index + 1
+        order_index: index
       }));
 
       const { error: itemsError } = await supabase
-        .from('tc_question_set_items')
+        .from('tc_question_set_questions')
         .insert(items);
 
       if (itemsError) throw itemsError;
@@ -74,7 +74,7 @@ exports.getQuestionSets = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        question_count:tc_question_set_items(count)
+        question_count:tc_question_set_questions(count)
       `)
       .order('created_at', { ascending: false });
 
@@ -106,8 +106,9 @@ exports.getQuestionSet = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        questions:tc_question_set_items(
-          order_number,
+        questions:tc_question_set_questions(
+          order_index,
+          points,
           question:question_id(*)
         )
       `)
@@ -121,7 +122,7 @@ exports.getQuestionSet = async (req, res) => {
 
     // Format questions
     const questions = set.questions
-      .sort((a, b) => a.order_number - b.order_number)
+      .sort((a, b) => a.order_index - b.order_index)
       .map(item => {
         const q = item.question;
         // Hide correct answer if not tutor and answers not revealed
@@ -219,7 +220,7 @@ exports.getPublicTests = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        question_count:tc_question_set_items(count),
+        question_count:tc_question_set_questions(count),
         center:center_id(name, tutor_id)
       `)
       .eq('visibility', 'public')

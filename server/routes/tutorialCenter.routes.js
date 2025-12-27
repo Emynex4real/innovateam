@@ -49,6 +49,11 @@ router.put('/tc-question-sets/:id', writeLimiter, uuidValidation('id'), question
 router.put('/tc-question-sets/:id/toggle-answers', writeLimiter, uuidValidation('id'), tutorialCenterController.toggleAnswers);
 router.delete('/tc-question-sets/:id', writeLimiter, uuidValidation('id'), tutorialCenterController.deleteQuestionSet);
 
+// Question set questions management
+router.post('/tc-question-sets/:id/questions', writeLimiter, uuidValidation('id'), tutorialCenterController.addQuestionsToTest);
+router.delete('/tc-question-sets/:testId/questions/:questionId', writeLimiter, tutorialCenterController.removeQuestionFromTest);
+router.get('/tc-question-sets/:id/questions', uuidValidation('id'), tutorialCenterController.getTestQuestions);
+
 // Attempts
 router.get('/tc-attempts/center-attempts', tutorialCenterController.getCenterAttempts);
 
