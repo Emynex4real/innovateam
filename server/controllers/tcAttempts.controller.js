@@ -1,112 +1,98 @@
 const supabase = require('../supabaseClient');
 const { logger } = require('../utils/logger');
 
-// Submit test attempt
+// Submit test attempt - INDUSTRY STANDARD VERSION
 exports.submitAttempt = async (req, res) => {
   try {
     const { question_set_id, answers, time_taken } = req.body;
     const studentId = req.user.id;
 
-    console.log('📝 Submit attempt:', { question_set_id, studentId, answersCount: answers?.length });
-
-    // Check if test has questions embedded
-    const { data: testWithQuestions, error: testError } = await supabase
+    // 1. FETCH TEST WITH QUESTIONS (Single Source of Truth)
+    const { data: questionSet, error: fetchError } = await supabase
       .from('tc_question_sets')
-      .select('*')
+      .select(`
+        *,
+        items:tc_question_set_items(
+          order_number,
+          question:question_id(
+            id, 
+            correct_answer, 
+            explanation
+          )
+        )
+      `)
       .eq('id', question_set_id)
       .single();
 
-    if (testError || !testWithQuestions) {
+    if (fetchError || !questionSet) {
       return res.status(404).json({ success: false, error: 'Test not found' });
     }
 
-    console.log('🔍 Test data:', { 
-      id: testWithQuestions.id,
-      hasQuestionsField: !!testWithQuestions.questions,
-      questionsType: typeof testWithQuestions.questions,
-      questionsLength: Array.isArray(testWithQuestions.questions) ? testWithQuestions.questions.length : 'not array'
-    });
-
-    // Check junction table
-    const { data: junctionItems } = await supabase
-      .from('tc_question_set_items')
-      .select('question_id')
-      .eq('question_set_id', question_set_id);
-
-    console.log('🔍 Junction items:', junctionItems?.length || 0);
-
-    // Use embedded questions if available, otherwise use junction table
-    let questions;
-    if (testWithQuestions.questions && Array.isArray(testWithQuestions.questions) && testWithQuestions.questions.length > 0) {
-      questions = testWithQuestions.questions;
-      console.log('✅ Using embedded questions:', questions.length);
-    } else if (junctionItems && junctionItems.length > 0) {
-      const questionIds = junctionItems.map(item => item.question_id);
-      const { data: fetchedQuestions } = await supabase
-        .from('tc_questions')
-        .select('id, correct_answer, explanation')
-        .in('id', questionIds);
-      questions = fetchedQuestions;
-      console.log('✅ Using junction table questions:', questions?.length);
-    } else {
-      return res.status(400).json({ 
+    // 2. VALIDATION (Fail Fast)
+    if (!questionSet.items || questionSet.items.length === 0) {
+      logger.error(`Integrity Error: Test ${question_set_id} has no questions linked.`);
+      return res.status(500).json({ 
         success: false, 
         error: 'This test has no questions. Please contact your tutor.' 
       });
     }
+
+    // 3. GRADING ENGINE
     let correctCount = 0;
-    const totalQuestions = questions.length;
+    const totalQuestions = questionSet.items.length;
     
-    const results = answers.map(ans => {
-      const question = questions.find(q => q.id === ans.question_id);
-      const isCorrect = question && question.correct_answer === ans.selected_answer;
-      if (isCorrect) correctCount++;
+    const gradedResults = questionSet.items
+      .sort((a, b) => a.order_number - b.order_number)
+      .map(item => {
+        if (!item.question) return null;
 
-      return {
-        question_id: ans.question_id,
-        selected_answer: ans.selected_answer,
-        correct_answer: question?.correct_answer,
-        is_correct: isCorrect,
-        explanation: testWithQuestions.show_answers ? question?.explanation : null
-      };
-    });
+        const submitted = answers.find(a => a.question_id === item.question.id);
+        const selectedOption = submitted?.selected_answer || null;
+        const isCorrect = selectedOption === item.question.correct_answer;
+        
+        if (isCorrect) correctCount++;
 
-    const score = Math.round((correctCount / totalQuestions) * 100) || 0;
+        return {
+          question_id: item.question.id,
+          selected_answer: selectedOption,
+          is_correct: isCorrect,
+          correct_answer: questionSet.show_answers ? item.question.correct_answer : null,
+          explanation: questionSet.show_answers ? item.question.explanation : null
+        };
+      })
+      .filter(Boolean);
 
-    console.log('🎯 Score calculated:', { correctCount, totalQuestions, score });
+    const score = Math.round((correctCount / totalQuestions) * 100);
 
-    const { data: attempt, error } = await supabase
+    // 4. PERSISTENCE
+    const { data: attempt, error: saveError } = await supabase
       .from('tc_student_attempts')
       .insert([{
         student_id: studentId,
         question_set_id,
-        answers,
-        score: score || 0,
+        answers: gradedResults,
+        score,
         total_questions: totalQuestions,
         time_taken: time_taken || 0
       }])
       .select()
       .single();
 
-    if (error) {
-      console.log('❌ Insert error:', error);
-      throw error;
-    }
+    if (saveError) throw saveError;
 
-    console.log('✅ Attempt saved:', attempt.id);
-
-    logger.info('Test attempt submitted', { 
+    logger.info('Test submitted', { 
       attemptId: attempt.id, 
       studentId, 
       score,
       isFirstAttempt: attempt.is_first_attempt 
     });
 
+    // 5. RESPONSE
     res.json({ 
       success: true, 
       attempt: {
         ...attempt,
-        results: testWithQuestions.show_answers ? results : results.map(r => ({
+        results: questionSet.show_answers ? gradedResults : gradedResults.map(r => ({
           question_id: r.question_id,
           is_correct: r.is_correct
         }))
@@ -114,7 +100,7 @@ exports.submitAttempt = async (req, res) => {
     });
   } catch (error) {
     logger.error('Submit attempt error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: 'Submission failed. Please try again.' });
   }
 };
 
@@ -200,7 +186,7 @@ exports.getAttemptDetails = async (req, res) => {
           title,
           passing_score,
           show_answers,
-          questions:tc_question_set_items(
+          items:tc_question_set_items(
             order_number,
             question:question_id(
               id,
@@ -225,7 +211,7 @@ exports.getAttemptDetails = async (req, res) => {
     }
 
     // Build results with questions
-    const results = attempt.question_set.questions
+    const results = attempt.question_set.items
       .sort((a, b) => a.order_number - b.order_number)
       .map(item => {
         const userAnswer = attempt.answers.find(a => a.question_id === item.question.id);

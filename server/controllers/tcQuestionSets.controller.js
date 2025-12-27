@@ -44,7 +44,7 @@ exports.createQuestionSet = async (req, res) => {
       }));
 
       const { error: itemsError } = await supabase
-        .from('tc_question_set_questions')
+        .from('tc_question_set_items')
         .insert(items);
 
       if (itemsError) throw itemsError;
@@ -74,7 +74,7 @@ exports.getQuestionSets = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        question_count:tc_question_set_items(count)
+        items:tc_question_set_items(count)
       `)
       .order('created_at', { ascending: false });
 
@@ -216,7 +216,7 @@ exports.getPublicTests = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        question_count:tc_question_set_items(count),
+        items:tc_question_set_items(count),
         center:center_id(name, tutor_id)
       `)
       .eq('visibility', 'public')
