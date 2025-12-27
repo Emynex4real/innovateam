@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { componentStyles } from '../../styles/designSystem';
+import StudentActivityModal from '../../components/StudentActivityModal';
 
 const EnterpriseTutorDashboard = () => {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ const EnterpriseTutorDashboard = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editName, setEditName] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [selectedActivity, setSelectedActivity] = useState(null);
 
   const handleEdit = async () => {
     if (!editName.trim()) {
@@ -66,6 +69,34 @@ const EnterpriseTutorDashboard = () => {
         setStats(prev => ({ ...prev, students: students.length, avgScore }));
       }
       if (testsRes.success) setStats(prev => ({ ...prev, tests: testsRes.questionSets.length }));
+      
+      // Load recent activity
+      try {
+        const attemptsRes = await tutorialCenterService.getCenterAttempts();
+        if (attemptsRes.success && attemptsRes.attempts) {
+          // Get student names
+          const studentsRes = await tutorialCenterService.getStudents();
+          const studentMap = {};
+          if (studentsRes.success) {
+            studentsRes.students.forEach(s => {
+              studentMap[s.id] = s.name;
+            });
+          }
+
+          const recent = attemptsRes.attempts.slice(0, 5).map(attempt => ({
+            id: attempt.id,
+            studentId: attempt.student_id,
+            studentName: studentMap[attempt.student_id] || 'Student',
+            testTitle: attempt.test_title || 'Test',
+            score: attempt.score,
+            passed: attempt.score >= (attempt.passing_score || 50),
+            completedAt: attempt.completed_at
+          }));
+          setRecentActivity(recent);
+        }
+      } catch (err) {
+        console.error('Failed to load activity:', err);
+      }
       
       // Load questions separately to avoid blocking dashboard
       try {
@@ -331,6 +362,53 @@ const EnterpriseTutorDashboard = () => {
                 Use AI to generate questions quickly and save time creating assessments!
               </p>
             </motion.div>
+
+            {/* Recent Activity */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 }}
+              className={componentStyles.card.default}
+            >
+              <h3 className="font-bold text-gray-900 mb-3">Recent Activity</h3>
+              {recentActivity.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No recent activity</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentActivity.map((activity) => (
+                    <div 
+                      key={activity.id} 
+                      onClick={() => setSelectedActivity(activity)}
+                      className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        activity.passed ? 'bg-green-100' : 'bg-orange-100'
+                      }`}>
+                        {activity.passed ? '✓' : '○'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {activity.studentName}
+                        </p>
+                        <p className="text-xs text-gray-600 truncate">
+                          {activity.testTitle}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs font-semibold ${
+                            activity.passed ? 'text-green-600' : 'text-orange-600'
+                          }`}>
+                            {activity.score}%
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(activity.completedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
           </div>
         </div>
       </div>
@@ -405,6 +483,14 @@ const EnterpriseTutorDashboard = () => {
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Student Activity Modal */}
+      {selectedActivity && (
+        <StudentActivityModal 
+          activity={selectedActivity} 
+          onClose={() => setSelectedActivity(null)} 
+        />
       )}
     </div>
   );
