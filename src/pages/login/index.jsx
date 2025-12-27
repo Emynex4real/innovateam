@@ -152,7 +152,7 @@ const Login = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="you@example.com"
+        check the image there are question there a            placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"

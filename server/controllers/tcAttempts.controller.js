@@ -7,47 +7,74 @@ exports.submitAttempt = async (req, res) => {
     const { question_set_id, answers, time_taken } = req.body;
     const studentId = req.user.id;
 
-    // Get question set with questions
-    const { data: questionSet, error: setError } = await supabase
+    console.log('📝 Submit attempt:', { question_set_id, studentId, answersCount: answers?.length });
+
+    // Check if test has questions embedded
+    const { data: testWithQuestions, error: testError } = await supabase
       .from('tc_question_sets')
-      .select(`
-        *,
-        questions:tc_question_set_items(
-          question:question_id(id, correct_answer, explanation)
-        )
-      `)
+      .select('*')
       .eq('id', question_set_id)
       .single();
 
-    if (setError || !questionSet) {
-      return res.status(404).json({ success: false, error: 'Question set not found' });
+    if (testError || !testWithQuestions) {
+      return res.status(404).json({ success: false, error: 'Test not found' });
     }
 
-    // Calculate score
-    let correctCount = 0;
-    const totalQuestions = questionSet.questions?.length || 0;
-    
-    if (totalQuestions === 0) {
-      return res.status(400).json({ success: false, error: 'No questions found in this test' });
+    console.log('🔍 Test data:', { 
+      id: testWithQuestions.id,
+      hasQuestionsField: !!testWithQuestions.questions,
+      questionsType: typeof testWithQuestions.questions,
+      questionsLength: Array.isArray(testWithQuestions.questions) ? testWithQuestions.questions.length : 'not array'
+    });
+
+    // Check junction table
+    const { data: junctionItems } = await supabase
+      .from('tc_question_set_items')
+      .select('question_id')
+      .eq('question_set_id', question_set_id);
+
+    console.log('🔍 Junction items:', junctionItems?.length || 0);
+
+    // Use embedded questions if available, otherwise use junction table
+    let questions;
+    if (testWithQuestions.questions && Array.isArray(testWithQuestions.questions) && testWithQuestions.questions.length > 0) {
+      questions = testWithQuestions.questions;
+      console.log('✅ Using embedded questions:', questions.length);
+    } else if (junctionItems && junctionItems.length > 0) {
+      const questionIds = junctionItems.map(item => item.question_id);
+      const { data: fetchedQuestions } = await supabase
+        .from('tc_questions')
+        .select('id, correct_answer, explanation')
+        .in('id', questionIds);
+      questions = fetchedQuestions;
+      console.log('✅ Using junction table questions:', questions?.length);
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'This test has no questions. Please contact your tutor.' 
+      });
     }
+    let correctCount = 0;
+    const totalQuestions = questions.length;
     
     const results = answers.map(ans => {
-      const question = questionSet.questions.find(q => q.question.id === ans.question_id);
-      const isCorrect = question && question.question.correct_answer === ans.selected_answer;
+      const question = questions.find(q => q.id === ans.question_id);
+      const isCorrect = question && question.correct_answer === ans.selected_answer;
       if (isCorrect) correctCount++;
 
       return {
         question_id: ans.question_id,
         selected_answer: ans.selected_answer,
-        correct_answer: question?.question.correct_answer,
+        correct_answer: question?.correct_answer,
         is_correct: isCorrect,
-        explanation: questionSet.show_answers ? question?.question.explanation : null
+        explanation: testWithQuestions.show_answers ? question?.explanation : null
       };
     });
 
     const score = Math.round((correctCount / totalQuestions) * 100) || 0;
 
-    // Save attempt (is_first_attempt set by trigger)
+    console.log('🎯 Score calculated:', { correctCount, totalQuestions, score });
+
     const { data: attempt, error } = await supabase
       .from('tc_student_attempts')
       .insert([{
@@ -61,7 +88,12 @@ exports.submitAttempt = async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.log('❌ Insert error:', error);
+      throw error;
+    }
+
+    console.log('✅ Attempt saved:', attempt.id);
 
     logger.info('Test attempt submitted', { 
       attemptId: attempt.id, 
@@ -74,7 +106,7 @@ exports.submitAttempt = async (req, res) => {
       success: true, 
       attempt: {
         ...attempt,
-        results: questionSet.show_answers ? results : results.map(r => ({
+        results: testWithQuestions.show_answers ? results : results.map(r => ({
           question_id: r.question_id,
           is_correct: r.is_correct
         }))

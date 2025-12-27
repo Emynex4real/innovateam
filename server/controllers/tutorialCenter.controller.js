@@ -674,7 +674,10 @@ exports.getQuestionSets = async (req, res) => {
 
     const { data, error, count } = await supabase
       .from('tc_question_sets')
-      .select('*', { count: 'exact' })
+      .select(`
+        *,
+        question_count:tc_question_set_items(count)
+      `, { count: 'exact' })
       .eq('center_id', center.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -758,16 +761,39 @@ exports.addQuestionsToTest = async (req, res) => {
       return res.status(400).json({ success: false, error: 'question_ids array required' });
     }
 
-    const { data, error } = await supabase.rpc('add_questions_to_test', {
-      test_id: testId,
-      question_ids,
-      tutor_user_id: tutorId
-    });
+    console.log('📝 Adding questions to test:', { testId, questionIds: question_ids, tutorId });
 
-    if (error) throw error;
-    if (data && !data.success) throw new Error(data.error);
+    // Verify test ownership
+    const { data: test } = await supabase
+      .from('tc_question_sets')
+      .select('id, tutor_id')
+      .eq('id', testId)
+      .eq('tutor_id', tutorId)
+      .single();
 
-    res.json(data);
+    if (!test) {
+      return res.status(404).json({ success: false, error: 'Test not found or unauthorized' });
+    }
+
+    // Insert into junction table
+    const items = question_ids.map((qid, index) => ({
+      question_set_id: testId,
+      question_id: qid,
+      order_number: index + 1
+    }));
+
+    const { data, error } = await supabase
+      .from('tc_question_set_items')
+      .insert(items)
+      .select();
+
+    if (error) {
+      console.log('❌ Insert error:', error);
+      throw error;
+    }
+
+    console.log('✅ Added questions:', data?.length);
+    res.json({ success: true, count: data?.length, added: data?.length });
   } catch (error) {
     logger.error('Add questions to test error:', error);
     res.status(500).json({ success: false, error: error.message });

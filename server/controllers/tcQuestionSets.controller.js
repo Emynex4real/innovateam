@@ -74,7 +74,7 @@ exports.getQuestionSets = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        question_count:tc_question_set_questions(count)
+        question_count:tc_question_set_items(count)
       `)
       .order('created_at', { ascending: false });
 
@@ -106,9 +106,8 @@ exports.getQuestionSet = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        questions:tc_question_set_questions(
-          order_index,
-          points,
+        items:tc_question_set_items(
+          order_number,
           question:question_id(*)
         )
       `)
@@ -117,21 +116,18 @@ exports.getQuestionSet = async (req, res) => {
 
     if (error) throw error;
 
-    // Check if user is tutor
     const isTutor = set.tutor_id === userId;
 
-    // Format questions
-    const questions = set.questions
-      .sort((a, b) => a.order_index - b.order_index)
+    const questions = set.items
+      ?.sort((a, b) => a.order_number - b.order_number)
       .map(item => {
         const q = item.question;
-        // Hide correct answer if not tutor and answers not revealed
         if (!isTutor && !set.show_answers) {
           delete q.correct_answer;
           delete q.explanation;
         }
         return q;
-      });
+      }) || [];
 
     res.json({ 
       success: true, 
@@ -220,7 +216,7 @@ exports.getPublicTests = async (req, res) => {
       .from('tc_question_sets')
       .select(`
         *,
-        question_count:tc_question_set_questions(count),
+        question_count:tc_question_set_items(count),
         center:center_id(name, tutor_id)
       `)
       .eq('visibility', 'public')
