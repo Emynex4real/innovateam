@@ -10,6 +10,40 @@ const EnterpriseTutorDashboard = () => {
   const [center, setCenter] = useState(null);
   const [stats, setStats] = useState({ students: 0, tests: 0, questions: 0, avgScore: 0 });
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+
+  const handleEdit = async () => {
+    if (!editName.trim()) {
+      toast.error('Center name cannot be empty');
+      return;
+    }
+    try {
+      const res = await tutorialCenterService.updateCenter({ name: editName.trim(), description: center.description });
+      if (res.success) {
+        toast.success('Center updated!');
+        setCenter(res.center);
+        setShowEditModal(false);
+      }
+    } catch (error) {
+      toast.error('Failed to update center');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const res = await tutorialCenterService.deleteCenter({ reason: deleteReason || 'No reason provided' });
+      if (res.success) {
+        toast.success('Center deleted');
+        setShowDeleteModal(false);
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    } catch (error) {
+      toast.error('Failed to delete center');
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -211,6 +245,22 @@ const EnterpriseTutorDashboard = () => {
                   <div className="font-semibold text-gray-900">Analytics</div>
                   <div className="text-sm text-gray-600">View insights</div>
                 </button>
+                <button
+                  onClick={() => navigate('/tutor/analytics/comparative')}
+                  className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 rounded-xl text-left transition-all transform hover:scale-[1.02]"
+                >
+                  <div className="text-3xl mb-2">📈</div>
+                  <div className="font-semibold text-gray-900">Compare Students</div>
+                  <div className="text-sm text-gray-600">Comparative analytics</div>
+                </button>
+                <button
+                  onClick={() => navigate('/tutor/students/alerts/all')}
+                  className="p-6 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-xl text-left transition-all transform hover:scale-[1.02]"
+                >
+                  <div className="text-3xl mb-2">🚨</div>
+                  <div className="font-semibold text-gray-900">Student Alerts</div>
+                  <div className="text-sm text-gray-600">View inactive students</div>
+                </button>
               </div>
             </motion.div>
           </div>
@@ -224,8 +274,33 @@ const EnterpriseTutorDashboard = () => {
               transition={{ delay: 0.6 }}
               className={componentStyles.card.default}
             >
-              <h3 className="font-bold text-gray-900 mb-3">Center Info</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-gray-900">Center Info</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditName(center.name);
+                      setShowEditModal(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-700 text-sm"
+                    title="Edit center name"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="text-red-600 hover:text-red-700 text-sm"
+                    title="Delete center"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
               <div className="space-y-2">
+                <div>
+                  <p className="text-sm text-gray-600">Name</p>
+                  <p className="text-lg font-semibold text-gray-900">{center.name}</p>
+                </div>
                 <div>
                   <p className="text-sm text-gray-600">Access Code</p>
                   <p className="text-lg font-mono font-bold text-green-600">{center.access_code}</p>
@@ -259,6 +334,78 @@ const EnterpriseTutorDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={componentStyles.card.default + ' max-w-md w-full'}
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Center Name</h3>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className={componentStyles.input.default}
+              placeholder="Enter center name"
+              autoFocus
+            />
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className={componentStyles.button.secondary + ' flex-1'}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEdit}
+                className={componentStyles.button.primary + ' flex-1'}
+              >
+                Save
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={componentStyles.card.default + ' max-w-md w-full'}
+          >
+            <h3 className="text-xl font-bold text-red-600 mb-4">Delete Tutorial Center</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete your tutorial center? This action cannot be undone.
+            </p>
+            <textarea
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              className={componentStyles.input.default}
+              placeholder="Reason for deletion (optional)"
+              rows={3}
+            />
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className={componentStyles.button.secondary + ' flex-1'}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
