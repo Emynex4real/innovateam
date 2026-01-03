@@ -76,6 +76,62 @@ exports.generateQuestions = async (req, res) => {
       });
     }
 
+    // --- CHECK FOR LITERATURE QUESTIONS IN DATABASE ---
+    if (safeSubject.toLowerCase().includes('literature') && !hasText) {
+      const { data: sourceData } = await supabase
+        .from('question_sources')
+        .select('content, metadata')
+        .eq('subject', 'Literature in English')
+        .eq('source_type', 'practice_questions')
+        .ilike('topic', `%${safeTopic}%`)
+        .limit(1)
+        .single();
+
+      if (sourceData?.content) {
+        console.log(`📚 Found ${safeTopic} questions in database`);
+        const dbQuestions = JSON.parse(sourceData.content);
+        const selectedQuestions = dbQuestions.slice(0, safeCount);
+        
+        // Save to question bank
+        const { data: bankData, error: bankError } = await supabase
+          .from('question_banks')
+          .insert([{
+            name: safeBankName,
+            subject: safeSubject,
+            topic: safeTopic,
+            difficulty: safeDifficulty,
+            is_active: true,
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (!bankError) {
+          const questionsToInsert = selectedQuestions.map(q => ({
+            bank_id: bankData.id,
+            question: q.question,
+            options: JSON.stringify(q.options),
+            correct_answer: q.correct_answer,
+            explanation: q.explanation || 'From JAMB prescribed text',
+            type: 'multiple-choice',
+            difficulty: safeDifficulty,
+            is_active: true,
+            created_at: new Date().toISOString()
+          }));
+
+          await supabase.from('questions').insert(questionsToInsert);
+
+          return res.status(200).json({
+            success: true,
+            message: `Retrieved ${selectedQuestions.length} questions from database`,
+            bankId: bankData.id,
+            questions: questionsToInsert,
+            source: 'database'
+          });
+        }
+      }
+    }
+
     // --- B. INDUSTRY STANDARD: Choose strategy based on count ---
     const USE_BATCHING = safeCount > 30;
     
