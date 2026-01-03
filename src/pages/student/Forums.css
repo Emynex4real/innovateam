@@ -1,0 +1,763 @@
+.forums-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: white;
+}
+
+html.dark .forums-page {
+  background: #1f2937;
+}
+
+.forums-header {
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+html.dark .forums-header {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+.forums-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  flex: 1;
+}
+
+html.dark .forums-header h1 {
+  color: #d1d5db;
+}
+
+.search-bar {
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-bar form {
+  display: flex;
+  gap: 8px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #d0d0d0;
+  border-radius: 20px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+html.dark .search-input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0084ff;
+  box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+}
+
+.search-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #0084ff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #f0f0f0;
+}
+
+html.dark .back-btn {
+  color: #60a5fa;
+}
+
+html.dark .back-btn:hover {
+  background-color: #374151;
+}
+
+.create-btn {
+  padding: 10px 16px;
+  background-color: #0084ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.create-btn:hover {
+  background-color: #0074e8;
+}
+
+.follow-btn {
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.follow-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.follow-btn.following {
+  background-color: #0084ff;
+  color: white;
+  border-color: #0084ff;
+}
+
+.follow-btn.following:hover {
+  background-color: #0074e8;
+}
+
+.loading,
+.error-message {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+html.dark .loading {
+  color: #9ca3af;
+}
+
+.error-message {
+  background-color: #ffe0e0;
+  border-left: 4px solid #ff4757;
+  color: #d32f2f;
+  border-radius: 4px;
+  margin: 16px;
+}
+
+html.dark .error-message {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  gap: 16px;
+  color: #666;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 16px;
+}
+
+.primary-btn {
+  padding: 10px 20px;
+  background-color: #0084ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.primary-btn:hover:not(:disabled) {
+  background-color: #0074e8;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Categories Grid */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.category-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+html.dark .category-card {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.category-card:hover {
+  border-color: #0084ff;
+  box-shadow: 0 4px 12px rgba(0, 132, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.category-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+html.dark .category-card h3 {
+  color: #f3f4f6;
+}
+
+.category-card p {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+}
+
+html.dark .category-card p {
+  color: #9ca3af;
+}
+
+.category-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #999;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+}
+
+html.dark .category-meta {
+  border-top-color: #4b5563;
+  color: #6b7280;
+}
+
+/* Threads List */
+.threads-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.thread-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+html.dark .thread-item {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.thread-item:hover {
+  border-color: #0084ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.thread-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+html.dark .thread-title {
+  color: #f3f4f6;
+}
+
+.thread-preview {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+html.dark .thread-preview {
+  color: #9ca3af;
+}
+
+.thread-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #999;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+html.dark .thread-meta {
+  border-top-color: #4b5563;
+  color: #6b7280;
+}
+
+.thread-author {
+  color: #0084ff;
+  font-weight: 500;
+}
+
+.solved-badge {
+  background-color: #10b981;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.reputation {
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* Thread Detail */
+.thread-detail-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.thread-original-post {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  background: white;
+}
+
+html.dark .thread-original-post {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.thread-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.author-info {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+}
+
+.author-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #000;
+}
+
+html.dark .author-name {
+  color: #f3f4f6;
+}
+
+.post-date {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
+html.dark .post-date {
+  color: #6b7280;
+}
+
+.thread-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+html.dark .thread-description {
+  color: #d1d5db;
+}
+
+.thread-meta {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  font-size: 12px;
+  color: #999;
+}
+
+.reply-count {
+  display: inline-block;
+  color: #0084ff;
+  font-weight: 500;
+}
+
+/* Posts Section */
+.posts-section {
+  margin-bottom: 24px;
+}
+
+.posts-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  border-bottom: 2px solid #0084ff;
+  padding-bottom: 8px;
+}
+
+html.dark .posts-section h3 {
+  color: #f3f4f6;
+}
+
+/* Reply Form */
+.reply-form {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+html.dark .reply-form {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.reply-form h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+html.dark .reply-form h3 {
+  color: #f3f4f6;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+html.dark .input-field {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #0084ff;
+  box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+}
+
+.input-field:disabled {
+  background-color: #f5f5f5;
+  color: #999;
+}
+
+html.dark .input-field:disabled {
+  background-color: #1f2937;
+  color: #6b7280;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 600px;
+  padding: 24px;
+  animation: modalSlideUp 0.3s ease-out;
+}
+
+html.dark .modal-content {
+  background: #374151;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-content h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+html.dark .modal-content h2 {
+  color: #f3f4f6;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 16px;
+}
+
+html.dark .modal-footer {
+  border-top-color: #4b5563;
+}
+
+.secondary-btn {
+  padding: 10px 20px;
+  background-color: #e8e8e8;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+html.dark .secondary-btn {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+.secondary-btn:hover {
+  background-color: #d0d0d0;
+}
+
+html.dark .secondary-btn:hover {
+  background-color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .forums-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-bar {
+    min-width: 100%;
+  }
+
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    width: 95%;
+  }
+}
+
+/* Enhanced Thread Item Styles */
+.thread-badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.badge-icon {
+  color: #64748b;
+}
+
+.badge-icon.pinned {
+  color: #f59e0b;
+}
+
+.badge-icon.locked {
+  color: #ef4444;
+}
+
+.thread-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 20px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+html.dark .loading-more {
+  color: #9ca3af;
+}
+/* =========================================
+   1. General Layout & Animations
+   ========================================= */
+.forums-container {
+  animation: fadeIn 0.3s ease-in-out;
+  width: 100%;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   2. Rich Text Editor & Markdown Styles
+   ========================================= */
+/* Custom Scrollbar for Editor Preview */
+.editor-preview::-webkit-scrollbar {
+  width: 6px;
+}
+.editor-preview::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.editor-preview::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.editor-preview::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Blockquote Styling within posts */
+.prose blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #4b5563;
+  background: #f8fafc;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Code block styling */
+.prose pre {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+/* =========================================
+   3. Math (KaTeX) Adjustments
+   ========================================= */
+/* Prevents long formulas from breaking mobile layout */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  max-width: 100%;
+}
+
+/* =========================================
+   4. Vote Buttons (Custom Interactive)
+   ========================================= */
+.vote-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vote-btn:active {
+  transform: scale(0.95);
+}
+
+.vote-btn.upvote.active {
+  color: #10b981; /* Green-500 */
+  background-color: #ecfdf5; /* Green-50 */
+  border-color: #10b981;
+}
+
+.vote-btn.downvote.active {
+  color: #ef4444; /* Red-500 */
+  background-color: #fef2f2; /* Red-50 */
+  border-color: #ef4444;
+}

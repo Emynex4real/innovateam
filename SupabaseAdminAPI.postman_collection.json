@@ -1,0 +1,63 @@
+{
+  "info": {
+    "name": "Supabase Admin API",
+    "_postman_id": "12345678-90ab-cdef-1234-567890abcdef",
+    "description": "Test all admin endpoints with Supabase Auth JWT",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Users",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+        ],
+        "url": { "raw": "http://localhost:5000/api/admin/users", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "admin", "users"] }
+      }
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json", "type": "text" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"phone_number\": \"1234567890\",\n  \"password\": \"yourpassword\"\n}"
+        },
+        "url": { "raw": "http://localhost:5000/api/admin/users", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "admin", "users"] }
+      }
+    },
+    {
+      "name": "Get All Transactions",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+        ],
+        "url": { "raw": "http://localhost:5000/api/admin/transactions", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "admin", "transactions"] }
+      }
+    },
+    {
+      "name": "Create Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json", "type": "text" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"USER_UUID\",\n  \"amount\": 100,\n  \"type\": \"deposit\",\n  \"description\": \"Test deposit\"\n}"
+        },
+        "url": { "raw": "http://localhost:5000/api/admin/transactions", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "admin", "transactions"] }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "access_token", "value": "" }
+  ]
+}

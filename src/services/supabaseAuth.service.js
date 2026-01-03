@@ -1,0 +1,193 @@
+import supabase from '../config/supabase';
+import { LOCAL_STORAGE_KEYS } from '../config/constants';
+import logger from '../utils/logger';
+import { storeUserData } from '../utils/authStorage';
+
+// Admin users are now managed through Supabase auth + user_profiles.role
+// No hardcoded passwords for security
+
+class SupabaseAuthService {
+  async register(userData) {
+    try {
+      logger.auth('Registration attempt started');
+      
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            full_name: userData.name
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Create user profile with email and role
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          id: authData.user.id,
+          email: userData.email,
+          full_name: userData.name,
+          wallet_balance: 0,
+          role: userData.role || 'student',
+          status: 'active'
+        });
+
+      if (profileError) {
+        console.warn('Profile creation failed:', profileError);
+      }
+
+      // Email is now stored in user_profiles table
+
+      logger.auth('Registration successful');
+      return { 
+        success: true, 
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          name: userData.name,
+          role: userData.role || 'student',
+          isAdmin: false
+        }
+      };
+    } catch (error) {
+      logger.auth('Registration failed', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async login(credentials) {
+    try {
+      logger.auth('Login attempt started');
+      
+      // Validate input
+      if (!credentials.email || !credentials.password) {
+        throw new Error('Email and password are required');
+      }
+
+      const email = credentials.email.toLowerCase().trim();
+      const password = credentials.password.trim();
+
+      if (password.length === 0) {
+        throw new Error('Password cannot be empty');
+      }
+
+      // Use Supabase auth for all users (including admins)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        // Provide specific error messages
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Invalid email or password');
+        }
+        if (error.message.includes('Email not confirmed')) {
+          throw new Error('Please verify your email address');
+        }
+        throw new Error('Login failed: ' + error.message);
+      }
+
+      // Get user profile with wallet balance
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.warn('Profile fetch failed:', profileError);
+      }
+
+      const walletBalance = profile?.wallet_balance || 0;
+      
+      const user = {
+        id: data.user.id,
+        email: data.user.email,
+        name: profile?.full_name || data.user.user_metadata?.full_name || 'User',
+        role: profile?.role || 'user',
+        isAdmin: profile?.role === 'admin',
+        walletBalance: walletBalance
+      };
+
+      this.setUser(user);
+      this.setToken(data.session.access_token);
+      
+      // Store wallet balance and user data for wallet context
+      localStorage.setItem('wallet_balance', String(walletBalance));
+      localStorage.setItem('confirmedUser', JSON.stringify(user));
+      
+      logger.auth('Supabase login successful');
+      return { success: true, user };
+    } catch (error) {
+      logger.auth('Login failed', error);
+      return { success: false, error: error.message || 'Invalid email or password' };
+    }
+  }
+
+  async logout() {
+    try {
+      await supabase.auth.signOut();
+      this.clearStorage();
+      logger.auth('Logout successful');
+      return { success: true };
+    } catch (error) {
+      this.clearStorage();
+      logger.auth('Logout error', error);
+      return { success: true };
+    }
+  }
+
+  setUser(user) {
+    return storeUserData(user);
+  }
+
+  setToken(token) {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, token);
+      return true;
+    } catch (error) {
+      logger.auth('Failed to store token', error);
+      return false;
+    }
+  }
+
+  getUser() {
+    try {
+      const userString = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
+      return userString ? JSON.parse(userString) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  getToken() {
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  clearStorage() {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
+      localStorage.removeItem('confirmedUser');
+      localStorage.removeItem('wallet_balance');
+    } catch (error) {
+      logger.auth('Failed to clear storage', error);
+    }
+  }
+
+  isAuthenticated() {
+    return !!this.getToken();
+  }
+}
+
+const supabaseAuthService = new SupabaseAuthService();
+export default supabaseAuthService;

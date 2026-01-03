@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check My Role</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left-color: #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Check My User Role</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong><br>
+            1. Make sure you're logged in to the app<br>
+            2. Click the button below to check your role<br>
+            3. If role is wrong, use the SQL command shown
+        </div>
+
+        <button onclick="checkRole()">Check My Role</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function checkRole() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">Checking...</div>';
+
+            try {
+                // Get user from localStorage
+                const confirmedUser = localStorage.getItem('confirmedUser');
+                const authToken = localStorage.getItem('auth_token');
+                
+                if (!confirmedUser && !authToken) {
+                    resultDiv.innerHTML = '<div class="result error">❌ Not logged in. Please login first.</div>';
+                    return;
+                }
+
+                const user = confirmedUser ? JSON.parse(confirmedUser) : null;
+                
+                let output = '=== USER INFO ===\n\n';
+                output += `Email: ${user?.email || 'Unknown'}\n`;
+                output += `Name: ${user?.name || 'Unknown'}\n`;
+                output += `User ID: ${user?.id || 'Unknown'}\n`;
+                output += `Role (localStorage): ${user?.role || 'Not set'}\n\n`;
+
+                // Check database role
+                output += '=== CHECKING DATABASE ===\n\n';
+                
+                // You need to check Supabase directly
+                output += '⚠️ To check database role, run this SQL in Supabase:\n\n';
+                output += `SELECT id, email, role FROM public.user_profiles WHERE email = '${user?.email}';\n\n`;
+                
+                output += '=== FIX COMMANDS ===\n\n';
+                output += 'If you should be a TUTOR, run:\n';
+                output += `UPDATE public.user_profiles SET role = 'tutor' WHERE email = '${user?.email}';\n\n`;
+                
+                output += 'If you should be a STUDENT, run:\n';
+                output += `UPDATE public.user_profiles SET role = 'student' WHERE email = '${user?.email}';\n\n`;
+                
+                output += '=== AFTER FIXING ===\n\n';
+                output += '1. Logout from the app\n';
+                output += '2. Clear browser cache (Ctrl+Shift+Delete)\n';
+                output += '3. Login again\n';
+
+                resultDiv.innerHTML = `<div class="result">${output}</div>`;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

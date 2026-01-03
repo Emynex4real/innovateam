@@ -1,0 +1,32 @@
+  async createThread(categoryId, centerId, creatorId, title, description, tags = []) {
+    try {
+      if (!categoryId || !centerId || !creatorId) throw new Error('Missing required fields');
+      if (!title?.trim() || title.length < 10) throw new Error('Title must be at least 10 characters');
+      if (!description?.trim() || description.length < 20) throw new Error('Description must be at least 20 characters');
+
+      const slug = this.generateSlug(title);
+      const { data: thread, error } = await supabase
+        .from('forum_threads')
+        .insert({
+          category_id: categoryId,
+          center_id: centerId,
+          creator_id: creatorId,
+          title: title.trim(),
+          description: description.trim(),
+          slug,
+          tags: tags || []
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!thread) throw new Error('Failed to create thread');
+
+      await this.followThread(thread.id, creatorId).catch(() => {});
+      logger.info(`Thread created: ${thread.id} by user ${creatorId}`);
+      return { success: true, data: thread };
+    } catch (error) {
+      logger.error('Error creating thread:', error);
+      return { success: false, error: error.message };
+    }
+  }

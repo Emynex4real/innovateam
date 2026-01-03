@@ -1,0 +1,53 @@
+services:
+  # Backend API
+  - type: web
+    name: innovateam-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MAX_CONCURRENCY
+        value: 5
+      - key: GEMINI_MAX_RETRIES
+        value: 3
+      - key: GEMINI_TIMEOUT
+        value: 45000
+      - key: ENABLE_CACHE
+        value: false
+      - key: CACHE_TTL
+        value: 3600
+      - key: LOG_LEVEL
+        value: info
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: SESSION_SECRET
+        sync: false
+      - key: BCRYPT_ROUNDS
+        value: 12
+      - key: CORS_ORIGIN
+        value: http://localhost:3000,https://innovateam.vercel.app,https://*.vercel.app
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100

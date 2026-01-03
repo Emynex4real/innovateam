@@ -1,0 +1,139 @@
+.post-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: white;
+  transition: box-shadow 0.2s;
+}
+
+.post-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.post-card.depth-1 {
+  margin-left: 20px;
+  border-left: 3px solid #e0e0e0;
+  background-color: #fafafa;
+}
+
+.post-card.depth-2 {
+  margin-left: 40px;
+  border-left: 3px solid #f0f0f0;
+  background-color: #fcfcfc;
+}
+
+.post-card.depth-3 {
+  margin-left: 60px;
+  border-left: 3px solid #f5f5f5;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.post-author {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.author-info {
+  flex: 1;
+}
+
+.author-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #000;
+}
+
+.post-meta {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.post-date {
+  margin-right: 4px;
+}
+
+.author-rep {
+  color: #0084ff;
+}
+
+.answer-badge {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.post-content {
+  margin-bottom: 12px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.post-content p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.post-footer {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+}
+
+.post-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border: 1px solid #d0d0d0;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  border-color: #0084ff;
+  color: #0084ff;
+}
+
+.action-btn.mark-answer {
+  background-color: #e7f3ff;
+  border-color: #0084ff;
+  color: #0084ff;
+  font-weight: 500;
+}
+
+.post-replies {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f5f5f5;
+}

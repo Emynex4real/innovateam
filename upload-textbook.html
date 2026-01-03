@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Textbook Content - InnovaTeam</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; margin-bottom: 10px; }
+    .subtitle { color: #666; margin-bottom: 30px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+    textarea { min-height: 200px; font-family: inherit; }
+    .char-count { text-align: right; color: #666; font-size: 12px; margin-top: 5px; }
+    button { background: #4CAF50; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+    button:hover { background: #45a049; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .message { padding: 15px; border-radius: 5px; margin-bottom: 20px; display: none; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .list { margin-top: 30px; }
+    .list-item { padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
+    .list-item h3 { color: #333; margin-bottom: 5px; }
+    .list-item p { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📚 Upload Textbook Content</h1>
+    <p class="subtitle">Add content to the knowledge base for AI question generation</p>
+
+    <div id="message" class="message"></div>
+
+    <form id="uploadForm">
+      <div class="form-group">
+        <label for="subject">Subject *</label>
+        <input type="text" id="subject" required placeholder="e.g., Mathematics, Physics, English">
+      </div>
+
+      <div class="form-group">
+        <label for="topic">Topic *</label>
+        <input type="text" id="topic" required placeholder="e.g., Algebra, Mechanics, Grammar">
+      </div>
+
+      <div class="form-group">
+        <label for="content">Textbook Content * (minimum 100 characters)</label>
+        <textarea id="content" required placeholder="Paste your textbook content, syllabus, or study notes here..."></textarea>
+        <div class="char-count"><span id="charCount">0</span> characters</div>
+      </div>
+
+      <div class="form-group">
+        <label for="sourceType">Source Type</label>
+        <select id="sourceType">
+          <option value="textbook">Textbook</option>
+          <option value="syllabus">Syllabus</option>
+          <option value="past_questions">Past Questions</option>
+          <option value="notes">Notes</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="difficulty">Difficulty Level</label>
+        <select id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+
+      <button type="submit" id="submitBtn">Upload Content</button>
+    </form>
+
+    <div class="list">
+      <h2>📖 Recent Uploads</h2>
+      <div id="recentList"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api/knowledge-base';
+    
+    // Get token from localStorage (assumes user is logged in)
+    const getToken = () => localStorage.getItem('access_token') || localStorage.getItem('token');
+
+    // Character counter
+    document.getElementById('content').addEventListener('input', (e) => {
+      document.getElementById('charCount').textContent = e.target.value.length;
+    });
+
+    // Show message
+    function showMessage(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = `message ${type}`;
+      msg.style.display = 'block';
+      setTimeout(() => msg.style.display = 'none', 5000);
+    }
+
+    // Upload form
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const token = getToken();
+      if (!token) {
+        showMessage('Please login first!', 'error');
+        return;
+      }
+
+      const content = document.getElementById('content').value;
+      if (content.length < 100) {
+        showMessage('Content must be at least 100 characters', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading...';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            subject: document.getElementById('subject').value,
+            topic: document.getElementById('topic').value,
+            content: content,
+            source_type: document.getElementById('sourceType').value,
+            difficulty: document.getElementById('difficulty').value
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showMessage('✅ Content uploaded successfully!', 'success');
+          document.getElementById('uploadForm').reset();
+          document.getElementById('charCount').textContent = '0';
+          loadRecent();
+        } else {
+          showMessage('❌ ' + (data.error || 'Upload failed'), 'error');
+        }
+      } catch (error) {
+        showMessage('❌ Error: ' + error.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Upload Content';
+      }
+    });
+
+    // Load recent uploads
+    async function loadRecent() {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch(API_URL, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          const list = document.getElementById('recentList');
+          list.innerHTML = data.data.slice(0, 5).map(item => `
+            <div class="list-item">
+              <h3>${item.subject} - ${item.topic}</h3>
+              <p>${item.content.substring(0, 150)}...</p>
+              <p style="font-size: 12px; color: #999; margin-top: 5px;">
+                ${item.source_type} | ${item.difficulty} | ${new Date(item.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Failed to load recent uploads:', error);
+      }
+    }
+
+    // Load on page load
+    loadRecent();
+  </script>
+</body>
+</html>

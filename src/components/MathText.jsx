@@ -1,0 +1,66 @@
+import React from 'react';
+import katex from 'katex';
+
+const MathText = ({ text, className = '' }) => {
+  const renderMath = (text) => {
+    if (!text) return [];
+    
+    const parts = [];
+    let lastIndex = 0;
+    
+    // Match $...$ for inline math and $$...$$ for display math
+    const regex = /\$\$([^\$]+)\$\$|\$([^\$]+)\$/g;
+    let match;
+    
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+      }
+      
+      const mathContent = match[1] || match[2];
+      const isDisplay = !!match[1];
+      
+      try {
+        const html = katex.renderToString(mathContent, {
+          displayMode: isDisplay,
+          throwOnError: false
+        });
+        parts.push({ type: 'math', content: html });
+      } catch (e) {
+        parts.push({ type: 'text', content: match[0] });
+      }
+      
+      lastIndex = regex.lastIndex;
+    }
+    
+    if (lastIndex < text.length) {
+      parts.push({ type: 'text', content: text.slice(lastIndex) });
+    }
+    
+    return parts;
+  };
+
+  const parts = renderMath(text || '');
+  
+  if (parts.length === 0) {
+    return <span className={className}>{text}</span>;
+  }
+  
+  if (parts.length === 1 && parts[0].type === 'math') {
+    return <span className={className} dangerouslySetInnerHTML={{ __html: parts[0].content }} />;
+  }
+  
+  return (
+    <span className={className}>
+      {parts.map((part, idx) => 
+        part.type === 'math' ? (
+          <span key={idx} dangerouslySetInnerHTML={{ __html: part.content }} />
+        ) : (
+          <span key={idx}>{part.content}</span>
+        )
+      )}
+    </span>
+  );
+};
+
+export default MathText;

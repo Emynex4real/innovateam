@@ -1,0 +1,27 @@
+name: Security Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check for secrets
+        run: |
+          if grep -r "SUPABASE_SERVICE_ROLE_KEY\|JWT_SECRET\|GEMINI_API_KEY\|REDIS_TOKEN" --include="*.js" --include="*.jsx" --include="*.env" .; then
+            echo "ERROR: Potential secrets found in code!"
+            exit 1
+          fi
+          
+      - name: Verify .gitignore
+        run: |
+          if [ ! -f .gitignore ]; then
+            echo "ERROR: .gitignore missing!"
+            exit 1
+          fi
