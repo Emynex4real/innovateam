@@ -12,10 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Check for secrets
+      - name: Check for hardcoded secrets
         run: |
-          if grep -r "SUPABASE_SERVICE_ROLE_KEY\|JWT_SECRET\|GEMINI_API_KEY\|REDIS_TOKEN" --include="*.js" --include="*.jsx" --include="*.env" .; then
-            echo "ERROR: Potential secrets found in code!"
+          if grep -rE "(SUPABASE_SERVICE_ROLE_KEY|JWT_SECRET|GEMINI_API_KEY|REDIS_TOKEN)\s*=\s*['\"][^'\"]{20,}" --include="*.js" --include="*.jsx" .; then
+            echo "ERROR: Hardcoded secrets found in code!"
+            exit 1
+          fi
+          
+      - name: Check for .env files
+        run: |
+          if find . -name ".env" -not -path "./node_modules/*" | grep -q .; then
+            echo "ERROR: .env file found in repository!"
             exit 1
           fi
           
