@@ -835,7 +835,7 @@ Return JSON array of extracted questions.
           topic,
           difficulty,
           totalQuestions,
-          userId,
+          userId, 
           onProgress
         });
       }
