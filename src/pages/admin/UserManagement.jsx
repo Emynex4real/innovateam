@@ -77,7 +77,7 @@ const UserManagement = () => {
   const handleUpdateRole = async (userId, newRole) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_URL}/api/admin/users/${userId}/role`, 
+      const response = await axios.post(`${API_URL}/api/admin/users/${userId}/role`, 
         { role: newRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -85,7 +85,7 @@ const UserManagement = () => {
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
-      alert('User role updated successfully');
+      alert(response.data.message || 'User role updated successfully. User must log out and log back in for changes to take effect.');
     } catch (err) {
       console.error('Error updating role:', err);
       alert(err.response?.data?.error || 'Failed to update role');

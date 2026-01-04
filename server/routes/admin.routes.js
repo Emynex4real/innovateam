@@ -125,17 +125,22 @@ router.post('/users/:id/role', sensitiveOpLimiter, async (req, res) => {
       return res.status(500).json({ success: false, error: authError.message });
     }
     
-    // Update role in user_profiles table
+    // Update role and flags in user_profiles table
     const { error: dbError } = await supabase
       .from('user_profiles')
-      .update({ role })
+      .update({ 
+        role,
+        is_admin: role === 'admin',
+        is_tutor: role === 'tutor',
+        is_student: role === 'student'
+      })
       .eq('id', id);
     
     if (dbError) {
       console.error('Update user_profiles table role error:', dbError);
     }
     
-    res.json({ success: true, message: `User role updated to ${role}` });
+    res.json({ success: true, message: `User role updated to ${role}. User must log out and log back in for changes to take effect.` });
   } catch (error) {
     console.error('Update user role error:', error);
     res.status(500).json({ success: false, error: error.message });

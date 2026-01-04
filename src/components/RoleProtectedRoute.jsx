@@ -23,17 +23,18 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
       }
 
       try {
-        // 3. Try getting role from metadata (fastest)
-        let role = user?.user_metadata?.role;
-
-        // 4. If metadata is missing, check the DB
+        // 3. Always check the DB first for the most up-to-date role
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role, is_admin, is_tutor, is_student')
+          .eq('id', user.id)
+          .single();
+        
+        let role = profile?.role;
+        
+        // 4. Fallback to metadata if DB check fails
         if (!role) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-          role = profile?.role;
+          role = user?.user_metadata?.role;
         }
 
         if (isMounted) {
