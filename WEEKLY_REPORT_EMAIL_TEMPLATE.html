@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Success Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f4f4f4; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; }
+    .header p { margin: 10px 0 0; opacity: 0.9; }
+    .content { padding: 30px; }
+    .section { margin-bottom: 30px; }
+    .section h2 { color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 15px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+    .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; border-left: 4px solid #667eea; }
+    .stat-card .number { font-size: 32px; font-weight: bold; color: #667eea; }
+    .stat-card .label { font-size: 14px; color: #666; margin-top: 5px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th { background: #667eea; color: white; padding: 12px; text-align: left; font-weight: 600; }
+    td { padding: 12px; border-bottom: 1px solid #ddd; }
+    tr:hover { background: #f8f9fa; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-success { background: #d4edda; color: #155724; }
+    .badge-warning { background: #fff3cd; color: #856404; }
+    .badge-danger { background: #f8d7da; color: #721c24; }
+    .alert { padding: 15px; border-radius: 8px; margin: 15px 0; }
+    .alert-warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+    .alert-danger { background: #f8d7da; border-left: 4px solid #dc3545; }
+    .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+    .cta-button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 0; font-weight: 600; }
+    .cta-button:hover { background: #5568d3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>📊 Weekly Success Report</h1>
+      <p>{{CENTER_NAME}} | Week of {{WEEK_START}} - {{WEEK_END}}</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      
+      <!-- Summary Stats -->
+      <div class="section">
+        <h2>📈 Weekly Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="number">{{TOTAL_STUDENTS}}</div>
+            <div class="label">Total Students</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">{{ACTIVE_STUDENTS}}</div>
+            <div class="label">Active This Week</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">{{TESTS_TAKEN}}</div>
+            <div class="label">Tests Taken</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">{{AVG_SCORE}}%</div>
+            <div class="label">Avg Score</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">{{PASS_RATE}}%</div>
+            <div class="label">Pass Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Performers -->
+      <div class="section">
+        <h2>🏆 Top 5 Students by XP</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Student Name</th>
+              <th>XP Earned</th>
+              <th>Tests Taken</th>
+              <th>Avg Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#TOP_STUDENTS}}
+            <tr>
+              <td><strong>{{rank}}</strong></td>
+              <td>{{name}}</td>
+              <td>{{xp}}</td>
+              <td>{{tests}}</td>
+              <td>{{score}}%</td>
+            </tr>
+            {{/TOP_STUDENTS}}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- At-Risk Students -->
+      {{#HAS_AT_RISK}}
+      <div class="section">
+        <h2>⚠️ At-Risk Students</h2>
+        <div class="alert alert-danger">
+          <strong>Action Required:</strong> {{AT_RISK_COUNT}} students need immediate attention.
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Tests Taken</th>
+              <th>Avg Score</th>
+              <th>Status</th>
+              <th>Risk Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#AT_RISK_STUDENTS}}
+            <tr>
+              <td>{{name}}</td>
+              <td>{{tests}}</td>
+              <td>{{score}}%</td>
+              <td><span class="badge badge-danger">{{status}}</span></td>
+              <td>{{reason}}</td>
+            </tr>
+            {{/AT_RISK_STUDENTS}}
+          </tbody>
+        </table>
+        <p><strong>Recommended Actions:</strong></p>
+        <ul>
+          <li>Schedule 1-on-1 sessions with failing students</li>
+          <li>Send motivational messages to inactive students</li>
+          <li>Review integrity issues with flagged students</li>
+        </ul>
+      </div>
+      {{/HAS_AT_RISK}}
+
+      <!-- Subject Gaps -->
+      {{#HAS_SUBJECT_GAPS}}
+      <div class="section">
+        <h2>📚 Subject-Wise Performance Gaps</h2>
+        <div class="alert alert-warning">
+          <strong>Attention:</strong> The following subjects have high failure rates (>50%).
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Students</th>
+              <th>Avg Score</th>
+              <th>Failure Rate</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#SUBJECT_GAPS}}
+            <tr>
+              <td><strong>{{subject}}</strong></td>
+              <td>{{students}}</td>
+              <td>{{avg_score}}%</td>
+              <td>{{failure_rate}}%</td>
+              <td>{{status}}</td>
+            </tr>
+            {{/SUBJECT_GAPS}}
+          </tbody>
+        </table>
+        <p><strong>Suggested Interventions:</strong></p>
+        <ul>
+          <li>Create remedial tests for struggling subjects</li>
+          <li>Host group study sessions for weak topics</li>
+          <li>Share additional learning resources</li>
+        </ul>
+      </div>
+      {{/HAS_SUBJECT_GAPS}}
+
+      <!-- Most Failed Topics -->
+      {{#HAS_TOPIC_GAPS}}
+      <div class="section">
+        <h2>🎯 Top 10 Most Difficult Topics</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Topic</th>
+              <th>Attempts</th>
+              <th>Avg Score</th>
+              <th>Failure Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#TOPIC_GAPS}}
+            <tr>
+              <td>{{subject}}</td>
+              <td>{{topic}}</td>
+              <td>{{attempts}}</td>
+              <td>{{avg_score}}%</td>
+              <td>{{failure_rate}}%</td>
+            </tr>
+            {{/TOPIC_GAPS}}
+          </tbody>
+        </table>
+      </div>
+      {{/HAS_TOPIC_GAPS}}
+
+      <!-- Engagement Trends -->
+      <div class="section">
+        <h2>📊 4-Week Engagement Trend</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th>Active Students</th>
+              <th>Tests Taken</th>
+              <th>Avg Score</th>
+              <th>Growth</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#WEEKLY_TRENDS}}
+            <tr>
+              <td>{{week}}</td>
+              <td>{{active}}</td>
+              <td>{{tests}}</td>
+              <td>{{score}}%</td>
+              <td>
+                {{#growth_positive}}
+                <span class="badge badge-success">+{{growth}}</span>
+                {{/growth_positive}}
+                {{#growth_negative}}
+                <span class="badge badge-danger">{{growth}}</span>
+                {{/growth_negative}}
+              </td>
+            </tr>
+            {{/WEEKLY_TRENDS}}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Call to Action -->
+      <div class="section" style="text-align: center; padding: 30px 0;">
+        <h2>🚀 Take Action Now</h2>
+        <p>Log in to your dashboard to view detailed analytics and take action on at-risk students.</p>
+        <a href="{{DASHBOARD_URL}}" class="cta-button">View Full Dashboard</a>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><strong>InnovaTeam EdTech Platform</strong></p>
+      <p>This report was automatically generated on {{REPORT_DATE}}</p>
+      <p>Questions? Reply to this email or contact support@innovateam.com</p>
+      <p style="font-size: 12px; color: #999; margin-top: 15px;">
+        You're receiving this because you're a registered tutorial center owner.<br>
+        <a href="{{UNSUBSCRIBE_URL}}" style="color: #999;">Unsubscribe from weekly reports</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

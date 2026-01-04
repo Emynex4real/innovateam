@@ -6,9 +6,11 @@ import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { componentStyles } from '../../styles/designSystem';
 import StudentActivityModal from '../../components/StudentActivityModal';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const EnterpriseTutorDashboard = () => {
   const navigate = useNavigate();
+  const { logoUrl, centerName, primaryColor } = useTheme();
   const [center, setCenter] = useState(null);
   const [stats, setStats] = useState({ students: 0, tests: 0, questions: 0, avgScore: 0 });
   const [loading, setLoading] = useState(true);
@@ -241,7 +243,7 @@ const EnterpriseTutorDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Header with Branding */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -254,8 +256,26 @@ const EnterpriseTutorDashboard = () => {
             <ArrowLeft size={20} />
             <span className="font-medium">Back to Dashboard</span>
           </button>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Tutor Dashboard 👨🏫</h1>
-          <p className="text-gray-600 dark:text-gray-400">{center.name}</p>
+          
+          {/* White-Label Branding */}
+          <div className="flex items-center gap-6 mb-4">
+            {logoUrl && (
+              <img 
+                src={logoUrl} 
+                alt={centerName || center?.name} 
+                className="h-20 w-auto object-contain"
+              />
+            )}
+            <div>
+              <h1 
+                className="text-4xl font-bold mb-2"
+                style={{ color: primaryColor || '#10b981' }}
+              >
+                {centerName || center?.name || 'Tutorial Center'}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">Tutor Dashboard 👨🏫</p>
+            </div>
+          </div>
         </motion.div>
 
         {/* Stats Grid */}

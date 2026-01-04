@@ -69,23 +69,40 @@ exports.getMyLeague = async (req, res) => {
     if (leagueError) throw leagueError;
 
     // Get rankings
-    const { data: rankings } = await supabase
+    const { data: rankings, error: rankingsError } = await supabase
       .from('tc_leagues')
-      .select(`
-        student_id,
-        weekly_points,
-        student:student_id(email, raw_user_meta_data)
-      `)
+      .select('student_id, weekly_points')
       .eq('center_id', centerId)
       .eq('league_tier', league.league_tier)
       .eq('week_start_date', weekStart.toISOString().split('T')[0])
       .order('weekly_points', { ascending: false })
       .limit(50);
 
-    const rank = rankings.findIndex(r => r.student_id === studentId) + 1;
+    if (rankingsError) {
+      logger.error('Rankings query error:', rankingsError);
+      return res.json({ 
+        success: true, 
+        league: { ...league, rank_in_league: 1 },
+        rankings: []
+      });
+    }
 
-    const formattedRankings = rankings.map(r => ({
-      student_name: r.student?.raw_user_meta_data?.name || r.student?.email?.split('@')[0] || 'Unknown',
+    const rank = rankings?.findIndex(r => r.student_id === studentId) + 1 || 1;
+
+    // Get student names separately
+    const studentIds = rankings?.map(r => r.student_id) || [];
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', studentIds);
+
+    const profileMap = {};
+    profiles?.forEach(p => {
+      profileMap[p.id] = p.full_name || 'Unknown';
+    });
+
+    const formattedRankings = (rankings || []).map(r => ({
+      student_name: profileMap[r.student_id] || 'Unknown',
       weekly_points: r.weekly_points
     }));
 

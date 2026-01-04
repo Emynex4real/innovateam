@@ -67,7 +67,8 @@ exports.getEnrolledCenters = async (req, res) => {
           id,
           name,
           description,
-          tutor_id
+          tutor_id,
+          theme_config
         )
       `)
       .eq('student_id', studentId);
@@ -96,7 +97,8 @@ exports.getEnrolledCenters = async (req, res) => {
         name: e.center.name,
         description: e.center.description,
         tutor_name: tutor?.full_name || tutor?.email?.split('@')[0] || 'Unknown',
-        enrolled_at: e.enrolled_at
+        enrolled_at: e.enrolled_at,
+        theme_config: e.center.theme_config
       };
     });
 

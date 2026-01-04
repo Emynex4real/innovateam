@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { WalletProvider } from './contexts/WalletContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import emailService from './services/email/emailService';
 
 // Pages
@@ -61,7 +62,7 @@ import TutoringMarketplace from './pages/student/TutoringMarketplace';
 
 // Tutor & Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
-import TutorDashboard from './pages/tutor/EnterpriseDashboard.jsx';
+import TutorDashboard from './pages/tutor/TutorDashboard.jsx';
 import TutorQuestions from './pages/tutor/Questions';
 import AIGenerator from './pages/tutor/AIGenerator';
 import BulkQuestionImport from './pages/tutor/BulkQuestionImport';
@@ -75,7 +76,7 @@ import ComparativeAnalytics from './pages/tutor/ComparativeAnalytics';
 import TutorLeaderboard from './pages/tutor/Leaderboard';
 import TutorAnalyticsDashboard from './pages/tutor/AnalyticsDashboard';
 import AdvancedAnalyticsDashboard from './pages/tutor/AdvancedAnalyticsDashboard';
-import StudentDashboard from './pages/student/tutorial-center/EnterpriseDashboard.jsx';
+import StudentDashboard from './pages/student/tutorial-center/StudentDashboard.jsx';
 import ThemeEditor from './pages/tutor/ThemeEditor';
 import NotFound from './pages/NotFound';
 
@@ -238,7 +239,8 @@ function App() {
   return (
     <DarkModeProvider>
       <SupabaseAuthProvider>
-        <WalletProvider>
+        <ThemeProvider>
+          <WalletProvider>
           <div className="App">
             <Toaster position="top-right" /> 
             
@@ -310,7 +312,7 @@ function App() {
               
               {/* Student Tutorial Center Routes (Students only) */}
               <Route path="/student/dashboard" element={<RoleProtectedRoute allowedRoles={['student']}><StudentDashboard /></RoleProtectedRoute>} />
-              <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><MyCenters /></EducationalSidebar></RoleProtectedRoute>} />
+              <Route path="/student/centers" element={<RoleProtectedRoute allowedRoles={['student']}><StudentDashboard /></RoleProtectedRoute>} />
               <Route path="/student/centers/join" element={<RoleProtectedRoute allowedRoles={['student']}><EducationalSidebar><JoinCenter /></EducationalSidebar></RoleProtectedRoute>} />
               <Route path="/student/tests" element={<RoleProtectedRoute allowedRoles={['student']}><StudentTests /></RoleProtectedRoute>} />
               <Route path="/student/tests/public" element={<RoleProtectedRoute allowedRoles={['student']}><PublicTests /></RoleProtectedRoute>} />
@@ -333,7 +335,8 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
-        </WalletProvider>
+          </WalletProvider>
+        </ThemeProvider>
       </SupabaseAuthProvider>
     </DarkModeProvider>
   );

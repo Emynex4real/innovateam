@@ -70,11 +70,11 @@ const EnterpriseTestList = () => {
         {/* Header with Search */}
         <div className={`sticky top-0 z-10 pb-4 pt-2 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <button
-            onClick={() => navigate('/student/centers')}
+            onClick={() => navigate('/student/dashboard')}
             className={`flex items-center gap-2 mb-4 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           >
             <ArrowLeft size={20} />
-            <span className="font-medium">Back to My Centers</span>
+            <span className="font-medium">Back to Dashboard</span>
           </button>
           <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
             <h1 className={`text-3xl font-bold self-start ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Assignments</h1>

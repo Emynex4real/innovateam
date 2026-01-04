@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Trophy, Target, Zap, Clock, ChevronRight, 
-  BookOpen, BarChart2, Globe, Plus, School 
+  BookOpen, BarChart2, Globe, Plus, School, Users, Calendar, ArrowRight, GraduationCap
 } from 'lucide-react';
 import studentTCService from '../../../services/studentTC.service';
 import StreakBadge from '../../../components/StreakBadge';
 import LeagueCard from '../../../components/LeagueCard';
 import toast from 'react-hot-toast';
-import { useDarkMode } from '../../../contexts/DarkModeContext'; // Assuming you have this context
+import { useDarkMode } from '../../../contexts/DarkModeContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const EnterpriseDashboard = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
+  const { primaryColor, logoUrl, centerName, updateBranding } = useTheme();
   const [centers, setCenters] = useState([]);
   const [stats, setStats] = useState({ tests: 0, avgScore: 0, streak: 0 });
   const [loading, setLoading] = useState(true);
@@ -30,17 +32,31 @@ const EnterpriseDashboard = () => {
         studentTCService.getMyAttempts()
       ]);
       
-      if (centersRes.success) setCenters(centersRes.centers);
+      if (centersRes.success && centersRes.centers) {
+        setCenters(centersRes.centers);
+        
+        // Update branding from first center
+        if (centersRes.centers.length > 0) {
+          const firstCenter = centersRes.centers[0];
+          if (firstCenter.theme_config) {
+            updateBranding({
+              primaryColor: firstCenter.theme_config.primary_color || '#10b981',
+              logoUrl: firstCenter.theme_config.logo_url || null,
+              centerName: firstCenter.name
+            });
+          }
+        }
+      }
       if (attemptsRes.success) {
         const attempts = attemptsRes.attempts;
         setStats({
           tests: attempts.length,
           avgScore: attempts.length ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0,
-          streak: 0 // Ideally this comes from the backend, defaulting to 0 or calculated
+          streak: 0
         });
       }
     } catch (error) {
-      console.error(error);
+      console.error('Dashboard load error:', error);
       toast.error('Failed to load dashboard');
     } finally {
       setLoading(false);
@@ -106,6 +122,26 @@ const EnterpriseDashboard = () => {
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            {/* White-Label Branding */}
+            {(logoUrl || centerName) && (
+              <div className="flex items-center gap-4 mb-4">
+                {logoUrl && (
+                  <img 
+                    src={logoUrl} 
+                    alt={centerName || 'Tutorial Center'} 
+                    className="h-16 w-auto object-contain"
+                  />
+                )}
+                {/* {centerName && (
+                  <h2 
+                    className="text-2xl font-bold"
+                    style={{ color: primaryColor || '#10b981' }}
+                  >
+                    {centerName}
+                  </h2>
+                )} */}
+              </div>
+            )}
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
               Welcome Back! <span className="animate-wave inline-block origin-bottom-right">👋</span>
             </h1>
@@ -117,7 +153,7 @@ const EnterpriseDashboard = () => {
           {/* Streak Badge Component Integration */}
           {primaryCenter && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-               <StreakBadge centerId={primaryCenter.center_id} />
+               <StreakBadge centerId={primaryCenter.center_id || primaryCenter.id} />
             </motion.div>
           )}
         </div>
@@ -175,10 +211,16 @@ const EnterpriseDashboard = () => {
                 />
               </div>
 
-              {/* 2. Primary Center Card */}
+              {/* 2. Primary Center Card - WITH BRANDING */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-                className={`p-8 rounded-[2.5rem] relative overflow-hidden ${isDarkMode ? 'bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-blue-800/50' : 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-900/20'}`}
+                className="p-8 rounded-[2.5rem] relative overflow-hidden shadow-xl"
+                style={{
+                  background: primaryColor 
+                    ? `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` 
+                    : 'linear-gradient(135deg, #2563eb, #1e40af)',
+                  color: '#ffffff'
+                }}
               >
                 <div className="absolute top-0 right-0 p-12 opacity-10">
                   <School size={180} />
@@ -187,21 +229,40 @@ const EnterpriseDashboard = () => {
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider mb-4 text-white">
                     Active Center
                   </div>
-                  <h2 className="text-3xl font-bold text-white mb-2">{primaryCenter.center_name}</h2>
-                  <p className="text-blue-100 mb-6 flex items-center gap-2">
+                  
+                  {/* Logo Display */}
+                  {/* {logoUrl && (
+                    <div className="mb-4 h-12 flex items-center">
+                      <img 
+                        src={logoUrl} 
+                        alt={centerName || primaryCenter.center_name || primaryCenter.name} 
+                        className="h-full object-contain brightness-0 invert"
+                      />
+                    </div>
+                  )} */}
+                  {logoUrl && (
+                  <img 
+                    src={logoUrl} 
+                    alt={centerName || 'Tutorial Center'} 
+                    className="h-16 w-auto object-contain"
+                  />
+                )}
+                  
+                  <h2 className="text-3xl font-bold text-white mb-2">{primaryCenter.center_name || primaryCenter.name}</h2>
+                  <p className="text-white/80 mb-6 flex items-center gap-2">
                     <span className="font-mono bg-white/10 px-2 py-1 rounded">CODE: {primaryCenter.access_code}</span>
                   </p>
                   
                   <div className="flex flex-wrap gap-3">
                     <button
-                      onClick={() => navigate('/student/tests')}
-                      className="px-6 py-3 bg-white text-blue-700 rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-lg flex items-center gap-2"
+                      onClick={() => navigate(`/student/tests?center=${primaryCenter.center_id || primaryCenter.id}`)}
+                      className="px-6 py-3 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg flex items-center gap-2"
                     >
                       <Clock size={18} /> Take New Test
                     </button>
                     <button
-                      onClick={() => navigate(`/student/analytics/${primaryCenter.center_id}`)}
-                      className="px-6 py-3 bg-blue-800/50 text-white rounded-xl font-bold hover:bg-blue-800/70 transition-colors backdrop-blur-sm flex items-center gap-2"
+                      onClick={() => navigate(`/student/analytics/${primaryCenter.center_id || primaryCenter.id}`)}
+                      className="px-6 py-3 bg-black/20 text-white rounded-xl font-bold hover:bg-black/30 transition-colors backdrop-blur-sm flex items-center gap-2"
                     >
                       <BarChart2 size={18} /> Analytics
                     </button>
@@ -209,9 +270,52 @@ const EnterpriseDashboard = () => {
                 </div>
               </motion.div>
 
-              {/* 3. Quick Actions Grid */}
+              {/* 3. All Enrolled Centers */}
+              {centers.length > 1 && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>All My Centers</h3>
+                    <button
+                      onClick={() => navigate('/student/centers/join')}
+                      className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    >
+                      <Plus size={16} /> Join Another
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {centers.slice(1).map((center, idx) => (
+                      <motion.div
+                        key={center.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 + idx * 0.1 }}
+                        onClick={() => navigate(`/student/tests?center=${center.center_id || center.id}`)}
+                        className={`group p-6 rounded-2xl cursor-pointer transition-all hover:shadow-lg ${isDarkMode ? 'bg-gray-800/50 border border-gray-700 hover:border-blue-500' : 'bg-white border border-gray-100 hover:border-blue-500'}`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
+                            <GraduationCap size={24} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className={`font-bold mb-1 truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{center.center_name || center.name}</h4>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                              <Calendar size={12} />
+                              <span>Joined {new Date(center.enrolled_at).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-semibold group-hover:gap-2 transition-all">
+                              View Tests <ArrowRight size={14} className="ml-1" />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Quick Actions */}
               <div>
-                <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Explore</h3>
+                <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Explore More</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <QuickAction 
                     icon={Globe} 
@@ -219,15 +323,15 @@ const EnterpriseDashboard = () => {
                     subtext="Access free community tests" 
                     onClick={() => navigate('/student/tests/public')}
                     gradient="from-purple-500 to-pink-500"
-                    delay={0.5}
+                    delay={0.7}
                   />
                   <QuickAction 
-                    icon={School} 
-                    label="My Centers" 
-                    subtext="Manage your enrollments" 
-                    onClick={() => navigate('/student/centers')}
+                    icon={Plus} 
+                    label="Join New Center" 
+                    subtext="Enroll in more tutorial centers" 
+                    onClick={() => navigate('/student/centers/join')}
                     gradient="from-orange-500 to-red-500"
-                    delay={0.6}
+                    delay={0.8}
                   />
                 </div>
               </div>
@@ -238,20 +342,19 @@ const EnterpriseDashboard = () => {
               
               {/* Leaderboard Widget */}
               <motion.div 
-                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.9 }}
                 className={`${isDarkMode ? 'bg-gray-800/50 border border-gray-700' : 'bg-white shadow-lg shadow-gray-200/50'} rounded-3xl p-6`}
               >
                 <div className="flex justify-between items-center mb-6">
                   <h3 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Leaderboard</h3>
                   <span className="text-xs font-bold text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">LIVE</span>
                 </div>
-                {/* Reusing your existing LeagueCard logic */}
-                <LeagueCard centerId={primaryCenter.center_id} />
+                <LeagueCard centerId={primaryCenter.center_id || primaryCenter.id} />
               </motion.div>
 
               {/* Pro Tip Card */}
               <motion.div 
-                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }}
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.0 }}
                 className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden"
               >
                 <div className="absolute -bottom-4 -right-4 text-emerald-600 opacity-20">

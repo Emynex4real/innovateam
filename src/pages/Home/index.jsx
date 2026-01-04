@@ -570,7 +570,7 @@ const Home = () => {
       icon: <Users className="w-8 h-8" />,
       title: 'Tutorial Centers',
       description: 'Connect with expert tutors and join tutorial centers',
-      link: '/student/centers',
+      link: '/student/dashboard',
       badge: 'Community',
       color: 'from-indigo-500 to-purple-500'
     },

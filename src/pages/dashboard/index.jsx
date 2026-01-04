@@ -322,7 +322,7 @@ const Dashboard = () => {
               {AI_TOOLS.map((tool) => {
                 // Dynamic link for tutorial center based on role
                 const toolLink = tool.id === 'tutorial' 
-                  ? (userRole === 'tutor' || userRole === 'admin' ? '/tutor' : '/student/centers')
+                  ? (userRole === 'tutor' || userRole === 'admin' ? '/tutor' : '/student/dashboard')
                   : tool.link;
                 
                 return (

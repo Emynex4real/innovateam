@@ -103,11 +103,11 @@ const PublicTests = () => {
 
           <motion.button
             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-            onClick={() => navigate('/student/centers')}
+            onClick={() => navigate('/student/dashboard')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all shadow-sm hover:shadow-md ${isDarkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
           >
             <School size={18} />
-            <span>My Centers</span>
+            <span>My Dashboard</span>
           </motion.button>
         </div>
 

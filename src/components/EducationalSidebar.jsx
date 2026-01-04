@@ -103,7 +103,7 @@ const EducationalSidebar = ({ children }) => {
         { label: 'Tutoring', path: '/student/tutoring' }
       ]
     },
-    { id: 'tutorial-center', label: 'Tutorial Center', icon: BookOpenIcon, path: userRole === 'student' ? '/student/centers' : '/tutor' },
+    { id: 'tutorial-center', label: 'Tutorial Center', icon: BookOpenIcon, path: userRole === 'student' ? '/student/dashboard' : '/tutor' },
     { id: 'transactions', label: 'Transactions', icon: ClipboardDocumentListIcon, path: '/dashboard/transactions' },
     { id: 'support', label: 'Support', icon: QuestionMarkCircleIcon, path: '/dashboard/support' }
   ];

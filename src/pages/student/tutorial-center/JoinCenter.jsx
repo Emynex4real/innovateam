@@ -19,7 +19,7 @@ const JoinCenter = () => {
       const res = await studentTCService.joinCenter(code.toUpperCase());
       if (res.success) {
         toast.success(`Welcome to ${res.center.name}! 🎉`);
-        navigate('/student/centers');
+        navigate('/student/dashboard');
       }
     } catch (error) {
       toast.error(error.response?.data?.error || 'Invalid code');
