@@ -11,36 +11,55 @@ const AdminProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const checkAdminAccess = async () => {
-      if (loading) return;
+      // console.log('🔍 [AdminProtectedRoute] Starting admin check...');
+      // console.log('🔍 [AdminProtectedRoute] Loading:', loading);
+      // console.log('🔍 [AdminProtectedRoute] User:', user);
+      // console.log('🔍 [AdminProtectedRoute] IsAuthenticated:', isAuthenticated);
+      
+      if (loading) {
+        // console.log('⏳ [AdminProtectedRoute] Still loading auth...');
+        return;
+      }
 
       if (!user && !isAuthenticated) {
+        // console.log('❌ [AdminProtectedRoute] No user, redirecting to login');
         navigate('/login', { replace: true });
         return;
       }
 
       try {
         // First check metadata (fast)
+        // console.log('🔍 [AdminProtectedRoute] Checking user metadata:', user.user_metadata);
         if (user.user_metadata?.role === 'admin') {
+           // console.log('✅ [AdminProtectedRoute] Admin confirmed via metadata');
            setIsAdmin(true);
            setChecking(false);
            return;
         }
 
         // Then check database (secure)
-        const { data: profile } = await supabase
+        // console.log('🔍 [AdminProtectedRoute] Checking database for user:', user.id);
+        const { data: profile, error } = await supabase
           .from('user_profiles')
           .select('is_admin, role')
           .eq('id', user.id)
           .single();
 
+        // console.log('🔍 [AdminProtectedRoute] Profile data:', profile);
+        // console.log('🔍 [AdminProtectedRoute] Profile error:', error);
+
         if (!profile || (!profile.is_admin && profile.role !== 'admin')) {
+          // console.log('❌ [AdminProtectedRoute] Not admin, redirecting to dashboard');
+          // console.log('   - is_admin:', profile?.is_admin);
+          // console.log('   - role:', profile?.role);
           navigate('/dashboard', { replace: true });
           return;
         }
 
+        // console.log('✅ [AdminProtectedRoute] Admin confirmed via database');
         setIsAdmin(true);
       } catch (error) {
-        console.error('Admin check error:', error);
+        console.error('❌ [AdminProtectedRoute] Admin check error:', error);
         navigate('/dashboard', { replace: true });
       } finally {
         setChecking(false);

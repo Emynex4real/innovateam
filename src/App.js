@@ -112,14 +112,28 @@ const SupabaseAuthProvider = ({ children }) => {
     }
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role, is_admin, is_tutor, is_student, full_name, wallet_balance')
+          .eq('id', session.user.id)
+          .single();
+        
+        // Check boolean flags first, then fallback to role column
+        let role = 'student';
+        if (profile?.is_admin === true || profile?.role === 'admin') role = 'admin';
+        else if (profile?.is_tutor === true || profile?.role === 'tutor') role = 'tutor';
+        else if (profile?.is_student === true || profile?.role === 'student') role = 'student';
+        else if (profile?.role) role = profile.role;
+        
         const userData = {
           id: session.user.id,
           email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-          user_metadata: session.user.user_metadata,
-          role: session.user.user_metadata?.role // Ensure role is top level for easier access
+          name: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+          role: role,
+          walletBalance: profile?.wallet_balance || 0,
+          user_metadata: session.user.user_metadata
         };
         localStorage.setItem('confirmedUser', JSON.stringify(userData));
         setUser(session.user);
@@ -159,7 +173,23 @@ const SupabaseAuthProvider = ({ children }) => {
       
       if (error) throw error;
       
-      // Profile creation is handled by database trigger
+      if (data.user) {
+        // Update BOTH role text and boolean flags
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({
+            role: userData?.role || 'student',
+            is_admin: userData?.role === 'admin',
+            is_tutor: userData?.role === 'tutor',
+            is_student: userData?.role === 'student' || !userData?.role
+          })
+          .eq('id', data.user.id);
+        
+        if (updateError) {
+          console.error('Role update error:', updateError);
+        }
+      }
+      
       return { success: true, data, needsEmailConfirmation: !data.user?.email_confirmed_at };
     } catch (error) {
       console.error('SignUp error:', error);
@@ -172,7 +202,6 @@ const SupabaseAuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     setLoading(true);
     try {
-      // Use Supabase signInWithPassword to set proper session
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -181,16 +210,39 @@ const SupabaseAuthProvider = ({ children }) => {
       if (error) throw error;
       
       if (data.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('role, is_admin, is_tutor, is_student, full_name, wallet_balance')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+        }
+        
+        console.log('Profile data:', profile);
+        
+        // Check boolean flags first, then fallback to role column
+        let role = 'student';
+        if (profile?.is_admin === true || profile?.role === 'admin') role = 'admin';
+        else if (profile?.is_tutor === true || profile?.role === 'tutor') role = 'tutor';
+        else if (profile?.is_student === true || profile?.role === 'student') role = 'student';
+        else if (profile?.role) role = profile.role;
+        
+        console.log('Computed role:', role);
+        
         const userData = {
           id: data.user.id,
           email: data.user.email,
-          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
-          role: data.user.user_metadata?.role || 'student',
+          name: profile?.full_name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
+          role: role,
+          walletBalance: profile?.wallet_balance || 0,
           user_metadata: data.user.user_metadata,
           email_confirmed_at: data.user.email_confirmed_at
         };
         localStorage.setItem('confirmedUser', JSON.stringify(userData));
         localStorage.setItem('token', data.session.access_token);
+        localStorage.setItem('wallet_balance', String(userData.walletBalance));
         setUser(data.user);
         return { success: true, data: { user: data.user } };
       }

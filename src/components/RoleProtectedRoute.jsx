@@ -24,13 +24,24 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
 
       try {
         // 3. Always check the DB first for the most up-to-date role
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
           .select('role, is_admin, is_tutor, is_student')
           .eq('id', user.id)
           .single();
         
-        let role = profile?.role;
+        if (profileError) {
+          console.error('RoleProtectedRoute profile error:', profileError);
+        }
+        
+        console.log('RoleProtectedRoute profile:', profile);
+        
+        // Check boolean flags first, then fallback to role column
+        let role = 'student';
+        if (profile?.is_admin === true || profile?.role === 'admin') role = 'admin';
+        else if (profile?.is_tutor === true || profile?.role === 'tutor') role = 'tutor';
+        else if (profile?.is_student === true || profile?.role === 'student') role = 'student';
+        else if (profile?.role) role = profile.role; // Use role column if boolean flags not set
         
         // 4. Fallback to metadata if DB check fails
         if (!role) {
@@ -76,11 +87,13 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   // 3. Unauthorized Access Handling
-  // Redirect based on their actual role
   if (userRole === 'admin') {
     return <Navigate to="/admin/dashboard" replace />;
   }
-
+  if (userRole === 'tutor') {
+    return <Navigate to="/tutor/dashboard" replace />;
+  }
+  
   return <Navigate to="/dashboard" replace />;
 };
 

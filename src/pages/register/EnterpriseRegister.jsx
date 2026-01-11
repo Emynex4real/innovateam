@@ -260,7 +260,7 @@ const EnterpriseRegister = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Phone (Optional)</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
                       <input
                         type="tel"
                         value={formData.phone}

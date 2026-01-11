@@ -11,36 +11,33 @@ class SupabaseAuthService {
     try {
       logger.auth('Registration attempt started');
       
-      // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
           data: {
-            full_name: userData.name
+            full_name: userData.fullName || userData.name,
+            role: userData.role || 'student'
           }
         }
       });
 
       if (authError) throw authError;
 
-      // Create user profile with email and role
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .insert({
+        .upsert({
           id: authData.user.id,
           email: userData.email,
-          full_name: userData.name,
+          full_name: userData.fullName || userData.name,
           wallet_balance: 0,
           role: userData.role || 'student',
           status: 'active'
-        });
+        }, { onConflict: 'id' });
 
       if (profileError) {
         console.warn('Profile creation failed:', profileError);
       }
-
-      // Email is now stored in user_profiles table
 
       logger.auth('Registration successful');
       return { 
@@ -48,7 +45,7 @@ class SupabaseAuthService {
         user: {
           id: authData.user.id,
           email: authData.user.email,
-          name: userData.name,
+          name: userData.fullName || userData.name,
           role: userData.role || 'student',
           isAdmin: false
         }
@@ -63,7 +60,6 @@ class SupabaseAuthService {
     try {
       logger.auth('Login attempt started');
       
-      // Validate input
       if (!credentials.email || !credentials.password) {
         throw new Error('Email and password are required');
       }
@@ -75,14 +71,12 @@ class SupabaseAuthService {
         throw new Error('Password cannot be empty');
       }
 
-      // Use Supabase auth for all users (including admins)
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password
       });
 
       if (error) {
-        // Provide specific error messages
         if (error.message.includes('Invalid login credentials')) {
           throw new Error('Invalid email or password');
         }
@@ -92,7 +86,6 @@ class SupabaseAuthService {
         throw new Error('Login failed: ' + error.message);
       }
 
-      // Get user profile with wallet balance
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
@@ -109,7 +102,7 @@ class SupabaseAuthService {
         id: data.user.id,
         email: data.user.email,
         name: profile?.full_name || data.user.user_metadata?.full_name || 'User',
-        role: profile?.role || 'user',
+        role: profile?.role || 'student',
         isAdmin: profile?.role === 'admin',
         walletBalance: walletBalance
       };
@@ -117,7 +110,6 @@ class SupabaseAuthService {
       this.setUser(user);
       this.setToken(data.session.access_token);
       
-      // Store wallet balance and user data for wallet context
       localStorage.setItem('wallet_balance', String(walletBalance));
       localStorage.setItem('confirmedUser', JSON.stringify(user));
       

@@ -93,6 +93,7 @@ const Dashboard = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showLowBalanceAlert, setShowLowBalanceAlert] = useState(true);
   const [userRole, setUserRole] = useState('student');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [progressData, setProgressData] = useState({
@@ -112,14 +113,26 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchUserRole = async () => {
+      // console.log('🔍 [Dashboard] Fetching user role for:', user?.id);
       if (user?.id) {
         const supabase = (await import('../../config/supabase')).default;
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('user_profiles')
-          .select('role')
+          .select('role, is_admin')
           .eq('id', user.id)
           .single();
-        setUserRole(profile?.role || 'student');
+        
+        // console.log('🔍 [Dashboard] Profile data:', profile);
+        // console.log('🔍 [Dashboard] Profile error:', error);
+        
+        const role = profile?.role || 'student';
+        const admin = profile?.is_admin || profile?.role === 'admin';
+        
+        // console.log('🔍 [Dashboard] Computed role:', role);
+        // console.log('🔍 [Dashboard] Is admin:', admin);
+        
+        setUserRole(role);
+        setIsAdmin(admin);
       }
     };
     fetchUserRole();
@@ -241,6 +254,29 @@ const Dashboard = () => {
             </Button>
           </motion.div>
         )}
+
+        {/* Admin Panel Link */}
+        {/* {isAdmin && (
+          <motion.div
+            variants={itemVariants}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 flex items-center justify-between shadow-lg"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Crown className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-white">
+                <h3 className="text-xl font-bold">Admin Access</h3>
+                <p className="text-purple-100 text-sm">Manage users, settings, and system configuration</p>
+              </div>
+            </div>
+            <Link to="/admin/dashboard">
+              <Button className="bg-white text-purple-600 hover:bg-purple-50 font-bold h-12 px-6 rounded-xl shadow-xl">
+                Open Admin Panel <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </motion.div>
+        )} */}
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">

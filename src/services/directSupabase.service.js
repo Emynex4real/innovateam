@@ -10,6 +10,8 @@ class DirectSupabaseService {
    */
   async getAllUsers(page = 1, limit = 10, search = '') {
     try {
+      // console.log('🔍 [DirectSupabase] getAllUsers called:', { page, limit, search });
+      
       // Fetch ALL users without pagination for admin dashboard
       let query = this.supabase
         .from('user_profiles')
@@ -23,7 +25,14 @@ class DirectSupabaseService {
       const { data: profiles, count, error } = await query
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // console.log('🔍 [DirectSupabase] Query result:', { profilesCount: profiles?.length, count, error });
+      
+      if (error) {
+        console.error('❌ [DirectSupabase] Query error:', error);
+        throw error;
+      }
+
+      // console.log('🔍 [DirectSupabase] Raw profiles:', profiles);
 
       // Map database fields to frontend structure
       const users = profiles.map(profile => ({
@@ -36,6 +45,8 @@ class DirectSupabaseService {
         walletBalance: profile.wallet_balance || 0,
         createdAt: profile.created_at || new Date().toISOString()
       }));
+
+      // console.log('✅ [DirectSupabase] Mapped users:', users);
 
       return { success: true, users, totalCount: count };
 

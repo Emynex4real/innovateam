@@ -185,15 +185,24 @@ const AdminDashboardContent = () => {
   // --- DATA FETCHING FUNCTIONS ---
 
   const loadStats = async () => {
+    // console.log('📊 [AdminDashboard] Loading stats...');
     // 1. Load General Stats (Top Cards)
     const statsResult = await directSupabaseService.getDashboardStats();
-    if (statsResult.success) setStats(statsResult.stats);
+    // console.log('📊 [AdminDashboard] Stats result:', statsResult);
+    if (statsResult.success) {
+      // console.log('✅ [AdminDashboard] Stats loaded:', statsResult.stats);
+      setStats(statsResult.stats);
+    } else {
+      console.error('❌ [AdminDashboard] Failed to load stats:', statsResult.error);
+    }
 
     // 2. Load Real Chart Data (Graphs)
     // Checks if the new service method exists before calling to prevent crashes
     if (directSupabaseService.getChartData) {
       const chartResult = await directSupabaseService.getChartData();
+      // console.log('📊 [AdminDashboard] Chart result:', chartResult);
       if (chartResult.success) {
+        // console.log('✅ [AdminDashboard] Chart data loaded:', chartResult.chartData);
         setChartData(chartResult.chartData);
       }
     }
