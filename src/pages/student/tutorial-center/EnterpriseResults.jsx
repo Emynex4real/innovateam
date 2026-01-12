@@ -53,16 +53,36 @@ const EnterpriseResults = () => {
   };
 
   const handleRemedial = async (attemptId) => {
+    // DEBUG: Uncomment for debugging
+    console.log('🚀 [REMEDIAL] handleRemedial called', { attemptId });
+    
     setGeneratingRemedial(true);
     try {
+      console.log('📤 [REMEDIAL] Sending request to backend');
       const res = await tutorialCenterService.generateRemedialTest(attemptId);
+      console.log('✅ [REMEDIAL] Backend response received', res);
+      
       if (res.success) {
+        console.log('🎉 [REMEDIAL] Generation successful, navigating to test');
         toast.success('Practice test created!');
-        navigate(`/student/test/${res.remedial_test.id}`);
+        
+        // Use setTimeout to ensure state updates complete before navigation
+        setTimeout(() => {
+          console.log('🧭 [REMEDIAL] Executing navigation to test');
+          navigate(`/student/test/${res.remedial_test.id}`, { replace: true });
+        }, 100);
+      } else {
+        console.error('❌ [REMEDIAL] Response success flag is false', res);
+        toast.error(res.error || 'Failed to generate practice test');
+        setGeneratingRemedial(false);
       }
     } catch (error) {
+      console.error('💥 [REMEDIAL] Exception caught', {
+        error,
+        message: error.message,
+        response: error.response?.data
+      });
       toast.error('Failed to generate practice test');
-    } finally {
       setGeneratingRemedial(false);
     }
   };

@@ -39,7 +39,7 @@ exports.checkTestAccess = async (req, res) => {
       required_mastery: test.mastery_threshold
     });
   } catch (error) {
-    logger.error('Check test access error:', error);
+    console.error('Check test access error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -62,7 +62,7 @@ exports.getStudentMastery = async (req, res) => {
 
     res.json({ success: true, mastery: data });
   } catch (error) {
-    logger.error('Get mastery error:', error);
+    console.error('Get mastery error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -70,16 +70,22 @@ exports.getStudentMastery = async (req, res) => {
 // Generate remedial test based on failed questions
 exports.generateRemedialTest = async (req, res) => {
   try {
-    console.log('🔍 Remedial test generation started', { body: req.body, user: req.user?.id });
+    // DEBUG: Uncomment for debugging
+    console.log('🎯 [REMEDIAL] generateRemedialTest called', { 
+      attemptId: req.body.attempt_id,
+      studentId: req.user?.id 
+    });
     
     const { attempt_id } = req.body;
     const studentId = req.user.id;
 
     if (!attempt_id) {
+      console.error('❌ [REMEDIAL] Missing attempt_id');
       return res.status(400).json({ success: false, error: 'Attempt ID is required' });
     }
 
     // Get failed questions from attempt
+    console.log('🔍 [REMEDIAL] Fetching attempt data');
     const { data: attempt, error: attemptError } = await supabase
       .from('tc_student_attempts')
       .select(`
@@ -91,15 +97,19 @@ exports.generateRemedialTest = async (req, res) => {
       .single();
 
     if (attemptError) {
-      console.error('❌ Error fetching attempt:', attemptError);
+      console.error('❌ [REMEDIAL] Error fetching attempt:', attemptError);
       throw attemptError;
     }
 
     if (!attempt) {
+      console.error('❌ [REMEDIAL] Attempt not found');
       return res.status(404).json({ success: false, error: 'Attempt not found' });
     }
 
-    console.log('✅ Attempt found:', { attemptId: attempt.id, answers: attempt.answers?.length });
+    console.log('✅ [REMEDIAL] Attempt found', { 
+      attemptId: attempt.id, 
+      answersCount: attempt.answers?.length 
+    });
 
     // Extract failed question IDs
     const failedQuestionIds = attempt.answers
@@ -107,13 +117,19 @@ exports.generateRemedialTest = async (req, res) => {
       .map(a => a.question_id)
       .slice(0, 5); // Max 5 questions for remedial
 
+    console.log('📊 [REMEDIAL] Failed questions analysis', {
+      totalAnswers: attempt.answers?.length,
+      failedCount: failedQuestionIds.length,
+      failedIds: failedQuestionIds
+    });
+
     if (failedQuestionIds.length === 0) {
+      console.warn('⚠️ [REMEDIAL] No failed questions to remediate');
       return res.json({ success: false, error: 'No failed questions to remediate' });
     }
 
-    console.log('📝 Failed questions:', failedQuestionIds);
-
     // Create remedial test
+    console.log('💾 [REMEDIAL] Creating remedial test');
     const { data: remedialTest, error } = await supabase
       .from('tc_question_sets')
       .insert([{
@@ -132,13 +148,14 @@ exports.generateRemedialTest = async (req, res) => {
       .single();
 
     if (error) {
-      console.error('❌ Error creating remedial test:', error);
+      console.error('❌ [REMEDIAL] Error creating remedial test:', error);
       throw error;
     }
 
-    console.log('✅ Remedial test created:', remedialTest.id);
+    console.log('✅ [REMEDIAL] Remedial test created', { testId: remedialTest.id });
 
     // Link questions to remedial test
+    console.log('🔗 [REMEDIAL] Linking questions to test');
     const items = failedQuestionIds.map((qid, index) => ({
       question_set_id: remedialTest.id,
       question_id: qid,
@@ -148,16 +165,21 @@ exports.generateRemedialTest = async (req, res) => {
     const { error: itemsError } = await supabase.from('tc_question_set_items').insert(items);
     
     if (itemsError) {
-      console.error('❌ Error linking questions:', itemsError);
+      console.error('❌ [REMEDIAL] Error linking questions:', itemsError);
       throw itemsError;
     }
 
-    logger.info('Remedial test generated', { remedialTestId: remedialTest.id, studentId });
+    console.log('✅ [REMEDIAL] Questions linked successfully');
+    console.log('🎉 [REMEDIAL] Remedial test generation complete');
+    console.log('✅ [REMEDIAL] Sending success response');
 
     res.json({ success: true, remedial_test: remedialTest });
   } catch (error) {
-    console.error('❌ Generate remedial test error:', error);
-    logger.error('Generate remedial test error:', error);
+    console.error('💥 [REMEDIAL] Generate remedial test error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({ success: false, error: error.message });
   }
 };

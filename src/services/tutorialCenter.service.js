@@ -196,8 +196,21 @@ export const tutorialCenterService = {
   },
 
   generateRemedialTest: async (attemptId) => {
-    const response = await api.post(`${API_BASE}/remedial/generate`, { attempt_id: attemptId });
-    return response.data;
+    // DEBUG: Uncomment for debugging
+    console.log('📡 [SERVICE] generateRemedialTest called', { attemptId });
+    
+    try {
+      const response = await api.post(`${API_BASE}/remedial/generate`, { attempt_id: attemptId });
+      console.log('✅ [SERVICE] generateRemedialTest response', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [SERVICE] generateRemedialTest error', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
   },
 
   // Gamification
