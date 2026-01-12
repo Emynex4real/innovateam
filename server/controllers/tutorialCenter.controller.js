@@ -1019,7 +1019,7 @@ exports.createQuestionSet = async (req, res) => {
 };
 
 exports.getQuestionSets = async (req, res) => {
-  console.log('🎯 getQuestionSets called - User:', req.user?.id);
+  console.log('🎯 [TEST-FETCH-TUTOR] getQuestionSets called - User:', req.user?.id);
   try {
     const tutorId = req.user.id;
     const page = parseInt(req.query.page) || 1;
@@ -1029,6 +1029,13 @@ exports.getQuestionSets = async (req, res) => {
     const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
     if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
 
+    // DEBUG: Uncomment for debugging
+    console.log('📊 [TEST-FETCH-TUTOR] Fetching tests for tutor', {
+      tutorId,
+      centerId: center.id,
+      note: 'Filtering out student-specific remedial tests'
+    });
+
     const { data, error, count } = await supabase
       .from('tc_question_sets')
       .select(`
@@ -1036,10 +1043,19 @@ exports.getQuestionSets = async (req, res) => {
         question_count:tc_question_set_items(count)
       `, { count: 'exact' })
       .eq('center_id', center.id)
+      .is('student_id', null)  // ✅ FIX: Only show tutor-created tests (not student remedial)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
+
+    // DEBUG: Uncomment for debugging
+    console.log('✅ [TEST-FETCH-TUTOR] Query results', {
+      total: data?.length,
+      remedialCount: data?.filter(t => t.is_remedial).length,
+      studentSpecificCount: data?.filter(t => t.student_id).length,
+      note: 'studentSpecificCount should be 0 for tutor view'
+    });
 
     res.json({
       success: true,

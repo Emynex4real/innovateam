@@ -34,7 +34,7 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
           console.error('RoleProtectedRoute profile error:', profileError);
         }
         
-        console.log('RoleProtectedRoute profile:', profile);
+        // console.log('RoleProtectedRoute profile:', profile);
         
         // Check boolean flags first, then fallback to role column
         let role = 'student';

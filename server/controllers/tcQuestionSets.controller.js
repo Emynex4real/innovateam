@@ -64,6 +64,13 @@ exports.getQuestionSets = async (req, res) => {
     const userId = req.user.id;
     const { center_id } = req.query;
 
+    // DEBUG: Uncomment for debugging
+    console.log('📊 [TEST-FETCH-STUDENT] getQuestionSets called', { 
+      userId, 
+      center_id,
+      note: 'Checking if user is tutor or student'
+    });
+
     // Check if user is tutor or student
     const { data: center } = await supabase
       .from('tutorial_centers')
@@ -80,9 +87,23 @@ exports.getQuestionSets = async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (center) {
-      // Tutor - show all their sets
-      query = query.eq('center_id', center.id);
+      // DEBUG: Uncomment for debugging
+      console.log('👨‍🏫 [TEST-FETCH-STUDENT] User is TUTOR', { 
+        centerId: center.id,
+        note: 'Should NOT see student-specific remedial tests'
+      });
+      
+      // Tutor - show all their sets EXCEPT student-specific remedial tests
+      query = query
+        .eq('center_id', center.id)
+        .is('student_id', null);  // ✅ FIX: Filter out student-specific tests
     } else {
+      // DEBUG: Uncomment for debugging
+      console.log('🎓 [TEST-FETCH-STUDENT] User is STUDENT', { 
+        userId,
+        note: 'Should see public tests + own remedial tests'
+      });
+      
       // Student - show only active sets
       query = query.eq('is_active', true);
       
@@ -93,9 +114,71 @@ exports.getQuestionSets = async (req, res) => {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    
+    if (error) {
+      console.error('❌ [TEST-FETCH-STUDENT] Query error:', error);
+      throw error;
+    }
 
-    res.json({ success: true, questionSets: data });
+    // For students: Filter to show only public tests + own remedial tests
+    let filteredData = data;
+    if (!center) {
+      console.log('🔍 [TEST-FETCH-STUDENT] Filtering student tests', {
+        totalTests: data?.length,
+        currentUserId: userId,
+        testsWithStudentId: data?.filter(t => t.student_id).map(t => ({
+          id: t.id,
+          title: t.title,
+          student_id: t.student_id,
+          isRemedial: t.is_remedial,
+          belongsToCurrentUser: t.student_id === userId
+        }))
+      });
+      
+      filteredData = data?.filter(test => {
+        const isPublic = !test.student_id;
+        const isOwnRemedial = test.student_id === userId;
+        const shouldShow = isPublic || isOwnRemedial;
+        
+        if (test.student_id) {
+          console.log(`🔍 [TEST-FILTER] Test "${test.title}"`, {
+            student_id: test.student_id,
+            currentUserId: userId,
+            match: test.student_id === userId,
+            shouldShow
+          });
+        }
+        
+        return shouldShow;
+      }) || [];
+      
+      console.log('🔍 [TEST-FETCH-STUDENT] Post-query filtering', {
+        beforeFilter: data?.length,
+        afterFilter: filteredData.length,
+        removedCount: (data?.length || 0) - filteredData.length,
+        removedTests: data?.filter(t => t.student_id && t.student_id !== userId).map(t => ({
+          title: t.title,
+          student_id: t.student_id,
+          reason: 'Belongs to different student'
+        }))
+      });
+    }
+
+    // DEBUG: Uncomment for debugging
+    console.log('✅ [TEST-FETCH-STUDENT] Final results', {
+      total: filteredData?.length,
+      remedialCount: filteredData?.filter(t => t.is_remedial).length,
+      studentSpecificCount: filteredData?.filter(t => t.student_id).length,
+      publicCount: filteredData?.filter(t => !t.student_id).length,
+      testList: filteredData?.map(t => ({
+        id: t.id,
+        title: t.title,
+        student_id: t.student_id || 'PUBLIC',
+        is_remedial: t.is_remedial || false
+      }))
+    });
+
+    res.json({ success: true, questionSets: filteredData });
   } catch (error) {
     logger.error('Get question sets error:', error);
     res.status(500).json({ success: false, error: error.message });

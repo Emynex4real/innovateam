@@ -129,21 +129,32 @@ exports.generateRemedialTest = async (req, res) => {
     }
 
     // Create remedial test
-    console.log('💾 [REMEDIAL] Creating remedial test');
+    console.log('💾 [REMEDIAL-VISIBILITY] Creating remedial test', {
+      tutorId: attempt.question_set.tutor_id,
+      centerId: attempt.question_set.center_id,
+      studentId: studentId,
+      isRemedial: true
+    });
+    
+    const remedialData = {
+      tutor_id: attempt.question_set.tutor_id,
+      center_id: attempt.question_set.center_id,
+      student_id: studentId,
+      title: `Remedial: ${attempt.question_set.title}`,
+      description: 'Auto-generated remedial test for concepts you missed',
+      time_limit: 10,
+      passing_score: 70,
+      show_answers: true,
+      is_active: true,
+      is_remedial: true,
+      parent_set_id: attempt.question_set_id
+    };
+    
+    console.log('📋 [REMEDIAL-DB] Inserting:', JSON.stringify(remedialData, null, 2));
+    
     const { data: remedialTest, error } = await supabase
       .from('tc_question_sets')
-      .insert([{
-        tutor_id: attempt.question_set.tutor_id,
-        center_id: attempt.question_set.center_id,
-        title: `Remedial: ${attempt.question_set.title}`,
-        description: 'Auto-generated remedial test for concepts you missed',
-        time_limit: 10,
-        passing_score: 70,
-        show_answers: true,
-        is_active: true,
-        is_remedial: true,
-        parent_set_id: attempt.question_set_id
-      }])
+      .insert([remedialData])
       .select()
       .single();
 
@@ -152,7 +163,13 @@ exports.generateRemedialTest = async (req, res) => {
       throw error;
     }
 
-    console.log('✅ [REMEDIAL] Remedial test created', { testId: remedialTest.id });
+    console.log('✅ [REMEDIAL-DB] Returned from DB:', JSON.stringify(remedialTest, null, 2));
+    console.log('🔍 [REMEDIAL-CHECK] student_id in response:', {
+      hasStudentId: !!remedialTest.student_id,
+      studentIdValue: remedialTest.student_id,
+      expectedValue: studentId,
+      match: remedialTest.student_id === studentId
+    });
 
     // Link questions to remedial test
     console.log('🔗 [REMEDIAL] Linking questions to test');
