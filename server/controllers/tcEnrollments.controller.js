@@ -4,10 +4,18 @@ const { logger } = require('../utils/logger');
 // Join center with access code
 exports.joinCenter = async (req, res) => {
   try {
+    // DEBUG: Uncomment for debugging
+    // console.log('🎯 [BACKEND] joinCenter called', { 
+    //   accessCode: req.body.accessCode,
+    //   studentId: req.user?.id
+    // });
+    
     const { accessCode } = req.body;
     const studentId = req.user.id;
 
     // Find center by access code
+    // DEBUG: Uncomment for debugging
+    // console.log('🔍 [BACKEND] Looking up center by access code');
     const { data: center, error: centerError } = await supabase
       .from('tutorial_centers')
       .select('*')
@@ -15,13 +23,22 @@ exports.joinCenter = async (req, res) => {
       .single();
 
     if (centerError || !center) {
+      console.error('❌ [BACKEND] Center not found', centerError);
       return res.status(404).json({
         success: false,
         error: 'Invalid access code'
       });
     }
+    
+    // DEBUG: Uncomment for debugging
+    // console.log('✅ [BACKEND] Center found', { 
+    //   centerId: center.id,
+    //   centerName: center.name 
+    // });
 
     // Check if already enrolled
+    // DEBUG: Uncomment for debugging
+    // console.log('🔍 [BACKEND] Checking existing enrollment');
     const { data: existing } = await supabase
       .from('tc_enrollments')
       .select('id')
@@ -30,25 +47,42 @@ exports.joinCenter = async (req, res) => {
       .single();
 
     if (existing) {
+      console.warn('⚠️ [BACKEND] Student already enrolled');
       return res.status(400).json({
         success: false,
         error: 'Already enrolled in this center'
       });
     }
+    
+    // DEBUG: Uncomment for debugging
+    // console.log('✅ [BACKEND] No existing enrollment, proceeding');
 
     // Enroll student
+    // DEBUG: Uncomment for debugging
+    // console.log('💾 [BACKEND] Creating enrollment');
     const { data, error } = await supabase
       .from('tc_enrollments')
       .insert([{ student_id: studentId, center_id: center.id }])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [BACKEND] Enrollment error', error);
+      throw error;
+    }
+    
+    // DEBUG: Uncomment for debugging
+    // console.log('✅ [BACKEND] Enrollment created', { enrollmentId: data.id });
+    // console.log('🎉 [BACKEND] Student enrolled successfully');
+    // console.log('✅ [BACKEND] Sending success response');
 
-    logger.info('Student enrolled', { studentId, centerId: center.id });
     res.json({ success: true, enrollment: data, center });
   } catch (error) {
-    logger.error('Join center error:', error);
+    console.error('💥 [BACKEND] Join center error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -104,7 +138,7 @@ exports.getEnrolledCenters = async (req, res) => {
 
     res.json({ success: true, centers });
   } catch (error) {
-    logger.error('Get enrolled centers error:', error);
+    console.error('Get enrolled centers error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

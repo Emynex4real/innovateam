@@ -4,10 +4,19 @@ const { logger } = require('../utils/logger');
 // Submit test attempt - INDUSTRY STANDARD VERSION
 exports.submitAttempt = async (req, res) => {
   try {
+    // DEBUG: Uncomment for debugging
+    // console.log('🎯 [BACKEND] submitAttempt called', { 
+    //   question_set_id: req.body.question_set_id,
+    //   studentId: req.user?.id,
+    //   answersCount: req.body.answers?.length 
+    // });
+    
     const { question_set_id, answers, time_taken } = req.body;
     const studentId = req.user.id;
 
     // 1. FETCH TEST WITH QUESTIONS (Single Source of Truth)
+    // DEBUG: Uncomment for debugging
+    // console.log('📚 [BACKEND] Fetching question set');
     const { data: questionSet, error: fetchError } = await supabase
       .from('tc_question_sets')
       .select(`
@@ -25,12 +34,19 @@ exports.submitAttempt = async (req, res) => {
       .single();
 
     if (fetchError || !questionSet) {
+      console.error('❌ [BACKEND] Question set not found', fetchError);
       return res.status(404).json({ success: false, error: 'Test not found' });
     }
+    
+    // DEBUG: Uncomment for debugging
+    // console.log('✅ [BACKEND] Question set fetched', { 
+    //   itemsCount: questionSet.items?.length,
+    //   centerId: questionSet.center_id 
+    // });
 
     // 2. VALIDATION (Fail Fast)
     if (!questionSet.items || questionSet.items.length === 0) {
-      logger.error(`Integrity Error: Test ${question_set_id} has no questions linked.`);
+      console.error(`Integrity Error: Test ${question_set_id} has no questions linked.`);
       return res.status(500).json({ 
         success: false, 
         error: 'This test has no questions. Please contact your tutor.' 
@@ -63,8 +79,12 @@ exports.submitAttempt = async (req, res) => {
       .filter(Boolean);
 
     const score = Math.round((correctCount / totalQuestions) * 100);
+    // DEBUG: Uncomment for debugging
+    // console.log('🎯 [BACKEND] Grading complete', { score, correctCount, totalQuestions });
 
     // 4. PERSISTENCE
+    // DEBUG: Uncomment for debugging
+    // console.log('💾 [BACKEND] Saving attempt to database');
     const { data: attempt, error: saveError } = await supabase
       .from('tc_student_attempts')
       .insert([{
@@ -78,21 +98,37 @@ exports.submitAttempt = async (req, res) => {
       .select()
       .single();
 
-    if (saveError) throw saveError;
+    if (saveError) {
+      console.error('❌ [BACKEND] Save error', saveError);
+      throw saveError;
+    }
+    
+    // DEBUG: Uncomment for debugging
+    // console.log('✅ [BACKEND] Attempt saved', { attemptId: attempt.id });
 
-    // Award points for league
-    const gamification = require('../services/gamification.service');
-    const points = Math.round(score / 10); // 10 points per 10% score
-    await gamification.awardPoints(studentId, questionSet.center_id, points);
+    // Award points for league (with error handling)
+    try {
+      const gamification = require('../services/gamification.service');
+      const points = Math.round(score / 10); // 10 points per 10% score
+      if (questionSet.center_id) {
+        await gamification.awardPoints(studentId, questionSet.center_id, points);
+      }
+    } catch (gamificationError) {
+      console.warn('⚠️ [BACKEND] Gamification error (non-critical):', gamificationError.message);
+      // Don't fail the submission if gamification fails
+    }
 
-    logger.info('Test submitted', { 
-      attemptId: attempt.id, 
-      studentId, 
-      score,
-      isFirstAttempt: attempt.is_first_attempt 
-    });
+    // DEBUG: Uncomment for debugging
+    // console.log('📝 [BACKEND] Test submitted successfully', { 
+    //   attemptId: attempt.id, 
+    //   studentId, 
+    //   score,
+    //   isFirstAttempt: attempt.is_first_attempt 
+    // });
 
     // 5. RESPONSE
+    // DEBUG: Uncomment for debugging
+    // console.log('✅ [BACKEND] Sending success response');
     res.json({ 
       success: true, 
       attempt: {
@@ -104,7 +140,11 @@ exports.submitAttempt = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Submit attempt error:', error);
+    console.error('💥 [BACKEND] Submit attempt error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({ success: false, error: 'Submission failed. Please try again.' });
   }
 };
@@ -133,7 +173,7 @@ exports.getMyAttempts = async (req, res) => {
 
     res.json({ success: true, attempts: data });
   } catch (error) {
-    logger.error('Get attempts error:', error);
+    console.error('Get attempts error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -172,7 +212,7 @@ exports.getLeaderboard = async (req, res) => {
 
     res.json({ success: true, leaderboard });
   } catch (error) {
-    logger.error('Get leaderboard error:', error);
+    console.error('Get leaderboard error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -238,7 +278,7 @@ exports.getAttemptDetails = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Get attempt details error:', error);
+    console.error('Get attempt details error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -272,7 +312,7 @@ exports.getCenterAttempts = async (req, res) => {
 
     res.json({ success: true, attempts: data });
   } catch (error) {
-    logger.error('Get center attempts error:', error);
+    console.error('Get center attempts error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -299,7 +339,7 @@ exports.getStudentAttempts = async (req, res) => {
 
     res.json({ success: true, attempts: tutorAttempts });
   } catch (error) {
-    logger.error('Get student attempts error:', error);
+    console.error('Get student attempts error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -39,9 +39,27 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // DEBUG: Uncomment for debugging
+    // console.log('✅ [API] Response received', {
+    //   url: response.config.url,
+    //   method: response.config.method,
+    //   status: response.status,
+    //   data: response.data
+    // });
+    return response;
+  },
   async (error) => {
     const { response, config } = error;
+    
+    // DEBUG: Uncomment for debugging
+    // console.error('❌ [API] Response error', {
+    //   url: config?.url,
+    //   method: config?.method,
+    //   status: response?.status,
+    //   data: response?.data,
+    //   message: error.message
+    // });
     
     if (!response) {
       toast.error(ERROR_MESSAGES.NETWORK_ERROR);
@@ -51,22 +69,28 @@ api.interceptors.response.use(
     // Handle 401 with token refresh
     if (response.status === 401 && !config._retry) {
       config._retry = true;
+      // DEBUG: Uncomment for debugging
+      // console.log('🔄 [API] Attempting token refresh');
       
       try {
         // Try to refresh the session
         const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
         
         if (session?.access_token) {
+          // DEBUG: Uncomment for debugging
+          // console.log('✅ [API] Token refreshed successfully');
           // Update token and retry request
           localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, session.access_token);
           config.headers.Authorization = `Bearer ${session.access_token}`;
           return api(config);
         }
       } catch (refreshErr) {
-        console.error('Token refresh failed:', refreshErr);
+        console.error('❌ [API] Token refresh failed:', refreshErr);
       }
       
       // If refresh fails, logout
+      // DEBUG: Uncomment for debugging
+      // console.warn('⚠️ [API] Logging out due to auth failure');
       await supabase.auth.signOut();
       localStorage.clear();
       window.location.href = '/login';

@@ -14,16 +14,41 @@ const JoinCenter = () => {
   const handleJoin = async (e) => {
     e.preventDefault();
     if (code.length < 6) return;
+    
+    // DEBUG: Uncomment for debugging
+    // console.log('🚀 [JOIN] handleJoin called', { code: code.toUpperCase() });
+    
     setLoading(true);
     try {
+      // DEBUG: Uncomment for debugging
+      // console.log('📤 [JOIN] Sending join request to backend');
       const res = await studentTCService.joinCenter(code.toUpperCase());
+      // DEBUG: Uncomment for debugging
+      // console.log('✅ [JOIN] Backend response received', res);
+      
       if (res.success) {
+        // DEBUG: Uncomment for debugging
+        // console.log('🎉 [JOIN] Join successful, navigating to dashboard');
         toast.success(`Welcome to ${res.center.name}! 🎉`);
-        navigate('/student/dashboard');
+        
+        // Use setTimeout to ensure state updates complete before navigation
+        setTimeout(() => {
+          // DEBUG: Uncomment for debugging
+          // console.log('🧭 [JOIN] Executing navigation to dashboard');
+          navigate('/student/dashboard', { replace: true });
+        }, 100);
+      } else {
+        console.error('❌ [JOIN] Response success flag is false', res);
+        toast.error(res.message || 'Failed to join center');
+        setLoading(false);
       }
     } catch (error) {
+      console.error('💥 [JOIN] Exception caught', {
+        error,
+        message: error.message,
+        response: error.response?.data
+      });
       toast.error(error.response?.data?.error || 'Invalid code');
-    } finally {
       setLoading(false);
     }
   };

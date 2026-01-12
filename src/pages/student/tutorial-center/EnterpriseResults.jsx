@@ -16,6 +16,8 @@ const EnterpriseResults = () => {
   const [selectedAttempt, setSelectedAttempt] = useState(null);
 
   useEffect(() => {
+    // DEBUG: Uncomment for debugging
+    // console.log('📊 [RESULTS] Component mounted', { testId });
     loadData();
   }, [testId]);
 
@@ -26,15 +28,24 @@ const EnterpriseResults = () => {
   }, [attempts]);
 
   const loadData = async () => {
+    // DEBUG: Uncomment for debugging
+    // console.log('🔄 [RESULTS] Loading data for testId:', testId);
     try {
       const [attemptsRes, testRes] = await Promise.all([
         studentTCService.getMyAttempts(testId),
         studentTCService.getTest(testId)
       ]);
       
+      // DEBUG: Uncomment for debugging
+      // console.log('✅ [RESULTS] Data loaded', {
+      //   attemptsCount: attemptsRes.attempts?.length,
+      //   testTitle: testRes.questionSet?.title
+      // });
+      
       if (attemptsRes.success) setAttempts(attemptsRes.attempts);
       if (testRes.success) setTest(testRes.questionSet);
     } catch (error) {
+      console.error('❌ [RESULTS] Failed to load data', error);
       toast.error('Failed to load results');
     } finally {
       setLoading(false);

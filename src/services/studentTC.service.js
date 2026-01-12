@@ -2,8 +2,22 @@ import api from './api';
 
 export const studentTCService = {
   joinCenter: async (accessCode) => {
-    const response = await api.post('/tc-enrollments/join', { accessCode });
-    return response.data;
+    // DEBUG: Uncomment for debugging
+    // console.log('📡 [SERVICE] joinCenter called', { accessCode });
+    
+    try {
+      const response = await api.post('/tc-enrollments/join', { accessCode });
+      // DEBUG: Uncomment for debugging
+      // console.log('✅ [SERVICE] joinCenter response', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [SERVICE] joinCenter error', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
   },
 
   getMyCenters: async () => {
@@ -24,8 +38,26 @@ export const studentTCService = {
   },
 
   submitAttempt: async (data) => {
-    const response = await api.post('/tc-attempts/submit', data);
-    return response.data;
+    // DEBUG: Uncomment for debugging
+    // console.log('📡 [SERVICE] submitAttempt called', { 
+    //   question_set_id: data.question_set_id,
+    //   answersCount: data.answers?.length,
+    //   time_taken: data.time_taken
+    // });
+    
+    try {
+      const response = await api.post('/tc-attempts/submit', data);
+      // DEBUG: Uncomment for debugging
+      // console.log('✅ [SERVICE] submitAttempt response', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [SERVICE] submitAttempt error', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      throw error;
+    }
   },
 
   getMyAttempts: async (questionSetId = null) => {

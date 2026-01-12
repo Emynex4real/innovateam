@@ -123,51 +123,105 @@ const EnterpriseTakeTest = () => {
 
   // --- SUBMISSION HANDLER (CRITICAL) ---
   const handleSubmit = async (autoSubmit = false) => {
-    if (submitting) return;
+    // DEBUG: Uncomment for debugging
+    // console.log('🚀 [SUBMIT] handleSubmit called', { autoSubmit, submitting, testId });
+    
+    if (submitting) {
+      // DEBUG: Uncomment for debugging
+      // console.warn('⚠️ [SUBMIT] Already submitting, returning early');
+      return;
+    }
     
     // Validation (only if not auto-submitting)
     if (!autoSubmit) {
       const unansweredCount = test.questions.length - Object.keys(answers).length;
+      // DEBUG: Uncomment for debugging
+      // console.log('📊 [SUBMIT] Validation check', { 
+      //   totalQuestions: test.questions.length, 
+      //   answeredCount: Object.keys(answers).length,
+      //   unansweredCount 
+      // });
+      
       if (unansweredCount > 0) {
         triggerHaptic('error');
-        if (!window.confirm(`You have ${unansweredCount} unanswered questions. Are you sure you want to submit?`)) {
+        const confirmed = window.confirm(`You have ${unansweredCount} unanswered questions. Are you sure you want to submit?`);
+        // DEBUG: Uncomment for debugging
+        // console.log('❓ [SUBMIT] User confirmation', { confirmed });
+        if (!confirmed) {
           return;
         }
       }
     }
 
+    // DEBUG: Uncomment for debugging
+    // console.log('⏳ [SUBMIT] Setting submitting state to true');
     setSubmitting(true);
     triggerHaptic('selection');
 
     try {
       // 1. Calculate total duration
       const totalTimeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      // DEBUG: Uncomment for debugging
+      // console.log('⏱️ [SUBMIT] Time calculation', { totalTimeTaken, startTime: startTimeRef.current });
       
       // 2. Format answers for backend
       const formattedAnswers = test.questions.map(q => ({
         question_id: q.id,
         selected_answer: answers[q.id] || null
       }));
+      // DEBUG: Uncomment for debugging
+      // console.log('📝 [SUBMIT] Formatted answers', { 
+      //   count: formattedAnswers.length,
+      //   answeredCount: formattedAnswers.filter(a => a.selected_answer !== null).length
+      // });
 
       // 3. Get Forensic Data (Preserved Functionality)
       const suspiciousEvents = trackerRef.current.getEvents();
       const fingerprint = trackerRef.current.getFingerprint();
+      // DEBUG: Uncomment for debugging
+      // console.log('🔒 [SUBMIT] Anti-cheat data collected', { 
+      //   suspiciousEventsCount: suspiciousEvents?.length || 0,
+      //   hasFingerprint: !!fingerprint 
+      // });
 
       // 4. Send to Backend
-      const response = await studentTCService.submitAttempt({
+      const payload = {
         question_set_id: testId,
         answers: formattedAnswers,
         time_taken: totalTimeTaken,
-        suspicious_events: suspiciousEvents, // Security Data
-        device_fingerprint: fingerprint      // Security Data
-      });
+        suspicious_events: suspiciousEvents,
+        device_fingerprint: fingerprint
+      };
+      // DEBUG: Uncomment for debugging
+      // console.log('📤 [SUBMIT] Sending to backend', payload);
+      
+      const response = await studentTCService.submitAttempt(payload);
+      // DEBUG: Uncomment for debugging
+      // console.log('✅ [SUBMIT] Backend response received', response);
 
       if (response.success) {
+        // DEBUG: Uncomment for debugging
+        // console.log('🎉 [SUBMIT] Submission successful, navigating to results');
         toast.success(autoSubmit ? 'Time Up! Test Submitted.' : 'Test Completed Successfully!');
-        navigate(`/student/results/${testId}`);
+        
+        // Use setTimeout to ensure state updates complete before navigation
+        setTimeout(() => {
+          // DEBUG: Uncomment for debugging
+          // console.log('🧭 [SUBMIT] Executing navigation to results page');
+          navigate(`/student/results/${testId}`, { replace: true });
+        }, 100);
+      } else {
+        console.error('❌ [SUBMIT] Response success flag is false', response);
+        toast.error(response.message || 'Submission failed');
+        setSubmitting(false);
       }
     } catch (error) {
-      console.error(error);
+      console.error('💥 [SUBMIT] Exception caught during submission', {
+        error,
+        message: error.message,
+        response: error.response?.data,
+        stack: error.stack
+      });
       toast.error('Submission failed. Please check your connection.');
       setSubmitting(false);
     }
