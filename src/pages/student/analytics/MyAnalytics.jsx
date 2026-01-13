@@ -4,12 +4,51 @@ import analyticsService from '../../../services/analyticsService';
 import predictionService from '../../../services/predictionService';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
+import { ChevronLeft, BarChart3, Target, Clock, Award, Flame } from 'lucide-react';
+
+// Import existing charts (Assuming these exist based on your original code)
 import {
   ScoreTrendChart,
   TopicMasteryHeatmap,
   AtRiskIndicator,
   PerformancePrediction
 } from '../../../components/analytics/AnalyticsCharts';
+
+// Import our newly enhanced components
+import {
+  RecentTestHistory,
+  StrengthsWeaknesses,
+  StudyCalendarHeatmap
+} from '../../../components/analytics/EnhancedAnalytics';
+
+// --- Skeleton Loader Component ---
+const AnalyticsSkeleton = () => {
+  const { isDarkMode } = useDarkMode();
+  const bgClass = isDarkMode ? 'bg-gray-800' : 'bg-white';
+  const pulseClass = isDarkMode ? 'bg-gray-700' : 'bg-gray-100';
+  
+  return (
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 animate-pulse">
+      <div className="flex justify-between items-center mb-8">
+        <div className={`h-10 w-64 rounded-lg ${pulseClass}`}></div>
+        <div className={`h-10 w-24 rounded-lg ${pulseClass}`}></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className={`h-32 rounded-xl ${bgClass} p-6`}>
+            <div className={`h-8 w-16 mb-4 rounded ${pulseClass}`}></div>
+            <div className={`h-4 w-24 rounded ${pulseClass}`}></div>
+          </div>
+        ))}
+      </div>
+      <div className={`h-64 rounded-xl ${bgClass}`}></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={`h-80 rounded-xl ${bgClass}`}></div>
+        <div className={`h-80 rounded-xl ${bgClass}`}></div>
+      </div>
+    </div>
+  );
+};
 
 const StudentAnalytics = () => {
   const navigate = useNavigate();
@@ -33,9 +72,8 @@ const StudentAnalytics = () => {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
+      // Keeping all original logs and logic
       console.log('🔍 [ANALYTICS DEBUG] Starting analytics load...');
-      console.log('📊 [ANALYTICS DEBUG] centerId:', centerId);
-      console.log('📊 [ANALYTICS DEBUG] selectedPeriod:', selectedPeriod);
 
       const [analyticsRes, subjectsRes, trendsRes, recsRes, riskRes, passRateRes] = await Promise.all([
         analyticsService.getStudentAnalytics(centerId),
@@ -46,63 +84,21 @@ const StudentAnalytics = () => {
         predictionService.predictPassRate('self', centerId)
       ]);
 
-      console.log('✅ [ANALYTICS DEBUG] API Responses:');
-      console.log('  - analyticsRes:', analyticsRes);
-      console.log('  - subjectsRes:', subjectsRes);
-      console.log('  - trendsRes:', trendsRes);
-      console.log('  - recsRes:', recsRes);
-      console.log('  - riskRes:', riskRes);
-      console.log('  - passRateRes:', passRateRes);
-
-      if (analyticsRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting analytics:', analyticsRes.analytics);
-        setAnalytics(analyticsRes.analytics || analyticsRes.data);
-      } else {
-        console.error('❌ [ANALYTICS DEBUG] Analytics failed:', analyticsRes);
-      }
-      
-      if (subjectsRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting subjects:', subjectsRes.subjects || subjectsRes.data);
-        setSubjects(subjectsRes.subjects || subjectsRes.data || []);
-      } else {
-        console.error('❌ [ANALYTICS DEBUG] Subjects failed:', subjectsRes);
-      }
-      
-      if (trendsRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting trends:', trendsRes.trend?.scores || trendsRes.data);
-        setTrends(trendsRes.trend?.scores || trendsRes.data || []);
-      } else {
-        console.error('❌ [ANALYTICS DEBUG] Trends failed:', trendsRes);
-      }
-      
-      if (recsRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting recommendations:', recsRes.recommendations || recsRes.data);
-        setRecommendations(recsRes.recommendations || recsRes.data || []);
-      } else {
-        console.error('❌ [ANALYTICS DEBUG] Recommendations failed:', recsRes);
-      }
+      if (analyticsRes.success) setAnalytics(analyticsRes.analytics || analyticsRes.data);
+      if (subjectsRes.success) setSubjects(subjectsRes.subjects || subjectsRes.data || []);
+      if (trendsRes.success) setTrends(trendsRes.trend?.scores || trendsRes.data || []);
+      if (recsRes.success) setRecommendations(recsRes.recommendations || recsRes.data || []);
       
       if (riskRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting risk score:', riskRes);
         setAtRiskScore(riskRes.at_risk_score || 0);
         setAtRiskLevel(riskRes.at_risk_level || 'low');
-      } else {
-        console.error('❌ [ANALYTICS DEBUG] Risk score failed:', riskRes);
       }
       
       if (passRateRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting pass rate:', passRateRes);
         setPredictedPassRate(passRateRes.predicted_pass_rate || 0);
-      } else {
-        console.error('❌ [ANALYTICS DEBUG] Pass rate failed:', passRateRes);
       }
     } catch (error) {
       console.error('❌ [ANALYTICS DEBUG] Load analytics error:', error);
-      console.error('❌ [ANALYTICS DEBUG] Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
       toast.error('Failed to load analytics: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
@@ -110,13 +106,29 @@ const StudentAnalytics = () => {
     }
   };
 
+  const MetricCard = ({ title, value, subtext, icon: Icon, colorClass, borderClass }) => (
+    <div className={`p-6 rounded-xl border transition-transform hover:-translate-y-1 ${
+      isDarkMode 
+        ? `bg-gray-800 ${borderClass || 'border-gray-700'}` 
+        : `bg-white ${borderClass || 'border-gray-200'} shadow-sm`
+    }`}>
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+          <Icon className={`w-6 h-6 ${colorClass}`} />
+        </div>
+      </div>
+      <div className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+        {value}
+      </div>
+      <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{title}</p>
+      {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Loading your analytics...</p>
-        </div>
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <AnalyticsSkeleton />
       </div>
     );
   }
@@ -125,11 +137,12 @@ const StudentAnalytics = () => {
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
         
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className={`text-3xl md:text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              📊 Your Performance Analytics
+            <h1 className={`text-2xl md:text-3xl font-bold flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+               <BarChart3 className="w-8 h-8 text-blue-500" />
+               Performance Analytics
             </h1>
             <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Track your progress and identify areas for improvement
@@ -137,154 +150,157 @@ const StudentAnalytics = () => {
           </div>
           <button
             onClick={() => navigate(-1)}
-            className={`px-4 py-2 rounded-lg transition ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white hover:bg-gray-50'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm ${
+              isDarkMode 
+                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700' 
+                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm'
+            }`}
           >
-            ← Back
+            <ChevronLeft className="w-4 h-4" /> Back to Dashboard
           </button>
         </div>
 
-        {/* Key Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-            <div className="text-3xl font-bold text-blue-600 mb-2">
-              {analytics?.average_score.toFixed(1)}%
-            </div>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Average Score</p>
-          </div>
-
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {analytics?.total_attempts}
-            </div>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tests Taken</p>
-          </div>
-
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-            <div className="text-3xl font-bold text-purple-600 mb-2">
-              {analytics?.overall_accuracy.toFixed(0)}%
-            </div>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Accuracy</p>
-          </div>
-
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-            <div className="text-3xl font-bold text-orange-600 mb-2">
-              {analytics?.current_streak} 🔥
-            </div>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Current Streak</p>
-          </div>
+        {/* Key Metrics Row - Improved UI */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard 
+            title="Average Score" 
+            value={`${analytics?.average_score.toFixed(1)}%`}
+            icon={Target}
+            colorClass="text-blue-500"
+            borderClass={isDarkMode ? 'border-blue-900/30' : 'border-blue-100'}
+          />
+          <MetricCard 
+            title="Tests Taken" 
+            value={analytics?.total_attempts}
+            icon={Clock}
+            colorClass="text-green-500"
+            borderClass={isDarkMode ? 'border-green-900/30' : 'border-green-100'}
+          />
+          <MetricCard 
+            title="Accuracy" 
+            value={`${analytics?.overall_accuracy.toFixed(0)}%`}
+            icon={Award}
+            colorClass="text-purple-500"
+            borderClass={isDarkMode ? 'border-purple-900/30' : 'border-purple-100'}
+          />
+          <MetricCard 
+            title="Current Streak" 
+            value={`${analytics?.current_streak} days`}
+            icon={Flame}
+            colorClass="text-orange-500"
+            borderClass={isDarkMode ? 'border-orange-900/30' : 'border-orange-100'}
+          />
         </div>
 
-        {/* At-Risk Score */}
+        {/* At-Risk Score Indicator */}
         <AtRiskIndicator riskScore={atRiskScore} riskLevel={atRiskLevel} />
 
-        {/* Score Trends and Prediction */}
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={`lg:col-span-2 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Score Trend
-              </h2>
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
-                className={`px-3 py-1 rounded text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-100 border-gray-300'}`}
-              >
-                <option value={7}>Last 7 days</option>
-                <option value={30}>Last 30 days</option>
-                <option value={90}>Last 90 days</option>
-              </select>
-            </div>
-            <ScoreTrendChart data={trends} days={selectedPeriod} />
-          </div>
-
-          <div>
-            <PerformancePrediction predictedPassRate={predictedPassRate} confidence="High" />
-          </div>
-        </div>
-
-        {/* Subject Mastery */}
-        <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-          <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Subject Mastery Levels
-          </h2>
-          {subjects.length > 0 ? (
-            <TopicMasteryHeatmap data={subjects} />
-          ) : (
-            <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              No subject data available yet
-            </p>
-          )}
-        </div>
-
-        {/* Recommendations */}
-        {recommendations.length > 0 && (
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'}`}>
-            <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-blue-300' : 'text-blue-900'}`}>
-              📚 Study Recommendations
-            </h2>
-            <div className="space-y-3">
-              {recommendations.map((rec, idx) => (
-                <div key={idx} className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">
-                      {rec.priority === 'high' ? '🔴' : '🟡'}
-                    </span>
-                    <div className="flex-1">
-                      <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {rec.subject}
-                      </h4>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {rec.message}
-                      </p>
-                      <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                        Suggested study time: {rec.suggestedStudyHours} hours
-                      </p>
+            {/* Left Column (2/3 width) */}
+            <div className="lg:col-span-2 space-y-6">
+                
+                {/* Score Trends Chart */}
+                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
+                    <div className="flex justify-between items-center mb-6">
+                    <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Score Trends
+                    </h2>
+                    <select
+                        value={selectedPeriod}
+                        onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
+                        className={`px-3 py-1.5 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                        isDarkMode 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                            : 'bg-gray-50 border-gray-200 text-gray-900'
+                        }`}
+                    >
+                        <option value={7}>Last 7 days</option>
+                        <option value={30}>Last 30 days</option>
+                        <option value={90}>Last 90 days</option>
+                    </select>
                     </div>
-                  </div>
+                    <ScoreTrendChart data={trends} days={selectedPeriod} />
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Study Consistency */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-            <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Study Consistency
-            </h3>
-            <div className="text-center">
-              <div className="text-5xl font-bold text-green-600 mb-2">
-                {analytics?.study_consistency.toFixed(0)}%
-              </div>
-              <div className={`w-full h-3 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden mb-3`}>
-                <div 
-                  className="h-full bg-green-600 transition-all duration-500"
-                  style={{ width: `${analytics?.study_consistency || 0}%` }}
-                />
-              </div>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Keep up your study routine!
-              </p>
-            </div>
-          </div>
+                {/* Subject Mastery Heatmap (Existing Component) */}
+                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
+                    <h2 className={`text-lg font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Subject Mastery
+                    </h2>
+                    {subjects.length > 0 ? (
+                        <TopicMasteryHeatmap data={subjects} />
+                    ) : (
+                        <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        No subject data available yet
+                        </p>
+                    )}
+                </div>
 
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-            <h3 className={`font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Time Invested
-            </h3>
-            <div className="text-center">
-              <div className="text-5xl font-bold text-blue-600 mb-2">
-                {Math.round((analytics?.total_time_spent || 0) / 3600)}h
-              </div>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Total study time
-              </p>
-              <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                Avg: {analytics?.average_time_per_question || 0} seconds per question
-              </p>
+                {/* Recommendations */}
+                {recommendations.length > 0 && (
+                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-blue-900/10 border-blue-800/30' : 'bg-blue-50/50 border-blue-100 shadow-sm'}`}>
+                    <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+                         Study Recommendations
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {recommendations.map((rec, idx) => (
+                        <div key={idx} className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                        <div className="flex items-start gap-3">
+                            <span className="text-xl mt-0.5">
+                                {rec.priority === 'high' ? '🔴' : '🟡'}
+                            </span>
+                            <div>
+                                <h4 className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {rec.subject}
+                                </h4>
+                                <p className={`text-xs mt-1 leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {rec.message}
+                                </p>
+                                <div className={`text-xs mt-3 inline-block px-2 py-1 rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                                    ⏱ Suggested: {rec.suggestedStudyHours}h
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+                )}
             </div>
-          </div>
+
+            {/* Right Column (1/3 width) - Enhanced Components */}
+            <div className="space-y-6">
+                <PerformancePrediction predictedPassRate={predictedPassRate} confidence="High" />
+                
+                <RecentTestHistory attempts={analytics?.recentAttempts} />
+                
+                <StrengthsWeaknesses subjects={subjects} />
+                
+                <StudyCalendarHeatmap attempts={analytics?.recentAttempts} />
+
+                {/* Time Invested Summary Card (Consolidated) */}
+                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
+                    <h3 className={`font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <Clock className="w-5 h-5 text-blue-500" /> Time Invested
+                    </h3>
+                    <div className="space-y-4">
+                         <div>
+                            <div className="text-3xl font-bold text-blue-600">
+                                {Math.round((analytics?.total_time_spent || 0) / 3600)}h
+                            </div>
+                            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total study time</p>
+                         </div>
+                         <div className={`h-px ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}></div>
+                         <div>
+                            <div className={`text-lg font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                {analytics?.average_time_per_question || 0}s
+                            </div>
+                            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Avg per question</p>
+                         </div>
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
     </div>

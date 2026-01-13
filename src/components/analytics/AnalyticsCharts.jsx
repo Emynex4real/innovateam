@@ -78,18 +78,18 @@ export const TopicMasteryHeatmap = ({ data }) => {
             <h4 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {topic.subject}
             </h4>
-            <span className={`text-sm font-bold ${getTextColor(topic.mastery_level)}`}>
-              {topic.mastery_level}%
+            <span className={`text-sm font-bold ${getTextColor(topic.mastery || topic.avgScore)}`}>
+              {topic.mastery || topic.avgScore}%
             </span>
           </div>
           <div className={`w-full h-2 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden`}>
             <div 
-              className={`h-full ${getColor(topic.mastery_level)} transition-all duration-500`}
-              style={{ width: `${topic.mastery_level}%` }}
+              className={`h-full ${getColor(topic.mastery || topic.avgScore)} transition-all duration-500`}
+              style={{ width: `${topic.mastery || topic.avgScore}%` }}
             />
           </div>
           <div className={`text-xs mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {topic.questions_correct}/{topic.questions_answered} correct • {topic.accuracy}% accuracy
+            {topic.correctAnswers || 0}/{topic.totalQuestions || 0} correct • {topic.accuracy || topic.avgScore}% accuracy
           </div>
         </div>
       ))}

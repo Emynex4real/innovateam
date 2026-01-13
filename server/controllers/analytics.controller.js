@@ -88,7 +88,8 @@ exports.getStudentAnalytics = async (req, res) => {
       .from('tc_student_attempts')
       .select('*, tc_question_sets(title, subject)')
       .eq('student_id', studentId)
-      .eq('center_id', centerId);
+      .eq('center_id', centerId)
+      .order('created_at', { ascending: false });
 
     if (attemptsError) {
       console.error('❌ [BACKEND] Supabase error:', attemptsError);
@@ -102,15 +103,47 @@ exports.getStudentAnalytics = async (req, res) => {
       ? attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalTests 
       : 0;
 
+    // Calculate total time spent
+    const totalTimeSpent = attempts?.reduce((sum, a) => sum + (a.time_taken || 0), 0) || 0;
+    const totalQuestions = attempts?.reduce((sum, a) => sum + (a.total_questions || 0), 0) || 0;
+    const avgTimePerQuestion = totalQuestions > 0 ? Math.round(totalTimeSpent / totalQuestions) : 0;
+
+    // Calculate study consistency (% of days with activity in last 30 days)
+    const uniqueDays = new Set(
+      attempts?.map(a => new Date(a.created_at || a.completed_at).toDateString()) || []
+    ).size;
+    const studyConsistency = Math.round((uniqueDays / 30) * 100);
+
+    // Calculate current streak
+    let currentStreak = 0;
+    if (attempts && attempts.length > 0) {
+      const sortedAttempts = [...attempts].sort((a, b) => 
+        new Date(b.created_at || b.completed_at) - new Date(a.created_at || a.completed_at)
+      );
+      let lastDate = new Date(sortedAttempts[0].created_at || sortedAttempts[0].completed_at);
+      currentStreak = 1;
+      
+      for (let i = 1; i < sortedAttempts.length; i++) {
+        const currentDate = new Date(sortedAttempts[i].created_at || sortedAttempts[i].completed_at);
+        const dayDiff = Math.floor((lastDate - currentDate) / (1000 * 60 * 60 * 24));
+        if (dayDiff <= 1) {
+          currentStreak++;
+          lastDate = currentDate;
+        } else {
+          break;
+        }
+      }
+    }
+
     const analytics = {
       total_attempts: totalTests,
       average_score: avgScore,
       overall_accuracy: avgScore,
-      current_streak: 0,
-      study_consistency: 0,
-      total_time_spent: 0,
-      average_time_per_question: 0,
-      recentAttempts: attempts?.slice(0, 5) || []
+      current_streak: currentStreak,
+      study_consistency: studyConsistency,
+      total_time_spent: totalTimeSpent,
+      average_time_per_question: avgTimePerQuestion,
+      recentAttempts: attempts || []
     };
 
     console.log('✅ [BACKEND] Sending analytics:', analytics);
@@ -137,7 +170,7 @@ exports.getSubjectAnalytics = async (req, res) => {
 
     const { data: attempts, error: attemptsError } = await supabase
       .from('tc_student_attempts')
-      .select('score, tc_question_sets(subject)')
+      .select('score, total_questions, answers, tc_question_sets(subject)')
       .eq('student_id', studentId)
       .eq('center_id', centerId);
 
@@ -152,19 +185,35 @@ exports.getSubjectAnalytics = async (req, res) => {
     attempts?.forEach(attempt => {
       const subject = attempt.tc_question_sets?.subject || 'Unknown';
       if (!subjectStats[subject]) {
-        subjectStats[subject] = { total: 0, sum: 0, count: 0 };
+        subjectStats[subject] = { totalScore: 0, totalQuestions: 0, correctAnswers: 0, count: 0 };
       }
-      subjectStats[subject].sum += attempt.score || 0;
+      
+      const score = attempt.score || 0;
+      const totalQuestions = attempt.total_questions || 0;
+      const correctAnswers = Math.round((score / 100) * totalQuestions);
+      
+      subjectStats[subject].totalScore += score;
+      subjectStats[subject].totalQuestions += totalQuestions;
+      subjectStats[subject].correctAnswers += correctAnswers;
       subjectStats[subject].count += 1;
-      subjectStats[subject].total = Math.round(subjectStats[subject].sum / subjectStats[subject].count);
     });
 
-    const subjects = Object.entries(subjectStats).map(([subject, stats]) => ({
-      subject,
-      avgScore: stats.total,
-      attempts: stats.count,
-      mastery: stats.total
-    }));
+    const subjects = Object.entries(subjectStats).map(([subject, stats]) => {
+      const avgScore = stats.count > 0 ? Math.round(stats.totalScore / stats.count) : 0;
+      const accuracy = stats.totalQuestions > 0 
+        ? Math.round((stats.correctAnswers / stats.totalQuestions) * 100) 
+        : 0;
+      
+      return {
+        subject,
+        avgScore,
+        attempts: stats.count,
+        mastery: avgScore,
+        correctAnswers: stats.correctAnswers,
+        totalQuestions: stats.totalQuestions,
+        accuracy
+      };
+    });
 
     console.log('✅ [BACKEND] Sending subjects:', subjects);
 
