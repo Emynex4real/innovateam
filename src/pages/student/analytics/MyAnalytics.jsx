@@ -83,16 +83,16 @@ const StudentAnalytics = () => {
       }
       
       if (riskRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting risk score:', riskRes.data);
-        setAtRiskScore(riskRes.data?.riskScore || riskRes.at_risk_score || 0);
-        setAtRiskLevel(riskRes.data?.riskLevel || riskRes.at_risk_level || 'low');
+        console.log('✅ [ANALYTICS DEBUG] Setting risk score:', riskRes);
+        setAtRiskScore(riskRes.at_risk_score || 0);
+        setAtRiskLevel(riskRes.at_risk_level || 'low');
       } else {
         console.error('❌ [ANALYTICS DEBUG] Risk score failed:', riskRes);
       }
       
       if (passRateRes.success) {
-        console.log('✅ [ANALYTICS DEBUG] Setting pass rate:', passRateRes.data);
-        setPredictedPassRate(passRateRes.data?.passRate || passRateRes.predicted_pass_rate || 0);
+        console.log('✅ [ANALYTICS DEBUG] Setting pass rate:', passRateRes);
+        setPredictedPassRate(passRateRes.predicted_pass_rate || 0);
       } else {
         console.error('❌ [ANALYTICS DEBUG] Pass rate failed:', passRateRes);
       }
