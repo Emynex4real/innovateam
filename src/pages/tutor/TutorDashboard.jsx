@@ -430,10 +430,18 @@ const EnterpriseTutorDashboard = () => {
                   <div className="text-sm text-gray-600">Manage question bank</div>
                 </button>
                 <button
-                  onClick={() => navigate('/tutor/tests/create')}
+                  onClick={() => navigate('/tutor/tests')}
                   className="p-6 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl text-left transition-all transform hover:scale-[1.02]"
                 >
                   <div className="text-3xl mb-2">📝</div>
+                  <div className="font-semibold text-gray-900">Manage Tests</div>
+                  <div className="text-sm text-gray-600">View & edit tests</div>
+                </button>
+                <button
+                  onClick={() => navigate('/tutor/tests/create')}
+                  className="p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-xl text-left transition-all transform hover:scale-[1.02]"
+                >
+                  <div className="text-3xl mb-2">➕</div>
                   <div className="font-semibold text-gray-900">Create Test</div>
                   <div className="text-sm text-gray-600">Build new assessment</div>
                 </button>

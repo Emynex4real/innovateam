@@ -1111,22 +1111,47 @@ exports.updateQuestionSet = async (req, res) => {
   try {
     const { id } = req.params;
     const tutorId = req.user.id;
+    const updateData = req.body;
     
     // Verify ownership
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+    const { data: center, error: centerError } = await supabase
+      .from('tutorial_centers')
+      .select('id')
+      .eq('tutor_id', tutorId)
+      .single();
     
-    const { data: questionSet } = await supabase.from('tc_question_sets').select('center_id').eq('id', id).single();
-    if (!questionSet || questionSet.center_id !== center.id) {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    if (centerError || !center) {
+      return res.status(404).json({ success: false, error: 'Center not found' });
     }
     
-    const { data, error } = await supabase.from('tc_question_sets').update(req.body).eq('id', id).select().single();
-    if (error) throw error;
+    const { data: questionSet, error: qsError } = await supabase
+      .from('tc_question_sets')
+      .select('center_id')
+      .eq('id', id)
+      .single();
+    
+    if (qsError || !questionSet || questionSet.center_id !== center.id) {
+      return res.status(qsError ? 404 : 403).json({ 
+        success: false, 
+        error: qsError ? 'Test not found' : 'Unauthorized' 
+      });
+    }
+    
+    const { data, error } = await supabase
+      .from('tc_question_sets')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Update failed' });
+    }
+    
     res.json({ success: true, questionSet: data });
   } catch (error) {
-    logger.error('Update question set error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    logger.error('Update question set error', { error: error.message });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 

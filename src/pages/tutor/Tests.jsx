@@ -38,12 +38,16 @@ const Tests = () => {
   };
 
   const toggleActive = async (id, currentState) => {
+    const newState = !currentState;
+    console.log('Toggle active request:', { id, currentState, newState });
+    
     try {
-      await tutorialCenterService.updateQuestionSet(id, { is_active: !currentState });
-      toast.success(`Test ${!currentState ? 'activated' : 'deactivated'}`);
+      await tutorialCenterService.updateQuestionSet(id, { is_active: newState });
+      toast.success(`Test ${newState ? 'activated' : 'deactivated'}`);
       loadTests();
     } catch (error) {
-      toast.error('Failed to update test');
+      console.error('Toggle active error:', error.response?.data || error);
+      toast.error(error.response?.data?.error || 'Failed to update test');
     }
   };
 

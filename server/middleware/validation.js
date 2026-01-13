@@ -46,6 +46,7 @@ const questionValidation = [
 // Question set validation rules
 const questionSetValidation = [
   body('title')
+    .optional()
     .trim()
     .notEmpty().withMessage('Title is required')
     .isLength({ min: 3, max: 200 }).withMessage('Title must be 3-200 characters'),
@@ -62,6 +63,12 @@ const questionSetValidation = [
   body('mode')
     .optional()
     .isIn(['practice', 'exam']).withMessage('Mode must be practice or exam'),
+  body('is_active')
+    .optional()
+    .isBoolean().withMessage('is_active must be a boolean'),
+  body('show_answers')
+    .optional()
+    .isBoolean().withMessage('show_answers must be a boolean'),
   validate
 ];
 
