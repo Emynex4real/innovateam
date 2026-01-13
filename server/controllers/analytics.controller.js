@@ -80,26 +80,47 @@ exports.getStudentAnalytics = async (req, res) => {
     const { centerId } = req.params;
     const studentId = req.user.id;
 
-    const { data: attempts } = await supabase
-      .from('tc_attempts')
+    console.log('🔍 [BACKEND] getStudentAnalytics called');
+    console.log('  - centerId:', centerId);
+    console.log('  - studentId:', studentId);
+
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('tc_student_attempts')
       .select('*, tc_question_sets(title, subject)')
       .eq('student_id', studentId)
       .eq('center_id', centerId);
+
+    if (attemptsError) {
+      console.error('❌ [BACKEND] Supabase error:', attemptsError);
+      throw attemptsError;
+    }
+
+    console.log('✅ [BACKEND] Attempts fetched:', attempts?.length || 0);
 
     const totalTests = attempts?.length || 0;
     const avgScore = totalTests > 0 
       ? attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalTests 
       : 0;
 
+    const analytics = {
+      total_attempts: totalTests,
+      average_score: avgScore,
+      overall_accuracy: avgScore,
+      current_streak: 0,
+      study_consistency: 0,
+      total_time_spent: 0,
+      average_time_per_question: 0,
+      recentAttempts: attempts?.slice(0, 5) || []
+    };
+
+    console.log('✅ [BACKEND] Sending analytics:', analytics);
+
     res.json({
       success: true,
-      data: {
-        totalTests,
-        avgScore: Math.round(avgScore),
-        recentAttempts: attempts?.slice(0, 5) || []
-      }
+      analytics
     });
   } catch (error) {
+    console.error('❌ [BACKEND] Get student analytics error:', error);
     logger.error('Get student analytics error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
@@ -110,11 +131,22 @@ exports.getSubjectAnalytics = async (req, res) => {
     const { centerId } = req.params;
     const studentId = req.user.id;
 
-    const { data: attempts } = await supabase
-      .from('tc_attempts')
+    console.log('🔍 [BACKEND] getSubjectAnalytics called');
+    console.log('  - centerId:', centerId);
+    console.log('  - studentId:', studentId);
+
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('tc_student_attempts')
       .select('score, tc_question_sets(subject)')
       .eq('student_id', studentId)
       .eq('center_id', centerId);
+
+    if (attemptsError) {
+      console.error('❌ [BACKEND] Supabase error:', attemptsError);
+      throw attemptsError;
+    }
+
+    console.log('✅ [BACKEND] Subject attempts fetched:', attempts?.length || 0);
 
     const subjectStats = {};
     attempts?.forEach(attempt => {
@@ -127,15 +159,21 @@ exports.getSubjectAnalytics = async (req, res) => {
       subjectStats[subject].total = Math.round(subjectStats[subject].sum / subjectStats[subject].count);
     });
 
+    const subjects = Object.entries(subjectStats).map(([subject, stats]) => ({
+      subject,
+      avgScore: stats.total,
+      attempts: stats.count,
+      mastery: stats.total
+    }));
+
+    console.log('✅ [BACKEND] Sending subjects:', subjects);
+
     res.json({
       success: true,
-      data: Object.entries(subjectStats).map(([subject, stats]) => ({
-        subject,
-        avgScore: stats.total,
-        attempts: stats.count
-      }))
+      subjects
     });
   } catch (error) {
+    console.error('❌ [BACKEND] Get subject analytics error:', error);
     logger.error('Get subject analytics error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
@@ -147,25 +185,44 @@ exports.getPerformanceTrends = async (req, res) => {
     const { days = 30 } = req.query;
     const studentId = req.user.id;
 
+    console.log('🔍 [BACKEND] getPerformanceTrends called');
+    console.log('  - centerId:', centerId);
+    console.log('  - studentId:', studentId);
+    console.log('  - days:', days);
+
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
-    const { data: attempts } = await supabase
-      .from('tc_attempts')
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('tc_student_attempts')
       .select('score, created_at')
       .eq('student_id', studentId)
       .eq('center_id', centerId)
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: true });
 
-    res.json({
-      success: true,
-      data: attempts?.map(a => ({
+    if (attemptsError) {
+      console.error('❌ [BACKEND] Supabase error:', attemptsError);
+      throw attemptsError;
+    }
+
+    console.log('✅ [BACKEND] Trends fetched:', attempts?.length || 0);
+
+    const trend = {
+      scores: attempts?.map(a => ({
         date: a.created_at,
         score: a.score
       })) || []
+    };
+
+    console.log('✅ [BACKEND] Sending trend:', trend);
+
+    res.json({
+      success: true,
+      trend
     });
   } catch (error) {
+    console.error('❌ [BACKEND] Get performance trends error:', error);
     logger.error('Get performance trends error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
@@ -176,13 +233,24 @@ exports.getRecommendations = async (req, res) => {
     const { centerId } = req.params;
     const studentId = req.user.id;
 
-    const { data: attempts } = await supabase
-      .from('tc_attempts')
+    console.log('🔍 [BACKEND] getRecommendations called');
+    console.log('  - centerId:', centerId);
+    console.log('  - studentId:', studentId);
+
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('tc_student_attempts')
       .select('score, tc_question_sets(subject)')
       .eq('student_id', studentId)
       .eq('center_id', centerId)
       .order('created_at', { ascending: false })
       .limit(10);
+
+    if (attemptsError) {
+      console.error('❌ [BACKEND] Supabase error:', attemptsError);
+      throw attemptsError;
+    }
+
+    console.log('✅ [BACKEND] Recommendations attempts fetched:', attempts?.length || 0);
 
     const weakSubjects = [];
     const subjectScores = {};
@@ -201,16 +269,21 @@ exports.getRecommendations = async (req, res) => {
         weakSubjects.push({
           subject,
           avgScore: Math.round(avg),
-          recommendation: `Focus more on ${subject}. Your average score is ${Math.round(avg)}%.`
+          message: `Focus more on ${subject}. Your average score is ${Math.round(avg)}%.`,
+          priority: avg < 40 ? 'high' : 'medium',
+          suggestedStudyHours: Math.ceil((60 - avg) / 10)
         });
       }
     });
 
+    console.log('✅ [BACKEND] Sending recommendations:', weakSubjects);
+
     res.json({
       success: true,
-      data: weakSubjects
+      recommendations: weakSubjects
     });
   } catch (error) {
+    console.error('❌ [BACKEND] Get recommendations error:', error);
     logger.error('Get recommendations error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
@@ -247,7 +320,7 @@ exports.getAtRiskStudents = async (req, res) => {
 
     for (const student of students || []) {
       const { data: attempts } = await supabase
-        .from('tc_attempts')
+        .from('tc_student_attempts')
         .select('score')
         .eq('student_id', student.student_id)
         .eq('center_id', centerId)
@@ -291,15 +364,32 @@ exports.updateAtRiskPredictions = async (req, res) => {
 
 exports.calculateAtRiskScore = async (req, res) => {
   try {
-    const { studentId, centerId } = req.params;
+    let { studentId, centerId } = req.params;
 
-    const { data: attempts } = await supabase
-      .from('tc_attempts')
+    console.log('🔍 [BACKEND] calculateAtRiskScore called');
+    console.log('  - studentId (param):', studentId);
+    console.log('  - centerId:', centerId);
+
+    // Handle 'self' as studentId
+    if (studentId === 'self') {
+      studentId = req.user.id;
+      console.log('  - Using authenticated user ID:', studentId);
+    }
+
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('tc_student_attempts')
       .select('score, created_at')
       .eq('student_id', studentId)
       .eq('center_id', centerId)
       .order('created_at', { ascending: false })
       .limit(10);
+
+    if (attemptsError) {
+      console.error('❌ [BACKEND] Supabase error:', attemptsError);
+      throw attemptsError;
+    }
+
+    console.log('✅ [BACKEND] Risk attempts fetched:', attempts?.length || 0);
 
     let riskScore = 0;
     if (attempts && attempts.length > 0) {
@@ -307,14 +397,19 @@ exports.calculateAtRiskScore = async (req, res) => {
       riskScore = Math.max(0, 100 - avgScore);
     }
 
+    const result = {
+      at_risk_score: Math.round(riskScore),
+      at_risk_level: riskScore > 70 ? 'high' : riskScore > 40 ? 'medium' : 'low'
+    };
+
+    console.log('✅ [BACKEND] Sending risk score:', result);
+
     res.json({
       success: true,
-      data: {
-        riskScore: Math.round(riskScore),
-        riskLevel: riskScore > 70 ? 'high' : riskScore > 40 ? 'medium' : 'low'
-      }
+      ...result
     });
   } catch (error) {
+    console.error('❌ [BACKEND] Calculate at-risk score error:', error);
     logger.error('Calculate at-risk score error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
@@ -325,7 +420,7 @@ exports.getRecommendedTopics = async (req, res) => {
     const { studentId, centerId } = req.params;
 
     const { data: attempts } = await supabase
-      .from('tc_attempts')
+      .from('tc_student_attempts')
       .select('score, tc_question_sets(subject, title)')
       .eq('student_id', studentId)
       .eq('center_id', centerId)
@@ -362,16 +457,34 @@ exports.getRecommendedTopics = async (req, res) => {
 
 exports.predictPassRate = async (req, res) => {
   try {
-    const { studentId, centerId } = req.params;
+    let { studentId, centerId } = req.params;
     const { difficulty = 'medium' } = req.query;
 
-    const { data: attempts } = await supabase
-      .from('tc_attempts')
+    console.log('🔍 [BACKEND] predictPassRate called');
+    console.log('  - studentId (param):', studentId);
+    console.log('  - centerId:', centerId);
+    console.log('  - difficulty:', difficulty);
+
+    // Handle 'self' as studentId
+    if (studentId === 'self') {
+      studentId = req.user.id;
+      console.log('  - Using authenticated user ID:', studentId);
+    }
+
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('tc_student_attempts')
       .select('score')
       .eq('student_id', studentId)
       .eq('center_id', centerId)
       .order('created_at', { ascending: false })
       .limit(10);
+
+    if (attemptsError) {
+      console.error('❌ [BACKEND] Supabase error:', attemptsError);
+      throw attemptsError;
+    }
+
+    console.log('✅ [BACKEND] Pass rate attempts fetched:', attempts?.length || 0);
 
     let passRate = 50;
     if (attempts && attempts.length > 0) {
@@ -380,14 +493,19 @@ exports.predictPassRate = async (req, res) => {
       passRate = Math.min(100, Math.max(0, avgScore * difficultyMultiplier));
     }
 
+    const result = {
+      predicted_pass_rate: Math.round(passRate),
+      confidence: attempts?.length >= 5 ? 'High' : 'Low'
+    };
+
+    console.log('✅ [BACKEND] Sending pass rate:', result);
+
     res.json({
       success: true,
-      data: {
-        passRate: Math.round(passRate),
-        confidence: attempts?.length >= 5 ? 'high' : 'low'
-      }
+      ...result
     });
   } catch (error) {
+    console.error('❌ [BACKEND] Predict pass rate error:', error);
     logger.error('Predict pass rate error:', error);
     res.status(500).json({ success: false, error: error.message });
   }

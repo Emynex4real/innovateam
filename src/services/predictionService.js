@@ -29,11 +29,18 @@ export const predictionService = {
 
   // Calculate at-risk score
   calculateAtRiskScore: async (studentId, centerId) => {
-    const response = await axios.get(
-      `${API_BASE}/analytics/predictions/score/${studentId}/${centerId}`,
-      { headers: await getAuthHeader() }
-    );
-    return response.data;
+    try {
+      console.log('📡 [API] Calling calculateAtRiskScore with studentId:', studentId, 'centerId:', centerId);
+      const response = await axios.get(
+        `${API_BASE}/analytics/predictions/score/${studentId}/${centerId}`,
+        { headers: await getAuthHeader() }
+      );
+      console.log('✅ [API] calculateAtRiskScore response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API] calculateAtRiskScore error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   // Get recommended topics
@@ -47,11 +54,18 @@ export const predictionService = {
 
   // Predict pass rate
   predictPassRate: async (studentId, centerId, difficulty = 'medium') => {
-    const response = await axios.get(
-      `${API_BASE}/analytics/predictions/pass-rate/${studentId}/${centerId}?difficulty=${difficulty}`,
-      { headers: await getAuthHeader() }
-    );
-    return response.data;
+    try {
+      console.log('📡 [API] Calling predictPassRate with studentId:', studentId, 'centerId:', centerId, 'difficulty:', difficulty);
+      const response = await axios.get(
+        `${API_BASE}/analytics/predictions/pass-rate/${studentId}/${centerId}?difficulty=${difficulty}`,
+        { headers: await getAuthHeader() }
+      );
+      console.log('✅ [API] predictPassRate response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API] predictPassRate error:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 

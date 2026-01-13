@@ -35,11 +35,13 @@ const BulkQuestionImport = () => {
         text: bulkText,
         ...metadata
       });
+      
       if (response.success) {
         setQuestions(response.questions);
         toast.success(`Parsed ${response.questions.length} questions!`);
       }
     } catch (error) {
+      console.error('Parse error:', error);
       toast.error(error.response?.data?.error || 'Failed to parse questions');
     } finally {
       setParsing(false);
@@ -65,6 +67,21 @@ const BulkQuestionImport = () => {
       toast.error('No questions to save');
       return;
     }
+    
+    // Validate questions before sending
+    const invalidQuestions = questions.filter(q => 
+      !q.question_text || 
+      !Array.isArray(q.options) || 
+      q.options.length !== 4 || 
+      !q.correct_answer ||
+      !q.subject
+    );
+    
+    if (invalidQuestions.length > 0) {
+      toast.error(`${invalidQuestions.length} questions have missing required fields. Please review.`);
+      return;
+    }
+    
     setSaving(true);
     try {
       const response = await tutorialCenterService.saveBulkQuestions(questions);
@@ -73,7 +90,8 @@ const BulkQuestionImport = () => {
         navigate('/tutor/questions');
       }
     } catch (error) {
-      toast.error('Failed to save questions');
+      console.error('Save error:', error);
+      toast.error(error.response?.data?.error || 'Failed to save questions');
     } finally {
       setSaving(false);
     }

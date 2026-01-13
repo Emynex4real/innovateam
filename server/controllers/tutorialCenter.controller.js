@@ -912,8 +912,7 @@ exports.parseBulkQuestions = async (req, res) => {
 };
 
 exports.saveBulkQuestions = async (req, res) => {
-  console.log('\n💾 ========== BULK SAVE REQUEST ==========');
-  console.log('Questions count:', req.body.questions?.length);
+  const startTime = Date.now();
   
   try {
     const { questions } = req.body;
@@ -923,7 +922,7 @@ exports.saveBulkQuestions = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No questions provided' });
     }
 
-    console.log(`📊 Saving ${questions.length} questions for tutor ${tutorId}`);
+    logger.info('Bulk save started', { tutorId, count: questions.length });
 
     const { data: center, error: centerError } = await supabase
       .from('tutorial_centers')
@@ -932,32 +931,54 @@ exports.saveBulkQuestions = async (req, res) => {
       .single();
 
     if (centerError || !center) {
-      console.error('❌ Center lookup failed:', centerError);
+      logger.error('Center not found', { tutorId, error: centerError });
       return res.status(404).json({ success: false, error: 'Create a tutorial center first' });
     }
 
-    console.log(`✅ Found center: ${center.id}`);
+    // Validate and sanitize questions
+    const questionsToInsert = questions.map((q, idx) => {
+      // Validate required fields
+      if (!q.question_text || typeof q.question_text !== 'string') {
+        throw new Error(`Question ${idx + 1}: Missing or invalid question_text`);
+      }
+      if (!Array.isArray(q.options) || q.options.length !== 4) {
+        throw new Error(`Question ${idx + 1}: Must have exactly 4 options`);
+      }
+      if (!q.correct_answer) {
+        throw new Error(`Question ${idx + 1}: Missing correct_answer`);
+      }
+      if (!q.subject) {
+        throw new Error(`Question ${idx + 1}: Missing subject`);
+      }
 
-    // Sanitize correct_answer to ensure it's only A, B, C, or D
-    const questionsToInsert = questions.map(q => ({
-      ...q,
-      correct_answer: q.correct_answer.trim().toUpperCase().charAt(0),
-      tutor_id: tutorId,
-      center_id: center.id
-    }));
+      // Sanitize correct_answer
+      const sanitizedAnswer = String(q.correct_answer).trim().toUpperCase().charAt(0);
+      if (!['A', 'B', 'C', 'D'].includes(sanitizedAnswer)) {
+        throw new Error(`Question ${idx + 1}: Invalid correct_answer "${q.correct_answer}". Must be A, B, C, or D`);
+      }
 
-    // Insert in smaller batches to avoid timeout
+      return {
+        question_text: q.question_text.trim(),
+        options: q.options,
+        correct_answer: sanitizedAnswer,
+        explanation: q.explanation || '',
+        subject: q.subject,
+        topic: q.topic || '',
+        difficulty: q.difficulty || 'medium',
+        category: q.category || '',
+        tutor_id: tutorId,
+        center_id: center.id
+      };
+    });
+
+    // Insert in batches with retry logic
     const BATCH_SIZE = 20;
     const allInserted = [];
     
     for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
       const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
       const batchNum = Math.floor(i/BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(questionsToInsert.length/BATCH_SIZE);
       
-      console.log(`💾 Inserting batch ${batchNum}/${totalBatches} (${batch.length} questions)`);
-      
-      // Retry logic for network issues
       let retries = 3;
       let success = false;
       
@@ -971,33 +992,34 @@ exports.saveBulkQuestions = async (req, res) => {
           if (error) throw error;
           
           allInserted.push(...data);
-          console.log(`✅ Batch ${batchNum} saved: ${data.length} questions`);
           success = true;
           
-          // Small delay between batches to avoid overwhelming the connection
           if (i + BATCH_SIZE < questionsToInsert.length) {
             await new Promise(r => setTimeout(r, 500));
           }
         } catch (err) {
           retries--;
-          console.error(`❌ Batch ${batchNum} attempt failed (${3 - retries}/3):`, err.message);
           
           if (retries === 0) {
+            logger.error('Batch insert failed', { batchNum, error: err.message });
             throw err;
           }
           
-          // Wait before retry (exponential backoff)
           await new Promise(r => setTimeout(r, 1000 * (4 - retries)));
         }
       }
     }
 
-    console.log(`✅ All ${allInserted.length} questions saved successfully`);
-    console.log('========== END BULK SAVE ==========\n');
+    const duration = Date.now() - startTime;
+    logger.info('Bulk save completed', { 
+      tutorId, 
+      count: allInserted.length, 
+      durationMs: duration 
+    });
     
     res.json({ success: true, questions: allInserted, count: allInserted.length });
   } catch (error) {
-    console.error('❌ Save bulk questions error:', error);
+    logger.error('Save bulk questions error', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };

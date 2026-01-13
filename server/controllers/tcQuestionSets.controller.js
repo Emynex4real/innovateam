@@ -123,60 +123,31 @@ exports.getQuestionSets = async (req, res) => {
     // For students: Filter to show only public tests + own remedial tests
     let filteredData = data;
     if (!center) {
-      console.log('🔍 [TEST-FETCH-STUDENT] Filtering student tests', {
-        totalTests: data?.length,
-        currentUserId: userId,
-        testsWithStudentId: data?.filter(t => t.student_id).map(t => ({
-          id: t.id,
-          title: t.title,
-          student_id: t.student_id,
-          isRemedial: t.is_remedial,
-          belongsToCurrentUser: t.student_id === userId
-        }))
-      });
+      // console.log('🔍 [TEST-FETCH-STUDENT] Filtering student tests', {
+      //   totalTests: data?.length,
+      //   currentUserId: userId,
+      //   testsWithStudentId: data?.filter(t => t.student_id).map(t => ({
+      //     id: t.id,
+      //     title: t.title,
+      //     student_id: t.student_id,
+      //     isRemedial: t.is_remedial,
+      //     belongsToCurrentUser: t.student_id === userId
+      //   }))
+      // });
       
       filteredData = data?.filter(test => {
         const isPublic = !test.student_id;
         const isOwnRemedial = test.student_id === userId;
-        const shouldShow = isPublic || isOwnRemedial;
-        
-        if (test.student_id) {
-          console.log(`🔍 [TEST-FILTER] Test "${test.title}"`, {
-            student_id: test.student_id,
-            currentUserId: userId,
-            match: test.student_id === userId,
-            shouldShow
-          });
-        }
-        
-        return shouldShow;
+        return isPublic || isOwnRemedial;
       }) || [];
-      
-      console.log('🔍 [TEST-FETCH-STUDENT] Post-query filtering', {
-        beforeFilter: data?.length,
-        afterFilter: filteredData.length,
-        removedCount: (data?.length || 0) - filteredData.length,
-        removedTests: data?.filter(t => t.student_id && t.student_id !== userId).map(t => ({
-          title: t.title,
-          student_id: t.student_id,
-          reason: 'Belongs to different student'
-        }))
-      });
     }
 
-    // DEBUG: Uncomment for debugging
-    console.log('✅ [TEST-FETCH-STUDENT] Final results', {
-      total: filteredData?.length,
-      remedialCount: filteredData?.filter(t => t.is_remedial).length,
-      studentSpecificCount: filteredData?.filter(t => t.student_id).length,
-      publicCount: filteredData?.filter(t => !t.student_id).length,
-      testList: filteredData?.map(t => ({
-        id: t.id,
-        title: t.title,
-        student_id: t.student_id || 'PUBLIC',
-        is_remedial: t.is_remedial || false
-      }))
-    });
+    // console.log('✅ [TEST-FETCH-STUDENT] Final results', {
+    //   total: filteredData?.length,
+    //   remedialCount: filteredData?.filter(t => t.is_remedial).length,
+    //   studentSpecificCount: filteredData?.filter(t => t.student_id).length,
+    //   publicCount: filteredData?.filter(t => !t.student_id).length
+    // });
 
     res.json({ success: true, questionSets: filteredData });
   } catch (error) {

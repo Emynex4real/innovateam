@@ -129,12 +129,12 @@ exports.generateRemedialTest = async (req, res) => {
     }
 
     // Create remedial test
-    console.log('💾 [REMEDIAL-VISIBILITY] Creating remedial test', {
-      tutorId: attempt.question_set.tutor_id,
-      centerId: attempt.question_set.center_id,
-      studentId: studentId,
-      isRemedial: true
-    });
+    // console.log('💾 [REMEDIAL-VISIBILITY] Creating remedial test', {
+    //   tutorId: attempt.question_set.tutor_id,
+    //   centerId: attempt.question_set.center_id,
+    //   studentId: studentId,
+    //   isRemedial: true
+    // });
     
     const remedialData = {
       tutor_id: attempt.question_set.tutor_id,
@@ -150,7 +150,7 @@ exports.generateRemedialTest = async (req, res) => {
       parent_set_id: attempt.question_set_id
     };
     
-    console.log('📋 [REMEDIAL-DB] Inserting:', JSON.stringify(remedialData, null, 2));
+    // console.log('📋 [REMEDIAL-DB] Inserting:', JSON.stringify(remedialData, null, 2));
     
     const { data: remedialTest, error } = await supabase
       .from('tc_question_sets')
@@ -163,13 +163,13 @@ exports.generateRemedialTest = async (req, res) => {
       throw error;
     }
 
-    console.log('✅ [REMEDIAL-DB] Returned from DB:', JSON.stringify(remedialTest, null, 2));
-    console.log('🔍 [REMEDIAL-CHECK] student_id in response:', {
-      hasStudentId: !!remedialTest.student_id,
-      studentIdValue: remedialTest.student_id,
-      expectedValue: studentId,
-      match: remedialTest.student_id === studentId
-    });
+    // console.log('✅ [REMEDIAL-DB] Returned from DB:', JSON.stringify(remedialTest, null, 2));
+    // console.log('🔍 [REMEDIAL-CHECK] student_id in response:', {
+    //   hasStudentId: !!remedialTest.student_id,
+    //   studentIdValue: remedialTest.student_id,
+    //   expectedValue: studentId,
+    //   match: remedialTest.student_id === studentId
+    // });
 
     // Link questions to remedial test
     console.log('🔗 [REMEDIAL] Linking questions to test');

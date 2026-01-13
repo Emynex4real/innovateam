@@ -33,6 +33,9 @@ const StudentAnalytics = () => {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
+      console.log('🔍 [ANALYTICS DEBUG] Starting analytics load...');
+      console.log('📊 [ANALYTICS DEBUG] centerId:', centerId);
+      console.log('📊 [ANALYTICS DEBUG] selectedPeriod:', selectedPeriod);
 
       const [analyticsRes, subjectsRes, trendsRes, recsRes, riskRes, passRateRes] = await Promise.all([
         analyticsService.getStudentAnalytics(centerId),
@@ -43,29 +46,67 @@ const StudentAnalytics = () => {
         predictionService.predictPassRate('self', centerId)
       ]);
 
+      console.log('✅ [ANALYTICS DEBUG] API Responses:');
+      console.log('  - analyticsRes:', analyticsRes);
+      console.log('  - subjectsRes:', subjectsRes);
+      console.log('  - trendsRes:', trendsRes);
+      console.log('  - recsRes:', recsRes);
+      console.log('  - riskRes:', riskRes);
+      console.log('  - passRateRes:', passRateRes);
+
       if (analyticsRes.success) {
-        setAnalytics(analyticsRes.analytics);
+        console.log('✅ [ANALYTICS DEBUG] Setting analytics:', analyticsRes.analytics);
+        setAnalytics(analyticsRes.analytics || analyticsRes.data);
+      } else {
+        console.error('❌ [ANALYTICS DEBUG] Analytics failed:', analyticsRes);
       }
+      
       if (subjectsRes.success) {
-        setSubjects(subjectsRes.subjects || []);
+        console.log('✅ [ANALYTICS DEBUG] Setting subjects:', subjectsRes.subjects || subjectsRes.data);
+        setSubjects(subjectsRes.subjects || subjectsRes.data || []);
+      } else {
+        console.error('❌ [ANALYTICS DEBUG] Subjects failed:', subjectsRes);
       }
+      
       if (trendsRes.success) {
-        setTrends(trendsRes.trend?.scores || []);
+        console.log('✅ [ANALYTICS DEBUG] Setting trends:', trendsRes.trend?.scores || trendsRes.data);
+        setTrends(trendsRes.trend?.scores || trendsRes.data || []);
+      } else {
+        console.error('❌ [ANALYTICS DEBUG] Trends failed:', trendsRes);
       }
+      
       if (recsRes.success) {
-        setRecommendations(recsRes.recommendations || []);
+        console.log('✅ [ANALYTICS DEBUG] Setting recommendations:', recsRes.recommendations || recsRes.data);
+        setRecommendations(recsRes.recommendations || recsRes.data || []);
+      } else {
+        console.error('❌ [ANALYTICS DEBUG] Recommendations failed:', recsRes);
       }
+      
       if (riskRes.success) {
-        setAtRiskScore(riskRes.at_risk_score);
-        setAtRiskLevel(riskRes.at_risk_level);
+        console.log('✅ [ANALYTICS DEBUG] Setting risk score:', riskRes.data);
+        setAtRiskScore(riskRes.data?.riskScore || riskRes.at_risk_score || 0);
+        setAtRiskLevel(riskRes.data?.riskLevel || riskRes.at_risk_level || 'low');
+      } else {
+        console.error('❌ [ANALYTICS DEBUG] Risk score failed:', riskRes);
       }
+      
       if (passRateRes.success) {
-        setPredictedPassRate(passRateRes.predicted_pass_rate);
+        console.log('✅ [ANALYTICS DEBUG] Setting pass rate:', passRateRes.data);
+        setPredictedPassRate(passRateRes.data?.passRate || passRateRes.predicted_pass_rate || 0);
+      } else {
+        console.error('❌ [ANALYTICS DEBUG] Pass rate failed:', passRateRes);
       }
     } catch (error) {
-      toast.error('Failed to load analytics');
+      console.error('❌ [ANALYTICS DEBUG] Load analytics error:', error);
+      console.error('❌ [ANALYTICS DEBUG] Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      toast.error('Failed to load analytics: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
+      console.log('🏁 [ANALYTICS DEBUG] Analytics load complete');
     }
   };
 
