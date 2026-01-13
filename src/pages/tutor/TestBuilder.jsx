@@ -21,6 +21,9 @@ const TestBuilder = () => {
     passing_score: 70,
     show_answers: false,
     visibility: 'private',
+    max_attempts: 1,
+    cooldown_hours: 0,
+    score_policy: 'best',
     scheduled_start: '',
     scheduled_end: '',
     auto_activate: false,
@@ -214,6 +217,61 @@ const TestBuilder = () => {
                   />
                   <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Show answers to students after submission</span>
                 </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Attempt Limits Section */}
+          <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow-lg p-4 md:p-6 mb-6`}>
+            <h2 className="text-lg md:text-xl font-bold mb-4">🎯 Attempt Limits</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Max Attempts</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="1"
+                  max="10"
+                  value={formData.max_attempts}
+                  onChange={(e) => setFormData({ ...formData, max_attempts: parseInt(e.target.value) || 1 })}
+                  className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                />
+                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Number of times a student can attempt this test (1-10)
+                </p>
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Cooldown Period (hours)</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  max="168"
+                  value={formData.cooldown_hours}
+                  onChange={(e) => setFormData({ ...formData, cooldown_hours: parseInt(e.target.value) || 0 })}
+                  className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                />
+                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Hours to wait between attempts (0 = no cooldown)
+                </p>
+              </div>
+              <div className="md:col-span-2">
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Score Policy</label>
+                <select
+                  value={formData.score_policy}
+                  onChange={(e) => setFormData({ ...formData, score_policy: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                >
+                  <option value="best">🏆 Best Score (Highest score counts)</option>
+                  <option value="average">📊 Average Score (Average of all attempts)</option>
+                  <option value="last">🔄 Last Attempt (Most recent score)</option>
+                  <option value="first">1️⃣ First Attempt (Initial score only)</option>
+                </select>
+                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  How to calculate the final score when multiple attempts are made
+                </p>
               </div>
             </div>
           </div>

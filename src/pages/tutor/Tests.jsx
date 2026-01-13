@@ -109,60 +109,71 @@ const Tests = () => {
           <div className="space-y-4">
             {tests.map((test) => (
               <div key={test.id} className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow-lg p-4 md:p-6`}>
-                <div className="flex flex-col lg:flex-row justify-between items-start gap-4 mb-4">
-                  <div className="flex-1 w-full">
-                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
-                      <h3 className="text-lg md:text-xl font-bold">{test.title}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs md:text-sm ${
-                        test.is_active 
-                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
-                          : isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {test.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    {test.description && <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-3 text-sm md:text-base`}>{test.description}</p>}
-                    <div className="flex flex-wrap gap-3 md:gap-6 text-xs md:text-sm">
-                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>📝 {test.question_count?.[0]?.count || 0} questions</span>
-                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>⏱️ {test.time_limit} minutes</span>
-                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>🎯 {test.passing_score}% to pass</span>
-                      <span className={test.visibility === 'public' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}>
-                        {test.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
-                      </span>
-                      <span className={test.show_answers ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
-                        {test.show_answers ? '✓ Answers visible' : '✗ Answers hidden'}
-                      </span>
-                    </div>
-                    {(test.scheduled_start || test.is_recurring) && (
-                      <div className={`mt-2 p-2 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} text-xs`}>
-                        {test.scheduled_start && (
-                          <div className="flex items-center gap-2">
-                            <span>📅</span>
-                            <span>Start: {new Date(test.scheduled_start).toLocaleString()}</span>
-                            {test.scheduled_end && <span>• End: {new Date(test.scheduled_end).toLocaleString()}</span>}
-                          </div>
-                        )}
-                        {test.is_recurring && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <span>🔄</span>
-                            <span>Recurring: {test.recurrence_pattern}</span>
-                            {test.next_activation_at && <span>• Next: {new Date(test.next_activation_at).toLocaleString()}</span>}
-                          </div>
-                        )}
+                <div 
+                  onClick={() => navigate(`/tutor/tests/${test.id}`)}
+                  className="cursor-pointer hover:opacity-80 transition"
+                >
+                  <div className="flex flex-col lg:flex-row justify-between items-start gap-4 mb-4">
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                        <h3 className="text-lg md:text-xl font-bold">{test.title}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs md:text-sm ${
+                          test.is_active 
+                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
+                            : isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {test.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <div className="w-full lg:w-auto">
-                    <button
-                      onClick={() => navigate(`/tutor/leaderboard/${test.id}`)}
-                      className="w-full lg:w-auto px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition text-sm md:text-base"
-                    >
-                      Leaderboard
-                    </button>
+                      {test.description && <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-3 text-sm md:text-base`}>{test.description}</p>}
+                      <div className="flex flex-wrap gap-3 md:gap-6 text-xs md:text-sm">
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>📝 {test.question_count?.[0]?.count || 0} questions</span>
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>⏱️ {test.time_limit} minutes</span>
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>🎯 {test.passing_score}% to pass</span>
+                        <span className={test.visibility === 'public' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}>
+                          {test.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
+                        </span>
+                        <span className={test.show_answers ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
+                          {test.show_answers ? '✓ Answers visible' : '✗ Answers hidden'}
+                        </span>
+                      </div>
+                      {(test.scheduled_start || test.is_recurring) && (
+                        <div className={`mt-2 p-2 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} text-xs`}>
+                          {test.scheduled_start && (
+                            <div className="flex items-center gap-2">
+                              <span>📅</span>
+                              <span>Start: {new Date(test.scheduled_start).toLocaleString()}</span>
+                              {test.scheduled_end && <span>• End: {new Date(test.scheduled_end).toLocaleString()}</span>}
+                            </div>
+                          )}
+                          {test.is_recurring && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span>🔄</span>
+                              <span>Recurring: {test.recurrence_pattern}</span>
+                              {test.next_activation_at && <span>• Next: {new Date(test.next_activation_at).toLocaleString()}</span>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-full lg:w-auto" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => navigate(`/tutor/leaderboard/${test.id}`)}
+                        className="w-full lg:w-auto px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition text-sm md:text-base"
+                      >
+                        Leaderboard
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div className={`flex flex-wrap gap-2 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`flex flex-wrap gap-2 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => navigate(`/tutor/tests/${test.id}`)}
+                    className="flex-1 sm:flex-none px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base font-semibold"
+                  >
+                    View Details
+                  </button>
                   <button
                     onClick={() => toggleActive(test.id, test.is_active)}
                     className={`flex-1 sm:flex-none px-3 md:px-4 py-2 rounded-lg transition text-sm md:text-base ${

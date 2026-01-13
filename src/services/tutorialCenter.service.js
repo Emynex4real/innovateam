@@ -228,6 +228,12 @@ export const tutorialCenterService = {
   updateTheme: async (theme) => {
     const response = await api.put(`${API_BASE}/theme`, { theme_config: theme });
     return response.data;
+  },
+
+  // Check test access (attempt limits)
+  checkTestAccess: async (testId) => {
+    const response = await api.get(`${API_BASE}/tests/${testId}/check-access`);
+    return response.data;
   }
 };
 

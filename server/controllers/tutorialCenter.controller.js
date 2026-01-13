@@ -1267,11 +1267,11 @@ exports.getTestQuestions = async (req, res) => {
   try {
     const { id: testId } = req.params;
 
+    // Query the correct junction table: tc_question_set_items
     const { data, error } = await supabase
-      .from('tc_question_set_questions')
+      .from('tc_question_set_items')
       .select(`
-        order_index,
-        points,
+        order_number,
         tc_questions(
           id,
           question_text,
@@ -1279,18 +1279,18 @@ exports.getTestQuestions = async (req, res) => {
           correct_answer,
           explanation,
           subject,
+          topic,
           difficulty
         )
       `)
       .eq('question_set_id', testId)
-      .order('order_index');
+      .order('order_number');
 
     if (error) throw error;
 
     const questions = data.map(item => ({
       ...item.tc_questions,
-      order_index: item.order_index,
-      points: item.points
+      order_number: item.order_number
     }));
 
     res.json({ success: true, questions });
@@ -1361,6 +1361,76 @@ exports.updateTheme = async (req, res) => {
     res.json({ success: true, center: data });
   } catch (error) {
     logger.error('Update theme error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Check test access (attempt limits)
+exports.checkTestAccess = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const studentId = req.user.id;
+
+    // Get test settings
+    const { data: test, error: testError } = await supabase
+      .from('tc_question_sets')
+      .select('max_attempts, cooldown_hours')
+      .eq('id', testId)
+      .single();
+
+    if (testError) throw testError;
+
+    // Get student attempts
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('tc_student_attempts')
+      .select('completed_at, score')
+      .eq('question_set_id', testId)
+      .eq('student_id', studentId)
+      .order('completed_at', { ascending: false });
+
+    if (attemptsError) throw attemptsError;
+
+    const attemptsUsed = attempts?.length || 0;
+
+    // Check max attempts (only if max_attempts is set and > 0)
+    if (test.max_attempts && test.max_attempts > 0 && attemptsUsed >= test.max_attempts) {
+      return res.json({
+        success: true,
+        canAttempt: false,
+        reason: 'max_attempts_reached',
+        attemptsUsed,
+        maxAttempts: test.max_attempts,
+        message: `Maximum attempts (${test.max_attempts}) reached`
+      });
+    }
+
+    // Check cooldown (only if cooldown_hours is set and > 0)
+    if (test.cooldown_hours && test.cooldown_hours > 0 && attempts && attempts.length > 0) {
+      const lastAttempt = new Date(attempts[0].completed_at);
+      const now = new Date();
+      const hoursSinceLastAttempt = (now - lastAttempt) / (1000 * 60 * 60);
+
+      if (hoursSinceLastAttempt < test.cooldown_hours) {
+        const hoursRemaining = Math.ceil(test.cooldown_hours - hoursSinceLastAttempt);
+        return res.json({
+          success: true,
+          canAttempt: false,
+          reason: 'cooldown_active',
+          hoursRemaining,
+          message: `Please wait ${hoursRemaining} hour(s) before retrying`
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      canAttempt: true,
+      attemptsUsed,
+      maxAttempts: test.max_attempts || null,
+      attemptsRemaining: test.max_attempts ? test.max_attempts - attemptsUsed : null
+    });
+  } catch (error) {
+    logger.error('Check test access error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

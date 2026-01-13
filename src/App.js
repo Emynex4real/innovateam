@@ -68,6 +68,7 @@ import AIGenerator from './pages/tutor/AIGenerator';
 import BulkQuestionImport from './pages/tutor/BulkQuestionImport';
 import TestBuilder from './pages/tutor/TestBuilder';
 import Tests from './pages/tutor/Tests';
+import TestDetail from './pages/tutor/TestDetail';
 import Students from './pages/tutor/Students';
 import StudentDetail from './pages/tutor/StudentDetail';
 import StudentProfile from './pages/tutor/StudentProfile';
@@ -351,6 +352,7 @@ function App() {
               <Route path="/tutor/questions/generate" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AIGenerator /></RoleProtectedRoute>} />
               <Route path="/tutor/questions/bulk-import" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><BulkQuestionImport /></RoleProtectedRoute>} />
               <Route path="/tutor/tests" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Tests /></RoleProtectedRoute>} />
+              <Route path="/tutor/tests/:testId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestDetail /></RoleProtectedRoute>} />
               <Route path="/tutor/tests/create" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><TestBuilder /></RoleProtectedRoute>} />
               <Route path="/tutor/students" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Students /></RoleProtectedRoute>} />
               <Route path="/tutor/students/:studentId" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><StudentDetail /></RoleProtectedRoute>} />

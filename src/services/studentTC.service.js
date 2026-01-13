@@ -90,6 +90,11 @@ export const studentTCService = {
   getMyAchievements: async () => {
     const response = await api.get('/tutorial-centers/achievements');
     return response.data;
+  },
+
+  checkTestAccess: async (testId) => {
+    const response = await api.get(`/tutorial-centers/tests/${testId}/check-access`);
+    return response.data;
   }
 };
 

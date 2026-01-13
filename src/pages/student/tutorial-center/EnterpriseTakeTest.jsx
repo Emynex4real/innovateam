@@ -33,6 +33,7 @@ const EnterpriseTakeTest = () => {
   const [submitting, setSubmitting] = useState(false);
   const [flagged, setFlagged] = useState({});
   const [showNav, setShowNav] = useState(false); // Mobile Drawer State
+  const [accessInfo, setAccessInfo] = useState(null); // Attempt limit info
 
   // --- ANTI-CHEAT & TIMING REFS ---
   // We use refs for the tracker to persist it without re-renders
@@ -68,6 +69,21 @@ const EnterpriseTakeTest = () => {
 
   const loadTest = async () => {
     try {
+      // Check access first
+      const accessResponse = await studentTCService.checkTestAccess(testId);
+      
+      if (!accessResponse.canAttempt) {
+        if (accessResponse.reason === 'max_attempts_reached') {
+          toast.error(`Maximum attempts (${accessResponse.maxAttempts}) reached`);
+        } else if (accessResponse.reason === 'cooldown_active') {
+          toast.error(`Please wait ${accessResponse.hoursRemaining} hour(s) before retrying`);
+        }
+        navigate('/student/tests');
+        return;
+      }
+      
+      setAccessInfo(accessResponse);
+      
       const response = await studentTCService.getTest(testId);
       if (response.success) {
         setTest(response.questionSet);
@@ -266,6 +282,18 @@ const EnterpriseTakeTest = () => {
       
       {/* 1. TOP BAR: Sticky & Informative */}
       <div className={`sticky top-0 z-30 px-4 py-3 border-b backdrop-blur-md transition-colors ${isDarkMode ? 'bg-gray-900/90 border-gray-800' : 'bg-white/90 border-gray-200'}`}>
+        {/* Attempt Info Banner */}
+        {accessInfo && accessInfo.maxAttempts && (
+          <div className="max-w-4xl mx-auto mb-2">
+            <div className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 ${isDarkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
+              📊 Attempt {(accessInfo.attemptsUsed || 0) + 1} of {accessInfo.maxAttempts}
+              {accessInfo.attemptsRemaining !== null && accessInfo.attemptsRemaining !== undefined && (
+                <span className="opacity-75">• {accessInfo.attemptsRemaining} remaining</span>
+              )}
+            </div>
+          </div>
+        )}
+        
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           
           {/* Left: Mobile Menu / Title */}

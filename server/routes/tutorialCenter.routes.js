@@ -58,6 +58,7 @@ router.get('/tc-question-sets/:id/questions', uuidValidation('id'), tutorialCent
 // Attempts
 router.get('/tc-attempts/center-attempts', tutorialCenterController.getCenterAttempts);
 router.get('/students/:studentId/attempts', tutorialCenterController.getStudentAttempts);
+router.get('/tests/:testId/check-access', tutorialCenterController.checkTestAccess);
 
 // Adaptive Learning
 const adaptiveLearning = require('../services/adaptiveLearning.service');
