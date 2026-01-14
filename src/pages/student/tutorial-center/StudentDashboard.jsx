@@ -143,7 +143,7 @@ const EnterpriseDashboard = () => {
               </div>
             )}
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
-              Welcome Back! <span className="animate-wave inline-block origin-bottom-right">👋</span>
+              Welcome Back!
             </h1>
             <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-lg`}>
               Let's continue your learning streak.

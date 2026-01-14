@@ -196,90 +196,54 @@ const StudentAnalytics = () => {
         <AtRiskIndicator riskScore={atRiskScore} riskLevel={atRiskLevel} />
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column (2/3 width) */}
-            <div className="lg:col-span-2 space-y-6">
-                
-                {/* Score Trends Chart */}
-                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
-                    <div className="flex justify-between items-center mb-6">
-                    <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        Score Trends
-                    </h2>
-                    <select
-                        value={selectedPeriod}
-                        onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
-                        className={`px-3 py-1.5 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
-                        isDarkMode 
-                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                            : 'bg-gray-50 border-gray-200 text-gray-900'
-                        }`}
-                    >
-                        <option value={7}>Last 7 days</option>
-                        <option value={30}>Last 30 days</option>
-                        <option value={90}>Last 90 days</option>
-                    </select>
-                    </div>
-                    <ScoreTrendChart data={trends} days={selectedPeriod} />
+        <div className="space-y-6">
+            {/* Score Trends Chart */}
+            <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
+                <div className="flex justify-between items-center mb-6">
+                <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Score Trends
+                </h2>
+                <select
+                    value={selectedPeriod}
+                    onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
+                    className={`px-3 py-1.5 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                    isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                >
+                    <option value={7}>Last 7 days</option>
+                    <option value={30}>Last 30 days</option>
+                    <option value={90}>Last 90 days</option>
+                </select>
                 </div>
+                <ScoreTrendChart data={trends} days={selectedPeriod} />
+            </div>
 
-                {/* Subject Mastery Heatmap (Existing Component) */}
-                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
-                    <h2 className={`text-lg font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        Subject Mastery
-                    </h2>
-                    {subjects.length > 0 ? (
-                        <TopicMasteryHeatmap data={subjects} />
-                    ) : (
-                        <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        No subject data available yet
-                        </p>
-                    )}
-                </div>
+            {/* Performance Prediction & Recent History */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <PerformancePrediction predictedPassRate={predictedPassRate} confidence="High" />
+                <RecentTestHistory attempts={analytics?.recentAttempts} />
+            </div>
 
-                {/* Recommendations */}
-                {recommendations.length > 0 && (
-                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-blue-900/10 border-blue-800/30' : 'bg-blue-50/50 border-blue-100 shadow-sm'}`}>
-                    <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
-                         Study Recommendations
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {recommendations.map((rec, idx) => (
-                        <div key={idx} className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                        <div className="flex items-start gap-3">
-                            <span className="text-xl mt-0.5">
-                                {rec.priority === 'high' ? '🔴' : '🟡'}
-                            </span>
-                            <div>
-                                <h4 className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {rec.subject}
-                                </h4>
-                                <p className={`text-xs mt-1 leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    {rec.message}
-                                </p>
-                                <div className={`text-xs mt-3 inline-block px-2 py-1 rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                                    ⏱ Suggested: {rec.suggestedStudyHours}h
-                                </div>
-                            </div>
-                        </div>
-                        </div>
-                    ))}
-                    </div>
-                </div>
+            {/* Subject Mastery Heatmap */}
+            <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
+                <h2 className={`text-lg font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Subject Mastery
+                </h2>
+                {subjects.length > 0 ? (
+                    <TopicMasteryHeatmap data={subjects} />
+                ) : (
+                    <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    No subject data available yet
+                    </p>
                 )}
             </div>
 
-            {/* Right Column (1/3 width) - Enhanced Components */}
-            <div className="space-y-6">
-                <PerformancePrediction predictedPassRate={predictedPassRate} confidence="High" />
-                
-                <RecentTestHistory attempts={analytics?.recentAttempts} />
-                
-                <StrengthsWeaknesses subjects={subjects} />
-                
+            {/* 2x2 Grid: Study Consistency, Strengths, Focus Areas, Time Invested */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <StudyCalendarHeatmap attempts={analytics?.recentAttempts} />
-
-                {/* Time Invested Summary Card (Consolidated) */}
+                
                 <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
                     <h3 className={`font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                         <Clock className="w-5 h-5 text-blue-500" /> Time Invested
@@ -300,7 +264,40 @@ const StudentAnalytics = () => {
                          </div>
                     </div>
                 </div>
+                
+                <StrengthsWeaknesses subjects={subjects} />
             </div>
+
+            {/* Recommendations */}
+            {recommendations.length > 0 && (
+            <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-blue-900/10 border-blue-800/30' : 'bg-blue-50/50 border-blue-100 shadow-sm'}`}>
+                <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+                     Study Recommendations
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recommendations.map((rec, idx) => (
+                    <div key={idx} className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                    <div className="flex items-start gap-3">
+                        <span className="text-xl mt-0.5">
+                            {rec.priority === 'high' ? '🔴' : '🟡'}
+                        </span>
+                        <div>
+                            <h4 className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {rec.subject}
+                            </h4>
+                            <p className={`text-xs mt-1 leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {rec.message}
+                            </p>
+                            <div className={`text-xs mt-3 inline-block px-2 py-1 rounded ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                                ⏱ Suggested: {rec.suggestedStudyHours}h
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                ))}
+                </div>
+            </div>
+            )}
         </div>
       </div>
     </div>
