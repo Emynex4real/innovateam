@@ -714,20 +714,16 @@ Generate ${batch.count} questions as a JSON array.
    */
   async parseBulkQuestions({ text, subject, topic, difficulty, category, userId = null }) {
     const startTime = Date.now();
+    const requestId = `parse_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    this.checkCircuit();
-    const model = this.genAI.getGenerativeModel({ 
-      model: this.primaryModel,
-      generationConfig: { 
-        responseMimeType: "application/json", 
-        responseSchema: QUESTION_SCHEMA,
-        temperature: 0.1 
-      }
-    });
-
-    const safeText = text.substring(0, CONFIG.MAX_SAFE_CHARS);
+    logger.info('Parse bulk started', { requestId, subject, topic, textLength: text?.length });
     
-    const prompt = `
+    try {
+      this.checkCircuit();
+      
+      const safeText = text.substring(0, CONFIG.MAX_SAFE_CHARS);
+      
+      const prompt = `
 Extract valid JAMB/WAEC exam questions from the text below.
 
 SUBJECT: ${subject}
@@ -745,11 +741,9 @@ TEXT:
 ${safeText}
 
 Return JSON array of extracted questions.
-    `.trim();
+      `.trim();
 
-    try {
-      const result = await model.generateContent(prompt);
-      const data = JSON.parse(result.response.text());
+      const data = await this._generateWithFallback(prompt, 50);
       
       if (!Array.isArray(data) || data.length === 0) {
         throw new Error('No questions extracted from text');
@@ -760,6 +754,9 @@ Return JSON array of extracted questions.
         .map(q => this.cleanQuestion(q))
         .filter(q => {
           const validation = this.validateQuestion(q, subject);
+          if (!validation.valid) {
+            logger.warn('Extracted question rejected', { reason: validation.errors });
+          }
           return validation.valid;
         })
         .map(q => ({
@@ -775,6 +772,7 @@ Return JSON array of extracted questions.
       
       const duration = Date.now() - startTime;
       logger.info('Parse bulk completed', { 
+        requestId,
         extracted: data.length, 
         valid: validData.length,
         durationMs: duration
@@ -782,17 +780,38 @@ Return JSON array of extracted questions.
       
       this._logUsage({ 
         userId, 
+        requestId,
         operation: 'parse_bulk', 
         status: 'success',
         extracted: data.length,
         valid: validData.length
       });
       
+      this.recordSuccess();
       return validData;
+      
     } catch (error) {
-      logger.error('Parse bulk failed', { error: error.message });
-      this._logUsage({ userId, operation: 'parse_bulk', status: 'failed', errorMessage: error.message });
-      throw new Error(`Failed to parse content: ${error.message}`);
+      const duration = Date.now() - startTime;
+      logger.error('Parse bulk failed', { requestId, error: error?.message || String(error), durationMs: duration });
+      
+      this._logUsage({ 
+        userId, 
+        requestId,
+        operation: 'parse_bulk', 
+        status: 'failed', 
+        errorMessage: error?.message || String(error) 
+      });
+      
+      this.recordFailure();
+      
+      // Provide user-friendly error messages
+      if (error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
+        throw new Error('Network error: Unable to connect to AI service. Please check your internet connection and try again.');
+      } else if (error?.message?.includes('429') || error?.message?.includes('quota')) {
+        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+      } else {
+        throw new Error(`Failed to parse content: ${error?.message || 'Unknown error'}`);
+      }
     }
   }
 
