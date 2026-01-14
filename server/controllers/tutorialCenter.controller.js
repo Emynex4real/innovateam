@@ -1,5 +1,5 @@
 const supabase = require('../supabaseClient');
-const { logger } = require('../utils/logger');
+const logger = require('../utils/safeLogger');
 const tutorialCenterService = require('../services/tutorialCenter.service');
 
 // Create tutorial center
@@ -916,48 +916,31 @@ exports.saveBulkQuestions = async (req, res) => {
   const startTime = Date.now();
   
   try {
-    console.log('🔍 [BULK-SAVE] Starting bulk save...');
-    
     const { questions } = req.body;
     const tutorId = req.user?.id;
 
-    console.log('🔍 [BULK-SAVE] Request data:', { 
-      questionsCount: questions?.length, 
-      tutorId,
-      hasUser: !!req.user 
-    });
-
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
-      console.log('❌ [BULK-SAVE] No questions provided');
       return res.status(400).json({ success: false, error: 'No questions provided' });
     }
 
-    console.log('🔍 [BULK-SAVE] Querying tutorial center...');
+    logger.info('Bulk save started', { tutorId, count: questions.length });
+
     const { data: center, error: centerError } = await supabase
       .from('tutorial_centers')
       .select('id')
       .eq('tutor_id', tutorId)
       .maybeSingle();
 
-    console.log('🔍 [BULK-SAVE] Center query result:', { 
-      hasCenter: !!center, 
-      centerId: center?.id,
-      hasError: !!centerError,
-      errorMessage: centerError?.message 
-    });
-
     if (centerError) {
-      console.log('❌ [BULK-SAVE] Center query error');
+      logger.error('Center query error', { tutorId, error: centerError?.message });
       return res.status(500).json({ success: false, error: 'Database error' });
     }
 
     if (!center) {
-      console.log('❌ [BULK-SAVE] Center not found');
+      logger.error('Center not found', { tutorId });
       return res.status(404).json({ success: false, error: 'Create a tutorial center first' });
     }
 
-    console.log('✅ [BULK-SAVE] Center found, validating questions...');
-    
     const questionsToInsert = [];
     
     for (let idx = 0; idx < questions.length; idx++) {
@@ -995,16 +978,12 @@ exports.saveBulkQuestions = async (req, res) => {
       });
     }
 
-    console.log(`✅ [BULK-SAVE] Validated ${questionsToInsert.length} questions, starting insert...`);
-
     const BATCH_SIZE = 20;
     const allInserted = [];
     
     for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
       const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
       const batchNum = Math.floor(i/BATCH_SIZE) + 1;
-      
-      console.log(`🔍 [BULK-SAVE] Batch ${batchNum}: inserting ${batch.length} questions...`);
       
       let retries = 3;
       let success = false;
@@ -1016,27 +995,19 @@ exports.saveBulkQuestions = async (req, res) => {
             .insert(batch)
             .select();
 
-          console.log(`🔍 [BULK-SAVE] Batch ${batchNum} result:`, { 
-            hasData: !!data, 
-            count: data?.length,
-            hasError: !!error 
-          });
-
           if (error) throw error;
           
           allInserted.push(...data);
           success = true;
-          console.log(`✅ [BULK-SAVE] Batch ${batchNum} success`);
           
           if (i + BATCH_SIZE < questionsToInsert.length) {
             await new Promise(r => setTimeout(r, 500));
           }
         } catch (err) {
           retries--;
-          console.log(`⚠️ [BULK-SAVE] Batch ${batchNum} error, retries: ${retries}`);
           
           if (retries === 0) {
-            console.log(`❌ [BULK-SAVE] Batch ${batchNum} failed:`, err?.message);
+            logger.error('Batch insert failed', { batchNum, error: err?.message });
             throw err;
           }
           
@@ -1046,15 +1017,18 @@ exports.saveBulkQuestions = async (req, res) => {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`✅ [BULK-SAVE] Complete! Inserted ${allInserted.length} questions in ${duration}ms`);
+    logger.info('Bulk save completed', { 
+      tutorId, 
+      count: allInserted.length, 
+      durationMs: duration 
+    });
     
     res.json({ success: true, questions: allInserted, count: allInserted.length });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.log('❌ [BULK-SAVE] Fatal error:', {
-      message: error?.message,
-      type: error?.constructor?.name,
-      durationMs: duration
+    logger.error('Save bulk questions error', { 
+      error: error?.message || String(error),
+      durationMs: duration 
     });
     
     res.status(500).json({ 
