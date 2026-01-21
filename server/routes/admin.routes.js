@@ -245,4 +245,11 @@ router.get('/transactions', adminLimiter, async (req, res) => {
 router.put('/transactions/:id', sensitiveOpLimiter, adminController.updateTransaction);
 router.delete('/transactions/:id', sensitiveOpLimiter, adminController.deleteTransaction);
 
+// Tutorial Centers Management Routes
+router.get('/tutorial-centers', adminLimiter, adminController.getTutorialCenters);
+router.get('/tutorial-centers/:id', adminLimiter, adminController.getTutorialCenterDetails);
+router.patch('/tutorial-centers/:id/suspend', sensitiveOpLimiter, adminController.suspendTutorialCenter);
+router.patch('/tutorial-centers/:id/activate', sensitiveOpLimiter, adminController.activateTutorialCenter);
+router.delete('/tutorial-centers/:id', sensitiveOpLimiter, adminController.deleteTutorialCenter);
+
 module.exports = router;

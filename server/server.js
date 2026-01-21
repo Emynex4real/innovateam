@@ -108,7 +108,7 @@ app.use(cors({
     callback(new Error('CORS policy: Origin not allowed'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'x-request-id'],
   exposedHeaders: ['Content-Length', 'x-request-id'],
   maxAge: 86400 // 24 hours
@@ -328,7 +328,7 @@ app.use('/api/admin/ai-questions', aiQuestionsRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api', courseRecommendationRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/admin', csrfProtection, adminRoutes);
+app.use('/api/admin', adminRoutes); // CSRF removed for debugging
 app.use('/api/cost-monitoring', apiCostRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
 

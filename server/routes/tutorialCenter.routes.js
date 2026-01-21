@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/authenticate');
+const { checkCenterSuspension } = require('../middleware/checkSuspension');
 const tutorialCenterController = require('../controllers/tutorialCenter.controller');
 const { questionValidation, questionSetValidation, paginationValidation, uuidValidation } = require('../middleware/validation');
 const { writeLimiter } = require('../middleware/rateLimiter');
@@ -8,11 +9,11 @@ const { writeLimiter } = require('../middleware/rateLimiter');
 // All routes require authentication
 router.use(authenticate);
 
-// Tutorial center management
+// Tutorial center management (check suspension for write operations)
 router.post('/', tutorialCenterController.createCenter);
 router.get('/my-center', tutorialCenterController.getMyCenter);
-router.put('/', tutorialCenterController.updateCenter);
-router.delete('/', tutorialCenterController.deleteCenter);
+router.put('/', checkCenterSuspension, tutorialCenterController.updateCenter);
+router.delete('/', checkCenterSuspension, tutorialCenterController.deleteCenter);
 router.get('/students', tutorialCenterController.getCenterStudents);
 
 // Enhanced student management
@@ -32,27 +33,27 @@ router.get('/advanced-analytics', tutorialCenterController.getAdvancedAnalytics)
 router.get('/achievements', tutorialCenterController.getMyAchievements);
 router.get('/achievements/all', tutorialCenterController.getAllAchievements);
 
-// Questions management
-router.post('/tc-questions', writeLimiter, questionValidation, tutorialCenterController.createQuestion);
+// Questions management (block if suspended)
+router.post('/tc-questions', checkCenterSuspension, writeLimiter, questionValidation, tutorialCenterController.createQuestion);
 router.get('/tc-questions', paginationValidation, tutorialCenterController.getQuestions);
-router.put('/tc-questions/:id', writeLimiter, uuidValidation('id'), questionValidation, tutorialCenterController.updateQuestion);
-router.delete('/tc-questions/:id', writeLimiter, uuidValidation('id'), tutorialCenterController.deleteQuestion);
-router.post('/tc-questions/generate-ai', writeLimiter, tutorialCenterController.generateQuestionsAI);
-router.post('/tc-questions/generate-ai-stream', writeLimiter, tutorialCenterController.generateQuestionsAIStream);
-router.post('/tc-questions/parse-bulk', writeLimiter, tutorialCenterController.parseBulkQuestions);
-router.post('/tc-questions/save-bulk', writeLimiter, tutorialCenterController.saveBulkQuestions);
+router.put('/tc-questions/:id', checkCenterSuspension, writeLimiter, uuidValidation('id'), questionValidation, tutorialCenterController.updateQuestion);
+router.delete('/tc-questions/:id', checkCenterSuspension, writeLimiter, uuidValidation('id'), tutorialCenterController.deleteQuestion);
+router.post('/tc-questions/generate-ai', checkCenterSuspension, writeLimiter, tutorialCenterController.generateQuestionsAI);
+router.post('/tc-questions/generate-ai-stream', checkCenterSuspension, writeLimiter, tutorialCenterController.generateQuestionsAIStream);
+router.post('/tc-questions/parse-bulk', checkCenterSuspension, writeLimiter, tutorialCenterController.parseBulkQuestions);
+router.post('/tc-questions/save-bulk', checkCenterSuspension, writeLimiter, tutorialCenterController.saveBulkQuestions);
 
-// Question sets (tests) management
-router.post('/tc-question-sets', writeLimiter, questionSetValidation, tutorialCenterController.createQuestionSet);
+// Question sets (tests) management (block if suspended)
+router.post('/tc-question-sets', checkCenterSuspension, writeLimiter, questionSetValidation, tutorialCenterController.createQuestionSet);
 router.get('/tc-question-sets', paginationValidation, tutorialCenterController.getQuestionSets);
 router.get('/tc-question-sets/:id', uuidValidation('id'), tutorialCenterController.getQuestionSet);
-router.put('/tc-question-sets/:id', writeLimiter, uuidValidation('id'), questionSetValidation, tutorialCenterController.updateQuestionSet);
-router.put('/tc-question-sets/:id/toggle-answers', writeLimiter, uuidValidation('id'), tutorialCenterController.toggleAnswers);
-router.delete('/tc-question-sets/:id', writeLimiter, uuidValidation('id'), tutorialCenterController.deleteQuestionSet);
+router.put('/tc-question-sets/:id', checkCenterSuspension, writeLimiter, uuidValidation('id'), questionSetValidation, tutorialCenterController.updateQuestionSet);
+router.put('/tc-question-sets/:id/toggle-answers', checkCenterSuspension, writeLimiter, uuidValidation('id'), tutorialCenterController.toggleAnswers);
+router.delete('/tc-question-sets/:id', checkCenterSuspension, writeLimiter, uuidValidation('id'), tutorialCenterController.deleteQuestionSet);
 
-// Question set questions management
-router.post('/tc-question-sets/:id/questions', writeLimiter, uuidValidation('id'), tutorialCenterController.addQuestionsToTest);
-router.delete('/tc-question-sets/:testId/questions/:questionId', writeLimiter, tutorialCenterController.removeQuestionFromTest);
+// Question set questions management (block if suspended)
+router.post('/tc-question-sets/:id/questions', checkCenterSuspension, writeLimiter, uuidValidation('id'), tutorialCenterController.addQuestionsToTest);
+router.delete('/tc-question-sets/:testId/questions/:questionId', checkCenterSuspension, writeLimiter, tutorialCenterController.removeQuestionFromTest);
 router.get('/tc-question-sets/:id/questions', uuidValidation('id'), tutorialCenterController.getTestQuestions);
 
 // Attempts

@@ -16,6 +16,7 @@ import { useDarkMode } from '../../contexts/DarkModeContext';
 import AIQuestions from './AIQuestions';
 import AdminLeaderboard from './AdminLeaderboard';
 import UploadTextbook from './UploadTextbook';
+import TutorialCenters from './TutorialCenters';
 import toast from 'react-hot-toast';
 import { supabase } from '../../config/supabase'; 
 
@@ -439,6 +440,7 @@ const AdminDashboardContent = () => {
             { id: 'users', label: 'Users', icon: Users },
             { id: 'transactions', label: 'Transactions', icon: DollarSign },
             { id: 'credit-requests', label: 'Credits', icon: TrendingUp },
+            { id: 'tutorial-centers', label: 'Tutorial Centers', icon: Activity },
             { id: 'deleted-centers', label: 'Deleted Centers', icon: Activity },
             { id: 'leaderboard', label: 'Leaderboard', icon: TrendingUp },
             { id: 'ai-questions', label: 'AI Studio', icon: Activity },
@@ -664,6 +666,7 @@ const AdminDashboardContent = () => {
           {activeTab === 'ai-questions' && <AIQuestions />}
           {activeTab === 'leaderboard' && <AdminLeaderboard />}
           {activeTab === 'upload-textbook' && <UploadTextbook />}
+          {activeTab === 'tutorial-centers' && <TutorialCenters />}
           
           {/* 5. DELETED CENTERS TAB */}
           {activeTab === 'deleted-centers' && (
