@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import TutorialCenterDetailModal from '../../components/admin/TutorialCenterDetailModal';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const StatCard = ({ title, value, icon: Icon, isDarkMode, color = 'blue' }) => (
   <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} hover:shadow-lg transition-all`}>
@@ -46,7 +46,7 @@ const TutorialCenters = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/admin/tutorial-centers`, {
+      const response = await axios.get(`${API_URL}/api/admin/tutorial-centers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -64,7 +64,7 @@ const TutorialCenters = () => {
   const handleViewDetails = async (center) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/admin/tutorial-centers/${center.id}`, {
+      const response = await axios.get(`${API_URL}/api/admin/tutorial-centers/${center.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -86,7 +86,7 @@ const TutorialCenters = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`${API_URL}/admin/tutorial-centers/${centerId}/suspend`, 
+      await axios.patch(`${API_URL}/api/admin/tutorial-centers/${centerId}/suspend`, 
         { reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -102,7 +102,7 @@ const TutorialCenters = () => {
   const handleActivate = async (centerId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`${API_URL}/admin/tutorial-centers/${centerId}/activate`, {},
+      await axios.patch(`${API_URL}/api/admin/tutorial-centers/${centerId}/activate`, {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -122,7 +122,7 @@ const TutorialCenters = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/admin/tutorial-centers/${centerId}`, {
+      await axios.delete(`${API_URL}/api/admin/tutorial-centers/${centerId}`, {
         data: { reason },
         headers: { Authorization: `Bearer ${token}` }
       });
