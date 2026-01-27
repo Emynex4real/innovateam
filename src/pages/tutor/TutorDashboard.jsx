@@ -6,7 +6,9 @@ import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { componentStyles } from '../../styles/designSystem';
 import StudentActivityModal from '../../components/StudentActivityModal';
+import RequestDebugPanel from '../../components/RequestDebugPanel';
 import { useTheme } from '../../contexts/ThemeContext';
+import { isDebugEnabled } from '../../config/debug.config';
 
 const EnterpriseTutorDashboard = () => {
   const navigate = useNavigate();
@@ -99,17 +101,41 @@ const EnterpriseTutorDashboard = () => {
   };
 
   useEffect(() => {
-    loadData();
+    let isMounted = true;
+    let hasLoaded = false;
+    const loadId = Date.now();
+    if (isDebugEnabled('DASHBOARD')) console.log(`🔄 [DASHBOARD-${loadId}] useEffect triggered`);
+    
+    // Prevent double execution in React Strict Mode
+    if (!hasLoaded) {
+      hasLoaded = true;
+      loadData(isMounted, loadId);
+    }
+    
+    return () => {
+      if (isDebugEnabled('DASHBOARD')) console.log(`🛝 [DASHBOARD-${loadId}] Component unmounting`);
+      isMounted = false;
+    };
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (isMounted = true, loadId = 'unknown') => {
+    if (isDebugEnabled('DASHBOARD')) console.log(`🚀 [DASHBOARD-${loadId}] loadData started`);
+    
     try {
       setLoading(true);
+      
+      if (isDebugEnabled('DASHBOARD')) console.log(`🏛️ [DASHBOARD-${loadId}] Fetching center...`);
       const centerRes = await tutorialCenterService.getMyCenter();
       
-      console.log('Center response:', centerRes);
+      if (isDebugEnabled('DASHBOARD')) console.log(`✅ [DASHBOARD-${loadId}] Center response:`, centerRes);
+      
+      if (!isMounted) {
+        if (isDebugEnabled('DASHBOARD')) console.log(`⚠️ [DASHBOARD-${loadId}] Component unmounted, aborting`);
+        return;
+      }
       
       if (!centerRes.success || !centerRes.center) {
+        if (isDebugEnabled('DASHBOARD')) console.log(`❌ [DASHBOARD-${loadId}] No center found`);
         setCenter(null);
         setLoading(false);
         return;
@@ -118,42 +144,82 @@ const EnterpriseTutorDashboard = () => {
       setCenter(centerRes.center);
       setLoading(false);
       
-      // Load all data in parallel (non-blocking)
-      Promise.all([
-        tutorialCenterService.getStudents().catch(() => ({ success: false, students: [] })),
-        tutorialCenterService.getQuestionSets().catch(() => ({ success: false, questionSets: [] })),
-        tutorialCenterService.getCenterAttempts().catch(() => ({ success: false, attempts: [] })),
-        tutorialCenterService.getQuestions({ limit: 1000 }).catch(() => ({ success: false, questions: [] }))
-      ]).then(([studentsRes, testsRes, attemptsRes, questionsRes]) => {
-        // Update stats
-        if (studentsRes.success) {
-          const students = studentsRes.students;
-          const avgScore = students.length 
-            ? Math.round(students.reduce((sum, s) => sum + (s.average_score || 0), 0) / students.length)
-            : 0;
-          setStats(prev => ({ ...prev, students: students.length, avgScore }));
+      if (isDebugEnabled('DASHBOARD')) console.log(`📦 [DASHBOARD-${loadId}] Loading additional data (non-blocking)...`);
+      
+      // Sequential loading with delays to prevent stampede
+      const loadWithDelay = async (fn, name, delay) => {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        if (!isMounted) return { success: false };
+        if (isDebugEnabled('DASHBOARD')) console.log(`🔍 [DASHBOARD-${loadId}] Loading ${name}...`);
+        try {
+          const result = await fn();
+          if (isDebugEnabled('DASHBOARD')) console.log(`✅ [DASHBOARD-${loadId}] ${name} loaded`);
+          return result;
+        } catch (error) {
+          console.error(`❌ [DASHBOARD-${loadId}] ${name} failed:`, error.message);
+          return { success: false };
         }
-        if (testsRes.success) setStats(prev => ({ ...prev, tests: testsRes.questionSets.length }));
-        if (questionsRes.success) setStats(prev => ({ ...prev, questions: questionsRes.questions.length }));
-        
-        // Update recent activity
-        if (attemptsRes.success && attemptsRes.attempts && studentsRes.success) {
-          const studentMap = {};
-          studentsRes.students.forEach(s => { studentMap[s.id] = s.name; });
-          const recent = attemptsRes.attempts.slice(0, 10).map(attempt => ({
-            id: attempt.id,
-            studentId: attempt.student_id,
-            studentName: studentMap[attempt.student_id] || 'Student',
-            testTitle: attempt.test_title || 'Test',
-            score: attempt.score,
-            passed: attempt.score >= (attempt.passing_score || 50),
-            completedAt: attempt.completed_at
-          }));
-          setRecentActivity(recent);
-        }
-      });
+      };
+      
+      // Load data sequentially with 200ms delays
+      const [studentsRes, testsRes, attemptsRes, questionsRes] = await Promise.all([
+        loadWithDelay(() => tutorialCenterService.getStudents(), 'students', 0),
+        loadWithDelay(() => tutorialCenterService.getQuestionSets(), 'tests', 200),
+        loadWithDelay(() => tutorialCenterService.getCenterAttempts(), 'attempts', 400),
+        loadWithDelay(() => tutorialCenterService.getQuestions({ limit: 1000 }), 'questions', 600)
+      ]);
+      
+      if (!isMounted) {
+        if (isDebugEnabled('DASHBOARD')) console.log(`⚠️ [DASHBOARD-${loadId}] Component unmounted during data load`);
+        return;
+      }
+      
+      if (isDebugEnabled('DASHBOARD')) console.log(`📊 [DASHBOARD-${loadId}] Processing stats...`);
+      
+      // Update stats
+      if (studentsRes.success) {
+        const students = studentsRes.students;
+        const avgScore = students.length 
+          ? Math.round(students.reduce((sum, s) => sum + (s.average_score || 0), 0) / students.length)
+          : 0;
+        setStats(prev => ({ ...prev, students: students.length, avgScore }));
+        if (isDebugEnabled('DASHBOARD')) console.log(`👥 [DASHBOARD-${loadId}] Students: ${students.length}, Avg: ${avgScore}%`);
+      }
+      
+      if (testsRes.success) {
+        setStats(prev => ({ ...prev, tests: testsRes.questionSets.length }));
+        if (isDebugEnabled('DASHBOARD')) console.log(`📝 [DASHBOARD-${loadId}] Tests: ${testsRes.questionSets.length}`);
+      }
+      
+      if (questionsRes.success) {
+        setStats(prev => ({ ...prev, questions: questionsRes.questions.length }));
+        if (isDebugEnabled('DASHBOARD')) console.log(`❓ [DASHBOARD-${loadId}] Questions: ${questionsRes.questions.length}`);
+      }
+      
+      // Update recent activity
+      if (attemptsRes.success && attemptsRes.attempts && studentsRes.success) {
+        const studentMap = {};
+        studentsRes.students.forEach(s => { studentMap[s.id] = s.name; });
+        const recent = attemptsRes.attempts.slice(0, 10).map(attempt => ({
+          id: attempt.id,
+          studentId: attempt.student_id,
+          studentName: studentMap[attempt.student_id] || 'Student',
+          testTitle: attempt.test_title || 'Test',
+          score: attempt.score,
+          passed: attempt.score >= (attempt.passing_score || 50),
+          completedAt: attempt.completed_at
+        }));
+        setRecentActivity(recent);
+        if (isDebugEnabled('DASHBOARD')) console.log(`📊 [DASHBOARD-${loadId}] Recent activity: ${recent.length} items`);
+      }
+      
+      if (isDebugEnabled('DASHBOARD')) console.log(`✅ [DASHBOARD-${loadId}] loadData completed successfully`);
     } catch (error) {
-      console.error('Dashboard load error:', error);
+      console.error(`❌ [DASHBOARD-${loadId}] Dashboard load error:`, {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
       setCenter(null);
       setLoading(false);
     }
@@ -630,6 +696,9 @@ const EnterpriseTutorDashboard = () => {
           onClose={() => setSelectedActivity(null)} 
         />
       )}
+
+      {/* Request Debug Panel (dev only) */}
+      <RequestDebugPanel />
     </div>
   );
 };
