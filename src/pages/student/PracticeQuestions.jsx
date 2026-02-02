@@ -149,12 +149,21 @@ const PracticeQuestions = () => {
     finally { setLoading(false); }
   };
 
-  const loadUserStats = () => {
+  const loadUserStats = async () => {
     const currentUser = getCurrentUser();
     const stats = JSON.parse(localStorage.getItem(`practice_stats_${currentUser.id}`) || '{}');
     const today = new Date().toDateString();
     if (stats.lastPracticeDate !== today) { stats.freeQuestionsToday = 0; stats.lastPracticeDate = today; }
-    setUserStats({ freeQuestionsToday: stats.freeQuestionsToday || 0, unlockedBanks: stats.unlockedBanks || [] });
+    
+    // Load unlocked banks from database
+    try {
+      const supabase = (await import('../../config/supabase')).default;
+      const { data } = await supabase.from('user_profiles').select('unlocked_banks').eq('id', currentUser.id).single();
+      const unlockedBanks = data?.unlocked_banks || [];
+      setUserStats({ freeQuestionsToday: stats.freeQuestionsToday || 0, unlockedBanks });
+    } catch {
+      setUserStats({ freeQuestionsToday: stats.freeQuestionsToday || 0, unlockedBanks: [] });
+    }
   };
 
   const loadWalletBalance = async () => {
@@ -244,9 +253,13 @@ const PracticeQuestions = () => {
       const result = await simpleWalletService.addTransaction(currentUser.email, UNLOCK_PRICE, `Unlocked: ${bank.name}`, 'debit');
       
       if (result.success) {
-        const newStats = { ...userStats, unlockedBanks: [...userStats.unlockedBanks, bank.id] };
-        localStorage.setItem(`practice_stats_${currentUser.id}`, JSON.stringify(newStats));
-        setUserStats(newStats);
+        const newUnlockedBanks = [...userStats.unlockedBanks, bank.id];
+        
+        // Save to database
+        const supabase = (await import('../../config/supabase')).default;
+        await supabase.from('user_profiles').update({ unlocked_banks: newUnlockedBanks }).eq('id', currentUser.id);
+        
+        setUserStats({ ...userStats, unlockedBanks: newUnlockedBanks });
         setWalletBalance(result.newBalance);
         toast.success('Bank Unlocked!');
       } else { toast.error(result.error); }
