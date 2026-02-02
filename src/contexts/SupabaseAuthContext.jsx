@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { AuthService } from '../services/supabase'
-import { supabase } from '../lib/supabase'
+import supabase from '../config/supabase'
 import SessionSecurity, { SecureTokenManager } from '../utils/sessionSecurity'
 import logger from '../utils/logger'
 

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import supabase from '../lib/supabase';
+import supabase from '../config/supabase';
 
 const API_BASE = 'http://localhost:5000/api';
 

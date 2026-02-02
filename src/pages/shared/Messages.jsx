@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import supabase from '../../lib/supabase';
+import supabase from '../../config/supabase';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../contexts/DarkModeContext';
 

@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import { supabase } from '../lib/supabase'; // ✅ Ensure this path points to your actual supabase.js file
+import supabase from '../config/supabase';
 
 /**
  * Collaboration Service

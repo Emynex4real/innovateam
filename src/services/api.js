@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { API_BASE_URL, ERROR_MESSAGES, LOCAL_STORAGE_KEYS } from '../config/constants';
-import { supabase } from '../lib/supabase';
+import supabase from '../config/supabase';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,9 +18,11 @@ api.interceptors.request.use(
       
       if (error) {
         console.error('Session error:', error);
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        if (refreshData?.session?.access_token) {
+        // Try to refresh if session is invalid
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (!refreshError && refreshData?.session?.access_token) {
           config.headers.Authorization = `Bearer ${refreshData.session.access_token}`;
+          localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, refreshData.session.access_token);
           return config;
         }
       }
@@ -69,28 +71,22 @@ api.interceptors.response.use(
     // Handle 401 with token refresh
     if (response.status === 401 && !config._retry) {
       config._retry = true;
-      // DEBUG: Uncomment for debugging
-      // console.log('🔄 [API] Attempting token refresh');
       
       try {
         // Try to refresh the session
         const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
         
-        if (session?.access_token) {
-          // DEBUG: Uncomment for debugging
-          // console.log('✅ [API] Token refreshed successfully');
+        if (!refreshError && session?.access_token) {
           // Update token and retry request
           localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, session.access_token);
           config.headers.Authorization = `Bearer ${session.access_token}`;
           return api(config);
         }
       } catch (refreshErr) {
-        console.error('❌ [API] Token refresh failed:', refreshErr);
+        console.error('Token refresh failed:', refreshErr);
       }
       
       // If refresh fails, logout
-      // DEBUG: Uncomment for debugging
-      // console.warn('⚠️ [API] Logging out due to auth failure');
       await supabase.auth.signOut();
       localStorage.clear();
       window.location.href = '/login';

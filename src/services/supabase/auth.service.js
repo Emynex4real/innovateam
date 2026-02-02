@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase'
+import supabase from '../../config/supabase'
 import PasswordValidator from '../../utils/passwordValidation'
 import { AuthRateLimiter } from '../../utils/rateLimiter'
 import { SessionFingerprint, SecureTokenManager } from '../../utils/sessionSecurity'

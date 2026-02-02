@@ -7,12 +7,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
+// Create a single Supabase client instance
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storage: window.localStorage
+    storage: window.localStorage,
+    storageKey: 'sb-jdedscbvbkjvqmmdabig-auth-token',
+    flowType: 'pkce'
   }
 });
 

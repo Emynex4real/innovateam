@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase'
+import supabase from '../../config/supabase'
 import cleanWalletService from '../cleanWallet.service'
 
 export class ServicesService {
