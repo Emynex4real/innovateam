@@ -294,8 +294,14 @@ const PracticeQuestions = () => {
     const score = calculateScore();
     
     if (!isBankUnlocked(selectedBank.id)) {
-      const newStats = { ...userStats, freeQuestionsToday: userStats.freeQuestionsToday + questions.length };
-      localStorage.setItem(`practice_stats_${getCurrentUser().id}`, JSON.stringify(newStats));
+      const currentUser = getCurrentUser();
+      const today = new Date().toDateString();
+      const newStats = { 
+        freeQuestionsToday: userStats.freeQuestionsToday + questions.length,
+        lastPracticeDate: today,
+        unlockedBanks: userStats.unlockedBanks
+      };
+      localStorage.setItem(`practice_stats_${currentUser.id}`, JSON.stringify(newStats));
       setUserStats(newStats);
     }
 
