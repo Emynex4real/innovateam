@@ -67,44 +67,77 @@ const PerformanceAnalytics = () => {
 
     // 2. Get Data from Supabase (Real DB)
     let practiceHistory = [];
+    let aiExamHistory = [];
+    
     try {
       const supabase = (await import('../../config/supabase')).default;
-      const { data, error } = await supabase
+      
+      // Fetch Practice Sessions
+      const { data: practiceData, error: practiceError } = await supabase
         .from('practice_sessions')
         .select('*')
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (practiceError) throw practiceError;
       
-      // Map Supabase data to expected format
-      practiceHistory = (data || []).map(s => ({
+      // Map Practice Sessions
+      practiceHistory = (practiceData || []).map(s => ({
         bankName: s.bank_name,
         subject: s.subject,
         totalQuestions: s.total_questions,
         correctAnswers: s.correct_answers,
         timeSpent: s.time_spent,
         percentage: s.percentage,
-        date: s.created_at
+        date: s.created_at,
+        source: 'practice'
       }));
+
+      // Fetch AI Examiner Sessions
+      const { data: aiExamData, error: aiExamError } = await supabase
+        .from('ai_exams')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false });
+      
+      if (!aiExamError && aiExamData) {
+        // Map AI Exams to same format
+        aiExamHistory = aiExamData.map(exam => ({
+          bankName: `AI Exam: ${exam.subject || 'Study Material'}`,
+          subject: exam.subject || 'General',
+          totalQuestions: exam.total_questions || 0,
+          correctAnswers: exam.score || 0,
+          timeSpent: 0, // AI exams don't track time currently
+          percentage: exam.percentage || 0,
+          date: exam.completed_at || exam.created_at,
+          source: 'ai-examiner'
+        }));
+      }
     } catch (error) {
-      console.error('Failed to load practice history:', error);
+      console.error('Failed to load history:', error);
       practiceHistory = [];
+      aiExamHistory = [];
     }
+
+    // 3. Combine both data sources
+    const allSessions = [...practiceHistory, ...aiExamHistory].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    );
     
-    // 3. FULL LOGIC RESTORED HERE
-    const totalSessions = practiceHistory.length;
-    const totalQuestions = practiceHistory.reduce((sum, session) => sum + session.totalQuestions, 0);
-    const correctAnswers = practiceHistory.reduce((sum, session) => sum + session.correctAnswers, 0);
-    const totalTime = practiceHistory.reduce((sum, session) => sum + session.timeSpent, 0);
+    // 4. Calculate combined statistics
+    const totalSessions = allSessions.length;
+    const totalQuestions = allSessions.reduce((sum, session) => sum + session.totalQuestions, 0);
+    const correctAnswers = allSessions.reduce((sum, session) => sum + session.correctAnswers, 0);
+    const totalTime = allSessions.reduce((sum, session) => sum + session.timeSpent, 0);
     
     const averageScore = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const averageTime = totalSessions > 0 ? Math.round(totalTime / totalSessions) : 0;
 
     // Streak Logic - Calculate consecutive days (unique dates only)
     let streak = 0;
-    if (practiceHistory.length > 0) {
-      const uniqueDates = [...new Set(practiceHistory.map(s => new Date(s.date).toDateString()))]
+    if (allSessions.length > 0) {
+      const uniqueDates = [...new Set(allSessions.map(s => new Date(s.date).toDateString()))]
         .sort((a, b) => new Date(b) - new Date(a));
       
       const today = new Date().setHours(0, 0, 0, 0);
@@ -127,7 +160,7 @@ const PerformanceAnalytics = () => {
 
     // Subject Performance Logic
     const subjectStats = {};
-    practiceHistory.forEach(session => {
+    allSessions.forEach(session => {
       const sub = session.subject || 'General';
       if (!subjectStats[sub]) subjectStats[sub] = { total: 0, correct: 0 };
       subjectStats[sub].total += session.totalQuestions;
@@ -138,14 +171,15 @@ const PerformanceAnalytics = () => {
       subject,
       accuracy: Math.round((stats.correct / stats.total) * 100),
       total: stats.total
-    })).sort((a, b) => b.accuracy - a.accuracy);
+    })).sort((a, b) => b.accuracy - a.accuracy).slice(0, 10);
 
-    // Recent Sessions (Newest First)
-    const recentSessions = practiceHistory.slice(-5).reverse().map(s => ({
+    // Recent Sessions (Newest First) - Already sorted, take first 10
+    const recentSessions = allSessions.slice(0, 5).map(s => ({
       bankName: s.bankName,
       date: s.date,
       score: s.percentage,
-      total: s.totalQuestions
+      total: s.totalQuestions,
+      source: s.source
     }));
 
     setAnalytics({
@@ -318,7 +352,14 @@ const PerformanceAnalytics = () => {
                          </div>
                          <div>
                             <p className="font-bold text-sm text-gray-900 dark:text-white">{session.bankName}</p>
-                            <p className="text-xs text-gray-500">{new Date(session.date).toLocaleDateString()}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-gray-500">{new Date(session.date).toLocaleDateString()}</p>
+                              {session.source === 'ai-examiner' && (
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800">
+                                  AI
+                                </Badge>
+                              )}
+                            </div>
                          </div>
                       </div>
 
