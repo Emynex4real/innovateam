@@ -72,7 +72,10 @@ const AIExaminer = () => {
   }, [currentQIndex, answers, timeLeft, step]);
   
   useEffect(() => { 
-    restoreExamState(); 
+    // Only check for restore on initial mount when on the home screen
+    if (step === 0) {
+      restoreExamState();
+    }
   }, []);
 
   // --- STATE HELPERS ---
@@ -100,12 +103,37 @@ const AIExaminer = () => {
     localStorage.setItem(`ai_exam_state_${getCurrentUser().id}`, JSON.stringify(state));
   };
 
-  const restoreExamState = () => {
+  const restoreExamState = async () => {
     const saved = localStorage.getItem(`ai_exam_state_${getCurrentUser().id}`);
     if (!saved) return;
+    
     try {
       const state = JSON.parse(saved);
-      if (state.timestamp > Date.now() - (60 * 60 * 1000) && state.questions?.length > 0) {
+      
+      if (state.timestamp > Date.now() - (60 * 60 * 1000) && state.questions?.length > 0 && state.examId) {
+        // Check if exam is already completed
+        try {
+          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+          const response = await fetch(`${apiUrl}/api/ai-examiner/exam-status/${state.examId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          
+          // If unauthorized (token expired), clear state
+          if (response.status === 401) {
+            clearExamState();
+            return;
+          }
+          
+          const data = await response.json();
+          if (data.success && data.status === 'completed') {
+            clearExamState();
+            return;
+          }
+        } catch (err) {
+          clearExamState();
+          return;
+        }
+        
         setPendingExamState(state);
         setShowRestoreDialog(true);
       } else { 
@@ -212,8 +240,8 @@ const AIExaminer = () => {
   // ✅ CORRECTED: Generate questions based on document content
   const handleGenerate = async () => {
     // 1. Validation
-    if (walletBalance < 300) {
-      return toast.error("Insufficient balance (₦300 needed)");
+    if (walletBalance < 100) {
+      return toast.error("Insufficient balance (₦100 needed)");
     }
     
     if (!documentId) {
@@ -260,7 +288,7 @@ const AIExaminer = () => {
         await addTransaction({
           type: 'debit',
           category: 'AI Examiner',
-          amount: 300,
+          amount: 100,
           description: `AI Exam: ${documentTitle} (${examConfig.questionCount} questions)`
         });
         
@@ -539,7 +567,7 @@ const AIExaminer = () => {
                 
                 <div className="pt-6 border-t dark:border-gray-800 flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
-                    <Sparkles className="h-4 w-4 text-amber-500" /> Cost: ₦300
+                    <Sparkles className="h-4 w-4 text-amber-500" /> Cost: ₦100
                   </div>
                   <Button 
                     onClick={handleGenerate} 
@@ -681,7 +709,7 @@ const AIExaminer = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => setStep(0)} 
-                    className="border-white/30 text-white hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
+                    className="border-white/30 text-indigo-900 font-bold hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
                   >
                     Back to Dashboard
                   </Button>
@@ -697,71 +725,100 @@ const AIExaminer = () => {
 
             <div className="space-y-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white px-4">
-                Detailed Review
+                Performance Breakdown
               </h3>
               
-              {results.results?.map((r, idx) => (
-                <Card 
-                  key={idx} 
-                  className={cn(
-                    "border-0 shadow-sm overflow-hidden",
-                    !r.isCorrect && "ring-1 ring-red-100 dark:ring-red-900/30"
-                  )}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex gap-4">
-                      <div className={cn(
-                        "h-8 w-8 rounded-full flex items-center justify-center text-white flex-shrink-0 mt-1",
-                        r.isCorrect ? "bg-emerald-500" : "bg-red-500"
-                      )}>
-                        {r.isCorrect ? (
-                          <CheckCircle className="h-5 w-5" />
-                        ) : (
-                          <XCircle className="h-5 w-5" />
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 space-y-3">
-                        <p className="font-bold text-lg text-gray-900 dark:text-white">
-                          {r.question}
-                        </p>
-                        
-                        <div className="grid md:grid-cols-2 gap-4 text-sm">
-                          <div className={cn(
-                            "p-3 rounded-lg border",
-                            r.isCorrect 
-                              ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
-                              : "bg-red-50 border-red-200 text-red-800"
-                          )}>
-                            <span className="block text-xs font-bold uppercase opacity-60 mb-1">
-                              Your Answer
-                            </span>
-                            {r.userAnswer}
-                          </div>
-                          
-                          {!r.isCorrect && (
-                            <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 text-blue-800">
-                              <span className="block text-xs font-bold uppercase opacity-60 mb-1">
-                                Correct Answer
-                              </span>
-                              {r.correctAnswer}
-                            </div>
+              {results.results?.map((r, idx) => {
+                // Find the original question to get all options
+                const originalQuestion = questions.find(q => q.question === r.question);
+                const options = originalQuestion?.options || [];
+                
+                // Get full text for correct answer
+                const getFullAnswer = (answer) => {
+                  if (!answer) return 'N/A';
+                  // If answer is already full text, return it
+                  if (answer.length > 2) return answer;
+                  // If it's a letter (A-D), find the corresponding option
+                  const letter = answer.trim().toUpperCase();
+                  const index = letter.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+                  return options[index] || answer;
+                };
+                
+                const correctAnswerFull = getFullAnswer(r.correctAnswer);
+                const userAnswerFull = getFullAnswer(r.userAnswer);
+                
+                return (
+                  <Card 
+                    key={idx} 
+                    className={cn(
+                      "border-0 shadow-sm overflow-hidden",
+                      !r.isCorrect && "ring-1 ring-red-100 dark:ring-red-900/30"
+                    )}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex gap-4">
+                        <div className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center text-white flex-shrink-0 mt-1",
+                          r.isCorrect ? "bg-emerald-500" : "bg-red-500"
+                        )}>
+                          {r.isCorrect ? (
+                            <CheckCircle className="h-5 w-5" />
+                          ) : (
+                            <XCircle className="h-5 w-5" />
                           )}
                         </div>
                         
-                        {r.explanation && (
-                          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                            <span className="font-bold text-gray-900 dark:text-white mr-2">
-                              Explanation:
-                            </span>
-                            {r.explanation}
+                        <div className="flex-1 space-y-3">
+                          <p className="font-bold text-lg text-gray-900 dark:text-white">
+                            {r.question}
+                          </p>
+                          
+                          <div className="space-y-3">
+                            <div className={cn(
+                              "p-4 rounded-lg border",
+                              r.isCorrect 
+                                ? "bg-emerald-50 border-emerald-200" 
+                                : "bg-red-50 border-red-200"
+                            )}>
+                              <span className="block text-xs font-bold uppercase opacity-60 mb-2">
+                                Your Answer
+                              </span>
+                              <p className={cn(
+                                "font-semibold",
+                                r.isCorrect ? "text-emerald-800" : "text-red-800"
+                              )}>
+                                {userAnswerFull}
+                              </p>
+                            </div>
+                            
+                            {!r.isCorrect && (
+                              <div className="p-4 rounded-lg border bg-blue-50 border-blue-200">
+                                <span className="block text-xs font-bold uppercase opacity-60 mb-2">
+                                  Correct Answer
+                                </span>
+                                <p className="font-semibold text-blue-800">
+                                  {correctAnswerFull}
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        )}
+                          
+                          {r.explanation && (
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900">
+                              <span className="block text-xs font-bold uppercase text-indigo-600 mb-2">
+                                EXPLANATION
+                              </span>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                {r.explanation}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </motion.div>
         )}

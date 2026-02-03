@@ -22,6 +22,7 @@ router.post('/submit-text', (req, res) => aiExaminerController.submitText(req, r
 // 3. Generation & Grading Routes
 router.post('/generate', (req, res) => aiExaminerController.generateQuestions(req, res));
 router.post('/submit/:examId', (req, res) => aiExaminerController.submitAnswers(req, res));
+router.get('/exam-status/:examId', (req, res) => aiExaminerController.getExamStatus(req, res));
 router.get('/history', (req, res) => aiExaminerController.getExamHistory(req, res));
 router.get('/results/:examId', (req, res) => aiExaminerController.getExamResults(req, res));
 

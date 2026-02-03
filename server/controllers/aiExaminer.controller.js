@@ -352,8 +352,8 @@ class AIExaminerController {
         const correctAns = q.correct_answer || q.correctAnswer;
         const questionType = q.type || 'multiple-choice';
         
-        const cleanUser = String(userAns || "").trim().toLowerCase();
-        const cleanCorrect = String(correctAns || "").trim().toLowerCase();
+        const cleanUser = String(userAns || "").trim();
+        const cleanCorrect = String(correctAns || "").trim();
         let isCorrect = false;
         let feedback = '';
         let issues = [];
@@ -371,28 +371,41 @@ class AIExaminerController {
             feedback = validation.feedback;
             issues = validation.issues || [];
           } catch (err) {
-            // Fallback to simple matching if AI validation fails
-            isCorrect = cleanUser === cleanCorrect;
+            isCorrect = cleanUser.toLowerCase() === cleanCorrect.toLowerCase();
           }
         } 
         // Standard matching for multiple-choice and true-false
         else {
-          if (cleanUser === cleanCorrect) {
-            isCorrect = true;
-          } 
-          // Handle cases like "A. Answer" vs "A"
-          else if (cleanUser.length > 1 && cleanCorrect.length === 1 && 
-            (cleanUser.startsWith(cleanCorrect + ".") || 
-             cleanUser.startsWith(cleanCorrect + ")") || 
-             cleanUser.startsWith(cleanCorrect + " "))) {
-            isCorrect = true;
+          let userOptionLetter = cleanUser;
+          let correctOptionLetter = cleanCorrect;
+          
+          // If user provided option text (not just A/B/C/D), find which option it matches
+          if (q.options && Array.isArray(q.options)) {
+            // Check if user answer is NOT already a single letter A-D
+            if (!['A', 'B', 'C', 'D'].includes(cleanUser.toUpperCase())) {
+              const matchedIndex = q.options.findIndex(opt => 
+                opt.trim().toLowerCase() === cleanUser.toLowerCase()
+              );
+              if (matchedIndex !== -1) {
+                userOptionLetter = String.fromCharCode(65 + matchedIndex);
+              }
+            }
+            
+            // Check if correct answer is NOT already a single letter A-D
+            if (!['A', 'B', 'C', 'D'].includes(cleanCorrect.toUpperCase())) {
+              const matchedIndex = q.options.findIndex(opt => 
+                opt.trim().toLowerCase() === cleanCorrect.toLowerCase()
+              );
+              if (matchedIndex !== -1) {
+                correctOptionLetter = String.fromCharCode(65 + matchedIndex);
+              }
+            }
           }
-          else if (cleanCorrect.length > 1 && cleanUser.length === 1 && 
-            (cleanCorrect.startsWith(cleanUser + ".") || 
-             cleanCorrect.startsWith(cleanUser + ")") || 
-             cleanCorrect.startsWith(cleanUser + " "))) {
-            isCorrect = true;
-          }
+          
+          const userLetter = userOptionLetter.toUpperCase().charAt(0);
+          const correctLetter = correctOptionLetter.toUpperCase().charAt(0);
+          
+          isCorrect = userLetter === correctLetter;
         }
 
         if (isCorrect) score++;
@@ -440,6 +453,52 @@ class AIExaminerController {
 
     } catch (error) {
       console.error('❌ Submit answers error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  }
+
+  /**
+   * 📊 GET EXAM STATUS
+   * Check if an exam is completed or active
+   */
+  async getExamStatus(req, res) {
+    try {
+      const { examId } = req.params;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Unauthorized' 
+        });
+      }
+
+      console.log('🔍 Executing query on ai_exams');
+      
+      const { data: exam, error } = await supabase
+        .from('ai_exams')
+        .select('status')
+        .eq('id', examId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !exam) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Exam not found' 
+        });
+      }
+      
+      res.json({
+        success: true,
+        status: exam.status
+      });
+
+    } catch (error) {
+      console.error('❌ Get exam status error:', error);
       res.status(500).json({ 
         success: false, 
         message: error.message 

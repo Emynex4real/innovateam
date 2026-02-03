@@ -56,14 +56,17 @@ const PracticeQuestions = () => {
   const [historySubject, setHistorySubject] = useState('all');
 
   const FREE_QUESTIONS_LIMIT = 5;
-  const UNLOCK_PRICE = 300;
+  const UNLOCK_PRICE = 100;
 
   // --- INITIALIZATION ---
   useEffect(() => {
     const init = async () => {
       await Promise.all([loadBanks(), loadWalletBalance()]);
       loadUserStats();
-      restoreExamState();
+      // Only restore on initial load when on banks view
+      if (view === 'banks') {
+        restoreExamState();
+      }
       if (view === 'history') loadPracticeHistory();
     };
     init();
@@ -305,7 +308,7 @@ const PracticeQuestions = () => {
       setUserStats(newStats);
     }
 
-    // Save to Supabase (Real DB)
+    // Save to Supabase with attempt tracking
     const sessionData = {
       bankId: selectedBank.id,
       bankName: selectedBank.name,
@@ -313,12 +316,14 @@ const PracticeQuestions = () => {
       totalQuestions: questions.length,
       correctAnswers: score.correct,
       timeSpent: timer,
-      percentage: score.percentage
+      percentage: score.percentage,
+      userAnswers: userAnswers // Save answers for review
     };
 
     const result = await practiceSessionService.savePracticeSession(sessionData);
     if (result.success) {
-      toast.success(result.isFirstAttempt ? `+${result.pointsAwarded} XP Earned!` : 'Session Recorded');
+      const attemptMsg = result.attemptNumber > 1 ? ` (Attempt #${result.attemptNumber})` : '';
+      toast.success(result.isFirstAttempt ? `+${result.pointsAwarded} XP Earned!${attemptMsg}` : `Session Recorded${attemptMsg}`);
       if (score.percentage >= 70 && result.isFirstAttempt) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#6366f1'] });
       
       // Update weekly XP for leaderboard
@@ -328,6 +333,7 @@ const PracticeQuestions = () => {
       }
     }
 
+    setPracticeComplete(true);
     setView('results');
   };
 
