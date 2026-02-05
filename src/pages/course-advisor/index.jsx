@@ -25,7 +25,7 @@ const ALL_STATES = ["Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayels
 const SUBJECTS_LIST = [
   "Mathematics", "English Language", "Physics", "Chemistry", "Biology", 
   "Economics", "Government", "Literature-in-English", "Geography", "Agric Science", 
-  "Further Math", "Computer Studies", "Civic Education", "Commerce", "Accounting", "CRS/IRS", "History", "Yoruba", "Igbo", "Hausa", "French", "Visual Arts", "Music"
+  "Further Math", "Computer Studies", "Commerce", "Accounting", "CRS/IRS", "History", "Yoruba", "Igbo", "Hausa", "French", "Visual Arts", "Music"
 ];
 
 // --- 2. ROBUST COURSE DATABASE (60+ Courses) ---
@@ -375,14 +375,14 @@ const COURSE_DB = {
       "English Language", 
       "Literature-in-English", 
       ["Government", "History"], 
-      ["CRS", "IRS", "Economics", "Civic Education"]
+      ["CRS", "IRS", "Economics"]
     ],
     waec_req: [
       "English Language", 
       "Mathematics", 
       "Literature-in-English", 
       "Government", 
-      ["Economics", "History", "Civic Education"]
+      ["Economics", "History"]
     ],
     waec_sitting: "One Sitting",
     salary: "Medium", demand: "High"
@@ -428,7 +428,7 @@ const COURSE_DB = {
     utme_req: [
       "English Language", 
       "Biology", 
-      ["Economics", "Government", "Civic Education"], 
+      ["Economics", "Government"], 
       ["Literature-in-English", "CRS", "IRS"]
     ],
     waec_req: [
@@ -482,7 +482,7 @@ const COURSE_DB = {
     utme_req: [
       "English Language", 
       "Government", 
-      ["Economics", "Civic Education"], 
+      ["Economics"], 
       ["Literature-in-English", "CRS", "History"]
     ],
     waec_req: [
@@ -629,7 +629,7 @@ const COURSE_DB = {
       "English Language", 
       "Government", 
       ["Literature-in-English", "History"], 
-      ["CRS", "IRS", "Civic Education"]
+      ["CRS", "IRS"]
     ],
     waec_req: [
       "English Language", 
