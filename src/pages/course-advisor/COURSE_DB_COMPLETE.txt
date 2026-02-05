@@ -1,0 +1,7 @@
+This file contains all courses that need flexible requirements added.
+I'll update them in batches to avoid errors.
+
+Management Sciences - ALL need flexible options
+Social Sciences - Some need flexible options  
+Arts - Some need flexible options
+Environmental - Some need flexible options

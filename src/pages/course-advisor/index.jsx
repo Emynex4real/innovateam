@@ -30,271 +30,786 @@ const SUBJECTS_LIST = [
 
 // --- 2. ROBUST COURSE DATABASE (60+ Courses) ---
 const COURSE_DB = {
-  // === COLLEGE OF MEDICINE ===
+  // === COLLEGE OF MEDICINE & DENTAL SCIENCES ===
   "Medicine & Surgery": {
-    faculty: "Clinical Sciences", cutoff: 84.0, min_jamb: 270,
+    faculty: "Clinical Sciences", cutoff: 85.025, min_jamb: 270,
     utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
     salary: "Very High", demand: "Very High"
   },
   "Dentistry": {
-    faculty: "Clinical Sciences", cutoff: 80.5, min_jamb: 260,
+    faculty: "Dental Sciences", cutoff: 76.65, min_jamb: 260,
     utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
     salary: "Very High", demand: "High"
   },
   "Nursing Science": {
-    faculty: "Clinical Sciences", cutoff: 78.5, min_jamb: 250,
+    faculty: "Clinical Sciences", cutoff: 79.80, min_jamb: 250,
     utme_req: ["English Language", "Physics", "Biology", "Chemistry"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "Very High"
   },
-  "Pharmacy": {
-    faculty: "Pharmacy", cutoff: 79.0, min_jamb: 250,
+  "Radiography": {
+    faculty: "Clinical Sciences", cutoff: 77.375, min_jamb: 240,
     utme_req: ["English Language", "Physics", "Biology", "Chemistry"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
-    salary: "Very High", demand: "High"
-  },
-  "Pharmacology": {
-    faculty: "Basic Medical Sciences", cutoff: 70.0, min_jamb: 220,
-    utme_req: ["English Language", "Physics", "Biology", "Chemistry"],
-    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
-    salary: "Medium", demand: "Medium"
-  },
-  "Physiology": {
-    faculty: "Basic Medical Sciences", cutoff: 65.0, min_jamb: 200,
-    utme_req: ["English Language", "Biology", "Physics", "Chemistry"],
-    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
-    salary: "Medium", demand: "Medium"
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "High"
   },
   "Medical Laboratory Science": {
-    faculty: "Clinical Sciences", cutoff: 74.0, min_jamb: 240,
+    faculty: "Clinical Sciences", cutoff: 74.375, min_jamb: 240,
     utme_req: ["English Language", "Physics", "Biology", "Chemistry"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
   },
   "Physiotherapy": {
-    faculty: "Clinical Sciences", cutoff: 75.5, min_jamb: 240,
+    faculty: "Clinical Sciences", cutoff: 74.725, min_jamb: 240,
     utme_req: ["English Language", "Physics", "Biology", "Chemistry"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
   },
-
-  // === FACULTY OF SCIENCE ===
-  "Computer Science": {
-    faculty: "Science", cutoff: 79.5, min_jamb: 250,
-    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"], 
-    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Biology"],
-    salary: "Very High", demand: "Explosive"
-  },
-  "Microbiology": {
-    faculty: "Science", cutoff: 62.0, min_jamb: 200,
-    utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
+  "Pharmacology": {
+    faculty: "Basic Medical Sciences", cutoff: 73.125, min_jamb: 230,
+    utme_req: ["English Language", "Physics", "Biology", "Chemistry"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
-    salary: "Medium", demand: "High"
-  },
-  "Biochemistry": {
-    faculty: "Science", cutoff: 64.0, min_jamb: 200,
-    utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
-    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Medium"
   },
-  "Geology": {
-    faculty: "Science", cutoff: 60.0, min_jamb: 200,
-    utme_req: ["English Language", "Physics", "Chemistry", "Mathematics"], 
-    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Biology"],
-    salary: "High", demand: "Medium"
+  "Physiology": {
+    faculty: "Basic Medical Sciences", cutoff: 72.875, min_jamb: 220,
+    utme_req: ["English Language", "Biology", "Physics", "Chemistry"],
+    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Medium"
   },
-  "Marine Biology": {
-    faculty: "Science", cutoff: 58.0, min_jamb: 200,
-    utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
-    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry"],
-    salary: "Medium", demand: "Low"
-  },
-  "Industrial Chemistry": {
-    faculty: "Science", cutoff: 60.0, min_jamb: 200,
-    utme_req: ["English Language", "Chemistry", "Mathematics", "Physics"],
-    waec_req: ["Mathematics", "English Language", "Chemistry", "Physics", "Biology"],
-    salary: "Medium", demand: "High"
-  },
-
-  // === ENGINEERING ===
-  "Systems Engineering": {
-    faculty: "Engineering", cutoff: 76.0, min_jamb: 240,
-    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
-    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
+  "Pharmacy": {
+    faculty: "Pharmacy", cutoff: 76.40, min_jamb: 250,
+    utme_req: ["English Language", "Physics", "Biology", "Chemistry"],
+    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
     salary: "Very High", demand: "High"
   },
-  "Computer Engineering": {
-    faculty: "Engineering", cutoff: 79.5, min_jamb: 250,
-    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
+
+  // === FACULTY OF COMPUTING & INFORMATICS ===
+  "Computer Science": {
+    faculty: "Computing & Informatics", cutoff: 83.425, min_jamb: 260,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Physics", 
+      ["Chemistry", "Economics", "Biology", "Geography"]
+    ],
     waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
     salary: "Very High", demand: "Explosive"
   },
-  "Mechanical Engineering": {
-    faculty: "Engineering", cutoff: 78.0, min_jamb: 240,
+  "Data Science": {
+    faculty: "Computing & Informatics", cutoff: 76.925, min_jamb: 250,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Physics", 
+      ["Chemistry", "Economics", "Biology", "Geography"]
+    ],
+    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
+    salary: "Very High", demand: "Explosive"
+  },
+
+  // === FACULTY OF ENGINEERING ===
+  "Computer Engineering": {
+    faculty: "Engineering", cutoff: 82.875, min_jamb: 260,
+    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
+    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
+    salary: "Very High", demand: "Explosive"
+  },
+  "Electrical & Electronics Engineering": {
+    faculty: "Engineering", cutoff: 79.50, min_jamb: 250,
     utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
     waec_req: ["Mathematics", "English Language", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
+    salary: "Very High", demand: "High"
+  },
+  "Mechanical Engineering": {
+    faculty: "Engineering", cutoff: 78.525, min_jamb: 240,
+    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
+    waec_req: ["Mathematics", "English Language", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
   },
+  "Systems Engineering": {
+    faculty: "Engineering", cutoff: 78.225, min_jamb: 240,
+    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
+    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
+    salary: "Very High", demand: "High"
+  },
   "Civil Engineering": {
-    faculty: "Engineering", cutoff: 74.0, min_jamb: 230,
+    faculty: "Engineering", cutoff: 75.625, min_jamb: 230,
     utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
     waec_req: ["Mathematics", "English Language", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "High"
+  },
+  "Chemical Engineering": {
+    faculty: "Engineering", cutoff: 74.50, min_jamb: 230,
+    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
+    waec_req: ["Mathematics", "English Language", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
   },
   "Petroleum & Gas Engineering": {
-    faculty: "Engineering", cutoff: 73.0, min_jamb: 230,
+    faculty: "Engineering", cutoff: 70.725, min_jamb: 230,
     utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
     waec_req: ["Mathematics", "English Language", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
     salary: "Very High", demand: "Medium"
   },
-  "Chemical Engineering": {
-    faculty: "Engineering", cutoff: 74.5, min_jamb: 230,
+  "Surveying & Geoinformatics": {
+    faculty: "Engineering", cutoff: 58.125, min_jamb: 200,
     utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
     waec_req: ["Mathematics", "English Language", "Physics", "Chemistry", "Further Math"],
-    salary: "High", demand: "High"
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "Medium"
+  },
+
+  // === FACULTY OF SCIENCE ===
+  "Microbiology": {
+    faculty: "Science", cutoff: 70.05, min_jamb: 200,
+    utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
+    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "High"
+  },
+  "Biochemistry": {
+    faculty: "Science", cutoff: 66.55, min_jamb: 200,
+    utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
+    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Medium"
+  },
+  "Geology": {
+    faculty: "Science", cutoff: 65.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Mathematics",
+      "Physics",
+      ["Chemistry", "Geography"]
+    ],
+    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Biology"],
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "Medium"
+  },
+  "Geophysics": {
+    faculty: "Science", cutoff: 64.20, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Mathematics",
+      "Physics",
+      ["Chemistry", "Geography"]
+    ],
+    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Biology"],
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "Medium"
+  },
+  "Industrial Chemistry": {
+    faculty: "Science", cutoff: 62.10, min_jamb: 200,
+    utme_req: ["English Language", "Chemistry", "Mathematics", "Physics"],
+    waec_req: ["Mathematics", "English Language", "Chemistry", "Physics", "Biology"],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "High"
+  },
+  "Marine Biology": {
+    faculty: "Science", cutoff: 60.50, min_jamb: 200,
+    utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
+    waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Low"
+  },
+  "Mathematics & Statistics": {
+    faculty: "Science", cutoff: 68.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Physics", 
+      ["Chemistry", "Economics", "Geography"]
+    ],
+    waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "Medium"
+  },
+  "Fisheries": {
+    faculty: "Science", cutoff: 55.40, min_jamb: 200,
+    utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Biology", 
+      "Chemistry", 
+      ["Physics", "Agricultural Science"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Low"
   },
 
   // === MANAGEMENT SCIENCES ===
   "Accounting": {
-    faculty: "Management", cutoff: 74.5, min_jamb: 240,
-    utme_req: ["English Language", "Mathematics", "Economics", "Commerce"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Commerce", "Accounting"],
+    faculty: "Management Sciences", cutoff: 75.70, min_jamb: 250,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Financial Accounting", "Further Mathematics", "Geography", "Government", "Biology"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Financial Accounting", 
+      ["Government", "Further Mathematics", "Geography"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "Very High"
   },
+  "Finance": {
+    faculty: "Management Sciences", cutoff: 73.20, min_jamb: 230,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Financial Accounting", "Further Mathematics", "Geography", "Government", "Biology"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Government", 
+      ["Financial Accounting", "Further Mathematics", "Geography"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Very High", demand: "High"
+  },
   "Business Administration": {
-    faculty: "Management", cutoff: 70.0, min_jamb: 220,
-    utme_req: ["English Language", "Mathematics", "Economics", "Government"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Government", "Commerce"],
+    faculty: "Management Sciences", cutoff: 71.50, min_jamb: 220,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Government", "Financial Accounting", "Commerce", "Geography"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Government", 
+      ["Commerce", "Financial Accounting", "Geography"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
   },
-  "Finance": {
-    faculty: "Management", cutoff: 71.0, min_jamb: 230,
-    utme_req: ["English Language", "Mathematics", "Economics", "Commerce"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Government", "Accounting"],
+  "Actuarial Science": {
+    faculty: "Management Sciences", cutoff: 70.80, min_jamb: 220,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Geography", "Government", "Physics", "Chemistry", "Biology"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Further Mathematics",
+      ["Geography", "Government", "Financial Accounting"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Very High", demand: "High"
   },
   "Insurance": {
-    faculty: "Management", cutoff: 66.0, min_jamb: 210,
-    utme_req: ["English Language", "Mathematics", "Economics", "Commerce"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Commerce", "Government"],
+    faculty: "Management Sciences", cutoff: 68.50, min_jamb: 210,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Commerce", "Government", "Geography"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Government", 
+      ["Commerce", "Geography", "Financial Accounting"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "Medium"
   },
-  "Actuarial Science": {
-    faculty: "Management", cutoff: 68.0, min_jamb: 220,
-    utme_req: ["English Language", "Mathematics", "Economics", "Geography"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Geography", "Further Math"],
-    salary: "Very High", demand: "High"
-  },
-  "IRPM": {
-    faculty: "Management", cutoff: 65.0, min_jamb: 210,
-    utme_req: ["English Language", "Mathematics", "Economics", "Government"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Government", "Commerce"],
+  "Employment Relations & HRM (IRPM)": {
+    faculty: "Management Sciences", cutoff: 69.10, min_jamb: 210,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Government", "Commerce"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Government", 
+      ["Commerce", "Geography", "History"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "High"
   },
 
   // === SOCIAL SCIENCES ===
-  "Economics": {
-    faculty: "Social Sciences", cutoff: 72.5, min_jamb: 240,
-    utme_req: ["English Language", "Mathematics", "Economics", "Government"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Government", "Geography"],
-    salary: "High", demand: "High"
-  },
   "Mass Communication": {
-    faculty: "Social Sciences", cutoff: 73.0, min_jamb: 230,
-    utme_req: ["English Language", "Literature-in-English", "Government", "CRS/IRS"],
-    waec_req: ["English Language", "Mathematics", "Literature-in-English", "Government", "Economics"],
+    faculty: "Communication & Media Studies", cutoff: 74.075, min_jamb: 240,
+    utme_req: [
+      "English Language", 
+      "Literature-in-English", 
+      ["Government", "History"], 
+      ["CRS", "IRS", "Economics", "Civic Education"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Literature-in-English", 
+      "Government", 
+      ["Economics", "History", "Civic Education"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "High"
   },
+  "Economics": {
+    faculty: "Social Sciences", cutoff: 73.475, min_jamb: 240,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Government", "History", "Geography", "Literature-in-English"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Government", 
+      ["Geography", "History", "Literature-in-English"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "High"
+  },
   "Political Science": {
-    faculty: "Social Sciences", cutoff: 68.0, min_jamb: 220,
-    utme_req: ["English Language", "Government", "Economics", "Literature-in-English"],
-    waec_req: ["English Language", "Mathematics", "Government", "History", "Economics"],
+    faculty: "Social Sciences", cutoff: 68.15, min_jamb: 220,
+    utme_req: [
+      "English Language", 
+      "Government", 
+      ["Economics", "History"], 
+      ["Literature-in-English", "CRS", "IRS", "Geography"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Government", 
+      "History", 
+      ["Economics", "Literature-in-English", "CRS", "IRS"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "Medium"
   },
-  "Sociology": {
-    faculty: "Social Sciences", cutoff: 65.0, min_jamb: 210,
-    utme_req: ["English Language", "Government", "Economics", "Literature-in-English"],
-    waec_req: ["English Language", "Mathematics", "Government", "Economics", "History"],
+  "Psychology": {
+    faculty: "Social Sciences", cutoff: 69.70, min_jamb: 220,
+    utme_req: [
+      "English Language", 
+      "Biology", 
+      ["Economics", "Government", "Civic Education"], 
+      ["Literature-in-English", "CRS", "IRS"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Biology", 
+      ["Economics", "Government"], 
+      ["Literature-in-English", "History", "CRS"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Medium"
   },
-  "Psychology": {
-    faculty: "Social Sciences", cutoff: 66.0, min_jamb: 220,
-    utme_req: ["English Language", "Biology", "Economics", "Government"],
-    waec_req: ["English Language", "Mathematics", "Biology", "Economics", "Government"],
+  "Sociology": {
+    faculty: "Social Sciences", cutoff: 67.20, min_jamb: 210,
+    utme_req: [
+      "English Language", 
+      "Government", 
+      ["Economics", "History"], 
+      ["Literature-in-English", "Geography", "CRS"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Government", 
+      ["Economics", "History"], 
+      ["Literature-in-English", "Geography", "CRS"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Medium"
   },
   "Geography": {
-    faculty: "Social Sciences", cutoff: 62.0, min_jamb: 200,
-    utme_req: ["English Language", "Geography", "Mathematics", "Economics"],
-    waec_req: ["English Language", "Mathematics", "Geography", "Economics", "Biology"],
+    faculty: "Social Sciences", cutoff: 62.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Geography", 
+      "Mathematics", 
+      ["Economics", "Government"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Geography", 
+      "Economics", 
+      ["Biology", "Government", "Physics"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Low"
+  },
+  "Social Work": {
+    faculty: "Social Sciences", cutoff: 66.80, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Government", 
+      ["Economics", "Civic Education"], 
+      ["Literature-in-English", "CRS", "History"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Government", 
+      ["Economics", "Civic Education"], 
+      ["Biology", "Literature-in-English", "History"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "High"
   },
 
   // === LAW & ARTS ===
   "Law": {
-    faculty: "Law", cutoff: 78.0, min_jamb: 250,
-    utme_req: ["English Language", "Literature-in-English", "Government", "CRS/IRS"],
-    waec_req: ["English Language", "Mathematics", "Literature-in-English", "Government", "CRS/IRS"],
+    faculty: "Law", cutoff: 78.225, min_jamb: 260,
+    utme_req: [
+      "English Language", 
+      "Literature-in-English", 
+      ["Government", "History"], 
+      ["CRS", "IRS", "Economics"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Literature-in-English", 
+      "Government", 
+      ["CRS", "IRS", "History", "Economics"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Very High", demand: "High"
   },
-  "Creative Arts": {
-    faculty: "Arts", cutoff: 64.0, min_jamb: 200,
-    utme_req: ["English Language", "Fine Art", "Literature-in-English", "Government"],
-    waec_req: ["English Language", "Mathematics", "Fine Art", "Literature-in-English", "Government"],
+  "Creative Arts (Theatre/Visual/Music)": {
+    faculty: "Arts", cutoff: 66.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Fine Art",
+      "Literature-in-English", 
+      ["Government", "History", "CRS"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Fine Art",
+      "Literature-in-English", 
+      ["Government", "History", "CRS"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Medium"
   },
   "English": {
-    faculty: "Arts", cutoff: 65.0, min_jamb: 210,
-    utme_req: ["English Language", "Literature-in-English", "Government", "CRS/IRS"],
-    waec_req: ["English Language", "Mathematics", "Literature-in-English", "Government", "CRS/IRS"],
+    faculty: "Arts", cutoff: 67.00, min_jamb: 210,
+    utme_req: [
+      "English Language", 
+      "Literature-in-English", 
+      "Government", 
+      ["CRS", "IRS", "History", "French"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Literature-in-English", 
+      "Government", 
+      ["CRS", "IRS", "History", "French"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Medium"
   },
   "History & Strategic Studies": {
-    faculty: "Arts", cutoff: 63.0, min_jamb: 200,
-    utme_req: ["English Language", "History", "Government", "Literature-in-English"],
-    waec_req: ["English Language", "Mathematics", "History", "Government", "Literature-in-English"],
+    faculty: "Arts", cutoff: 65.00, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "History", 
+      "Government", 
+      ["Literature-in-English", "CRS", "IRS", "Geography"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "History", 
+      "Government", 
+      ["Literature-in-English", "CRS", "IRS", "Geography"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Low"
   },
   "Philosophy": {
-    faculty: "Arts", cutoff: 60.0, min_jamb: 200,
-    utme_req: ["English Language", "Government", "Literature-in-English", "CRS/IRS"],
-    waec_req: ["English Language", "Mathematics", "Government", "Literature-in-English", "CRS/IRS"],
+    faculty: "Arts", cutoff: 63.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Government", 
+      ["Literature-in-English", "CRS", "IRS"],
+      ["History", "Economics"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Government", 
+      ["Literature-in-English", "CRS", "IRS"],
+      ["History", "Economics"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "Low"
   },
   "Linguistics": {
-    faculty: "Arts", cutoff: 62.0, min_jamb: 200,
-    utme_req: ["English Language", "Literature-in-English", "Yoruba", "Government"],
-    waec_req: ["English Language", "Mathematics", "Literature-in-English", "Yoruba", "Government"],
+    faculty: "Arts", cutoff: 64.00, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Literature-in-English", 
+      ["Yoruba", "Igbo", "Hausa"], 
+      ["Government", "History", "CRS"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Literature-in-English", 
+      ["Yoruba", "Igbo", "Hausa"], 
+      ["Government", "History", "CRS"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "Medium", demand: "Low"
+  },
+  "French": {
+    faculty: "Arts", cutoff: 62.00, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "French",
+      "Literature-in-English", 
+      ["Government", "History", "CRS"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "French", 
+      "Literature-in-English", 
+      ["Government", "History", "CRS"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Low"
+  },
+  "Chinese": {
+    faculty: "Arts", cutoff: 60.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Government", 
+      ["Literature-in-English", "History"], 
+      ["CRS", "IRS", "Civic Education"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Literature-in-English", 
+      "Government", 
+      ["Economics", "History", "CRS"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "High", demand: "Medium"
   },
 
   // === ENVIRONMENTAL SCIENCES ===
   "Architecture": {
-    faculty: "Environmental", cutoff: 74.5, min_jamb: 230,
-    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
-    waec_req: ["Mathematics", "English Language", "Physics", "Fine Art", "Chemistry"],
+    faculty: "Environmental Sciences", cutoff: 75.575, min_jamb: 240,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Physics", 
+      ["Chemistry", "Geography", "Economics", "Biology", "Fine Art"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Physics", 
+      "Fine Art",
+      ["Chemistry", "Geography", "Economics", "Biology"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
   },
   "Quantity Surveying": {
-    faculty: "Environmental", cutoff: 65.0, min_jamb: 200,
-    utme_req: ["English Language", "Mathematics", "Physics", "Geography"],
-    waec_req: ["Mathematics", "English Language", "Physics", "Geography", "Economics"],
+    faculty: "Environmental Sciences", cutoff: 68.50, min_jamb: 210,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Physics", 
+      ["Geography", "Economics", "Chemistry"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Physics", 
+      ["Geography", "Economics"], 
+      ["Chemistry", "Biology", "Technical Drawing"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "Medium"
   },
   "Building": {
-    faculty: "Environmental", cutoff: 62.0, min_jamb: 200,
-    utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
-    waec_req: ["Mathematics", "English Language", "Physics", "Chemistry", "Economics"],
+    faculty: "Environmental Sciences", cutoff: 65.00, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Physics", 
+      ["Chemistry", "Economics"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Physics", 
+      "Chemistry", 
+      ["Economics", "Technical Drawing", "Biology"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
   },
   "Estate Management": {
-    faculty: "Environmental", cutoff: 60.0, min_jamb: 200,
-    utme_req: ["English Language", "Mathematics", "Economics", "Geography"],
-    waec_req: ["Mathematics", "English Language", "Economics", "Geography", "Biology"],
+    faculty: "Environmental Sciences", cutoff: 63.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Economics", 
+      ["Physics", "Chemistry", "Biology", "Geography", "Financial Accounting"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Economics", 
+      "Geography", 
+      ["Biology", "Physics", "Chemistry", "Financial Accounting"]
+    ],
+    waec_sitting: "One Sitting",
     salary: "High", demand: "High"
+  },
+  "Urban & Regional Planning": {
+    faculty: "Environmental Sciences", cutoff: 53.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Mathematics", 
+      "Geography", 
+      ["Economics", "Physics", "Chemistry", "Biology"]
+    ],
+    waec_req: [
+      "Mathematics", 
+      "English Language", 
+      "Geography", 
+      "Economics", 
+      ["Physics", "Chemistry", "Biology", "Technical Drawing"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Medium"
+  },
+
+  // === EDUCATION ===
+  "Science Education (Bio/Chem/Phys/Math)": {
+    faculty: "Education", cutoff: 60.00, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Subject of Specialization", 
+      "Mathematics", 
+      ["Physics", "Chemistry", "Biology"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Subject of Specialization", 
+      ["Physics", "Chemistry", "Biology"],
+      ["Further Mathematics", "Geography", "Economics"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "High"
+  },
+  "Arts Education (Eng/Hist/Religions)": {
+    faculty: "Education", cutoff: 60.00, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Subject of Specialization", 
+      "Literature-in-English", 
+      ["Government", "History", "CRS"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Subject of Specialization", 
+      "Literature-in-English", 
+      ["Government", "History", "CRS"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Medium"
+  },
+  "Educational Management": {
+    faculty: "Education", cutoff: 58.50, min_jamb: 200,
+    utme_req: [
+      "English Language", 
+      "Government", 
+      "Economics", 
+      ["Literature-in-English", "Commerce", "Mathematics"]
+    ],
+    waec_req: [
+      "English Language", 
+      "Mathematics", 
+      "Government", 
+      "Economics", 
+      ["Commerce", "Literature-in-English", "Geography"]
+    ],
+    waec_sitting: "One Sitting",
+    salary: "Medium", demand: "Medium"
   }
+};
+
+// Helper function to check if requirements are met (handles flexible options)
+const checkRequirements = (requirements, userSubjects) => {
+  let matchCount = 0;
+  for (const req of requirements) {
+    if (Array.isArray(req)) {
+      // Flexible option: match any one from the array
+      if (req.some(option => userSubjects.includes(option))) matchCount++;
+    } else {
+      // Fixed requirement: must match exactly
+      if (userSubjects.includes(req)) matchCount++;
+    }
+  }
+  return matchCount;
+};
+
+// Helper to flatten requirements for display (keeps structure for UI)
+const flattenRequirements = (requirements) => {
+  // Return requirements as-is to preserve flexible options structure
+  return requirements;
 };
 
 const CourseAdvisor = () => {
@@ -334,9 +849,8 @@ const CourseAdvisor = () => {
       }
 
       // --- GATEKEEPER 2: Subject Combination ---
-      // We check if at least 3 of the required UTME subjects are present.
-      const matchingSubjects = targetCourse.utme_req.filter(req => utmeSubs.includes(req));
-      if (matchingSubjects.length < 3) {
+      const matchingSubjects = checkRequirements(targetCourse.utme_req, utmeSubs);
+      if (matchingSubjects < 3) {
          disqualifiers.push("Your UTME Subject combination does not match the core requirements.");
       }
 
@@ -346,12 +860,26 @@ const CourseAdvisor = () => {
       let oLevelPoints = 0;
       let missingCredits = [];
       
+      // Check WAEC requirements (handle flexible options)
       targetCourse.waec_req.forEach(req => {
-        const grade = olevels[req];
-        if (grade && GRADE_POINTS[grade] > 0) {
-          oLevelPoints += GRADE_POINTS[grade];
+        if (Array.isArray(req)) {
+          // Flexible requirement - check if any option has a grade
+          const hasGrade = req.some(option => olevels[option] && GRADE_POINTS[olevels[option]] > 0);
+          if (hasGrade) {
+            // Find the first option with a grade and use it
+            const gradedOption = req.find(option => olevels[option] && GRADE_POINTS[olevels[option]] > 0);
+            oLevelPoints += GRADE_POINTS[olevels[gradedOption]];
+          } else {
+            missingCredits.push(req.join(' / '));
+          }
         } else {
-          missingCredits.push(req);
+          // Fixed requirement
+          const grade = olevels[req];
+          if (grade && GRADE_POINTS[grade] > 0) {
+            oLevelPoints += GRADE_POINTS[grade];
+          } else {
+            missingCredits.push(req);
+          }
         }
       });
 
@@ -392,9 +920,8 @@ const CourseAdvisor = () => {
             const course = COURSE_DB[key];
             
             // A. UTME Check: Does this course accept my UTME combo?
-            // This is the CRITICAL FIX. We only check UTME compatibility.
-            const matchingUtme = course.utme_req.filter(req => utmeSubs.includes(req));
-            if (matchingUtme.length < 3) return null; // Must match at least 3 subjects
+            const matchingUtme = checkRequirements(course.utme_req, utmeSubs);
+            if (matchingUtme < 3) return null; // Must match at least 3 subjects
 
             // B. JAMB Score Check
             if (parsedJamb < Math.max(200, course.min_jamb)) return null;
@@ -456,7 +983,7 @@ const CourseAdvisor = () => {
 
   const renderInput = () => {
     const requiredOLevels = preferredCourse && COURSE_DB[preferredCourse] 
-      ? COURSE_DB[preferredCourse].waec_req 
+      ? flattenRequirements(COURSE_DB[preferredCourse].waec_req)
       : [];
 
     return (
@@ -516,15 +1043,32 @@ const CourseAdvisor = () => {
                 
                 {preferredCourse ? (
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {requiredOLevels.map(sub => (
-                      <div key={sub} className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
-                        <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 truncate mb-1" title={sub}>{sub}</p>
-                        <select value={olevels[sub] || ""} onChange={e => setOlevels({...olevels, [sub]: e.target.value})} className="w-full bg-transparent font-bold text-sm outline-none cursor-pointer">
-                          <option value="">Grade</option>
-                          {Object.keys(GRADE_POINTS).map(g => <option key={g} value={g}>{g}</option>)}
-                        </select>
-                      </div>
-                    ))}
+                    {requiredOLevels.map((sub, idx) => {
+                      const isFlexible = Array.isArray(sub);
+                      const displayLabel = isFlexible ? sub.join(' / ') : sub;
+                      const subjectKey = isFlexible ? sub[0] : sub;
+                      
+                      return (
+                        <div key={idx} className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
+                          <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 truncate mb-1" title={displayLabel}>{displayLabel}</p>
+                          <select 
+                            value={olevels[subjectKey] || ""} 
+                            onChange={e => {
+                              const newOlevels = {...olevels};
+                              if (isFlexible) {
+                                // Clear all flexible options first
+                                sub.forEach(s => delete newOlevels[s]);
+                              }
+                              newOlevels[subjectKey] = e.target.value;
+                              setOlevels(newOlevels);
+                            }} 
+                            className="w-full bg-transparent font-bold text-sm outline-none cursor-pointer">
+                            <option value="">Grade</option>
+                            {Object.keys(GRADE_POINTS).map(g => <option key={g} value={g}>{g}</option>)}
+                          </select>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center p-8 border-2 border-dashed rounded-xl text-slate-400 text-sm">

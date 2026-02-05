@@ -709,7 +709,7 @@ const AIExaminer = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => setStep(0)} 
-                    className="border-white/30 text-indigo-900 font-bold hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
+                    className="border-white/30 text-white font-bold hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
                   >
                     Back to Dashboard
                   </Button>
