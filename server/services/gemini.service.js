@@ -48,7 +48,7 @@ const CONFIG = {
   RATE_LIMIT_DELAY: 500, 
   RATE_LIMIT_BACKOFF: 5000,
   MAX_SAFE_CHARS: 60000,
-  ENABLE_CACHE: false, // Temporarily disabled to test LaTeX fixes
+  ENABLE_CACHE: process.env.ENABLE_CACHE === 'true',
   CACHE_TTL: parseInt(process.env.CACHE_TTL || '3600'),
   ENABLE_STRICT_VALIDATION: process.env.ENABLE_STRICT_VALIDATION !== 'false', // Default to true
 };
