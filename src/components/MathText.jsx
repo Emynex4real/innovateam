@@ -1,71 +1,122 @@
 import React from 'react';
+import 'katex/dist/katex.min.css';
 import katex from 'katex';
-import { formatMathText } from '../utils/mathFormatter';
 
-const MathText = ({ text, className = '' }) => {
-  const renderMath = (text) => {
-    if (!text) return [];
+const MathText = ({ children, text, className = '' }) => {
+  // Support both `text` prop (old API) and `children` prop (new API)
+  const content = text || children;
+  
+  const renderMath = (textContent) => {
+    if (!textContent) return '';
+    
+    // Auto-wrap common math patterns if not already in LaTeX
+    let processedText = String(textContent);
+    
+    // Only auto-wrap if there are no existing LaTeX delimiters
+    if (!processedText.includes('$') && !processedText.includes('\\(')) {
+      // Wrap superscripts: x^2 -> $x^2$
+      processedText = processedText.replace(/([a-zA-Z0-9]+)\^([a-zA-Z0-9]+)/g, '$$1^{$2}$');
+      // Wrap subscripts: x_2 -> $x_2$
+      processedText = processedText.replace(/([a-zA-Z0-9]+)_([a-zA-Z0-9]+)/g, '$$1_{$2}$');
+      // Wrap fractions: a/b -> $\frac{a}{b}$ (only simple cases)
+      processedText = processedText.replace(/\b([a-zA-Z0-9]+)\/([a-zA-Z0-9]+)\b/g, '$\\frac{$1}{$2}$');
+      // Wrap square roots: sqrt(x) -> $\sqrt{x}$
+      processedText = processedText.replace(/sqrt\(([^)]+)\)/g, '$\\sqrt{$1}$');
+    }
     
     const parts = [];
     let lastIndex = 0;
     
-    // Match $...$ for inline math and $$...$$ for display math
-    const regex = /\$\$([^\$]+)\$\$|\$([^\$]+)\$/g;
-    let match;
+    // Match inline math: $...$ or \(...\)
+    const inlineRegex = /\$([^\$]+)\$|\\\(([^\)]+)\\\)/g;
+    // Match display math: $$...$$ or \[...\]
+    const displayRegex = /\$\$([^\$]+)\$\$|\\\[([^\]]+)\\\]/g;
     
-    while ((match = regex.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
-      }
-      
-      const mathContent = match[1] || match[2];
-      const isDisplay = !!match[1];
-      
-      try {
-        const html = katex.renderToString(mathContent, {
-          displayMode: isDisplay,
-          throwOnError: false
+    // First, handle display math
+    let displayMatch;
+    const displayMatches = [];
+    while ((displayMatch = displayRegex.exec(processedText)) !== null) {
+      displayMatches.push({
+        start: displayMatch.index,
+        end: displayMatch.index + displayMatch[0].length,
+        latex: displayMatch[1] || displayMatch[2],
+        display: true
+      });
+    }
+    
+    // Then handle inline math
+    let inlineMatch;
+    const inlineMatches = [];
+    while ((inlineMatch = inlineRegex.exec(processedText)) !== null) {
+      // Skip if this match is inside a display math block
+      const isInDisplay = displayMatches.some(dm => 
+        inlineMatch.index >= dm.start && inlineMatch.index < dm.end
+      );
+      if (!isInDisplay) {
+        inlineMatches.push({
+          start: inlineMatch.index,
+          end: inlineMatch.index + inlineMatch[0].length,
+          latex: inlineMatch[1] || inlineMatch[2],
+          display: false
         });
-        parts.push({ type: 'math', content: html });
-      } catch (e) {
-        parts.push({ type: 'text', content: match[0] });
+      }
+    }
+    
+    // Combine and sort all matches
+    const allMatches = [...displayMatches, ...inlineMatches].sort((a, b) => a.start - b.start);
+    
+    // Build the result
+    allMatches.forEach((match, index) => {
+      // Add text before this match
+      if (match.start > lastIndex) {
+        parts.push(
+          <span key={`text-${index}`}>
+            {processedText.substring(lastIndex, match.start)}
+          </span>
+        );
       }
       
-      lastIndex = regex.lastIndex;
+      // Add the rendered math
+      try {
+        const html = katex.renderToString(match.latex, {
+          displayMode: match.display,
+          throwOnError: false,
+          output: 'html'
+        });
+        parts.push(
+          <span 
+            key={`math-${index}`}
+            dangerouslySetInnerHTML={{ __html: html }}
+            className={match.display ? 'block my-4' : 'inline-block mx-1'}
+          />
+        );
+      } catch (err) {
+        // If KaTeX fails, show the original text
+        parts.push(
+          <span key={`error-${index}`} className="text-red-500">
+            {processedText.substring(match.start, match.end)}
+          </span>
+        );
+      }
+      
+      lastIndex = match.end;
+    });
+    
+    // Add remaining text
+    if (lastIndex < processedText.length) {
+      parts.push(
+        <span key="text-end">
+          {processedText.substring(lastIndex)}
+        </span>
+      );
     }
     
-    if (lastIndex < text.length) {
-      parts.push({ type: 'text', content: text.slice(lastIndex) });
-    }
-    
-    return parts;
+    return parts.length > 0 ? parts : processedText;
   };
-
-  // Apply formatting first
-  const formattedText = formatMathText(text || '');
-  
-  // Convert superscripts to HTML
-  const htmlText = formattedText.replace(/([a-zA-Z0-9])\^\{(\d+)\}/g, '$1<sup>$2</sup>');
-  
-  const parts = renderMath(htmlText);
-  
-  if (parts.length === 0) {
-    return <span className={className} dangerouslySetInnerHTML={{ __html: htmlText }} />;
-  }
-  
-  if (parts.length === 1 && parts[0].type === 'text') {
-    return <span className={className} dangerouslySetInnerHTML={{ __html: parts[0].content }} />;
-  }
-  
-  if (parts.length === 1 && parts[0].type === 'math') {
-    return <span className={className} dangerouslySetInnerHTML={{ __html: parts[0].content }} />;
-  }
   
   return (
     <span className={className}>
-      {parts.map((part, idx) => 
-        <span key={idx} dangerouslySetInnerHTML={{ __html: part.content }} />
-      )}
+      {renderMath(content)}
     </span>
   );
 };

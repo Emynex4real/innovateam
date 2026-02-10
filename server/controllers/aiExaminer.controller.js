@@ -4,11 +4,28 @@ const geminiService = require('../services/gemini.service');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { parseOffice } = require('officeparser');
+const Tesseract = require('tesseract.js');
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 
 class AIExaminerController {
+
+  /**
+   * 🔍 OCR Helper - Extract text from PDF buffer using Tesseract
+   */
+  async performOCROnPDF(buffer) {
+    try {
+      // Use Tesseract directly on PDF buffer
+      const { data: { text } } = await Tesseract.recognize(buffer, 'eng', {
+        logger: m => console.log('OCR Progress:', m)
+      });
+      return text;
+    } catch (err) {
+      console.error('❌ OCR failed:', err);
+      return '';
+    }
+  }
 
   /**
    * 📤 UPLOAD DOCUMENT
@@ -39,6 +56,20 @@ class AIExaminerController {
       if (mimeType === 'application/pdf') {
         const data = await pdfParse(buffer);
         extractedText = data.text;
+        
+        // If PDF has very little text, try OCR (likely scanned PDF)
+        if (extractedText.length < 100) {
+          console.log('📸 PDF has minimal text, attempting OCR on scanned document...');
+          try {
+            const ocrText = await this.performOCROnPDF(buffer);
+            if (ocrText && ocrText.length > extractedText.length) {
+              extractedText = ocrText;
+              console.log(`✅ OCR extracted ${ocrText.length} characters`);
+            }
+          } catch (ocrErr) {
+            console.error('❌ OCR failed:', ocrErr.message);
+          }
+        }
       } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         const result = await mammoth.extractRawText({ buffer });
         extractedText = result.value;

@@ -15,6 +15,8 @@ import { Label } from '../../components/ui/label';
 import { cn } from '../../lib/utils';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { motion } from 'framer-motion';
+import MathText from '../../components/MathText';
+import 'katex/dist/katex.min.css';
 
 const AIExaminer = () => {
   const { walletBalance, addTransaction } = useWallet();
@@ -49,6 +51,7 @@ const AIExaminer = () => {
   // Dialogs
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [pendingExamState, setPendingExamState] = useState(null);
 
   // --- PERSISTENCE & TIMER ---
@@ -308,7 +311,19 @@ const AIExaminer = () => {
     }
   };
 
+  const handleSubmitClick = () => {
+    // Check for unanswered questions
+    const unansweredCount = questions.filter(q => !answers[q.id]).length;
+    
+    if (unansweredCount > 0) {
+      setShowSubmitDialog(true);
+    } else {
+      handleSubmit();
+    }
+  };
+
   const handleSubmit = async () => {
+    setShowSubmitDialog(false);
     clearExamState();
     setLoading(true);
     setLoadingText('AI is grading your answers...');
@@ -360,6 +375,16 @@ const AIExaminer = () => {
         confirmText="Resume" 
         cancelText="Restart" 
         type="info" 
+      />
+      <ConfirmDialog 
+        isOpen={showSubmitDialog} 
+        onClose={() => setShowSubmitDialog(false)} 
+        onConfirm={handleSubmit} 
+        title="Submit Exam?" 
+        message={`You have ${questions.filter(q => !answers[q.id]).length} unanswered question(s). Submit anyway?`}
+        confirmText="Submit" 
+        cancelText="Review" 
+        type="warning" 
       />
       <ConfirmDialog 
         isOpen={showQuitDialog} 
@@ -617,7 +642,7 @@ const AIExaminer = () => {
                 </span>
                 
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 leading-relaxed">
-                  {questions[currentQIndex].question}
+                  <MathText>{questions[currentQIndex].question}</MathText>
                 </h3>
                 
                 <div className="space-y-3">
@@ -648,7 +673,7 @@ const AIExaminer = () => {
                           ? "font-bold text-indigo-900 dark:text-indigo-300" 
                           : "text-gray-600 dark:text-gray-400"
                       )}>
-                        {opt}
+                        <MathText>{opt}</MathText>
                       </span>
                     </div>
                   ))}
@@ -666,7 +691,7 @@ const AIExaminer = () => {
                 
                 {currentQIndex === questions.length - 1 ? (
                   <Button 
-                    onClick={handleSubmit} 
+                    onClick={handleSubmitClick} 
                     className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-8 shadow-lg shadow-indigo-500/20"
                   >
                     Submit Exam
@@ -770,7 +795,7 @@ const AIExaminer = () => {
                         
                         <div className="flex-1 space-y-3">
                           <p className="font-bold text-lg text-gray-900 dark:text-white">
-                            {r.question}
+                            <MathText>{r.question}</MathText>
                           </p>
                           
                           <div className="space-y-3">
@@ -787,7 +812,7 @@ const AIExaminer = () => {
                                 "font-semibold",
                                 r.isCorrect ? "text-emerald-800" : "text-red-800"
                               )}>
-                                {userAnswerFull}
+                                <MathText>{userAnswerFull}</MathText>
                               </p>
                             </div>
                             
@@ -797,7 +822,7 @@ const AIExaminer = () => {
                                   Correct Answer
                                 </span>
                                 <p className="font-semibold text-blue-800">
-                                  {correctAnswerFull}
+                                  <MathText>{correctAnswerFull}</MathText>
                                 </p>
                               </div>
                             )}
@@ -809,7 +834,7 @@ const AIExaminer = () => {
                                 EXPLANATION
                               </span>
                               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                                {r.explanation}
+                                <MathText>{r.explanation}</MathText>
                               </p>
                             </div>
                           )}
