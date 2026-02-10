@@ -12,17 +12,32 @@ const os = require('os');
 class AIExaminerController {
 
   /**
-   * 🔍 OCR Helper - Extract text from PDF buffer using Tesseract
+   * 🔍 OCR Helper - Use Gemini Vision to read scanned PDFs
    */
   async performOCROnPDF(buffer) {
     try {
-      // Use Tesseract directly on PDF buffer
-      const { data: { text } } = await Tesseract.recognize(buffer, 'eng', {
-        logger: m => console.log('OCR Progress:', m)
-      });
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      
+      // Convert buffer to base64
+      const base64Data = buffer.toString('base64');
+      
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: 'application/pdf',
+            data: base64Data
+          }
+        },
+        'Extract all text from this document, including any mathematical formulas, equations, and symbols. Preserve the structure and formatting as much as possible.'
+      ]);
+      
+      const text = result.response.text();
+      console.log(`✅ Gemini Vision extracted ${text.length} characters`);
       return text;
     } catch (err) {
-      console.error('❌ OCR failed:', err);
+      console.error('❌ Gemini Vision OCR failed:', err.message);
       return '';
     }
   }
@@ -57,9 +72,9 @@ class AIExaminerController {
         const data = await pdfParse(buffer);
         extractedText = data.text;
         
-        // If PDF has very little text, try OCR (likely scanned PDF)
-        if (extractedText.length < 100) {
-          console.log('📸 PDF has minimal text, attempting OCR on scanned document...');
+        // If PDF has very little text or only watermarks, try OCR (likely scanned PDF)
+        if (extractedText.length < 500 || extractedText.includes('Scanned by CamScanner')) {
+          console.log('📸 PDF appears to be scanned, attempting Gemini Vision OCR...');
           try {
             const ocrText = await this.performOCROnPDF(buffer);
             if (ocrText && ocrText.length > extractedText.length) {
@@ -278,11 +293,12 @@ class AIExaminerController {
       // 6. ✅ Generate questions using document CONTENT (not just metadata)
       console.log('🤖 Generating questions from document content...');
       console.log(`📄 Document has ${doc.content.length} characters of text`);
+      console.log('📄 Content preview:', doc.content.substring(0, 300));
       
       const questions = await geminiService.generateQuestionsFromContent({
         content: doc.content,
-        subject: subject || doc.filename,
-        topic: doc.filename || 'Document Analysis',
+        subject: 'General',
+        topic: 'Document Analysis',
         difficulty: difficulty,
         totalQuestions: parseInt(questionCount) || 45,
         userId: userId
@@ -297,16 +313,27 @@ class AIExaminerController {
       }
 
       // 8. Process questions with IDs and additional metadata
-      const processedQuestions = questions.map(q => ({
-        id: uuidv4(),
-        question: q.question,
-        options: q.options || [],
-        correct_answer: q.answer || q.correctAnswer,
-        explanation: q.explanation || `The correct answer is ${q.answer || q.correctAnswer}.`,
-        type: q.type || 'multiple-choice',
-        difficulty: difficulty,
-        points: 1
-      }));
+      const processedQuestions = questions.map(q => {
+        // Clean up options - remove newlines and normalize
+        const cleanedOptions = (q.options || []).map(opt => {
+          if (typeof opt !== 'string') return String(opt || '');
+          return opt
+            .replace(/\r?\n/g, ' ')  // Remove all newlines
+            .replace(/\s{2,}/g, ' ')  // Collapse multiple spaces
+            .trim();
+        }).filter(opt => opt.length > 0);
+        
+        return {
+          id: uuidv4(),
+          question: q.question,
+          options: cleanedOptions,
+          correct_answer: q.answer || q.correctAnswer,
+          explanation: q.explanation || `The correct answer is ${q.answer || q.correctAnswer}.`,
+          type: q.type || 'multiple-choice',
+          difficulty: difficulty,
+          points: 1
+        };
+      });
 
       // 9. Create exam record
       const examId = uuidv4();

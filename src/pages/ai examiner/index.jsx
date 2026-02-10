@@ -280,7 +280,11 @@ const AIExaminer = () => {
       // 4. Handle success
       if (res && res.success && res.data) {
         console.log("📋 Questions received:", res.data.questions);
-        console.log("📋 First question structure:", res.data.questions[0]);
+        console.log("📋 First question:", res.data.questions[0]);
+        console.log("📋 First option RAW:", res.data.questions[0]?.options?.[0]);
+        console.log("📋 Has rac{:", res.data.questions[0]?.options?.some(o => o?.includes('rac{')));
+        console.log("📋 Has \\frac:", res.data.questions[0]?.options?.some(o => o?.includes('\\frac')));
+        console.log("📋 Has $:", res.data.questions[0]?.options?.some(o => o?.includes('$')));
         
         // ✅ Store questions and exam data
         setQuestions(res.data.questions);

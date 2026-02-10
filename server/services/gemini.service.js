@@ -48,7 +48,7 @@ const CONFIG = {
   RATE_LIMIT_DELAY: 500, 
   RATE_LIMIT_BACKOFF: 5000,
   MAX_SAFE_CHARS: 60000,
-  ENABLE_CACHE: process.env.ENABLE_CACHE === 'true',
+  ENABLE_CACHE: false, // Temporarily disabled to test LaTeX fixes
   CACHE_TTL: parseInt(process.env.CACHE_TTL || '3600'),
   ENABLE_STRICT_VALIDATION: process.env.ENABLE_STRICT_VALIDATION !== 'false', // Default to true
 };
@@ -110,17 +110,23 @@ class GeminiService {
       math: `DOMAIN: JAMB MATHEMATICS
 - Topics: Algebra, Geometry, Calculus, Statistics, Trigonometry
 - Question Types: Problem-solving, formula application, logical reasoning
-- Style: Clear numerical problems with exact answers`,
+- Style: Clear numerical problems with exact answers
+- CRITICAL: 70% of questions MUST be calculation-based with numerical answers
+- Include step-by-step problem solving questions`,
       
       physics: `DOMAIN: JAMB PHYSICS
 - Topics: Mechanics, Optics, Electricity, Waves, Modern Physics
 - Question Types: Formula-based calculations, concept application, real-world scenarios
-- Style: Quantitative problems with units and measurements`,
+- Style: Quantitative problems with units and measurements
+- CRITICAL: 70% of questions MUST be calculation-based with numerical answers
+- Include problems requiring formula application and unit conversions`,
       
       chemistry: `DOMAIN: JAMB CHEMISTRY
 - Topics: Organic Chemistry, Stoichiometry, Periodic Table, Electrolysis, Redox
 - Question Types: Equations, nomenclature, calculations, properties
-- Style: Precise chemical concepts and reactions`,
+- Style: Precise chemical concepts and reactions
+- CRITICAL: 60% of questions MUST be calculation-based (molar mass, stoichiometry, pH, etc.)
+- Include quantitative analysis and chemical equation balancing`,
       
       biology: `DOMAIN: JAMB BIOLOGY
 - Topics: Ecology, Genetics, Cells, Physiology, Classification, Evolution
@@ -206,6 +212,39 @@ class GeminiService {
   }
 
   /**
+   * 🧮 MATH NORMALIZATION (For duplicate detection)
+   * Carefully normalizes math expressions without breaking valid differences
+   */
+  _normalizeMath(str) {
+    if (!str) return '';
+    
+    let normalized = str.toLowerCase().trim();
+    
+    // Step 1: Remove LaTeX sizing commands (safe)
+    normalized = normalized.replace(/\\left|\\right/g, '');
+    
+    // Step 2: Normalize \frac{a}{b} to a/b BEFORE removing braces
+    normalized = normalized.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)');
+    
+    // Step 3: Remove whitespace (crucial for LaTeX)
+    normalized = normalized.replace(/\s+/g, '');
+    
+    // Step 4: Normalize decimal equivalents using negative lookahead/lookbehind
+    // Matches "0.5" only if NOT preceded by a digit AND NOT followed by a digit
+    // This correctly handles: x=0.5, 0.5x, but ignores 10.5
+    normalized = normalized.replace(/(?<!\d)0\.5(?!\d)/g, '1/2');
+    normalized = normalized.replace(/(?<!\d)0\.25(?!\d)/g, '1/4');
+    normalized = normalized.replace(/(?<!\d)0\.75(?!\d)/g, '3/4');
+    normalized = normalized.replace(/(?<!\d)0\.33+(?!\d)/g, '1/3'); // Handles 0.33, 0.333, etc.
+    normalized = normalized.replace(/(?<!\d)0\.66+(?!\d)/g, '2/3');
+    
+    // Step 5: DO NOT remove braces globally - they matter for exponents!
+    // e^{x+1} and e^x+1 are different and should stay different
+    
+    return normalized;
+  }
+
+  /**
    * ✅ QUESTION VALIDATION (Multi-Layer Quality Gate)
    */
   validateQuestion(q, subject) {
@@ -225,7 +264,51 @@ class GeminiService {
       return { valid: false, reason: 'invalid_answer' };
     }
 
-    // Layer 2: Meta-content detection (CRITICAL FIX)
+    // Check all options are non-empty
+    if (q.options.some(opt => !opt || opt.trim().length === 0)) {
+      logger.warn('Empty option detected', { options: q.options });
+      return { valid: false, reason: 'empty_option' };
+    }
+
+    // Layer 2: Math-aware duplicate detection
+    const isMathSubject = subject?.toLowerCase().match(/math|physic|chem|engineer/);
+    
+    if (isMathSubject) {
+      // Use math normalization for STEM subjects
+      const normalizedOptions = q.options.map(o => this._normalizeMath(o));
+      const uniqueOptions = new Set(normalizedOptions);
+      
+      if (uniqueOptions.size !== 4) {
+        logger.warn('Duplicate options detected (Mathematical equivalence)', { 
+          options: q.options,
+          normalized: normalizedOptions
+        });
+        return { valid: false, reason: 'duplicate_options_math' };
+      }
+    } else {
+      // Use simple string comparison for non-STEM subjects
+      const uniqueOptions = new Set(q.options.map(o => o.toLowerCase().trim()));
+      if (uniqueOptions.size !== 4) {
+        logger.warn('Duplicate options detected (String)', { options: q.options });
+        return { valid: false, reason: 'duplicate_options' };
+      }
+    }
+
+    // Layer 3: Correct answer must be in options
+    const validKeys = ['A', 'B', 'C', 'D'];
+    const answerIndex = validKeys.indexOf(q.answer);
+    
+    if (answerIndex === -1) {
+      logger.warn('Invalid answer key format', { answer: q.answer });
+      return { valid: false, reason: 'invalid_answer_key' };
+    }
+    
+    if (!q.options[answerIndex]) {
+      logger.warn('Correct answer index out of bounds', { answer: q.answer, options: q.options });
+      return { valid: false, reason: 'answer_not_in_options' };
+    }
+
+    // Layer 4: Meta-content detection (CRITICAL FIX)
     const metaKeywords = [
       'source text', 'according to the text', 'as described', 'the text states',
       'instruction', 'prompt', 'generation', 'the document mentions',
@@ -245,20 +328,13 @@ class GeminiService {
       }
     }
 
-    // Layer 3: Question quality checks
+    // Layer 5: Question quality checks
     if (q.question.endsWith('?') === false) {
       logger.warn('Question missing question mark', { question: q.question });
       return { valid: false, reason: 'no_question_mark' };
     }
 
-    // Layer 4: Option quality checks
-    const uniqueOptions = new Set(q.options.map(o => o.toLowerCase().trim()));
-    if (uniqueOptions.size !== 4) {
-      logger.warn('Duplicate options detected', { options: q.options });
-      return { valid: false, reason: 'duplicate_options' };
-    }
-
-    // Layer 5: Subject relevance check (basic keyword matching)
+    // Layer 6: Subject relevance check (basic keyword matching)
     if (CONFIG.ENABLE_STRICT_VALIDATION) {
       const subjectKeywords = this._getSubjectKeywords(subject);
       const hasRelevantKeyword = subjectKeywords.some(kw => 
@@ -279,28 +355,43 @@ class GeminiService {
   }
 
   /**
-   * 🔧 QUESTION CLEANUP (Remove Meta-References)
+   * 🔧 QUESTION CLEANUP (Industry Standard)
    */
   cleanQuestion(q) {
-    let cleaned = { ...q };
+    if (!q || typeof q !== 'object') return q;
     
-    // Clean question text
-    cleaned.question = q.question
-      .replace(/according to (the )?(text|source|document|passage|content)/gi, '')
-      .replace(/as (stated|mentioned|described|explained) in (the )?(text|source|document)/gi, '')
-      .replace(/the (text|source|document|passage|content) (states|mentions|says|explains|describes)/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    // Clean explanation
-    if (q.explanation) {
-      cleaned.explanation = q.explanation
-        .replace(/the source text (states|mentions|says|explains)/gi, 'The concept is that')
-        .replace(/according to the (text|source|document|passage),?/gi, '')
-        .replace(/as (mentioned|stated|described) in the text,?/gi, '')
-        .replace(/\s+/g, ' ')
+    const fixLatex = (text) => {
+      if (!text || typeof text !== 'string') return text;
+      return text
+        .replace(/\\binom/g, '\\binom')   // Preserve correct \binom
+        .replace(/\\frac/g, '\\frac')     // Preserve correct \frac
+        .replace(/\brac\{/g, '\\frac{')   // Fix rac{ -> \frac{
+        .replace(/\binom\{/g, '\\binom{') // Fix inom{ -> \binom{
+        .replace(/\bsqrt\{/g, '\\sqrt{')  // Fix sqrt{ -> \sqrt{
+        .replace(/\r?\n/g, ' ')            // Remove newlines
+        .replace(/\s{2,}/g, ' ')           // Collapse spaces
         .trim();
-    }
+    };
+    
+    const wrapLatex = (text) => {
+      if (!text || text.includes('$')) return text;
+      if (text.match(/\\(frac|binom|sqrt|sum)/)) return `$${text}$`;
+      return text;
+    };
+    
+    const cleaned = {
+      ...q,
+      question: wrapLatex(fixLatex(q.question)),
+      explanation: wrapLatex(fixLatex(q.explanation)),
+      options: Array.isArray(q.options) 
+        ? q.options.map(opt => wrapLatex(fixLatex(opt))).filter(Boolean)
+        : q.options
+    };
+    
+    logger.info('✅ Cleaned', { 
+      q: cleaned.question.substring(0, 60),
+      opt0: cleaned.options?.[0]?.substring(0, 50)
+    });
     
     return cleaned;
   }
@@ -367,6 +458,10 @@ INSTRUCTIONS:
 3. Only ONE option is correct
 4. Questions must be clear and standalone (no references to "the text" or "the source")
 5. Focus on ${subject} concepts, NOT on procedures or meta-content
+6. CRITICAL: Each option MUST be a single, complete line of text
+7. For math expressions, use proper LaTeX: wrap in $ for inline math (e.g., $x^2$, $\\frac{a}{b}$)
+8. DO NOT split formulas across multiple lines or mix with option labels
+9. Each option should be: "Complete answer text with $math$ if needed"
 
 Return JSON array of ${totalQuestions} questions.
       `.trim() : `
@@ -385,6 +480,10 @@ CRITICAL RULES:
 4. Questions must be standalone - students won't have the study material
 5. Each question has 4 options (A, B, C, D), only ONE correct
 6. Focus ONLY on ${subject} subject matter
+7. CRITICAL: Each option MUST be a single, complete line of text
+8. For math expressions, use proper LaTeX: wrap in $ for inline math (e.g., $x^2$, $\\frac{a}{b}$)
+9. DO NOT split formulas across multiple lines or mix with option labels
+10. Each option should be: "Complete answer text with $math$ if needed"
 
 STUDY MATERIAL:
 ${safeContent}
@@ -534,12 +633,40 @@ CRITICAL INSTRUCTIONS:
 4. DO NOT reference instructions, curriculum, or examination procedures
 5. Each question has 4 options (A-D), only ONE correct
 6. Questions must be clear, unambiguous, and exam-standard
+7. CRITICAL: For ALL mathematical expressions, you MUST use proper LaTeX:
+   - Fractions: Use \\frac{numerator}{denominator} NOT rac{} or frac{}
+   - Binomial: Use \\binom{n}{r} NOT inom{} or binom{}
+   - Always include the backslash (\\) before LaTeX commands
+8. Wrap ALL LaTeX in $ delimiters: $\\frac{a}{b}$, $\\binom{n}{r}$
+9. Each option MUST be a single, complete line
+10. NEVER write "rac{" or "inom{" - these are INVALID
 
 FORMAT:
 - Question: A clear exam question
-- Options: 4 distinct choices (A, B, C, D)
+- Options: 4 distinct choices (A, B, C, D) - each as a SINGLE complete line
 - Answer: The correct option (A, B, C, or D)
 - Explanation: Brief reasoning (without referencing "the text")
+
+EXAMPLE OF CORRECT FORMAT:
+{
+  "question": "What is the general term in the binomial expansion?",
+  "options": [
+    "$T_{r+1} = \\binom{n}{r} a^{n-r} b^r$",
+    "$T_r = \\binom{n}{r} a^{n-r} b^{r-1}$",
+    "$T_{r+1} = \\binom{n}{r+1} a^{n-r-1} b^r$",
+    "$T_r = \\binom{n}{r} a^r b^{n-r}$"
+  ],
+  "answer": "A",
+  "explanation": "The general term formula uses r+1 as the term number."
+}
+
+WRONG - DO NOT DO THIS:
+- "rac{n(n+1)}{2}" ❌ (missing backslash)
+- "inom{n}{r}" ❌ (missing backslash)
+
+CORRECT:
+- "$\\frac{n(n+1)}{2}$" ✅
+- "$\\binom{n}{r}$" ✅
 
 STUDY MATERIAL:
 ${safeContent}
@@ -680,11 +807,34 @@ Generate ${batch.count} questions as a JSON array.
             });
 
             const result = await model.generateContent(prompt);
-            return JSON.parse(result.response.text());
+            const rawResponse = result.response.text();
+            
+            // Log raw response for debugging
+            logger.info('Raw AI response sample', { 
+              sample: rawResponse.substring(0, 500),
+              length: rawResponse.length 
+            });
+            
+            const parsed = JSON.parse(rawResponse);
+            
+            // Log first question structure
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              logger.info('🤖 AI generated question (RAW)', {
+                question: parsed[0].question?.substring(0, 100),
+                optionsCount: parsed[0].options?.length,
+                option0: parsed[0].options?.[0],
+                option1: parsed[0].options?.[1],
+                hasRac: parsed[0].options?.some(o => o?.includes('rac{')),
+                hasInom: parsed[0].options?.some(o => o?.includes('inom{'))
+              });
+            }
+            
+            return parsed;
         } catch (error) {
             if (error.message.includes('429') || error.message.includes('quota')) {
                 this.isRateLimited = true;
             }
+            logger.error('AI generation error', { error: error.message });
             throw error;
         }
     };
