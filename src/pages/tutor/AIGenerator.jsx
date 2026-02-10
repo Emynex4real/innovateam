@@ -251,7 +251,7 @@ const AIGenerator = () => {
                   
                   <div className="mb-4">
                     <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Question</label>
-                    <div className={`mb-2 p-3 rounded border ${isDarkMode ? 'bg-gray-900 border-gray-600' : 'bg-gray-50 border-gray-200'} whitespace-pre-wrap`}>
+                    <div className={`mb-2 p-3 rounded border ${isDarkMode ? 'bg-gray-900 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
                       <MathText text={q.question_text} />
                     </div>
                     <textarea

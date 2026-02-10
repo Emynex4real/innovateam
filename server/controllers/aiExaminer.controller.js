@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const geminiService = require('../services/gemini.service');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
+const officeParser = require('officeparser');
 
 class AIExaminerController {
 
@@ -38,12 +39,14 @@ class AIExaminerController {
       } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         const result = await mammoth.extractRawText({ buffer });
         extractedText = result.value;
+      } else if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+        extractedText = await officeParser.parseOfficeAsync(buffer);
       } else if (mimeType === 'text/plain') {
         extractedText = buffer.toString('utf-8');
       } else {
         return res.status(400).json({ 
           success: false, 
-          message: 'Unsupported file type. Please upload PDF, DOCX, or TXT files.' 
+          message: 'Unsupported file type. Please upload PDF, DOCX, PPTX, or TXT files.' 
         });
       }
 

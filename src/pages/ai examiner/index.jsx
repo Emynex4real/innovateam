@@ -444,14 +444,14 @@ const AIExaminer = () => {
                     <input 
                       type="file" 
                       onChange={handleUpload} 
-                      accept=".pdf,.docx,.txt" 
+                      accept=".pdf,.docx,.pptx,.txt" 
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                     />
                     <div className="bg-indigo-50 dark:bg-indigo-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                       <Upload className="h-8 w-8 text-indigo-600" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Click to Upload</h3>
-                    <p className="text-sm text-gray-500 mt-1">PDF, DOCX, TXT (Max 10MB)</p>
+                    <p className="text-sm text-gray-500 mt-1">PDF, DOCX, PPTX, TXT (Max 10MB)</p>
                   </div>
                 ) : (
                   <div className="space-y-4">

@@ -1,5 +1,6 @@
 import React from 'react';
 import katex from 'katex';
+import { formatMathText } from '../utils/mathFormatter';
 
 const MathText = ({ text, className = '' }) => {
   const renderMath = (text) => {
@@ -40,10 +41,20 @@ const MathText = ({ text, className = '' }) => {
     return parts;
   };
 
-  const parts = renderMath(text || '');
+  // Apply formatting first
+  const formattedText = formatMathText(text || '');
+  
+  // Convert superscripts to HTML
+  const htmlText = formattedText.replace(/([a-zA-Z0-9])\^\{(\d+)\}/g, '$1<sup>$2</sup>');
+  
+  const parts = renderMath(htmlText);
   
   if (parts.length === 0) {
-    return <span className={className}>{text}</span>;
+    return <span className={className} dangerouslySetInnerHTML={{ __html: htmlText }} />;
+  }
+  
+  if (parts.length === 1 && parts[0].type === 'text') {
+    return <span className={className} dangerouslySetInnerHTML={{ __html: parts[0].content }} />;
   }
   
   if (parts.length === 1 && parts[0].type === 'math') {
@@ -53,11 +64,7 @@ const MathText = ({ text, className = '' }) => {
   return (
     <span className={className}>
       {parts.map((part, idx) => 
-        part.type === 'math' ? (
-          <span key={idx} dangerouslySetInnerHTML={{ __html: part.content }} />
-        ) : (
-          <span key={idx}>{part.content}</span>
-        )
+        <span key={idx} dangerouslySetInnerHTML={{ __html: part.content }} />
       )}
     </span>
   );

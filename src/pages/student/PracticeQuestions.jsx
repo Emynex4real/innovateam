@@ -18,6 +18,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
+import { formatMathText } from '../../utils/mathFormatter';
 
 // --- UTILS ---
 const getCurrentUser = () => {
@@ -519,7 +520,7 @@ const PracticeQuestions = () => {
            
            <div className="mb-8">
              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Question {currentQuestionIndex + 1} / {questions.length}</span>
-             <h2 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mt-3 leading-tight"><Latex>{q.question}</Latex></h2>
+             <h2 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mt-3 leading-tight"><Latex>{formatMathText(q.question)}</Latex></h2>
            </div>
 
            <div className="space-y-3">
@@ -557,7 +558,7 @@ const PracticeQuestions = () => {
                  }}
                  className={`w-full text-left p-5 rounded-2xl border-2 transition-all flex items-center gap-4 group ${borderClass} ${mode === 'learn' && checkedAnswer ? 'cursor-default' : 'hover:border-emerald-200 dark:hover:border-emerald-900 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold border transition-colors ${isSelected ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-200 dark:border-slate-700 group-hover:border-emerald-300'}`}>{String.fromCharCode(65 + idx)}</div>
-                    <span className={`text-base md:text-lg ${isSelected ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'}`}><Latex>{opt}</Latex></span>
+                    <span className={`text-base md:text-lg ${isSelected ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'}`}><Latex>{formatMathText(opt)}</Latex></span>
                  </button>
                )
              })}
@@ -576,7 +577,7 @@ const PracticeQuestions = () => {
            {mode === 'learn' && checkedAnswer && q.explanation && (
              <div className="mt-6 p-5 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/50">
                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-2">✨ Explanation</p>
-               <p className="text-sm text-slate-700 dark:text-slate-300"><Latex>{q.explanation}</Latex></p>
+               <p className="text-sm text-slate-700 dark:text-slate-300"><Latex>{formatMathText(q.explanation)}</Latex></p>
              </div>
            )}
 
@@ -681,13 +682,13 @@ const PracticeQuestions = () => {
                         {isCorrect ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                      </div>
                      <div className="flex-1">
-                        <p className="font-bold text-slate-900 dark:text-white mb-2"><Latex>{q.question}</Latex></p>
-                        <p className="text-sm text-slate-500 mb-1">Your Answer: <span className={isCorrect ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}><Latex>{userAns || 'Skipped'}</Latex></span></p>
-                        {!isCorrect && <p className="text-sm text-emerald-600">Correct Answer: <span className="font-bold"><Latex>{correctAns}</Latex></span></p>}
+                        <p className="font-bold text-slate-900 dark:text-white mb-2"><Latex>{formatMathText(q.question)}</Latex></p>
+                        <p className="text-sm text-slate-500 mb-1">Your Answer: <span className={isCorrect ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}><Latex>{formatMathText(userAns || 'Skipped')}</Latex></span></p>
+                        {!isCorrect && <p className="text-sm text-emerald-600">Correct Answer: <span className="font-bold"><Latex>{formatMathText(correctAns)}</Latex></span></p>}
                         {q.explanation && (
                           <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/50">
                              <p className="text-xs font-bold text-blue-600 uppercase mb-1">Explanation</p>
-                             <p className="text-sm text-slate-600 dark:text-slate-300"><Latex>{q.explanation}</Latex></p>
+                             <p className="text-sm text-slate-600 dark:text-slate-300"><Latex>{formatMathText(q.explanation)}</Latex></p>
                           </div>
                         )}
                      </div>
@@ -772,7 +773,7 @@ const PracticeQuestions = () => {
                         {isCorrect ? 'Correct' : 'Incorrect'}
                       </Badge>
                     </div>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white mb-4"><Latex>{q.question}</Latex></p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white mb-4"><Latex>{formatMathText(q.question)}</Latex></p>
                     
                     {/* Options */}
                     <div className="space-y-2 mb-4">
@@ -791,7 +792,7 @@ const PracticeQuestions = () => {
                             }`}>
                               {String.fromCharCode(65 + idx)}
                             </div>
-                            <span className="text-sm flex-1"><Latex>{opt}</Latex></span>
+                            <span className="text-sm flex-1"><Latex>{formatMathText(opt)}</Latex></span>
                             {isUserAnswer && <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-200">Your Answer</Badge>}
                             {isCorrectAnswer && <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200">Correct</Badge>}
                           </div>
@@ -805,7 +806,7 @@ const PracticeQuestions = () => {
                         <p className="text-xs font-bold text-blue-600 uppercase mb-2 flex items-center gap-1">
                           <Sparkles className="w-3.5 h-3.5" /> Explanation
                         </p>
-                        <p className="text-sm text-slate-700 dark:text-slate-300"><Latex>{q.explanation}</Latex></p>
+                        <p className="text-sm text-slate-700 dark:text-slate-300"><Latex>{formatMathText(q.explanation)}</Latex></p>
                       </div>
                     )}
                   </div>
