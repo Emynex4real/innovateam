@@ -15,6 +15,7 @@ import {
 import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import { generateStudentReportPDF } from '../../utils/pdfReportGenerator';
 
 const StudentProfile = () => {
   const { studentId } = useParams();
@@ -74,20 +75,18 @@ const StudentProfile = () => {
   };
 
   const handleDownloadReport = async () => {
+    const loadingToast = toast.loading('Generating PDF report...');
     try {
       const res = await tutorialCenterService.generateStudentReport(studentId, reportPeriod);
       if (res.success) {
-        // Create download link for PDF/CSV
-        const blob = new Blob([JSON.stringify(res.report, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${student.name.replace(/\s+/g, '_')}_Report_${reportPeriod}.json`;
-        a.click();
-        toast.success('Report downloaded successfully');
+        generateStudentReportPDF(res.report);
+        toast.success('PDF report downloaded successfully!', { id: loadingToast });
+      } else {
+        toast.error(res.message || 'Failed to generate report', { id: loadingToast });
       }
     } catch (error) {
-      toast.error('Export failed');
+      console.error('PDF Generation Error:', error);
+      toast.error(error.message || 'Failed to generate report', { id: loadingToast });
     }
   };
 
@@ -121,6 +120,15 @@ const StudentProfile = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          <select
+            value={reportPeriod}
+            onChange={(e) => setReportPeriod(e.target.value)}
+            className={`px-4 py-2 rounded-xl border font-medium transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+          >
+            <option value="week">Last Week</option>
+            <option value="month">Last Month</option>
+            <option value="all">All Time</option>
+          </select>
           <button className={`p-2 rounded-xl border transition-colors ${isDarkMode ? 'border-gray-700 hover:bg-gray-800 text-gray-400' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}>
             <MoreVertical size={20} />
           </button>
@@ -128,7 +136,7 @@ const StudentProfile = () => {
             onClick={handleDownloadReport}
             className="hidden md:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
           >
-            <Download size={18} /> Export Report
+            <Download size={18} /> Export PDF Report
           </button>
         </div>
       </div>
@@ -416,6 +424,14 @@ const StudentProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Export FAB */}
+      <button
+        onClick={handleDownloadReport}
+        className="md:hidden fixed bottom-20 right-6 z-40 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-all active:scale-95"
+      >
+        <Download size={24} />
+      </button>
     </div>
   );
 };

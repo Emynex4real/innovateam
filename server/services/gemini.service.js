@@ -379,7 +379,7 @@ class GeminiService {
       return text;
     };
     
-    const cleaned = {
+    return {
       ...q,
       question: wrapLatex(fixLatex(q.question)),
       explanation: wrapLatex(fixLatex(q.explanation)),
@@ -387,13 +387,6 @@ class GeminiService {
         ? q.options.map(opt => wrapLatex(fixLatex(opt))).filter(Boolean)
         : q.options
     };
-    
-    logger.info('✅ Cleaned', { 
-      q: cleaned.question.substring(0, 60),
-      opt0: cleaned.options?.[0]?.substring(0, 50)
-    });
-    
-    return cleaned;
   }
 
   /**
@@ -816,18 +809,6 @@ Generate ${batch.count} questions as a JSON array.
             });
             
             const parsed = JSON.parse(rawResponse);
-            
-            // Log first question structure
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              logger.info('🤖 AI generated question (RAW)', {
-                question: parsed[0].question?.substring(0, 100),
-                optionsCount: parsed[0].options?.length,
-                option0: parsed[0].options?.[0],
-                option1: parsed[0].options?.[1],
-                hasRac: parsed[0].options?.some(o => o?.includes('rac{')),
-                hasInom: parsed[0].options?.some(o => o?.includes('inom{'))
-              });
-            }
             
             return parsed;
         } catch (error) {
