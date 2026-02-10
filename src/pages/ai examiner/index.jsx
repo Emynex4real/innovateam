@@ -709,7 +709,7 @@ const AIExaminer = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => setStep(0)} 
-                    className="border-white/30 text-white font-bold hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
+                    className="border-white/30 text-indigo-900 dark:text-white font-bold hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
                   >
                     Back to Dashboard
                   </Button>
@@ -780,7 +780,7 @@ const AIExaminer = () => {
                                 ? "bg-emerald-50 border-emerald-200" 
                                 : "bg-red-50 border-red-200"
                             )}>
-                              <span className="block text-xs font-bold uppercase opacity-60 mb-2">
+                              <span className="block text-xs font-bold uppercase opacity-60 mb-2 dark:text-black">
                                 Your Answer
                               </span>
                               <p className={cn(

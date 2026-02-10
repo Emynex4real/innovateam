@@ -3,7 +3,10 @@ const { v4: uuidv4 } = require('uuid');
 const geminiService = require('../services/gemini.service');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const officeParser = require('officeparser');
+const { parseOffice } = require('officeparser');
+const fs = require('fs').promises;
+const path = require('path');
+const os = require('os');
 
 class AIExaminerController {
 
@@ -40,7 +43,28 @@ class AIExaminerController {
         const result = await mammoth.extractRawText({ buffer });
         extractedText = result.value;
       } else if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-        extractedText = await officeParser.parseOfficeAsync(buffer);
+        const tempPath = path.join(os.tmpdir(), `${uuidv4()}.pptx`);
+        await fs.writeFile(tempPath, buffer);
+        try {
+          const result = await parseOffice(tempPath);
+          
+          // Extract text from all content nodes recursively
+          const extractText = (nodes) => {
+            if (!nodes || !Array.isArray(nodes)) return '';
+            return nodes.map(node => {
+              let text = '';
+              if (node.text) text += node.text + ' ';
+              if (node.children) text += extractText(node.children);
+              return text;
+            }).join(' ');
+          };
+          
+          extractedText = extractText(result.content);
+          await fs.unlink(tempPath);
+        } catch (err) {
+          await fs.unlink(tempPath).catch(() => {});
+          throw err;
+        }
       } else if (mimeType === 'text/plain') {
         extractedText = buffer.toString('utf-8');
       } else {
