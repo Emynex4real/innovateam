@@ -4,6 +4,21 @@ import studentTCService from '../../../services/studentTC.service';
 import tutorialCenterService from '../../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
+import { 
+  ArrowLeft, 
+  Clock, 
+  Calendar, 
+  CheckCircle, 
+  XCircle, 
+  TrendingUp, 
+  RefreshCw, 
+  BookOpen, 
+  Award, 
+  BarChart2,
+  ChevronRight,
+  Zap
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const EnterpriseResults = () => {
   const { testId } = useParams();
@@ -16,8 +31,6 @@ const EnterpriseResults = () => {
   const [selectedAttempt, setSelectedAttempt] = useState(null);
 
   useEffect(() => {
-    // DEBUG: Uncomment for debugging
-    // console.log('📊 [RESULTS] Component mounted', { testId });
     loadData();
   }, [testId]);
 
@@ -28,24 +41,16 @@ const EnterpriseResults = () => {
   }, [attempts]);
 
   const loadData = async () => {
-    // DEBUG: Uncomment for debugging
-    // console.log('🔄 [RESULTS] Loading data for testId:', testId);
     try {
       const [attemptsRes, testRes] = await Promise.all([
         studentTCService.getMyAttempts(testId),
         studentTCService.getTest(testId)
       ]);
       
-      // DEBUG: Uncomment for debugging
-      // console.log('✅ [RESULTS] Data loaded', {
-      //   attemptsCount: attemptsRes.attempts?.length,
-      //   testTitle: testRes.questionSet?.title
-      // });
-      
       if (attemptsRes.success) setAttempts(attemptsRes.attempts);
       if (testRes.success) setTest(testRes.questionSet);
     } catch (error) {
-      console.error('❌ [RESULTS] Failed to load data', error);
+      console.error('Failed to load data', error);
       toast.error('Failed to load results');
     } finally {
       setLoading(false);
@@ -53,35 +58,21 @@ const EnterpriseResults = () => {
   };
 
   const handleRemedial = async (attemptId) => {
-    // DEBUG: Uncomment for debugging
-    console.log('🚀 [REMEDIAL] handleRemedial called', { attemptId });
-    
     setGeneratingRemedial(true);
     try {
-      console.log('📤 [REMEDIAL] Sending request to backend');
       const res = await tutorialCenterService.generateRemedialTest(attemptId);
-      console.log('✅ [REMEDIAL] Backend response received', res);
       
       if (res.success) {
-        console.log('🎉 [REMEDIAL] Generation successful, navigating to test');
-        toast.success('Practice test created!');
-        
-        // Use setTimeout to ensure state updates complete before navigation
+        toast.success('Practice test created based on your mistakes!');
         setTimeout(() => {
-          console.log('🧭 [REMEDIAL] Executing navigation to test');
           navigate(`/student/test/${res.remedial_test.id}`, { replace: true });
-        }, 100);
+        }, 500);
       } else {
-        console.error('❌ [REMEDIAL] Response success flag is false', res);
         toast.error(res.error || 'Failed to generate practice test');
         setGeneratingRemedial(false);
       }
     } catch (error) {
-      console.error('💥 [REMEDIAL] Exception caught', {
-        error,
-        message: error.message,
-        response: error.response?.data
-      });
+      console.error('Remedial error', error);
       toast.error('Failed to generate practice test');
       setGeneratingRemedial(false);
     }
@@ -89,206 +80,271 @@ const EnterpriseResults = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
-          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Loading results...</p>
-        </div>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${isDarkMode ? 'bg-zinc-950 text-zinc-400' : 'bg-gray-50 text-gray-500'}`}>
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4" />
+        <p className="font-medium">Calculating Performance...</p>
       </div>
     );
   }
 
-  const bestAttempt = attempts.reduce((best, curr) => curr.score > best.score ? curr : best, attempts[0]);
-  const avgScore = attempts.reduce((sum, att) => sum + att.score, 0) / attempts.length;
+  // Derived Stats
+  const bestAttempt = attempts.reduce((best, curr) => curr.score > best.score ? curr : best, attempts[0] || {});
+  const avgScore = attempts.length ? Math.round(attempts.reduce((sum, att) => sum + att.score, 0) / attempts.length) : 0;
   const improvement = attempts.length > 1 ? attempts[0].score - attempts[attempts.length - 1].score : 0;
+  const passRate = attempts.length ? Math.round(attempts.filter(a => a.score >= test.passing_score).length / attempts.length * 100) : 0;
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'}`}>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
+    <div className={`min-h-screen font-sans ${isDarkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Navigation */}
         <div className="mb-8">
           <button
             onClick={() => navigate('/student/tests')}
-            className={`mb-4 flex items-center gap-2 font-semibold transition-all hover:scale-105 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              isDarkMode ? 'text-zinc-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+            }`}
           >
-            ← Back to Tests
+            <ArrowLeft size={16} /> Back to Assessments
           </button>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{test?.title}</h1>
-              <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Performance Analysis</p>
-            </div>
-            <button
-              onClick={() => navigate(`/student/test/${testId}`)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 font-semibold transition-all shadow-lg hover:scale-105"
-            >
-              🔄 Retake Test
-            </button>
-          </div>
         </div>
 
         {attempts.length === 0 ? (
-          <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-2xl text-center py-16`}>
-            <div className="text-6xl mb-4">📝</div>
-            <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>No Attempts Yet</h2>
-            <p className={`mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Take the test to see your results</p>
+          /* Empty State */
+          <div className={`max-w-2xl mx-auto text-center p-12 rounded-2xl border border-dashed ${isDarkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-gray-300 bg-white'}`}>
+            <div className={`inline-flex p-4 rounded-full mb-6 ${isDarkMode ? 'bg-zinc-800 text-zinc-400' : 'bg-gray-100 text-gray-500'}`}>
+              <BookOpen size={32} />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">No Results Yet</h2>
+            <p className={`mb-8 ${isDarkMode ? 'text-zinc-400' : 'text-gray-500'}`}>
+              You haven't attempted <strong>{test?.title}</strong> yet. Complete the test to see detailed analytics here.
+            </p>
             <button
               onClick={() => navigate(`/student/test/${testId}`)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 font-semibold transition-all shadow-lg"
+              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20"
             >
-              Start Test
+              Start Assessment
             </button>
           </div>
         ) : (
-          <>
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className={`${isDarkMode ? 'bg-gradient-to-br from-green-900/50 to-emerald-900/50 backdrop-blur-xl border border-green-700' : 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-xl'} rounded-2xl p-6 text-white`}>
-                <div className="text-sm mb-2 opacity-90">Best Score</div>
-                <div className="text-4xl font-bold mb-1">{bestAttempt.score}%</div>
-                <div className="text-xs opacity-75">Attempt {attempts.indexOf(bestAttempt) + 1}</div>
-              </div>
-              <div className={`${isDarkMode ? 'bg-gradient-to-br from-blue-900/50 to-purple-900/50 backdrop-blur-xl border border-blue-700' : 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-xl'} rounded-2xl p-6 text-white`}>
-                <div className="text-sm mb-2 opacity-90">Average Score</div>
-                <div className="text-4xl font-bold mb-1">{avgScore.toFixed(1)}%</div>
-                <div className="text-xs opacity-75">{attempts.length} attempts</div>
-              </div>
-              <div className={`${isDarkMode ? 'bg-gradient-to-br from-orange-900/50 to-red-900/50 backdrop-blur-xl border border-orange-700' : 'bg-gradient-to-br from-orange-500 to-red-600 shadow-xl'} rounded-2xl p-6 text-white`}>
-                <div className="text-sm mb-2 opacity-90">Improvement</div>
-                <div className="text-4xl font-bold mb-1">{improvement > 0 ? '+' : ''}{improvement.toFixed(1)}%</div>
-                <div className="text-xs opacity-75">{improvement >= 0 ? 'Great progress!' : 'Keep practicing'}</div>
-              </div>
-              <div className={`${isDarkMode ? 'bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur-xl border border-purple-700' : 'bg-gradient-to-br from-purple-500 to-pink-600 shadow-xl'} rounded-2xl p-6 text-white`}>
-                <div className="text-sm mb-2 opacity-90">Pass Rate</div>
-                <div className="text-4xl font-bold mb-1">{Math.round(attempts.filter(a => a.score >= test.passing_score).length / attempts.length * 100)}%</div>
-                <div className="text-xs opacity-75">{attempts.filter(a => a.score >= test.passing_score).length}/{attempts.length} passed</div>
-              </div>
-            </div>
-
-            {/* Latest Attempt Details */}
-            {selectedAttempt && (
-              <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-xl'} rounded-2xl p-8 mb-8`}>
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        Latest Attempt
-                      </h3>
-                      {selectedAttempt.is_first_attempt && (
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full text-xs font-bold">First Attempt</span>
-                      )}
-                      {selectedAttempt.score >= test.passing_score && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold">✓ Passed</span>
-                      )}
-                    </div>
-                    <div className={`flex gap-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <span>📅 {new Date(selectedAttempt.completed_at).toLocaleString()}</span>
-                      <span>⏱️ {Math.floor(selectedAttempt.time_taken / 60)}m {selectedAttempt.time_taken % 60}s</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Score Visualization */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className={`text-center p-8 rounded-2xl ${selectedAttempt.score >= test.passing_score ? isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-gradient-to-br from-green-50 to-emerald-50' : isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-gradient-to-br from-red-50 to-orange-50'}`}>
-                    <div className={`text-6xl font-bold mb-2 ${selectedAttempt.score >= test.passing_score ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedAttempt.score}%
-                    </div>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Final Score</p>
-                    <div className={`mt-4 h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                      <div 
-                        className={`h-full ${selectedAttempt.score >= test.passing_score ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-orange-600'}`}
-                        style={{ width: `${selectedAttempt.score}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className={`text-center p-8 rounded-2xl ${isDarkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-gradient-to-br from-blue-50 to-purple-50'}`}>
-                    <div className="text-6xl font-bold text-blue-600 mb-2">
-                      {Math.round(selectedAttempt.score * selectedAttempt.total_questions / 100)}
-                    </div>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Correct Answers</p>
-                    <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>out of {selectedAttempt.total_questions}</p>
-                  </div>
-                  <div className={`text-center p-8 rounded-2xl ${isDarkMode ? 'bg-purple-900/30 border border-purple-700' : 'bg-gradient-to-br from-purple-50 to-pink-50'}`}>
-                    <div className={`text-6xl mb-2 ${selectedAttempt.score >= test.passing_score ? 'text-green-600' : 'text-red-600'}`}>
-                      {selectedAttempt.score >= test.passing_score ? '✓' : '✗'}
-                    </div>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {selectedAttempt.score >= test.passing_score ? 'Passed' : 'Failed'}
-                    </p>
-                    <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>Required: {test.passing_score}%</p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-3">
-                  {test.show_answers && (
-                    <button
-                      onClick={() => navigate(`/student/review/${selectedAttempt.id}`)}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 font-semibold transition-all shadow-lg"
-                    >
-                      📖 Review Answers
-                    </button>
-                  )}
-                  {selectedAttempt.score < 70 && (
-                    <button
-                      onClick={() => handleRemedial(selectedAttempt.id)}
-                      disabled={generatingRemedial}
-                      className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 font-semibold transition-all shadow-lg disabled:opacity-50"
-                    >
-                      {generatingRemedial ? '⏳ Generating...' : '📚 Practice Weak Areas'}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => navigate('/student/tests')}
-                    className={`px-6 py-3 rounded-xl font-semibold transition-all ${isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                  >
-                    📝 More Tests
-                  </button>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* LEFT COLUMN: Main Report Card (lg:col-span-8) */}
+            <div className="lg:col-span-8 space-y-6">
+              
+              {/* Header Info */}
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight mb-2">{test?.title}</h1>
+                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-zinc-400' : 'text-gray-500'}`}>
+                  <BarChart2 size={16} /> 
+                  <span>Performance Report</span>
+                  <span className="mx-2">•</span>
+                  <span>{attempts.length} Attempt{attempts.length !== 1 ? 's' : ''}</span>
                 </div>
               </div>
-            )}
 
-            {/* Attempt History */}
-            <div className={`${isDarkMode ? 'bg-gray-800/50 backdrop-blur-xl border border-gray-700' : 'bg-white shadow-lg'} rounded-2xl p-6`}>
-              <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Attempt History</h3>
-              <div className="space-y-3">
-                {attempts.map((attempt, idx) => {
-                  const passed = attempt.score >= test.passing_score;
-                  return (
-                    <div
-                      key={attempt.id}
-                      className={`p-4 rounded-xl border-2 transition-all cursor-pointer hover:scale-[1.01] ${
-                        selectedAttempt?.id === attempt.id
-                          ? isDarkMode ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50'
-                          : isDarkMode ? 'border-gray-700 hover:border-gray-600' : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setSelectedAttempt(attempt)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${passed ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                            #{attempts.length - idx}
-                          </div>
-                          <div>
-                            <div className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              Score: {attempt.score}% {passed ? '✓' : '✗'}
-                            </div>
-                            <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {new Date(attempt.completed_at).toLocaleDateString()} • {Math.floor(attempt.time_taken / 60)}m {attempt.time_taken % 60}s
-                            </div>
-                          </div>
+              {selectedAttempt && (
+                <motion.div 
+                  key={selectedAttempt.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={`rounded-2xl border overflow-hidden ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-sm'}`}
+                >
+                  {/* Result Header Banner */}
+                  <div className={`p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
+                    isDarkMode ? 'border-zinc-800' : 'border-gray-100'
+                  }`}>
+                    <div>
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider ${
+                          selectedAttempt.score >= test.passing_score 
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                            : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                        }`}>
+                          {selectedAttempt.score >= test.passing_score ? 'Passed' : 'Failed'}
+                        </span>
+                        <span className={`text-xs ${isDarkMode ? 'text-zinc-500' : 'text-gray-400'}`}>
+                          Attempt ID: #{selectedAttempt.id.toString().slice(-4)}
+                        </span>
+                      </div>
+                      <div className={`text-sm flex items-center gap-4 ${isDarkMode ? 'text-zinc-400' : 'text-gray-500'}`}>
+                        <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(selectedAttempt.completed_at).toLocaleDateString()}</span>
+                        <span className="flex items-center gap-1.5"><Clock size={14} /> {Math.floor(selectedAttempt.time_taken / 60)}m {selectedAttempt.time_taken % 60}s</span>
+                      </div>
+                    </div>
+                    
+                    {/* Big Score Display */}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className={`text-5xl font-black tracking-tight ${
+                          selectedAttempt.score >= test.passing_score 
+                            ? 'text-emerald-500' 
+                            : 'text-rose-500'
+                        }`}>
+                          {selectedAttempt.score}%
                         </div>
-                        <div className={`text-2xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>
-                          {attempt.score}%
+                        <div className={`text-xs font-medium uppercase tracking-wider ${isDarkMode ? 'text-zinc-500' : 'text-gray-400'}`}>
+                          Pass Score: {test.passing_score}%
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className={`p-6 ${isDarkMode ? 'bg-zinc-900' : 'bg-white'}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      
+                      {/* Primary Actions */}
+                      <div className="flex flex-col gap-3">
+                        {test.show_answers && (
+                          <button
+                            onClick={() => navigate(`/student/review/${selectedAttempt.id}`)}
+                            className={`w-full py-3 px-4 rounded-xl font-semibold border flex items-center justify-center gap-2 transition-all ${
+                              isDarkMode 
+                                ? 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-white' 
+                                : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            <BookOpen size={18} /> Review Answers
+                          </button>
+                        )}
+                        
+                        <button
+                          onClick={() => navigate(`/student/test/${testId}`)}
+                          className={`w-full py-3 px-4 rounded-xl font-semibold border flex items-center justify-center gap-2 transition-all ${
+                            isDarkMode 
+                              ? 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-white' 
+                              : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          <RefreshCw size={18} /> Retake Test
+                        </button>
+                      </div>
+
+                      {/* Remedial Action (Only if failed) */}
+                      {selectedAttempt.score < 70 ? (
+                        <div className={`p-4 rounded-xl border flex flex-col justify-center ${
+                          isDarkMode ? 'bg-amber-900/10 border-amber-900/30' : 'bg-amber-50 border-amber-100'
+                        }`}>
+                          <h4 className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-amber-400' : 'text-amber-800'}`}>
+                            Need more practice?
+                          </h4>
+                          <p className={`text-xs mb-3 ${isDarkMode ? 'text-amber-200/70' : 'text-amber-700/70'}`}>
+                            Generate a custom test focusing specifically on the questions you missed.
+                          </p>
+                          <button
+                            onClick={() => handleRemedial(selectedAttempt.id)}
+                            disabled={generatingRemedial}
+                            className={`w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+                              generatingRemedial 
+                                ? 'bg-amber-200 text-amber-800 cursor-not-allowed' 
+                                : 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20'
+                            }`}
+                          >
+                            {generatingRemedial ? (
+                              <div className="w-4 h-4 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <><Zap size={16} /> Generate Practice Test</>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={`p-4 rounded-xl border flex flex-col justify-center items-center text-center ${
+                          isDarkMode ? 'bg-emerald-900/10 border-emerald-900/30' : 'bg-emerald-50 border-emerald-100'
+                        }`}>
+                          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-full text-emerald-600 mb-2">
+                            <Award size={24} />
+                          </div>
+                          <h4 className={`text-sm font-bold ${isDarkMode ? 'text-emerald-400' : 'text-emerald-800'}`}>
+                            Great Job!
+                          </h4>
+                          <p className={`text-xs ${isDarkMode ? 'text-emerald-200/70' : 'text-emerald-700/70'}`}>
+                            You've mastered this material. Keep up the good work!
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
-          </>
+
+            {/* RIGHT COLUMN: Sidebar (lg:col-span-4) */}
+            <div className="lg:col-span-4 space-y-6">
+              
+              {/* Aggregate Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${isDarkMode ? 'text-zinc-500' : 'text-gray-500'}`}>Best Score</p>
+                  <p className="text-2xl font-bold">{bestAttempt.score}%</p>
+                </div>
+                <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${isDarkMode ? 'text-zinc-500' : 'text-gray-500'}`}>Avg Score</p>
+                  <p className="text-2xl font-bold">{avgScore}%</p>
+                </div>
+                <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${isDarkMode ? 'text-zinc-500' : 'text-gray-500'}`}>Improvement</p>
+                  <div className={`flex items-center gap-1 font-bold text-xl ${improvement >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <TrendingUp size={16} className={improvement < 0 ? 'rotate-180' : ''} />
+                    {Math.abs(improvement)}%
+                  </div>
+                </div>
+                <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${isDarkMode ? 'text-zinc-500' : 'text-gray-500'}`}>Pass Rate</p>
+                  <p className="text-2xl font-bold">{passRate}%</p>
+                </div>
+              </div>
+
+              {/* History List */}
+              <div className={`rounded-xl border overflow-hidden ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+                <div className={`px-5 py-3 border-b flex justify-between items-center ${isDarkMode ? 'border-zinc-800' : 'border-gray-100'}`}>
+                  <h3 className="font-semibold text-sm">Attempt History</h3>
+                </div>
+                <div className={`max-h-[400px] overflow-y-auto ${isDarkMode ? 'divide-zinc-800' : 'divide-gray-100'} divide-y`}>
+                  {attempts.map((attempt, idx) => (
+                    <button
+                      key={attempt.id}
+                      onClick={() => setSelectedAttempt(attempt)}
+                      className={`w-full flex items-center justify-between p-4 text-left transition-colors ${
+                        selectedAttempt?.id === attempt.id 
+                          ? isDarkMode ? 'bg-zinc-800/50' : 'bg-indigo-50/50'
+                          : isDarkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                          attempt.score >= test.passing_score 
+                            ? isDarkMode ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                            : isDarkMode ? 'bg-rose-900/30 text-rose-400' : 'bg-rose-100 text-rose-700'
+                        }`}>
+                          {attempt.score >= test.passing_score ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                        </div>
+                        <div>
+                          <div className={`text-sm font-medium ${isDarkMode ? 'text-zinc-200' : 'text-gray-900'}`}>
+                            {new Date(attempt.completed_at).toLocaleDateString()}
+                          </div>
+                          <div className={`text-xs ${isDarkMode ? 'text-zinc-500' : 'text-gray-500'}`}>
+                            {new Date(attempt.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <span className={`text-sm font-bold ${
+                          attempt.score >= test.passing_score ? 'text-emerald-500' : 'text-rose-500'
+                        }`}>
+                          {attempt.score}%
+                        </span>
+                        <ChevronRight size={16} className={isDarkMode ? 'text-zinc-600' : 'text-gray-300'} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
         )}
       </div>
     </div>

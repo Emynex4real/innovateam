@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Clock, CheckCircle, Play, BarChart2, Search, ChevronRight, BookOpen, ArrowLeft } from 'lucide-react';
+import { 
+  Clock, 
+  CheckCircle, 
+  Play, 
+  BarChart2, 
+  Search, 
+  ChevronRight, 
+  BookOpen, 
+  ArrowLeft, 
+  Filter, 
+  RefreshCw,
+  AlertCircle 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import studentTCService from '../../../services/studentTC.service';
 import toast from 'react-hot-toast';
@@ -44,12 +56,14 @@ const EnterpriseTestList = () => {
 
   const getStatus = (testId) => {
     const att = attempts[testId] || [];
-    if (att.length === 0) return { label: 'New', color: 'bg-blue-100 text-blue-700', icon: Play };
+    if (att.length === 0) return { label: 'Not Started', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', icon: Play, type: 'new' };
+    
     const best = Math.max(...att.map(a => a.score));
     const passed = tests.find(t => t.id === testId)?.passing_score <= best;
+    
     return passed 
-      ? { label: 'Passed', color: 'bg-green-100 text-green-700', icon: CheckCircle, score: best }
-      : { label: 'Failed', color: 'bg-red-100 text-red-700', icon: BarChart2, score: best };
+      ? { label: 'Passed', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300', icon: CheckCircle, score: best, type: 'passed' }
+      : { label: 'Retake', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', icon: RefreshCw, score: best, type: 'failed' };
   };
 
   const filtered = tests.filter(t => 
@@ -58,103 +72,173 @@ const EnterpriseTestList = () => {
   );
 
   if(loading) return (
-    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
     </div>
   );
 
   return (
-    <div className={`min-h-screen pb-20 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Header with Search */}
-        <div className={`sticky top-0 z-10 pb-4 pt-2 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-          <button
-            onClick={() => navigate('/student/dashboard')}
-            className={`flex items-center gap-2 mb-4 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back to Dashboard</span>
-          </button>
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
-            <h1 className={`text-3xl font-bold self-start ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Assignments</h1>
+        {/* Navigation & Header */}
+        <div className="flex flex-col gap-6 mb-8">
+          <div>
+            <button
+              onClick={() => navigate('/student/dashboard')}
+              className={`flex items-center gap-2 text-sm font-medium mb-4 transition-colors ${
+                isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <ArrowLeft size={16} /> Back to Dashboard
+            </button>
+            <h1 className="text-3xl font-bold tracking-tight">Available Assessments</h1>
+            <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Select a test to begin or review your previous attempts.
+            </p>
+          </div>
+
+          {/* Toolbar */}
+          <div className={`p-4 rounded-2xl border flex flex-col md:flex-row gap-4 items-center justify-between ${
+            isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200 shadow-sm'
+          }`}>
             
-            <div className="flex gap-2 w-full md:w-auto">
-              <div className="relative flex-1 md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input 
-                  value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search..."
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900'}`}
-                />
-              </div>
-              <div className={`flex rounded-xl p-1 border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                {['all', 'new', 'done'].map(f => (
-                  <button 
-                    key={f} onClick={() => setFilter(f)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${filter === f ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300'}`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
+            {/* Search Input */}
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                value={search} 
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search assessments..."
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
+                  isDarkMode ? 'bg-gray-950 border-gray-800 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900'
+                }`}
+              />
+            </div>
+
+            {/* Filter Tabs */}
+            <div className={`flex p-1 rounded-xl w-full md:w-auto ${isDarkMode ? 'bg-gray-950 border border-gray-800' : 'bg-gray-100'}`}>
+              {[
+                { id: 'all', label: 'All Tests' },
+                { id: 'new', label: 'To Do' },
+                { id: 'done', label: 'Completed' }
+              ].map(f => (
+                <button 
+                  key={f.id} 
+                  onClick={() => setFilter(f.id)}
+                  className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+                    filter === f.id 
+                      ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-800 dark:text-indigo-400' 
+                      : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* List */}
-        <div className="space-y-4">
-          <AnimatePresence>
-            {filtered.map((test, i) => {
-              const status = getStatus(test.id);
-              const StatusIcon = status.icon;
-              
-              return (
-                <motion.div
-                  key={test.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => navigate(`/student/test/${test.id}`)}
-                  className={`group rounded-2xl p-5 border cursor-pointer shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center gap-4 ${isDarkMode ? 'bg-gray-800 border-gray-700 hover:border-blue-500' : 'bg-white border-gray-100 hover:border-blue-500'}`}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold flex items-center gap-1 ${status.color}`}>
-                        <StatusIcon size={12} /> {status.label} {status.score !== undefined && `• ${status.score}%`}
-                      </span>
-                      <div className="flex items-center gap-3 text-xs text-gray-400">
-                        <span className="flex items-center gap-1"><Clock size={12} /> {test.time_limit}m</span>
-                        <span className="flex items-center gap-1"><BookOpen size={12} /> {test.items?.[0]?.count || 0} Qs</span>
+        {/* Tests Grid */}
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className={`p-4 rounded-full mb-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+              <AlertCircle size={32} className="text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold">No tests found</h3>
+            <p className="text-gray-500 mt-1">Try adjusting your filters or search terms.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence>
+              {filtered.map((test, i) => {
+                const status = getStatus(test.id);
+                const StatusIcon = status.icon;
+                
+                return (
+                  <motion.div
+                    key={test.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => navigate(`/student/test/${test.id}`)}
+                    className={`group relative flex flex-col rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${
+                      isDarkMode 
+                        ? 'bg-gray-900 border-gray-800 hover:border-indigo-500/50' 
+                        : 'bg-white border-gray-200 hover:border-indigo-200'
+                    }`}
+                  >
+                    {/* Status Banner (Mobile/Top) */}
+                    <div className="p-5 flex-1">
+                      <div className="flex justify-between items-start mb-4">
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 ${status.color}`}>
+                          <StatusIcon size={14} /> {status.label}
+                        </span>
+                        {status.score !== undefined && (
+                          <span className={`text-sm font-bold ${
+                            status.score >= test.passing_score 
+                              ? 'text-green-600 dark:text-green-400' 
+                              : 'text-amber-600 dark:text-amber-400'
+                          }`}>
+                            {status.score}%
+                          </span>
+                        )}
                       </div>
-                    </div>
-                    <h3 className={`font-bold text-lg transition-colors group-hover:text-blue-600 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {test.title}
-                    </h3>
-                    <p className={`text-sm mt-1 line-clamp-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {test.description || "No description provided."}
-                    </p>
-                  </div>
 
-                  <div className={`flex items-center gap-4 pt-4 md:pt-0 border-t md:border-t-0 ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                    {/* Mini Progress Bar if attempted */}
-                    {status.score !== undefined && (
-                      <div className="hidden md:block w-32">
-                        <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                          <div className={`h-full ${status.score >= test.passing_score ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${status.score}%` }} />
+                      <h3 className={`text-lg font-bold mb-2 line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {test.title}
+                      </h3>
+                      <p className={`text-sm line-clamp-2 mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {test.description || "No description provided."}
+                      </p>
+
+                      <div className="flex flex-wrap gap-3">
+                        <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded border ${isDarkMode ? 'border-gray-800 bg-gray-950 text-gray-400' : 'border-gray-100 bg-gray-50 text-gray-500'}`}>
+                          <Clock size={12} />
+                          {test.time_limit}m
+                        </div>
+                        <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded border ${isDarkMode ? 'border-gray-800 bg-gray-950 text-gray-400' : 'border-gray-100 bg-gray-50 text-gray-500'}`}>
+                          <BookOpen size={12} />
+                          {test.items?.length || 0} Qs
                         </div>
                       </div>
-                    )}
-                    
-                    <button className={`w-full md:w-auto px-6 py-2.5 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 ${isDarkMode ? 'bg-gray-700 text-white group-hover:bg-blue-600' : 'bg-gray-50 text-gray-900 group-hover:bg-blue-600 group-hover:text-white'}`}>
-                      {status.label === 'New' ? 'Start' : 'Retake'} <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+                    </div>
+
+                    {/* Card Footer / Progress */}
+                    <div className={`px-5 py-4 border-t mt-auto flex items-center justify-between ${isDarkMode ? 'border-gray-800' : 'border-gray-100'}`}>
+                      {status.score !== undefined ? (
+                        <div className="flex-1 mr-4">
+                          <div className="flex justify-between text-xs mb-1 font-medium text-gray-500">
+                            <span>Score</span>
+                            <span>Pass: {test.passing_score}%</span>
+                          </div>
+                          <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                            <div 
+                              className={`h-full rounded-full ${status.score >= test.passing_score ? 'bg-green-500' : 'bg-amber-500'}`} 
+                              style={{ width: `${status.score}%` }} 
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Ready to start?
+                        </span>
+                      )}
+                      
+                      <button className={`p-2 rounded-full transition-colors ${
+                        status.type === 'new'
+                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                          : isDarkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}>
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -274,3 +274,171 @@ export const generateStudentReportPDF = (reportData) => {
     throw new Error(`Failed to generate PDF: ${error.message}`);
   }
 };
+
+
+// --- CLASS TEST REPORT (All Students) ---
+export const generateClassTestReportPDF = (testData) => {
+  // console.log('📄 Generating Class Test Report...');
+  // console.log('Test data received:', testData);
+
+  try {
+    const doc = new jsPDF();
+    const { test_name, test_date, students, summary, passing_score = 50 } = testData;
+    
+    // --- HEADER ---
+    doc.setFillColor(...theme.colors.primary);
+    doc.rect(0, 0, 210, 45, 'F');
+    
+    doc.setFillColor(255, 255, 255);
+    doc.circle(20, 22, 10, 'F');
+    doc.setTextColor(...theme.colors.primary);
+    doc.setFontSize(14);
+    doc.setFont(theme.fonts.header, 'bold');
+    doc.text('IQ', 16, 24);
+
+    doc.setTextColor(...theme.colors.text.light);
+    doc.setFontSize(20);
+    doc.text('CLASS TEST REPORT', 40, 20);
+    
+    doc.setFontSize(12);
+    doc.text(test_name, 40, 28);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(220, 220, 255);
+    doc.text(`Test Date: ${new Date(test_date).toLocaleDateString()} | Generated: ${new Date().toLocaleDateString()}`, 40, 35);
+
+    // --- SUMMARY STATS ---
+    let yPos = 55;
+    doc.setFontSize(12);
+    doc.setTextColor(...theme.colors.text.dark);
+    doc.setFont(theme.fonts.header, 'bold');
+    doc.text('CLASS STATISTICS', 15, yPos);
+    
+    yPos += 5;
+    const statsY = yPos;
+    const cardWidth = 35;
+    const gap = 3;
+    
+    const stats = [
+      { label: 'Total Students', value: summary.total_students, color: theme.colors.primary },
+      { label: 'Passed', value: summary.passed, color: theme.colors.success },
+      { label: 'Failed', value: summary.failed, color: theme.colors.danger },
+      { label: 'Class Avg', value: `${summary.class_average}%`, color: theme.colors.secondary },
+      { label: 'Highest', value: `${summary.highest_score}%`, color: theme.colors.success },
+      { label: 'Lowest', value: `${summary.lowest_score}%`, color: theme.colors.danger }
+    ];
+
+    stats.forEach((stat, i) => {
+      const xPos = 15 + (i * (cardWidth + gap));
+      
+      doc.setFillColor(...theme.colors.bg.light);
+      doc.setDrawColor(240, 240, 240);
+      doc.roundedRect(xPos, statsY, cardWidth, 20, 2, 2, 'FD');
+      
+      doc.setFillColor(...stat.color);
+      doc.rect(xPos + 2, statsY + 3, 1, 14, 'F');
+      
+      doc.setFontSize(12);
+      doc.setTextColor(...theme.colors.text.dark);
+      doc.setFont(theme.fonts.header, 'bold');
+      doc.text(String(stat.value), xPos + 6, statsY + 10);
+      
+      doc.setFontSize(7);
+      doc.setTextColor(...theme.colors.text.secondary);
+      doc.setFont(theme.fonts.body, 'normal');
+      doc.text(stat.label, xPos + 6, statsY + 16);
+    });
+
+    yPos = statsY + 30;
+
+    // --- STUDENTS TABLE ---
+    doc.setFontSize(12);
+    doc.setTextColor(...theme.colors.text.dark);
+    doc.setFont(theme.fonts.header, 'bold');
+    doc.text('STUDENT RESULTS', 15, yPos);
+    
+    const tableBody = students.map((student, index) => {
+      const percentage = student.score;
+      const isPassed = percentage >= passing_score;
+      const rank = index + 1;
+      
+      // console.log(`Student ${student.name}: score=${percentage}, passing=${passing_score}, isPassed=${isPassed}`);
+      
+      return [
+        rank,
+        student.name,
+        student.email,
+        `${student.correct}/${student.total}`,
+        `${percentage}%`,
+        `${student.time_taken}s`,
+        isPassed ? 'PASS' : 'FAIL'
+      ];
+    });
+
+    autoTable(doc, {
+      startY: yPos + 5,
+      head: [['Rank', 'Student Name', 'Email', 'Correct', 'Score', 'Time', 'Status']],
+      body: tableBody,
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: theme.colors.primary,
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 38 },
+        2: { cellWidth: 48 },
+        3: { cellWidth: 16, halign: 'center' },
+        4: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+        5: { cellWidth: 16, halign: 'center' },
+        6: { cellWidth: 16, halign: 'center', fontStyle: 'bold' }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body') {
+          // Rank column - highlight top 3
+          if (data.column.index === 0) {
+            const rank = data.cell.raw;
+            if (rank === 1) data.cell.styles.fillColor = [255, 215, 0]; // Gold
+            else if (rank === 2) data.cell.styles.fillColor = [192, 192, 192]; // Silver
+            else if (rank === 3) data.cell.styles.fillColor = [205, 127, 50]; // Bronze
+          }
+          
+          // Status column
+          if (data.column.index === 6) {
+            const text = data.cell.raw;
+            data.cell.styles.textColor = text === 'PASS' ? theme.colors.success : theme.colors.danger;
+          }
+        }
+      }
+    });
+
+    // --- FOOTER ---
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(...theme.colors.text.secondary);
+      doc.text(
+        `Class Report | © ${new Date().getFullYear()} InnovaTeam | Page ${i} of ${pageCount}`,
+        105,
+        287,
+        { align: 'center' }
+      );
+    }
+
+    const fileName = `${test_name.replace(/\s+/g, '_')}_Class_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+    // console.log('✅ Class report saved:', fileName);
+
+  } catch (error) {
+    console.error('❌ Class Report Error:', error);
+    throw new Error(`Failed to generate class report: ${error.message}`);
+  }
+};

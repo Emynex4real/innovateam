@@ -3,6 +3,28 @@ import { useParams, useNavigate } from 'react-router-dom';
 import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import { 
+  ArrowLeft, 
+  Trash2, 
+  Play, 
+  Pause, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  BarChart2, 
+  Settings, 
+  Users, 
+  FileText, 
+  HelpCircle, 
+  Award, 
+  Calendar,
+  AlertCircle,
+  Plus,
+  Trophy,
+  Target,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 const TestDetail = () => {
   const { testId } = useParams();
@@ -45,10 +67,10 @@ const TestDetail = () => {
   };
 
   const handleDeleteQuestion = async (questionId) => {
-    if (!window.confirm('Delete this question?')) return;
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
     try {
       await tutorialCenterService.deleteQuestion(questionId);
-      toast.success('Question deleted');
+      toast.success('Question deleted successfully');
       loadTestData();
     } catch (error) {
       toast.error('Failed to delete question');
@@ -69,7 +91,7 @@ const TestDetail = () => {
     if (!window.confirm('Delete this test? This cannot be undone.')) return;
     try {
       await tutorialCenterService.deleteQuestionSet(test.id);
-      toast.success('Test deleted');
+      toast.success('Test deleted successfully');
       navigate('/tutor/tests');
     } catch (error) {
       toast.error('Failed to delete test');
@@ -78,18 +100,28 @@ const TestDetail = () => {
 
   if (loading) {
     return (
-      <div className={`flex justify-center items-center min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className={`flex flex-col items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading test details...</p>
       </div>
     );
   }
 
   if (!test) {
     return (
-      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} p-8`}>
-        <div className="text-center">
-          <p className={isDarkMode ? 'text-white' : 'text-gray-900'}>Test not found</p>
-          <button onClick={() => navigate('/tutor/tests')} className="mt-4 text-blue-600">← Back to Tests</button>
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'} p-8`}>
+        <div className="text-center max-w-md">
+          <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-sm'} mb-4`}>
+             <AlertCircle size={32} className="text-gray-400" />
+          </div>
+          <h2 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Test Not Found</h2>
+          <p className={`mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>The test you are looking for does not exist or has been deleted.</p>
+          <button 
+            onClick={() => navigate('/tutor/tests')} 
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          >
+            <ArrowLeft size={16} /> Back to Tests
+          </button>
         </div>
       </div>
     );
@@ -102,111 +134,150 @@ const TestDetail = () => {
     ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length)
     : 0;
 
+  const tabs = [
+    { id: 'questions', label: 'Questions', icon: FileText },
+    { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'attempts', label: 'Attempts', icon: Users },
+  ];
+
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate('/tutor/tests')}
-            className={`mb-4 ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}
-          >
-            ← Back to Tests
-          </button>
-          
-          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-6`}>
-            <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className={`text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {test.title}
-                  </h1>
-                  <span className={`px-3 py-1 rounded-full text-sm ${
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Header Navigation */}
+        <button
+          onClick={() => navigate('/tutor/tests')}
+          className={`flex items-center gap-2 text-sm font-medium mb-6 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'} transition-colors`}
+        >
+          <ArrowLeft size={16} /> Back to All Tests
+        </button>
+
+        {/* Main Header Card */}
+        <div className={`rounded-xl border shadow-sm p-6 mb-8 ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                     test.is_active 
-                      ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                      ? isDarkMode ? 'bg-emerald-900/30 text-emerald-400 border-emerald-900/50' : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                      : isDarkMode ? 'bg-gray-800 text-gray-400 border-gray-700' : 'bg-gray-100 text-gray-600 border-gray-200'
                   }`}>
+                    {test.is_active ? <Play size={10} fill="currentColor" /> : <Pause size={10} fill="currentColor" />}
                     {test.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                </span>
+                <h1 className="text-3xl font-bold tracking-tight">{test.title}</h1>
+              </div>
+              
+              <p className={`mb-6 max-w-2xl text-base ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {test.description || "No description provided for this test."}
+              </p>
+
+              <div className="flex flex-wrap gap-4 sm:gap-6">
+                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <FileText size={16} className="text-indigo-500" />
+                  <span className="font-medium">{questions.length}</span> Questions
                 </div>
-                {test.description && (
-                  <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-4`}>{test.description}</p>
-                )}
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>📝 {questions.length} questions</span>
-                  <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>⏱️ {test.time_limit} min</span>
-                  <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>🎯 {test.passing_score}% pass</span>
-                  <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>👥 {attempts.length} attempts</span>
+                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <Clock size={16} className="text-indigo-500" />
+                  <span className="font-medium">{test.time_limit}</span> Mins Limit
+                </div>
+                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <Award size={16} className="text-indigo-500" />
+                  <span className="font-medium">{test.passing_score}%</span> Pass Score
+                </div>
+                <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <Users size={16} className="text-indigo-500" />
+                  <span className="font-medium">{attempts.length}</span> Attempts
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={toggleActive}
-                  className={`px-4 py-2 rounded-lg transition ${
-                    test.is_active
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'
-                      : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 hover:bg-green-200'
-                  }`}
-                >
-                  {test.is_active ? 'Deactivate' : 'Activate'}
-                </button>
-                <button
-                  onClick={handleDeleteTest}
-                  className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-lg hover:bg-red-200 transition"
-                >
-                  Delete Test
-                </button>
-              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+              <button
+                onClick={toggleActive}
+                className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border font-medium transition-all ${
+                  test.is_active
+                    ? isDarkMode 
+                      ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700 border-transparent shadow-sm'
+                }`}
+              >
+                {test.is_active ? <Pause size={18} /> : <Play size={18} />}
+                {test.is_active ? 'Deactivate' : 'Activate'}
+              </button>
+              <button
+                onClick={handleDeleteTest}
+                className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border font-medium transition-all ${
+                   isDarkMode 
+                    ? 'bg-red-900/20 border-red-900/30 text-red-400 hover:bg-red-900/30' 
+                    : 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
+                }`}
+              >
+                <Trash2 size={18} />
+                Delete
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg overflow-hidden`}>
-          <div className={`flex border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            {['questions', 'analytics', 'settings', 'attempts'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 px-6 py-4 font-semibold capitalize transition ${
-                  activeTab === tab
-                    ? isDarkMode 
-                      ? 'bg-blue-900 text-blue-200 border-b-2 border-blue-500'
-                      : 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
-                    : isDarkMode
-                      ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+        {/* Content Area */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Tabs Navigation */}
+          <div className={`border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+            <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors
+                      ${isActive 
+                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'}
+                    `}
+                  >
+                    <Icon size={18} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
 
-          <div className="p-6">
-            {/* Questions Tab */}
+          {/* Tab Contents */}
+          <div className="min-h-[400px]">
+            
+            {/* --- QUESTIONS TAB --- */}
             {activeTab === 'questions' && (
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Questions ({questions.length})
-                  </h2>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-bold">Question Bank</h3>
                   <button
                     onClick={() => navigate('/tutor/questions')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm"
                   >
-                    Add Questions
+                    <Plus size={18} /> Add Questions
                   </button>
                 </div>
 
                 {questions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-4`}>No questions added yet</p>
+                  <div className={`text-center py-16 rounded-xl border border-dashed ${isDarkMode ? 'border-gray-800 bg-gray-900/50' : 'border-gray-300 bg-gray-50'}`}>
+                    <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-sm'} mb-4`}>
+                      <HelpCircle size={24} className="text-indigo-500" />
+                    </div>
+                    <h3 className="text-lg font-medium">No questions yet</h3>
+                    <p className={`mt-1 mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Start building your test by adding questions.</p>
                     <button
                       onClick={() => navigate('/tutor/questions')}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="px-6 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
                     >
-                      Add Your First Question
+                      Open Question Builder
                     </button>
                   </div>
                 ) : (
@@ -214,90 +285,79 @@ const TestDetail = () => {
                     {questions.map((q, idx) => (
                       <div
                         key={q.id}
-                        className={`p-4 rounded-lg border ${
-                          isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+                        className={`group relative p-5 rounded-xl border transition-all ${
+                          isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200 shadow-sm hover:shadow-md'
                         }`}
                       >
-                        <div className="flex justify-between items-start gap-4">
+                        <div className="absolute top-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <button
+                            onClick={() => handleDeleteQuestion(q.id)}
+                            className={`p-2 rounded-lg transition-colors ${
+                                isDarkMode ? 'bg-gray-800 text-red-400 hover:bg-red-900/30' : 'bg-gray-100 text-red-600 hover:bg-red-50'
+                            }`}
+                            title="Delete Question"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        <div className="flex gap-4">
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${
+                              isDarkMode ? 'bg-gray-800 text-gray-300' : 'bg-indigo-50 text-indigo-700'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          
                           <div className="flex-1">
-                            <div className="flex items-start gap-3 mb-3">
-                              <span className={`font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Q{idx + 1}.
-                              </span>
-                              <p className={`flex-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {q.question_text}
-                              </p>
-                            </div>
-                            <div className="ml-8 space-y-2">
+                             <div className="flex flex-wrap gap-2 mb-3">
+                                {q.difficulty && (
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${
+                                    q.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                    q.difficulty === 'medium' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                }`}>
+                                    {q.difficulty}
+                                </span>
+                                )}
+                                {q.topic && <span className={`px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400`}>{q.topic}</span>}
+                             </div>
+
+                            <p className="text-base font-medium mb-4 pr-8">{q.question_text}</p>
+                            
+                            <div className="grid gap-2 mb-4 sm:grid-cols-2">
                               {q.options?.map((option, i) => {
-                                // Handle both formats: "A. Text" or just "Text"
                                 const optionLetter = ['A', 'B', 'C', 'D'][i];
-                                const optionText = typeof option === 'string' && option.match(/^[A-D]\.\s/) 
-                                  ? option.substring(3) 
-                                  : option;
-                                
+                                const isCorrect = optionLetter === q.correct_answer;
+                                // Handle string formats like "A. Text" vs "Text"
+                                const optionText = typeof option === 'string' && option.match(/^[A-D]\.\s/) ? option.substring(3) : option;
+
                                 return (
                                   <div
                                     key={i}
-                                    className={`flex items-center gap-2 p-2 rounded ${
-                                      optionLetter === q.correct_answer
-                                        ? isDarkMode
-                                          ? 'bg-green-900/30 text-green-300'
-                                          : 'bg-green-50 text-green-700'
-                                        : isDarkMode
-                                          ? 'text-gray-300'
-                                          : 'text-gray-700'
+                                    className={`flex items-center gap-3 p-3 rounded-lg border text-sm transition-colors ${
+                                      isCorrect
+                                        ? isDarkMode ? 'bg-emerald-900/20 border-emerald-900/50 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                        : isDarkMode ? 'bg-gray-800/50 border-gray-800 text-gray-400' : 'bg-gray-50 border-transparent text-gray-600'
                                     }`}
                                   >
-                                    <span className="font-semibold">{optionLetter}.</span>
-                                    <span>{optionText}</span>
-                                    {optionLetter === q.correct_answer && <span className="ml-auto">✓</span>}
+                                    <span className={`font-bold ${isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>{optionLetter}.</span>
+                                    <span className="flex-1">{optionText}</span>
+                                    {isCorrect && <CheckCircle size={16} className="text-emerald-500 shrink-0" />}
                                   </div>
                                 );
                               })}
                             </div>
+
                             {q.explanation && (
-                              <div className={`ml-8 mt-3 p-3 rounded ${
-                                isDarkMode ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-700'
-                              }`}>
-                                <span className="font-semibold">Explanation: </span>
-                                {q.explanation}
+                              <div className={`flex gap-3 p-3 rounded-lg text-sm ${isDarkMode ? 'bg-indigo-900/20 text-indigo-300' : 'bg-indigo-50 text-indigo-800'}`}>
+                                <HelpCircle size={18} className="shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-bold block mb-1">Explanation:</span>
+                                    {q.explanation}
+                                </div>
                               </div>
                             )}
-                            <div className="ml-8 mt-2 flex flex-wrap gap-2 text-xs">
-                              {q.subject && (
-                                <span className={`px-2 py-1 rounded ${
-                                  isDarkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700'
-                                }`}>
-                                  {q.subject}
-                                </span>
-                              )}
-                              {q.topic && (
-                                <span className={`px-2 py-1 rounded ${
-                                  isDarkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
-                                }`}>
-                                  {q.topic}
-                                </span>
-                              )}
-                              {q.difficulty && (
-                                <span className={`px-2 py-1 rounded ${
-                                  q.difficulty === 'easy'
-                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                                    : q.difficulty === 'medium'
-                                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                                }`}>
-                                  {q.difficulty}
-                                </span>
-                              )}
-                            </div>
                           </div>
-                          <button
-                            onClick={() => handleDeleteQuestion(q.id)}
-                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            🗑️
-                          </button>
                         </div>
                       </div>
                     ))}
@@ -306,140 +366,177 @@ const TestDetail = () => {
               </div>
             )}
 
-            {/* Analytics Tab */}
+            {/* --- ANALYTICS TAB --- */}
             {activeTab === 'analytics' && (
-              <div>
-                <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Test Analytics
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Attempts</p>
-                    <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {attempts.length}
-                    </p>
-                  </div>
-                  <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-green-50'}`}>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pass Rate</p>
-                    <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {passRate}%
-                    </p>
-                  </div>
-                  <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-purple-50'}`}>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Average Score</p>
-                    <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {avgScore}%
-                    </p>
-                  </div>
+              <div className="space-y-8 animate-in fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Stat Card 1 */}
+                   <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                            <Users size={24} />
+                        </div>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>All Time</span>
+                    </div>
+                    <div>
+                        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Attempts</p>
+                        <h3 className="text-3xl font-bold mt-1">{attempts.length}</h3>
+                    </div>
+                   </div>
+
+                   {/* Stat Card 2 */}
+                   <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                            <Target size={24} />
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${passRate >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                {passRate >= 70 ? 'Excellent' : 'Needs Work'}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Pass Rate</p>
+                        <h3 className="text-3xl font-bold mt-1">{passRate}%</h3>
+                    </div>
+                   </div>
+
+                   {/* Stat Card 3 */}
+                   <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-indigo-900/30 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                            <Award size={24} />
+                        </div>
+                    </div>
+                    <div>
+                        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Average Score</p>
+                        <h3 className="text-3xl font-bold mt-1">{avgScore}%</h3>
+                    </div>
+                   </div>
                 </div>
-                <button
-                  onClick={() => navigate(`/tutor/leaderboard/${test.id}`)}
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                >
-                  View Full Leaderboard
-                </button>
+
+                {/* Call to Action */}
+                <div className={`flex flex-col sm:flex-row items-center justify-between p-8 rounded-xl border ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-100'}`}>
+                   <div className="mb-4 sm:mb-0">
+                        <h3 className="text-lg font-bold mb-1">Student Leaderboard</h3>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>View detailed performance breakdown for every student.</p>
+                   </div>
+                   <button
+                    onClick={() => navigate(`/tutor/leaderboard/${test.id}`)}
+                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium shadow-sm"
+                   >
+                     <Trophy size={18} /> View Leaderboard
+                   </button>
+                </div>
               </div>
             )}
 
-            {/* Settings Tab */}
+            {/* --- SETTINGS TAB --- */}
             {activeTab === 'settings' && (
-              <div>
-                <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Test Settings
-                </h2>
-                <div className="space-y-4">
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Time Limit</p>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>{test.time_limit} minutes</p>
-                  </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Passing Score</p>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>{test.passing_score}%</p>
-                  </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Visibility</p>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                      {test.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
-                    </p>
-                  </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Show Answers</p>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                      {test.show_answers ? '✓ Yes' : '✗ No'}
-                    </p>
-                  </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Max Attempts</p>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                      {test.max_attempts || 'Unlimited'}
-                    </p>
-                  </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Cooldown Period</p>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                      {test.cooldown_hours ? `${test.cooldown_hours} hours` : 'No cooldown'}
-                    </p>
-                  </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Score Policy</p>
-                    <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                      {test.score_policy === 'best' && '🏆 Best Score'}
-                      {test.score_policy === 'average' && '📊 Average Score'}
-                      {test.score_policy === 'last' && '🔄 Last Attempt'}
-                      {test.score_policy === 'first' && '1️⃣ First Attempt'}
-                    </p>
-                  </div>
+              <div className="animate-in fade-in">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold">Configuration</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Helper Component for Settings Item */}
+                  {[
+                    { label: 'Time Limit', value: `${test.time_limit} Minutes`, icon: Clock },
+                    { label: 'Passing Score', value: `${test.passing_score}%`, icon: Target },
+                    { label: 'Visibility', value: test.visibility === 'public' ? 'Public (Visible to all)' : 'Private (Link only)', icon: test.visibility === 'public' ? Eye : EyeOff },
+                    { label: 'Show Answers', value: test.show_answers ? 'Yes, after submission' : 'No, hidden always', icon: HelpCircle },
+                    { label: 'Max Attempts', value: test.max_attempts || 'Unlimited', icon: AlertCircle },
+                    { label: 'Cooldown Period', value: test.cooldown_hours ? `${test.cooldown_hours} Hours` : 'No cooldown', icon: Clock },
+                    { label: 'Score Policy', value: test.score_policy === 'best' ? 'Best Score' : test.score_policy === 'average' ? 'Average' : 'Last Attempt', icon: Award },
+                  ].map((setting, i) => (
+                    <div key={i} className={`flex items-start gap-4 p-4 rounded-xl border ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                        <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                            <setting.icon size={20} />
+                        </div>
+                        <div>
+                            <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{setting.label}</p>
+                            <p className="font-semibold mt-0.5">{setting.value}</p>
+                        </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-8 pt-8 border-t border-dashed border-gray-200 dark:border-gray-800">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-red-500 mb-4">Danger Zone</h4>
+                    <div className={`flex flex-col sm:flex-row items-center justify-between p-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/30`}>
+                        <div className="mb-4 sm:mb-0">
+                            <h5 className="font-bold text-red-900 dark:text-red-200">Delete this Test</h5>
+                            <p className="text-sm text-red-700 dark:text-red-300">Once deleted, all questions and student attempts will be permanently removed.</p>
+                        </div>
+                        <button 
+                            onClick={handleDeleteTest}
+                            className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium text-sm transition dark:bg-red-900/20 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-900/40"
+                        >
+                            Delete Permanently
+                        </button>
+                    </div>
                 </div>
               </div>
             )}
 
-            {/* Attempts Tab */}
+            {/* --- ATTEMPTS TAB --- */}
             {activeTab === 'attempts' && (
-              <div>
-                <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Recent Attempts ({attempts.length})
-                </h2>
+              <div className="animate-in fade-in">
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="text-lg font-bold">Recent Student Attempts</h3>
+                   <span className={`text-sm px-3 py-1 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                     Total: {attempts.length}
+                   </span>
+                </div>
+
                 {attempts.length === 0 ? (
-                  <p className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    No attempts yet
-                  </p>
+                  <div className={`text-center py-16 rounded-xl border border-dashed ${isDarkMode ? 'border-gray-800 bg-gray-900/50' : 'border-gray-300 bg-gray-50'}`}>
+                    <Users size={40} className={`mx-auto mb-3 ${isDarkMode ? 'text-gray-700' : 'text-gray-300'}`} />
+                    <p className={`text-gray-500`}>No students have attempted this test yet.</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {attempts.slice(0, 20).map(attempt => (
-                      <div
-                        key={attempt.id}
-                        className={`p-4 rounded-lg border ${
-                          isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              Student ID: {attempt.student_id}
-                            </p>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {new Date(attempt.completed_at).toLocaleString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-2xl font-bold ${
-                              attempt.score >= test.passing_score
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              {attempt.score}%
-                            </p>
-                            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {attempt.score >= test.passing_score ? 'Passed' : 'Failed'}
-                            </p>
-                          </div>
+                    {attempts.slice(0, 50).map((attempt) => {
+                       const passed = attempt.score >= test.passing_score;
+                       return (
+                        <div
+                            key={attempt.id}
+                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all ${
+                            isDarkMode ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 shadow-sm hover:shadow-md'
+                            }`}
+                        >
+                            <div className="flex items-start gap-4 mb-3 sm:mb-0">
+                                <div className={`p-2 rounded-full ${passed ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                    {passed ? <CheckCircle size={20} /> : <XCircle size={20} />}
+                                </div>
+                                <div>
+                                    <p className="font-semibold">Student ID: {attempt.student_id}</p>
+                                    <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        <Calendar size={14} />
+                                        {new Date(attempt.completed_at).toLocaleDateString()} at {new Date(attempt.completed_at).toLocaleTimeString()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-6 pl-12 sm:pl-0">
+                                <div className="text-right">
+                                    <span className={`block text-2xl font-bold ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {attempt.score}%
+                                    </span>
+                                    <span className={`text-xs font-bold uppercase tracking-wider ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {passed ? 'Passed' : 'Failed'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                      </div>
-                    ))}
+                       );
+                    })}
                   </div>
                 )}
               </div>
             )}
+
           </div>
         </div>
       </div>

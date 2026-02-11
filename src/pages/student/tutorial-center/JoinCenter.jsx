@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Key, Search } from 'lucide-react';
+import { ArrowLeft, Key, Search, ChevronRight } from 'lucide-react';
 import studentTCService from '../../../services/studentTC.service';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
@@ -15,94 +15,105 @@ const JoinCenter = () => {
     e.preventDefault();
     if (code.length < 6) return;
     
-    // DEBUG: Uncomment for debugging
-    // console.log('🚀 [JOIN] handleJoin called', { code: code.toUpperCase() });
-    
     setLoading(true);
     try {
-      // DEBUG: Uncomment for debugging
-      // console.log('📤 [JOIN] Sending join request to backend');
       const res = await studentTCService.joinCenter(code.toUpperCase());
-      // DEBUG: Uncomment for debugging
-      // console.log('✅ [JOIN] Backend response received', res);
       
       if (res.success) {
-        // DEBUG: Uncomment for debugging
-        // console.log('🎉 [JOIN] Join successful, navigating to dashboard');
         toast.success(`Welcome to ${res.center.name}! 🎉`);
         
-        // Use setTimeout to ensure state updates complete before navigation
         setTimeout(() => {
-          // DEBUG: Uncomment for debugging
-          // console.log('🧭 [JOIN] Executing navigation to dashboard');
           navigate('/student/dashboard', { replace: true });
         }, 100);
       } else {
-        console.error('❌ [JOIN] Response success flag is false', res);
+        console.error('Join failed', res);
         toast.error(res.message || 'Failed to join center');
         setLoading(false);
       }
     } catch (error) {
-      console.error('💥 [JOIN] Exception caught', {
-        error,
-        message: error.message,
-        response: error.response?.data
-      });
+      console.error('Join error', error);
       toast.error(error.response?.data?.error || 'Invalid code');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${isDarkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-gray-50 text-gray-900'}`}>
+      
+      {/* Back Button */}
+      <div className="w-full max-w-md mb-8">
         <button 
           onClick={() => navigate(-1)} 
-          className="flex items-center text-gray-500 hover:text-gray-900 dark:hover:text-white mb-8 transition-colors"
+          className={`flex items-center gap-2 text-sm font-medium transition-colors ${isDarkMode ? 'text-zinc-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
         >
-          <ArrowLeft size={20} className="mr-2" /> Back
+          <ArrowLeft size={16} /> Back
         </button>
+      </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400">
-              <Key size={32} />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Enter Access Code</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Ask your tutor for the 6-character code to join their center.
-            </p>
+      <div className={`w-full max-w-md rounded-2xl border shadow-sm overflow-hidden ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-200'}`}>
+        
+        {/* Header Section */}
+        <div className={`px-8 pt-10 pb-6 text-center border-b ${isDarkMode ? 'border-zinc-800 bg-zinc-900' : 'border-gray-50 bg-white'}`}>
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+            <Key size={32} />
           </div>
+          <h1 className="text-2xl font-bold tracking-tight mb-2">Join a Center</h1>
+          <p className={`text-sm ${isDarkMode ? 'text-zinc-400' : 'text-gray-500'}`}>
+            Enter the 6-character access code provided by your instructor.
+          </p>
+        </div>
 
+        {/* Form Section */}
+        <div className="p-8">
           <form onSubmit={handleJoin}>
-            <div className="mb-6">
+            <div className="mb-8">
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 text-center ${isDarkMode ? 'text-zinc-500' : 'text-gray-400'}`}>
+                Access Code
+              </label>
               <input
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 6))}
                 placeholder="ABC-123"
-                className="w-full text-center text-3xl font-mono font-bold tracking-widest py-4 border-b-2 border-gray-200 dark:border-gray-700 focus:border-blue-600 dark:focus:border-blue-500 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
+                className={`w-full text-center text-4xl font-mono font-bold tracking-widest py-3 bg-transparent border-b-2 outline-none transition-all placeholder-opacity-30 ${
+                  isDarkMode 
+                    ? 'border-zinc-700 focus:border-indigo-500 text-white placeholder-zinc-700' 
+                    : 'border-gray-200 focus:border-indigo-600 text-gray-900 placeholder-gray-300'
+                }`}
+                autoFocus
               />
             </div>
 
             <button
               type="submit"
               disabled={code.length < 6 || loading}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30"
+              className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                isDarkMode 
+                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white disabled:bg-zinc-800 disabled:text-zinc-600' 
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-200 disabled:text-gray-400'
+              }`}
             >
-              {loading ? 'Verifying...' : 'Join Center'}
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Join Center <ChevronRight size={16} />
+                </>
+              )}
             </button>
           </form>
+        </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
-            <p className="text-sm text-gray-500 mb-4">Looking for open tests?</p>
-            <button 
-              onClick={() => navigate('/student/tests/public')}
-              className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-lg transition-colors"
-            >
-              <Search size={16} /> Browse Public Library
-            </button>
-          </div>
+        {/* Footer Link */}
+        <div className={`p-4 text-center border-t ${isDarkMode ? 'bg-zinc-950/30 border-zinc-800' : 'bg-gray-50 border-gray-100'}`}>
+          <button 
+            onClick={() => navigate('/student/tests/public')}
+            className={`text-xs font-medium flex items-center justify-center gap-1.5 mx-auto transition-colors ${
+              isDarkMode ? 'text-zinc-500 hover:text-indigo-400' : 'text-gray-500 hover:text-indigo-600'
+            }`}
+          >
+            <Search size={14} /> Looking for public tests? Browse Library
+          </button>
         </div>
       </div>
     </div>
