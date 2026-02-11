@@ -166,7 +166,7 @@ const Tests = () => {
     return (
       <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
           <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading assessment data...</p>
         </div>
       </div>
@@ -206,7 +206,7 @@ const Tests = () => {
             </button>
             <button
               onClick={() => navigate('/tutor/tests/create')}
-              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm hover:shadow transition-all text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm hover:shadow transition-all text-sm font-medium"
             >
               <Plus size={18} />
               Create New Test
@@ -222,7 +222,7 @@ const Tests = () => {
                 <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Assessments</p>
                 <p className="text-2xl font-bold mt-1">{tests.length}</p>
               </div>
-              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-indigo-900/30 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600'}`}>
                 <FileText size={24} />
               </div>
             </div>
@@ -244,7 +244,7 @@ const Tests = () => {
                 <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Questions</p>
                 <p className="text-2xl font-bold mt-1">{totalQuestions}</p>
               </div>
-              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-indigo-900/30 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600'}`}>
                 <Layout size={24} />
               </div>
             </div>
@@ -261,7 +261,7 @@ const Tests = () => {
             placeholder="Search tests by title or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={`block w-full pl-10 pr-3 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+            className={`block w-full pl-10 pr-3 py-3 rounded-xl border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
               isDarkMode 
                 ? 'bg-gray-900 border-gray-700 text-white placeholder-gray-500' 
                 : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 shadow-sm'
@@ -282,7 +282,7 @@ const Tests = () => {
             {!searchTerm && (
               <button
                 onClick={() => navigate('/tutor/tests/create')}
-                className="mt-6 text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
+                className="mt-6 text-green-600 dark:text-green-400 font-medium hover:underline"
               >
                 Create new test
               </button>
@@ -296,7 +296,7 @@ const Tests = () => {
                 className={`group flex flex-col rounded-xl border transition-all duration-200 hover:shadow-lg ${
                   isDarkMode 
                     ? 'bg-gray-900 border-gray-800 hover:border-gray-700' 
-                    : 'bg-white border-gray-200 hover:border-indigo-200 shadow-sm'
+                    : 'bg-white border-gray-200 hover:border-green-200 shadow-sm'
                 }`}
               >
                 {/* Card Header */}
@@ -324,7 +324,7 @@ const Tests = () => {
 
                   <h3 
                     onClick={() => navigate(`/tutor/tests/${test.id}`)}
-                    className="text-lg font-bold mb-2 cursor-pointer hover:text-indigo-500 transition-colors line-clamp-1"
+                    className="text-lg font-bold mb-2 cursor-pointer hover:text-green-500 transition-colors line-clamp-1"
                   >
                     {test.title}
                   </h3>
@@ -335,15 +335,15 @@ const Tests = () => {
 
                   <div className={`grid grid-cols-2 gap-3 mb-4 text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                     <div className="flex items-center gap-2">
-                      <Layout size={14} className="text-indigo-500" />
+                      <Layout size={14} className="text-green-500" />
                       <span>{test.question_count?.[0]?.count || 0} Questions</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-indigo-500" />
+                      <Clock size={14} className="text-green-500" />
                       <span>{test.time_limit} Mins</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Award size={14} className="text-indigo-500" />
+                      <Award size={14} className="text-green-500" />
                       <span>Pass: {test.passing_score}%</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ const Tests = () => {
                       <Calendar size={14} className="mt-0.5 shrink-0" />
                       <div className="space-y-0.5">
                         {test.scheduled_start && <div>Start: {new Date(test.scheduled_start).toLocaleDateString()}</div>}
-                        {test.is_recurring && <div className="font-medium text-indigo-500">Recurring: {test.recurrence_pattern}</div>}
+                        {test.is_recurring && <div className="font-medium text-green-500">Recurring: {test.recurrence_pattern}</div>}
                       </div>
                     </div>
                   )}
@@ -377,7 +377,7 @@ const Tests = () => {
                      <button
                       onClick={() => handleExportClassReport(test)}
                       title="Export Class Report"
-                      className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-800 text-indigo-400' : 'hover:bg-white hover:shadow-sm text-indigo-600'}`}
+                      className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-800 text-green-400' : 'hover:bg-white hover:shadow-sm text-green-600'}`}
                     >
                       <FileDown size={18} />
                     </button>
