@@ -49,7 +49,17 @@ const Subscription = () => {
         { headers: { Authorization: `Bearer ${session?.access_token}` } }
       );
       
-      window.location.href = data.url;
+      // Validate redirect URL to prevent open redirect attacks
+      try {
+        const redirectUrl = new URL(data.url);
+        const allowedHosts = [window.location.hostname, 'checkout.stripe.com'];
+        if (!allowedHosts.some(host => redirectUrl.hostname.endsWith(host))) {
+          throw new Error('Untrusted redirect URL');
+        }
+        window.location.href = data.url;
+      } catch (urlError) {
+        toast.error('Invalid checkout URL received');
+      }
     } catch (error) {
       toast.error('Failed to create checkout session');
     }

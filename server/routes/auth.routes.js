@@ -12,8 +12,8 @@ const registerValidation = [
   body('email').isEmail().withMessage('Please enter a valid email'),
   body('phoneNumber').trim().notEmpty().withMessage('Phone number is required'),
   body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters long')
+    .isLength({ min: 12 })
+    .withMessage('Password must be at least 12 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   body('confirmPassword')
@@ -27,6 +27,24 @@ const loginValidation = [
   body('password').notEmpty().withMessage('Password is required'),
   validateRequest,
 ];
+
+// httpOnly cookie helpers for secure token storage
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieOpts = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'strict' : 'lax',
+    path: '/'
+  };
+  res.cookie('access_token', accessToken, { ...cookieOpts, maxAge: 15 * 60 * 1000 });
+  res.cookie('refresh_token', refreshToken, { ...cookieOpts, maxAge: 7 * 24 * 60 * 60 * 1000 });
+};
+
+const clearAuthCookies = (res) => {
+  res.clearCookie('access_token', { path: '/' });
+  res.clearCookie('refresh_token', { path: '/' });
+};
 
 // Helper function to log detailed error information
 const logError = (error, context = {}) => {
@@ -90,6 +108,7 @@ router.post('/register', ipLimiter, authLimiter, registerValidation, async (req,
           // Sign in the user to get session tokens
           const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
           if (!signInError && signInData.session) {
+            setAuthCookies(res, signInData.session.access_token, signInData.session.refresh_token);
             return res.json({
               success: true,
               user: { id: adminData.user.id, email, name, phoneNumber },
@@ -127,6 +146,7 @@ router.post('/register', ipLimiter, authLimiter, registerValidation, async (req,
     console.log(`✅ [${requestId}] Auth user created:`, { userId: data.user?.id, email });
     if (data.user) {
       if (data.session) {
+        setAuthCookies(res, data.session.access_token, data.session.refresh_token);
         return res.json({
           success: true,
           user: { id: data.user.id, email, name, phoneNumber: data.user.user_metadata.phone_number },
@@ -186,11 +206,13 @@ router.post('/login', ipLimiter, authLimiter, loginValidation, async (req, res) 
       isAdmin
     };
     
-    res.json({ 
-      success: true, 
-      user: userResponse, 
-      token: data.session.access_token, 
-      refreshToken: data.session.refresh_token 
+    setAuthCookies(res, data.session.access_token, data.session.refresh_token);
+
+    res.json({
+      success: true,
+      user: userResponse,
+      token: data.session.access_token,
+      refreshToken: data.session.refresh_token
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -201,15 +223,17 @@ router.post('/login', ipLimiter, authLimiter, loginValidation, async (req, res) 
 router.post('/logout', async (req, res) => {
   try {
     await supabase.auth.signOut();
+    clearAuthCookies(res);
     res.json({ success: true });
   } catch (error) {
     console.error('Logout error:', error);
+    clearAuthCookies(res);
     res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 
 router.get('/validate', apiLimiter, async (req, res) => {
-  const token = req.headers.authorization?.split('Bearer ')[1];
+  const token = req.cookies?.access_token || req.headers.authorization?.split('Bearer ')[1];
   if (!token) {
     return res.status(401).json({ success: false, error: 'No token provided' });
   }
@@ -238,15 +262,17 @@ router.get('/validate', apiLimiter, async (req, res) => {
 });
 
 router.post('/refresh-token', authLimiter, async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.refresh_token || req.body.refreshToken;
   if (!refreshToken) {
     return res.status(400).json({ success: false, error: 'No refresh token provided' });
   }
   try {
     const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
     if (error) {
+      clearAuthCookies(res);
       return res.status(401).json({ success: false, error: error.message });
     }
+    setAuthCookies(res, data.session.access_token, data.session.refresh_token);
     res.json({ success: true, token: data.session.access_token, refreshToken: data.session.refresh_token, user: data.user });
   } catch (error) {
     console.error('Refresh token error:', error);

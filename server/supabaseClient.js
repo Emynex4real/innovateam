@@ -8,22 +8,18 @@ const validateEnvVars = () => {
     'SUPABASE_SERVICE_ROLE_KEY',
     'SUPABASE_JWT_SECRET'
   ];
-  
-  console.log('🔍 Validating Supabase environment variables...');
+
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
+
   if (missingVars.length > 0) {
     const error = new Error(`Missing required Supabase environment variables: ${missingVars.join(', ')}`);
     error.code = 'MISSING_ENV_VARS';
     error.missingVars = missingVars;
     throw error;
   }
-  
-  console.log('✅ All required Supabase environment variables are present');
-  
-  // Log non-sensitive configuration
+
   if (process.env.NODE_ENV === 'development') {
-    console.log('\n📋 Supabase Configuration:');
+    console.log('Supabase Configuration:');
     console.log(`   - SUPABASE_URL: ${process.env.SUPABASE_URL}`);
     console.log(`   - SUPABASE_KEY: ${process.env.SUPABASE_KEY ? '*** (present)' : 'missing'}`);
     console.log(`   - SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '*** (present)' : 'missing'}`);
@@ -35,106 +31,72 @@ const validateEnvVars = () => {
 try {
   validateEnvVars();
 } catch (error) {
-  console.error('❌ Failed to initialize Supabase client:');
-  console.error('   Error:', error.message);
+  console.error('Failed to initialize Supabase client:', error.message);
   if (error.code === 'MISSING_ENV_VARS') {
     console.error('   Missing variables:', error.missingVars.join(', '));
-    console.log('   Available environment variables:', 
-      Object.keys(process.env).filter(k => k.startsWith('SUPABASE_'))
-    );
   }
-  throw error; // Re-throw to prevent further execution
+  throw error;
 }
 
-// Create Supabase client with enhanced error handling and logging
-let supabase;
+// Shared client options
+const baseOptions = {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false,
+    storage: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {}
+    }
+  },
+  global: {
+    headers: {
+      'x-application-name': 'innovateam-backend',
+      'x-client-info': 'innovateam/1.0.0',
+      'Connection': 'keep-alive'
+    },
+    fetch: (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(30000)
+      });
+    }
+  },
+  db: { schema: 'public' },
+  realtime: { eventsPerSecond: 10 }
+};
+
+let anonClient;
+let adminClient;
+
 const initializeSupabase = () => {
   try {
-    console.log('🚀 Initializing Supabase client...');
-    
-    // Basic configuration with connection pooling and retry
-    const options = {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-        storageKey: 'sb-auth-token',
-        storage: {
-          getItem: () => null,
-          setItem: () => {},
-          removeItem: () => {}
-        }
-      },
-      global: {
-        headers: { 
-          'x-application-name': 'innovateam-backend',
-          'x-client-info': 'innovateam/1.0.0',
-          'Connection': 'keep-alive'
-        },
-        fetch: (url, options = {}) => {
-          return fetch(url, {
-            ...options,
-            signal: AbortSignal.timeout(30000) // Increased to 30 seconds for bulk operations
-          });
-        }
-      },
-      db: {
-        schema: 'public'
-      },
-      realtime: {
-        eventsPerSecond: 10
-      }
-    };
-    
-    // Create the main client with anon key for regular operations
-    console.log('🔑 Initializing Supabase client with anon key...');
-    const anonClient = createClient(
+    // Anon client - respects RLS, used for user-facing queries
+    anonClient = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_KEY,
-      {
-        ...options,
-        auth: {
-          ...options.auth,
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false
-        }
-      }
+      baseOptions
     );
-    
-    // Create an admin client with service role key for admin operations
-    console.log('🔑 Initializing Supabase admin client with service role key...');
-    
-    // Verify service role key is different from anon key
+
     if (process.env.SUPABASE_KEY === process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.warn('⚠️ WARNING: SUPABASE_KEY and SUPABASE_SERVICE_ROLE_KEY are the same. This is not recommended for production.');
+      console.warn('WARNING: SUPABASE_KEY and SUPABASE_SERVICE_ROLE_KEY are the same. This is not recommended for production.');
     }
-    
-    const adminClient = createClient(
+
+    // Admin client - bypasses RLS, used ONLY for admin operations
+    adminClient = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
       {
-        ...options,
+        ...baseOptions,
         auth: {
-          ...options.auth,
-          // Disable auto token refresh for admin client
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false,
-          // Use a different storage key to avoid conflicts
+          ...baseOptions.auth,
           storageKey: 'sb-admin-token',
-          storage: {
-            ...options.auth.storage,
-            // Override storage key for admin client
-            getItem: (key) => null,
-            setItem: (key, value) => {},
-            removeItem: (key) => {}
-          }
         },
         global: {
-          ...options.global,
+          ...baseOptions.global,
           headers: {
-            ...options.global.headers,
+            ...baseOptions.global.headers,
             'x-application-name': 'innovateam-backend-admin',
             'x-client-info': 'innovateam/1.0.0-admin',
             'x-request-origin': 'server-side'
@@ -142,116 +104,118 @@ const initializeSupabase = () => {
         }
       }
     );
-    
-    // Use the admin client as the main client since we need admin operations
-    supabase = adminClient;
-    
-    // Add admin methods
-    supabase.admin = {
-      auth: adminClient.auth.admin
-    };
-    
-    console.log('✅ Supabase client initialized with admin capabilities');
+
+    console.log('Supabase clients initialized (anon + admin)');
     return true;
-    
+
   } catch (error) {
-    console.error('❌ Failed to initialize Supabase client:', error);
+    console.error('Failed to initialize Supabase client:', error);
     process.exit(1);
   }
 };
 
 // Test the database connection
 const testDatabaseConnection = async () => {
-  console.log('🔌 Testing database connection...');
-  
   try {
-    // Test a simple query
-    const { data, error, status } = await supabase
+    const { data, error, status } = await adminClient
       .from('users')
       .select('*')
       .limit(1);
-    
+
     if (error) {
-      console.error('❌ Database connection test failed:');
-      console.error('   - Status:', status);
-      console.error('   - Error:', error);
-      console.error('   - Hint: Check if the database tables exist and are accessible');
+      console.error('Database connection test failed:', { status, error });
       return false;
     }
-    
-    console.log('✅ Successfully connected to the database');
-    console.log(`   - Users table: ${data ? 'Exists' : 'Not found'}`);
-    console.log(`   - User count: ${data ? data.length : 0}`);
+
+    console.log('Database connected successfully');
     return true;
-    
+
   } catch (error) {
-    console.error('❌ Exception while testing database connection:', error);
+    console.error('Exception while testing database connection:', error);
     return false;
   }
 };
 
-// Initialize Supabase and test connection
+// Initialize
 const initialize = async () => {
   try {
     initializeSupabase();
-    
-    // Run connection tests
     const dbConnected = await testDatabaseConnection();
-    
+
     if (!dbConnected) {
-      console.error('❌ Failed to establish database connection. Please check your configuration.');
-      console.log('\nTroubleshooting tips:');
-      console.log('1. Verify your Supabase project is running and accessible');
-      console.log('2. Check that the database tables exist and are properly configured');
-      console.log('3. Ensure your IP is whitelisted in Supabase if using IP restrictions');
-      console.log('4. Check the network connection to Supabase');
-      console.log('5. Verify the service role key has the correct permissions\n');
-      
-      // Don't exit in development to allow for debugging
+      console.error('Failed to establish database connection. Check your configuration.');
       if (process.env.NODE_ENV !== 'development') {
         process.exit(1);
       }
     }
   } catch (error) {
-    console.error('❌ Error initializing Supabase client:', error);
-    console.error('Please check your Supabase URL and key in the .env file');
+    console.error('Error initializing Supabase:', error);
     process.exit(1);
   }
 };
 
-// Run the initialization
 initialize();
 
-// Wrap queries with retry logic
-const originalFrom = supabase.from;
-supabase.from = function(table) {
-  console.log(`🔍 Executing query on ${table}`);
-  const builder = originalFrom.apply(this, [table]);
-  const originalMethods = {};
-  
-  ['select', 'insert', 'update', 'delete', 'upsert'].forEach(method => {
-    originalMethods[method] = builder[method];
-    builder[method] = function(...args) {
-      const query = originalMethods[method].apply(this, args);
-      const originalThen = query.then;
-      
-      query.then = async function(resolve, reject) {
-        let retries = 2;
-        while (retries >= 0) {
-          try {
-            return await originalThen.call(this, resolve, reject);
-          } catch (error) {
-            if (retries === 0 || !error.message?.includes('fetch failed')) throw error;
-            retries--;
-            await new Promise(r => setTimeout(r, 300));
+// Retry wrapper for queries - applies to admin client only
+// (admin client is used by existing code via default export for backward compat)
+const wrapWithRetry = (client) => {
+  const originalFrom = client.from.bind(client);
+  client.from = function(table) {
+    const builder = originalFrom(table);
+    const originalMethods = {};
+
+    ['select', 'insert', 'update', 'delete', 'upsert'].forEach(method => {
+      if (!builder[method]) return;
+      originalMethods[method] = builder[method];
+      builder[method] = function(...args) {
+        const query = originalMethods[method].apply(this, args);
+        const originalThen = query.then;
+
+        query.then = async function(resolve, reject) {
+          let retries = 2;
+          while (retries >= 0) {
+            try {
+              return await originalThen.call(this, resolve, reject);
+            } catch (error) {
+              if (retries === 0 || !error.message?.includes('fetch failed')) throw error;
+              retries--;
+              // Exponential backoff: 300ms, 600ms
+              await new Promise(r => setTimeout(r, 300 * Math.pow(2, 2 - retries)));
+            }
           }
-        }
+        };
+        return query;
       };
-      return query;
-    };
-  });
-  
-  return builder;
+    });
+
+    return builder;
+  };
 };
 
-module.exports = supabase;
+wrapWithRetry(adminClient);
+
+// Default export: admin client (backward compatible with all 60+ existing imports)
+// MIGRATION NOTE: New code should use supabaseAdmin only for admin operations
+// and use createUserClient(jwt) for user-facing queries with RLS.
+module.exports = adminClient;
+module.exports.supabaseAdmin = adminClient;
+module.exports.supabaseAnon = anonClient;
+
+// Helper: create a per-request client that enforces RLS for the given user JWT.
+// Usage: const userDb = createUserClient(req.headers.authorization.split(' ')[1]);
+module.exports.createUserClient = (jwt) => {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY,
+    {
+      ...baseOptions,
+      global: {
+        ...baseOptions.global,
+        headers: {
+          ...baseOptions.global.headers,
+          Authorization: `Bearer ${jwt}`
+        }
+      }
+    }
+  );
+};

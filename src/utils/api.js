@@ -9,7 +9,21 @@ const apiSecurity = {
     'X-Requested-With': 'XMLHttpRequest',
     'X-Client-Version': '1.0.0'
   }),
-  sanitizeRequest: (data) => data
+  sanitizeRequest: (data) => {
+    if (!data || typeof data !== 'object') return data;
+    const sanitized = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'string') {
+        sanitized[key] = value.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+                              .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+      } else if (typeof value === 'object' && value !== null) {
+        sanitized[key] = apiSecurity.sanitizeRequest(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  }
 };
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://innovateam-api.onrender.com';
@@ -18,6 +32,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'https://innovateam-api.onrende
 const api = axios.create({
   baseURL: API_URL,
   timeout: 10000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -34,9 +49,11 @@ api.interceptors.request.use(async (config) => {
       const token = await csrfProtection.getToken();
       if (token) {
         config.headers['x-csrf-token'] = token;
+      } else {
+        return Promise.reject(new Error('CSRF token unavailable. Request blocked for security.'));
       }
     } catch (error) {
-      console.warn('Failed to get CSRF token:', error);
+      return Promise.reject(new Error('CSRF validation failed. Request blocked for security.'));
     }
   }
   

@@ -1,4 +1,7 @@
-const supabase = require('../supabaseClient');
+// Admin controller uses service role key (bypasses RLS) - this is intentional
+// because admin operations need unrestricted access to all user data.
+const supabase = require('../supabaseClient'); // already adminClient via default export
+const { supabaseAdmin } = require('../supabaseClient');
 const {
   sanitizeSearchTerm,
   validateUUID,

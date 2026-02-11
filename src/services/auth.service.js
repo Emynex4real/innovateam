@@ -12,32 +12,8 @@ import {
 
 
 
-// Mock user database for local-only authentication
-// Note: In production, use proper authentication service
-const mockUsers = [
-  {
-    id: '1',
-    email: 'admin@innovateam.com',
-    password: 'admin123!', // Secure default password
-    name: 'Admin User',
-    role: 'admin',
-    isAdmin: true,
-    emailVerified: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    email: 'innovateamnigeria@gmail.com',
-    password: 'innovateam2024!',
-    name: 'Innovateam Nigeria',
-    role: 'admin',
-    isAdmin: true,
-    emailVerified: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+// Mock user database removed — use Supabase authentication in production
+const mockUsers = [];
 
 
 

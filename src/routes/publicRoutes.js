@@ -10,10 +10,6 @@ import Login from "../pages/login";
 import Register from "../pages/register";
 import NotFound from "../pages/NotFound";
 
-// Import admin and course advisor
-import AdminPanel from "../pages/admin";
-import CourseAdvisor from "../pages/course-advisor";
-
 // Define public routes
 const publicRoutes = [
   { 
@@ -46,17 +42,7 @@ const publicRoutes = [
     element: <Register />,
     title: "Register" 
   },
-  { 
-    path: "/admin", 
-    element: <AdminPanel />,
-    title: "Admin Panel" 
-  },
-  { 
-    path: "/course-advisor", 
-    element: <CourseAdvisor />,
-    title: "Course Advisor" 
-  },
-  { 
+  {
     path: "/404", 
     element: <NotFound />,
     title: "Page Not Found" 

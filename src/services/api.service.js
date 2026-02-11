@@ -58,9 +58,8 @@ class ApiService {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    // 3. CSRF Protection
-    // Skip CSRF for AI Examiner endpoints if necessary, or for non-mutating requests
-    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method) && !endpoint.includes('/ai-examiner')) {
+    // 3. CSRF Protection for all state-changing requests
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
       const csrfToken = await this.getCSRFToken();
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
@@ -71,7 +70,8 @@ class ApiService {
       const response = await fetch(url, {
         method: options.method,
         headers,
-        body: options.body
+        body: options.body,
+        credentials: 'include'
       });
 
       // 4. Unified Error Handling

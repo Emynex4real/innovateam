@@ -100,15 +100,15 @@ export class SessionSecurity {
   }
 }
 
-// Session fingerprinting for security
+// Session fingerprinting for security (uses SHA-256 hash instead of plaintext)
 export class SessionFingerprint {
-  static generate() {
+  static async generate() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     ctx.textBaseline = 'top';
     ctx.font = '14px Arial';
     ctx.fillText('Session fingerprint', 2, 2);
-    
+
     const fingerprint = {
       userAgent: navigator.userAgent,
       language: navigator.language,
@@ -118,8 +118,10 @@ export class SessionFingerprint {
       canvas: canvas.toDataURL(),
       webgl: this.getWebGLFingerprint()
     };
-    
-    return btoa(JSON.stringify(fingerprint));
+
+    const encoded = new TextEncoder().encode(JSON.stringify(fingerprint));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   static getWebGLFingerprint() {
@@ -127,7 +129,7 @@ export class SessionFingerprint {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (!gl) return 'no-webgl';
-      
+
       const renderer = gl.getParameter(gl.RENDERER);
       const vendor = gl.getParameter(gl.VENDOR);
       return `${vendor}~${renderer}`;
@@ -136,46 +138,76 @@ export class SessionFingerprint {
     }
   }
 
-  static validate(storedFingerprint) {
-    const currentFingerprint = this.generate();
+  static async validate(storedFingerprint) {
+    const currentFingerprint = await this.generate();
     return storedFingerprint === currentFingerprint;
   }
 }
 
-// Secure token storage with validation
+// Secure token storage using AES-GCM encryption via Web Crypto API
 export class SecureTokenManager {
-  static setToken(token, fingerprint) {
+  static _keyPromise = null;
+
+  static async _getKey() {
+    if (this._keyPromise) return this._keyPromise;
+
+    this._keyPromise = (async () => {
+      const storedKey = sessionStorage.getItem('_sk');
+      if (storedKey) {
+        const rawKey = Uint8Array.from(atob(storedKey), c => c.charCodeAt(0));
+        return crypto.subtle.importKey('raw', rawKey, 'AES-GCM', true, ['encrypt', 'decrypt']);
+      }
+      const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+      const exported = await crypto.subtle.exportKey('raw', key);
+      sessionStorage.setItem('_sk', btoa(String.fromCharCode(...new Uint8Array(exported))));
+      return key;
+    })();
+
+    return this._keyPromise;
+  }
+
+  static async setToken(token, fingerprint) {
     const tokenData = {
       token,
       fingerprint,
       timestamp: Date.now(),
-      expires: Date.now() + (15 * 60 * 1000) // 15 minutes
+      expires: Date.now() + (15 * 60 * 1000)
     };
-    
-    // Encrypt token data
-    const encrypted = btoa(JSON.stringify(tokenData));
-    sessionStorage.setItem('auth_session', encrypted);
+
+    const key = await this._getKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(JSON.stringify(tokenData));
+    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+
+    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(ciphertext), iv.length);
+    sessionStorage.setItem('auth_session', btoa(String.fromCharCode(...combined)));
   }
 
-  static getToken() {
+  static async getToken() {
     try {
-      const encrypted = sessionStorage.getItem('auth_session');
-      if (!encrypted) return null;
-      
-      const tokenData = JSON.parse(atob(encrypted));
-      
-      // Check expiration
+      const stored = sessionStorage.getItem('auth_session');
+      if (!stored) return null;
+
+      const key = await this._getKey();
+      const combined = Uint8Array.from(atob(stored), c => c.charCodeAt(0));
+      const iv = combined.slice(0, 12);
+      const ciphertext = combined.slice(12);
+
+      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+      const tokenData = JSON.parse(new TextDecoder().decode(decrypted));
+
       if (Date.now() > tokenData.expires) {
         this.clearToken();
         return null;
       }
-      
-      // Validate fingerprint
-      if (!SessionFingerprint.validate(tokenData.fingerprint)) {
+
+      if (!await SessionFingerprint.validate(tokenData.fingerprint)) {
         this.clearToken();
         return null;
       }
-      
+
       return tokenData.token;
     } catch {
       this.clearToken();
@@ -185,12 +217,14 @@ export class SecureTokenManager {
 
   static clearToken() {
     sessionStorage.removeItem('auth_session');
-    localStorage.removeItem('auth_session'); // Clear any old localStorage tokens
+    sessionStorage.removeItem('_sk');
+    localStorage.removeItem('auth_session');
+    this._keyPromise = null;
   }
 
-  static refreshToken(newToken) {
-    const fingerprint = SessionFingerprint.generate();
-    this.setToken(newToken, fingerprint);
+  static async refreshToken(newToken) {
+    const fingerprint = await SessionFingerprint.generate();
+    await this.setToken(newToken, fingerprint);
   }
 }
 

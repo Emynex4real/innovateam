@@ -2,11 +2,6 @@ import axios from 'axios';
 
 class DeepSeekService {
   constructor() {
-    console.log('Environment variables:', {
-      REACT_APP_DEEPSEEK_API_KEY: process.env.REACT_APP_DEEPSEEK_API_KEY,
-      NODE_ENV: process.env.NODE_ENV
-    });
-    
     this.apiKey = process.env.REACT_APP_DEEPSEEK_API_KEY;
     
     // Use direct URL for all environments
@@ -33,12 +28,7 @@ class DeepSeekService {
 
     this.client.interceptors.request.use(
       config => {
-        // Add API key to headers for each request
         config.headers['Authorization'] = `Bearer ${this.apiKey}`;
-        
-        // Log request details
-        console.log('Making API request with key:', this.apiKey);
-        console.log('To URL:', config.url);
         return config;
       },
       error => {
@@ -48,14 +38,7 @@ class DeepSeekService {
     );
 
     this.client.interceptors.response.use(
-      response => {
-        // Log successful response
-        console.log('Response received:', {
-          status: response.status,
-          headers: response.headers
-        });
-        return response;
-      },
+      response => response,
       error => {
         console.error('Response error:', error);
         
@@ -98,9 +81,6 @@ class DeepSeekService {
         throw new Error('DeepSeek API key is not configured. Please check your .env file.');
       }
 
-      // Log the messages being sent
-      console.log('Sending messages to DeepSeek API:', messages);
-
       const response = await this.client.post('/chat/completions', {
         model: 'deepseek-chat',
         messages: messages.map(msg => ({
@@ -111,12 +91,6 @@ class DeepSeekService {
         max_tokens: 1000,
         stream: false,
         top_p: 0.95
-      });
-
-      // Log the response data
-      console.log('Received response from DeepSeek API:', {
-        status: response.status,
-        data: response.data
       });
 
       if (!response.data) {

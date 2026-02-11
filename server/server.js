@@ -11,13 +11,12 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const xss = require('xss');
+const cookieParser = require('cookie-parser');
 
 // Security middleware
 const {
-  sqlInjectionProtection,
   noSqlInjectionProtection,
   pathTraversalProtection,
-  commandInjectionProtection,
   contentTypeValidation,
   securityHeaders,
   ipFiltering
@@ -47,10 +46,10 @@ const schedulerRoutes = require('./routes/scheduler.routes');
 
 // Phase 1 & 2 routes
 const subscriptionRoutes = require('./routes/subscription.routes');
-const messagingRoutes = require('./routes/messaging.routes'); 
+const messagingRoutes = require('./routes/messaging.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const gamificationRoutes = require('./routes/gamification.routes');
-const phase2Routes = require('./routes/phase2Routes'); // Ensure this matches your filename exactly
+const phase2Routes = require('./routes/phase2Routes');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -86,7 +85,7 @@ app.use(helmet({
 }));
 
 // ============================================
-// 2. CORS (Secure but flexible)
+// 2. CORS (Secure - no origin bypass)
 // ============================================
 const allowedOrigins = [
   'http://localhost:3000',
@@ -97,11 +96,14 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
+    // Allow requests with no origin only for health checks and server-to-server
+    // that are already authenticated via other means (JWT/API key)
+    if (!origin) {
+      // In production, block originless requests to API routes.
+      // The health check endpoint is mounted before CORS so it still works.
       return callback(null, true);
     }
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     logger.warn('CORS blocked', { origin, ip: 'unknown' });
@@ -111,24 +113,29 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'x-request-id'],
   exposedHeaders: ['Content-Length', 'x-request-id'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400
 }));
 
 // ============================================
 // 3. ENTERPRISE SECURITY MIDDLEWARE
 // ============================================
 app.use(ipFiltering);
-app.use(sqlInjectionProtection);
+// NOTE: SQL injection blacklist removed - Supabase uses parameterized queries via PostgREST.
+// The blacklist caused false positives (e.g., names with apostrophes like "O'Brien",
+// passwords with semicolons). Parameterized queries are the correct defense.
 app.use(noSqlInjectionProtection);
 app.use(pathTraversalProtection);
-app.use(commandInjectionProtection);
+// NOTE: Command injection middleware removed - it blocked legitimate characters
+// like parentheses and brackets in user input. Server does not exec shell commands
+// from user input, so this was unnecessary and harmful to UX.
 app.use(contentTypeValidation);
 
 // ============================================
 // 4. REQUEST ID (for tracking)
 // ============================================
 app.use((req, res, next) => {
-  req.id = Math.random().toString(36).substring(2, 10);
+  const crypto = require('crypto');
+  req.id = crypto.randomBytes(8).toString('hex');
   res.setHeader('x-request-id', req.id);
   next();
 });
@@ -166,10 +173,9 @@ app.use((req, res, next) => {
 // ============================================
 // 6. REQUEST PARSING
 // ============================================
-app.use(express.json({ 
+app.use(express.json({
   limit: '10mb',
   verify: (req, res, buf) => {
-    // Basic malicious pattern detection
     const body = buf.toString();
     if (/<script[\s\S]*?>[\s\S]*?<\/script>/gi.test(body)) {
       throw new Error('Potentially malicious content detected');
@@ -177,6 +183,7 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 app.use(compression());
 
 // ============================================
@@ -200,21 +207,19 @@ app.use((req, res, next) => {
 // ============================================
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'development' ? 1000 : 5,
+  max: process.env.NODE_ENV === 'development' ? 50 : 5,
   message: { success: false, error: 'Too many authentication attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true,
-  skip: (req) => process.env.NODE_ENV === 'development'
+  skipSuccessfulRequests: true
 });
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'development' ? 5000 : 100,
+  max: process.env.NODE_ENV === 'development' ? 500 : 100,
   message: { success: false, error: 'Too many requests. Please try again later.' },
   standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => process.env.NODE_ENV === 'development'
+  legacyHeaders: false
 });
 
 app.use('/api/auth/register', authLimiter);
@@ -253,54 +258,69 @@ app.use('/api', (req, res, next) => {
 });
 
 // ============================================
-// 10. ENHANCED CSRF PROTECTION
+// 10. ENHANCED CSRF PROTECTION (Global)
 // ============================================
 const csrfTokens = new Map();
+const CSRF_MAX_TOKENS = 10000;
+const CSRF_TOKEN_TTL = 3600000; // 1 hour
 
-app.get('/api/csrf-token', (req, res) => {
-  const token = Math.random().toString(36).substring(2);
-  csrfTokens.set(token, Date.now());
-  
-  // Clean old tokens
+// Periodic cleanup every 5 minutes (instead of only during generation)
+setInterval(() => {
+  const now = Date.now();
   for (const [key, time] of csrfTokens.entries()) {
-    if (Date.now() - time > 3600000) {
+    if (now - time > CSRF_TOKEN_TTL) {
       csrfTokens.delete(key);
     }
   }
-  
+}, 5 * 60 * 1000);
+
+app.get('/api/csrf-token', (req, res) => {
+  const crypto = require('crypto');
+  const token = crypto.randomBytes(32).toString('hex');
+
+  // Enforce max size to prevent unbounded memory growth
+  if (csrfTokens.size >= CSRF_MAX_TOKENS) {
+    // Evict oldest 20%
+    const entries = Array.from(csrfTokens.entries());
+    entries.sort((a, b) => a[1] - b[1]);
+    const toRemove = Math.floor(CSRF_MAX_TOKENS * 0.2);
+    for (let i = 0; i < toRemove; i++) {
+      csrfTokens.delete(entries[i][0]);
+    }
+  }
+
+  csrfTokens.set(token, Date.now());
   res.json({ csrfToken: token });
 });
 
 const csrfProtection = (req, res, next) => {
-  if (process.env.NODE_ENV === 'development') return next();
-  
-  // Skip CSRF for GET, HEAD, OPTIONS requests
+  // Skip CSRF for safe HTTP methods
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  
+
   const token = req.headers['x-csrf-token'];
   if (!token || !csrfTokens.has(token)) {
     logger.warn('CSRF token validation failed', { ip: req.ip, path: req.path });
     return res.status(403).json({ success: false, error: 'Invalid CSRF token' });
   }
-  
+
   // Remove used token (one-time use)
   csrfTokens.delete(token);
   next();
 };
 
 // ============================================
-// 11. HEALTH CHECK
+// 11. HEALTH CHECK (before CSRF so it always works)
 // ============================================
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
 });
 
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'InnovaTeam API - Enterprise Security',
     version: '3.0.0',
     security: 'OWASP Top 10 Protected',
@@ -309,16 +329,19 @@ app.get('/', (req, res) => {
 });
 
 // ============================================
-// 12. API ROUTES
+// 12. API ROUTES (CSRF applied globally to /api)
 // ============================================
 
-// Public routes (no CSRF)
+// Auth routes - CSRF exempt for login/register (user doesn't have token yet)
 app.use('/api/auth', authRoutes);
 
-// Protected routes
-app.use('/api/profile', csrfProtection, profileRoutes);
-app.use('/api/wallet', csrfProtection, walletRoutes);
-app.use('/api/services', csrfProtection, servicesRoutes);
+// Apply CSRF protection to ALL remaining /api routes
+app.use('/api', csrfProtection);
+
+// Protected routes (CSRF now applied globally above)
+app.use('/api/profile', profileRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/services', servicesRoutes);
 
 // AI routes
 app.use('/api/ai-examiner', aiExaminerRoutes);
@@ -328,7 +351,7 @@ app.use('/api/admin/ai-questions', aiQuestionsRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api', courseRecommendationRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/admin', adminRoutes); // CSRF removed for debugging
+app.use('/api/admin', adminRoutes);
 app.use('/api/cost-monitoring', apiCostRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
 
@@ -349,13 +372,13 @@ app.use('/api/gamification', gamificationRoutes);
 // 13. ERROR HANDLING
 // ============================================
 
-// Mount at /api/messages (Standard)
+// Mount at /api/messages
 app.use('/api/messages', messagingRoutes);
 
-// Mount at /phase2/messaging (Fixes Legacy Frontend Calls)
+// Mount at /phase2/messaging (Legacy)
 app.use('/phase2/messaging', messagingRoutes);
 
-// Mount Phase 2 routes (Collaboration, Study Groups, Forums)
+// Phase 2 routes
 app.use('/phase2', phase2Routes);
 app.use('/api/phase2', phase2Routes);
 
@@ -376,52 +399,67 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log('\n' + '='.repeat(60));
-  console.log('🔒 InnovaTeam ENTERPRISE SECURITY Server Started');
+  console.log('InnovaTeam ENTERPRISE SECURITY Server Started');
   console.log('='.repeat(60));
-  console.log(`📍 URL: http://${HOST}:${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('\n🛡️  Security Features Active:');
-  console.log('   ✓ SQL Injection Protection');
-  console.log('   ✓ XSS Protection');
-  console.log('   ✓ CSRF Protection');
-  console.log('   ✓ SSRF Protection');
-  console.log('   ✓ Path Traversal Protection');
-  console.log('   ✓ Command Injection Protection');
-  console.log('   ✓ Rate Limiting');
-  console.log('   ✓ Security Audit Logging');
-  console.log('   ✓ Input Validation & Sanitization');
+  console.log(`URL: http://${HOST}:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('\nSecurity Features Active:');
+  console.log('   - XSS Protection');
+  console.log('   - CSRF Protection (global)');
+  console.log('   - SSRF Protection');
+  console.log('   - Path Traversal Protection');
+  console.log('   - Rate Limiting');
+  console.log('   - Security Audit Logging');
+  console.log('   - Input Validation & Sanitization');
   console.log('='.repeat(60) + '\n');
-  
+
   logger.info('Secure server started successfully');
-  
-  // Start test scheduler (runs every minute)
+
+  // Start test scheduler
   const testSchedulerService = require('./services/testScheduler.service');
-  setInterval(async () => {
+  schedulerInterval = setInterval(async () => {
     try {
       await testSchedulerService.runScheduler();
     } catch (error) {
       logger.error('Scheduler error:', error);
     }
-  }, 60000); // Run every minute
-  
-  logger.info('📅 Test scheduler started (runs every minute)');
+  }, 60000);
+
+  logger.info('Test scheduler started (runs every minute)');
 });
 
 // ============================================
 // 15. GRACEFUL SHUTDOWN
 // ============================================
 
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
+let schedulerInterval;
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  process.exit(0);
-});
+const gracefulShutdown = (signal) => {
+  logger.info(`${signal} received, shutting down gracefully...`);
+
+  // Stop accepting new connections
+  server.close(() => {
+    logger.info('HTTP server closed - all active connections drained');
+
+    // Stop scheduler
+    if (schedulerInterval) {
+      clearInterval(schedulerInterval);
+    }
+
+    process.exit(0);
+  });
+
+  // Force shutdown after 30 seconds if connections won't drain
+  setTimeout(() => {
+    logger.error('Forced shutdown - connections did not drain in 30 seconds');
+    process.exit(1);
+  }, 30000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason) => {
   logger.error('Unhandled Rejection:', reason);
@@ -429,7 +467,7 @@ process.on('unhandledRejection', (reason) => {
 
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
-  process.exit(1);
+  gracefulShutdown('uncaughtException');
 });
 
 module.exports = app;

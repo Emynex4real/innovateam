@@ -209,7 +209,7 @@ const EnterpriseTutorDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent" />
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent" />
         <p className="text-gray-500 font-medium">Loading your dashboard...</p>
       </div>
     );
@@ -223,14 +223,14 @@ const EnterpriseTutorDashboard = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-xl text-center max-w-md w-full"
         >
-          <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <GraduationCap size={40} className="text-indigo-600 dark:text-indigo-400" />
+          <div className="w-20 h-20 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <GraduationCap size={40} className="text-green-600 dark:text-green-400" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Welcome, Tutor!</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8">Set up your professional tutorial center to start creating assessments and tracking students.</p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="w-full py-3.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-200 dark:shadow-none flex items-center justify-center gap-2"
           >
             <Plus size={20} />
             Create Tutorial Center
@@ -261,7 +261,7 @@ const EnterpriseTutorDashboard = () => {
                       type="text"
                       value={newCenterName}
                       onChange={(e) => setNewCenterName(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white transition-all"
                       placeholder="e.g. Elite Math Academy"
                       autoFocus
                     />
@@ -271,7 +271,7 @@ const EnterpriseTutorDashboard = () => {
                     <textarea
                       value={newCenterDescription}
                       onChange={(e) => setNewCenterDescription(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white transition-all resize-none"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white transition-all resize-none"
                       placeholder="Briefly describe your institution..."
                       rows={3}
                     />
@@ -287,7 +287,7 @@ const EnterpriseTutorDashboard = () => {
                   <button
                     onClick={handleCreateCenter}
                     disabled={isCreating}
-                    className="flex-1 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                    className="flex-1 px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                   >
                     {isCreating ? (
                       <>
@@ -342,7 +342,7 @@ const EnterpriseTutorDashboard = () => {
             </button>
             <button
                 onClick={() => navigate('/dashboard')}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium shadow-md shadow-indigo-200 dark:shadow-none"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium shadow-md shadow-green-200 dark:shadow-none"
             >
                 <Layout size={16} /> Main Dashboard
             </button>
@@ -390,13 +390,13 @@ const EnterpriseTutorDashboard = () => {
                                     <Plus size={24} />
                                 </div>
                                 <h3 className="text-lg font-bold mb-1">Create New Test</h3>
-                                <p className="text-indigo-100 text-sm">Build a new assessment</p>
+                                <p className="text-green-100 text-sm">Build a new assessment</p>
                             </div>
                         </button>
 
                         <button 
                             onClick={() => navigate('/tutor/questions')}
-                            className="group p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-indigo-300 dark:hover:border-indigo-700 text-left"
+                            className="group p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-green-300 dark:hover:border-green-700 text-left"
                         >
                             <div className="bg-blue-50 dark:bg-blue-900/20 w-10 h-10 rounded-lg flex items-center justify-center mb-3 text-blue-600 dark:text-blue-400">
                                 <HelpCircle size={24} />
@@ -407,7 +407,7 @@ const EnterpriseTutorDashboard = () => {
 
                         <button 
                             onClick={() => navigate('/tutor/tests')}
-                            className="group p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-indigo-300 dark:hover:border-indigo-700 text-left"
+                            className="group p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-green-300 dark:hover:border-green-700 text-left"
                         >
                             <div className="bg-emerald-50 dark:bg-emerald-900/20 w-10 h-10 rounded-lg flex items-center justify-center mb-3 text-emerald-600 dark:text-emerald-400">
                                 <FileText size={24} />
@@ -458,7 +458,7 @@ const EnterpriseTutorDashboard = () => {
                             <h3 className="font-bold flex items-center gap-2">
                                 <Clock size={18} className="text-gray-400" /> Recent Submissions
                             </h3>
-                            <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 uppercase tracking-wide">View All</button>
+                            <button className="text-xs font-semibold text-green-600 hover:text-green-700 dark:text-green-400 uppercase tracking-wide">View All</button>
                         </div>
                         <div className="divide-y divide-gray-100 dark:divide-gray-800">
                             {recentActivity.map((activity) => (
@@ -505,7 +505,7 @@ const EnterpriseTutorDashboard = () => {
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Access Code</p>
                             <div className="flex items-center gap-2">
-                                <code className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg font-mono text-lg font-bold tracking-wide text-indigo-600 dark:text-indigo-400">
+                                <code className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg font-mono text-lg font-bold tracking-wide text-green-600 dark:text-green-400">
                                     {center.access_code}
                                 </code>
                             </div>
@@ -541,7 +541,7 @@ const EnterpriseTutorDashboard = () => {
                         <Zap size={100} />
                     </div>
                     <h3 className="font-bold text-lg mb-2 relative z-10">Pro Tip</h3>
-                    <p className="text-indigo-100 text-sm relative z-10 leading-relaxed mb-4">
+                    <p className="text-green-100 text-sm relative z-10 leading-relaxed mb-4">
                         Save time by using our AI Question Generator. Create comprehensive tests in seconds!
                     </p>
                     <button 
@@ -583,7 +583,7 @@ const EnterpriseTutorDashboard = () => {
                         />
                         <div className="flex gap-3">
                             <button onClick={() => setShowEditModal(false)} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium">Cancel</button>
-                            <button onClick={handleEdit} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">Save</button>
+                            <button onClick={handleEdit} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Save</button>
                         </div>
                     </motion.div>
                 </div>

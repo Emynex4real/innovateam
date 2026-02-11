@@ -59,9 +59,17 @@ const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Skip server validation for now, just use stored data
+      // Validate token with Supabase before trusting stored data
+      const isValid = await supabaseAuthService.validateToken();
+      if (!isValid) {
+        logger.auth('Stored token is invalid, clearing auth state');
+        supabaseAuthService.clearStorage();
+        clearAuthState();
+        return;
+      }
+
       updateUserState(storedUser);
-      logger.auth('Authentication restored from storage');
+      logger.auth('Authentication restored and validated');
     } catch (error) {
       const errorResponse = errorHandler.createSafeErrorResponse(error, 'Authentication check failed');
       logger.auth('Auth check error', { message: errorResponse.error });

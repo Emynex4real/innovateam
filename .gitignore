@@ -224,3 +224,6 @@ users_fixed.json
 !FUZZY_MATCHING.md
 !SUBJECT_ALIASES.md
 !FUZZY_MATCHING_COMPLETE.md
+
+# Windows reserved filename
+nul

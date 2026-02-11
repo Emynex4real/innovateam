@@ -14,9 +14,7 @@ export const sendConfirmationEmail = async (email, confirmationToken) => {
     
     localStorage.setItem(`confirmation_${email}`, JSON.stringify(confirmationData));
     
-    // Simulate email sending
-    console.log(`📧 Email sent to ${email}`);
-    console.log(`Confirmation link: ${window.location.origin}/email-confirmation?token=${confirmationToken}&email=${encodeURIComponent(email)}`);
+    // Email confirmation handled via Supabase
     
     return { success: true };
   } catch (error) {

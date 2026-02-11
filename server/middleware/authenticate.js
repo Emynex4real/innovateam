@@ -9,18 +9,13 @@ const withTimeout = (promise, ms = 3000) => {
 
 const authenticate = async (req, res, next) => {
   try {
+    // Prefer httpOnly cookie, fall back to Authorization header
+    const cookieToken = req.cookies?.access_token;
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ Auth failed: No token or invalid format');
-      return res.status(401).json({ success: false, error: 'No token', code: 'NO_TOKEN' });
-    }
+    const token = cookieToken || (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
 
-    const token = authHeader.split(' ')[1];
-    
     if (!token || token === 'null' || token === 'undefined') {
-      console.log('❌ Auth failed: Invalid token value');
-      return res.status(401).json({ success: false, error: 'Invalid token', code: 'INVALID_TOKEN' });
+      return res.status(401).json({ success: false, error: 'No token', code: 'NO_TOKEN' });
     }
 
     let data, error;
@@ -87,13 +82,10 @@ const requireAdmin = async (req, res, next) => {
 
 const optionalAuth = async (req, res, next) => {
   try {
+    const cookieToken = req.cookies?.access_token;
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      req.user = null;
-      return next();
-    }
+    const token = cookieToken || (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
 
-    const token = authHeader.split(' ')[1];
     if (!token) {
       req.user = null;
       return next();

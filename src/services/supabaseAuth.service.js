@@ -176,6 +176,25 @@ class SupabaseAuthService {
     }
   }
 
+  async validateToken() {
+    try {
+      const token = this.getToken();
+      if (!token) return false;
+
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/auth/validate`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
+      });
+
+      if (!response.ok) return false;
+      const data = await response.json();
+      return data.success && data.valid;
+    } catch {
+      return false;
+    }
+  }
+
   isAuthenticated() {
     return !!this.getToken();
   }

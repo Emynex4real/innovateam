@@ -28,35 +28,18 @@ const AdminProtectedRoute = ({ children }) => {
       }
 
       try {
-        // First check metadata (fast)
-        // console.log('🔍 [AdminProtectedRoute] Checking user metadata:', user.user_metadata);
-        if (user.user_metadata?.role === 'admin') {
-           // console.log('✅ [AdminProtectedRoute] Admin confirmed via metadata');
-           setIsAdmin(true);
-           setChecking(false);
-           return;
-        }
-
-        // Then check database (secure)
-        // console.log('🔍 [AdminProtectedRoute] Checking database for user:', user.id);
+        // Always verify admin status against database (authoritative source)
         const { data: profile, error } = await supabase
           .from('user_profiles')
           .select('is_admin, role')
           .eq('id', user.id)
           .single();
 
-        // console.log('🔍 [AdminProtectedRoute] Profile data:', profile);
-        // console.log('🔍 [AdminProtectedRoute] Profile error:', error);
-
-        if (!profile || (!profile.is_admin && profile.role !== 'admin')) {
-          // console.log('❌ [AdminProtectedRoute] Not admin, redirecting to dashboard');
-          // console.log('   - is_admin:', profile?.is_admin);
-          // console.log('   - role:', profile?.role);
+        if (error || !profile || (!profile.is_admin && profile.role !== 'admin')) {
           navigate('/dashboard', { replace: true });
           return;
         }
 
-        // console.log('✅ [AdminProtectedRoute] Admin confirmed via database');
         setIsAdmin(true);
       } catch (error) {
         console.error('❌ [AdminProtectedRoute] Admin check error:', error);
