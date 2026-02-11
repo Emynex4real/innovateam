@@ -68,7 +68,7 @@ describe('Loading Component', () => {
 
   it('renders with different colors', () => {
     const { rerender } = render(<Loading color="primary" />);
-    expect(screen.getByRole('status').querySelector('div')).toHaveClass('text-indigo-600');
+    expect(screen.getByRole('status').querySelector('div')).toHaveClass('text-green-600');
 
     rerender(<Loading color="success" />);
     expect(screen.getByRole('status').querySelector('div')).toHaveClass('text-green-600');

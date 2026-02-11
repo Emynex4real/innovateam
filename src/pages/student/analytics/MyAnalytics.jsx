@@ -160,7 +160,7 @@ const StudentAnalytics = () => {
               <ChevronLeft size={16} /> Back to Dashboard
             </button>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+              <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
                 <BarChart3 size={24} />
               </div>
               Performance Analytics

@@ -193,7 +193,7 @@ const AIGenerator = () => {
                         required
                         value={formData.subject}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        className={`w-full px-4 py-3 rounded-xl border transition-all focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                        className={`w-full px-4 py-3 rounded-xl border transition-all focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                             isDarkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 placeholder-gray-400'
                         }`}
                         placeholder="e.g. Physics"
@@ -209,7 +209,7 @@ const AIGenerator = () => {
                         required
                         value={formData.topic}
                         onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                        className={`w-full px-4 py-3 rounded-xl border transition-all focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                        className={`w-full px-4 py-3 rounded-xl border transition-all focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                             isDarkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 placeholder-gray-400'
                         }`}
                         placeholder="e.g. Thermodynamics"
@@ -225,7 +225,7 @@ const AIGenerator = () => {
                         <select
                           value={formData.difficulty}
                           onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                          className={`w-full px-4 py-3 rounded-xl border appearance-none transition-all focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                          className={`w-full px-4 py-3 rounded-xl border appearance-none transition-all focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                               isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'
                           }`}
                         >
@@ -247,7 +247,7 @@ const AIGenerator = () => {
                         max="60"
                         value={formData.count}
                         onChange={(e) => setFormData({ ...formData, count: parseInt(e.target.value) })}
-                        className={`w-full px-4 py-3 rounded-xl border transition-all focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                        className={`w-full px-4 py-3 rounded-xl border transition-all focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                             isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'
                         }`}
                       />
@@ -358,7 +358,7 @@ const AIGenerator = () => {
                             <textarea
                                 value={q.question_text}
                                 onChange={(e) => handleEdit(idx, 'question_text', e.target.value)}
-                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
                                     isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300'
                                 }`}
                                 rows="2"
@@ -382,7 +382,7 @@ const AIGenerator = () => {
                                                 newOptions[optIdx] = e.target.value;
                                                 handleEdit(idx, 'options', newOptions);
                                             }}
-                                            className={`flex-1 px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                                            className={`flex-1 px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
                                                 isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300'
                                             } ${
                                                 q.correct_answer === letter ? 'ring-2 ring-green-500 border-green-500' : ''

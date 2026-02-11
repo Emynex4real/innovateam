@@ -226,7 +226,7 @@ const PublicTests = () => {
         {/* 4. FOOTER CTA */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className={`mt-16 rounded-[2.5rem] relative overflow-hidden text-center p-10 md:p-14 ${isDarkMode ? 'bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-blue-800/30' : 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl shadow-blue-900/20'}`}
+          className={`mt-16 rounded-[2.5rem] relative overflow-hidden text-center p-10 md:p-14 ${isDarkMode ? 'bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-blue-800/30' : 'bg-gradient-to-br from-blue-600 to-green-700 text-white shadow-2xl shadow-blue-900/20'}`}
         >
           {/* Decorative Elements */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">

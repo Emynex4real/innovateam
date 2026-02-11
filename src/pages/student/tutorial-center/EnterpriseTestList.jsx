@@ -73,7 +73,7 @@ const EnterpriseTestList = () => {
 
   if(loading) return (
     <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
-      <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
     </div>
   );
 
@@ -110,7 +110,7 @@ const EnterpriseTestList = () => {
                 value={search} 
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search assessments..."
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all ${
                   isDarkMode ? 'bg-gray-950 border-gray-800 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900'
                 }`}
               />
@@ -128,7 +128,7 @@ const EnterpriseTestList = () => {
                   onClick={() => setFilter(f.id)}
                   className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all ${
                     filter === f.id 
-                      ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-800 dark:text-indigo-400' 
+                      ? 'bg-white text-green-600 shadow-sm dark:bg-gray-800 dark:text-green-400' 
                       : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
                   }`}
                 >
@@ -164,8 +164,8 @@ const EnterpriseTestList = () => {
                     onClick={() => navigate(`/student/test/${test.id}`)}
                     className={`group relative flex flex-col rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${
                       isDarkMode 
-                        ? 'bg-gray-900 border-gray-800 hover:border-indigo-500/50' 
-                        : 'bg-white border-gray-200 hover:border-indigo-200'
+                        ? 'bg-gray-900 border-gray-800 hover:border-green-500/50' 
+                        : 'bg-white border-gray-200 hover:border-green-200'
                     }`}
                   >
                     {/* Status Banner (Mobile/Top) */}
@@ -227,7 +227,7 @@ const EnterpriseTestList = () => {
                       
                       <button className={`p-2 rounded-full transition-colors ${
                         status.type === 'new'
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                          ? 'bg-green-600 text-white hover:bg-green-700'
                           : isDarkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}>
                         <ChevronRight size={18} />

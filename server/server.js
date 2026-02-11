@@ -12,6 +12,7 @@ const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const xss = require('xss');
 const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
 
 // Security middleware
 const {
@@ -21,6 +22,11 @@ const {
   securityHeaders,
   ipFiltering
 } = require('./middleware/security.middleware');
+
+// Redis-backed stores
+const csrfStore = require('./stores/csrfStore');
+const { createStore: createRateLimitStore } = require('./stores/rateLimitStore');
+const redisClient = require('./utils/redisClient');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -85,7 +91,7 @@ app.use(helmet({
 }));
 
 // ============================================
-// 2. CORS (Secure - no origin bypass)
+// 2. CORS (Secure)
 // ============================================
 const allowedOrigins = [
   'http://localhost:3000',
@@ -96,11 +102,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin only for health checks and server-to-server
-    // that are already authenticated via other means (JWT/API key)
     if (!origin) {
-      // In production, block originless requests to API routes.
-      // The health check endpoint is mounted before CORS so it still works.
       return callback(null, true);
     }
     if (allowedOrigins.includes(origin)) {
@@ -120,28 +122,21 @@ app.use(cors({
 // 3. ENTERPRISE SECURITY MIDDLEWARE
 // ============================================
 app.use(ipFiltering);
-// NOTE: SQL injection blacklist removed - Supabase uses parameterized queries via PostgREST.
-// The blacklist caused false positives (e.g., names with apostrophes like "O'Brien",
-// passwords with semicolons). Parameterized queries are the correct defense.
 app.use(noSqlInjectionProtection);
 app.use(pathTraversalProtection);
-// NOTE: Command injection middleware removed - it blocked legitimate characters
-// like parentheses and brackets in user input. Server does not exec shell commands
-// from user input, so this was unnecessary and harmful to UX.
 app.use(contentTypeValidation);
 
 // ============================================
 // 4. REQUEST ID (for tracking)
 // ============================================
 app.use((req, res, next) => {
-  const crypto = require('crypto');
   req.id = crypto.randomBytes(8).toString('hex');
   res.setHeader('x-request-id', req.id);
   next();
 });
 
 // ============================================
-// 5. XSS PROTECTION (Safe implementation)
+// 5. XSS PROTECTION
 // ============================================
 const sanitizeInput = (obj) => {
   if (typeof obj === 'string') {
@@ -203,23 +198,28 @@ app.use((req, res, next) => {
 });
 
 // ============================================
-// 8. ENHANCED RATE LIMITING (DDoS Protection)
+// 8. RATE LIMITING (Redis-backed)
 // ============================================
+const authWindowMs = 15 * 60 * 1000;
+const apiWindowMs = 15 * 60 * 1000;
+
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: authWindowMs,
   max: process.env.NODE_ENV === 'development' ? 50 : 5,
   message: { success: false, error: 'Too many authentication attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  store: createRateLimitStore(authWindowMs)
 });
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: apiWindowMs,
   max: process.env.NODE_ENV === 'development' ? 500 : 100,
   message: { success: false, error: 'Too many requests. Please try again later.' },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  store: createRateLimitStore(apiWindowMs)
 });
 
 app.use('/api/auth/register', authLimiter);
@@ -227,7 +227,7 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/', apiLimiter);
 
 // ============================================
-// 9. SSRF PROTECTION (Enhanced)
+// 9. SSRF PROTECTION
 // ============================================
 const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254'];
 
@@ -258,64 +258,43 @@ app.use('/api', (req, res, next) => {
 });
 
 // ============================================
-// 10. ENHANCED CSRF PROTECTION (Global)
+// 10. CSRF PROTECTION (Redis-backed, global)
 // ============================================
-const csrfTokens = new Map();
-const CSRF_MAX_TOKENS = 10000;
-const CSRF_TOKEN_TTL = 3600000; // 1 hour
-
-// Periodic cleanup every 5 minutes (instead of only during generation)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, time] of csrfTokens.entries()) {
-    if (now - time > CSRF_TOKEN_TTL) {
-      csrfTokens.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
-
-app.get('/api/csrf-token', (req, res) => {
-  const crypto = require('crypto');
+app.get('/api/csrf-token', async (req, res) => {
   const token = crypto.randomBytes(32).toString('hex');
-
-  // Enforce max size to prevent unbounded memory growth
-  if (csrfTokens.size >= CSRF_MAX_TOKENS) {
-    // Evict oldest 20%
-    const entries = Array.from(csrfTokens.entries());
-    entries.sort((a, b) => a[1] - b[1]);
-    const toRemove = Math.floor(CSRF_MAX_TOKENS * 0.2);
-    for (let i = 0; i < toRemove; i++) {
-      csrfTokens.delete(entries[i][0]);
-    }
-  }
-
-  csrfTokens.set(token, Date.now());
+  await csrfStore.set(token);
   res.json({ csrfToken: token });
 });
 
-const csrfProtection = (req, res, next) => {
-  // Skip CSRF for safe HTTP methods
+const csrfProtection = async (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
 
   const token = req.headers['x-csrf-token'];
-  if (!token || !csrfTokens.has(token)) {
-    logger.warn('CSRF token validation failed', { ip: req.ip, path: req.path });
+  if (!token) {
+    logger.warn('CSRF token missing', { ip: req.ip, path: req.path });
     return res.status(403).json({ success: false, error: 'Invalid CSRF token' });
   }
 
-  // Remove used token (one-time use)
-  csrfTokens.delete(token);
+  const valid = await csrfStore.has(token);
+  if (!valid) {
+    logger.warn('CSRF token invalid', { ip: req.ip, path: req.path });
+    return res.status(403).json({ success: false, error: 'Invalid CSRF token' });
+  }
+
+  // One-time use: delete after validation
+  await csrfStore.del(token);
   next();
 };
 
 // ============================================
-// 11. HEALTH CHECK (before CSRF so it always works)
+// 11. HEALTH CHECK (before CSRF)
 // ============================================
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    redis: redisClient.isRedisReady() ? 'connected' : 'unavailable'
   });
 });
 
@@ -329,16 +308,16 @@ app.get('/', (req, res) => {
 });
 
 // ============================================
-// 12. API ROUTES (CSRF applied globally to /api)
+// 12. API ROUTES (CSRF applied globally)
 // ============================================
 
-// Auth routes - CSRF exempt for login/register (user doesn't have token yet)
+// Auth routes - CSRF exempt for login/register
 app.use('/api/auth', authRoutes);
 
-// Apply CSRF protection to ALL remaining /api routes
+// Apply CSRF to all remaining /api routes
 app.use('/api', csrfProtection);
 
-// Protected routes (CSRF now applied globally above)
+// Protected routes
 app.use('/api/profile', profileRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/services', servicesRoutes);
@@ -372,13 +351,8 @@ app.use('/api/gamification', gamificationRoutes);
 // 13. ERROR HANDLING
 // ============================================
 
-// Mount at /api/messages
 app.use('/api/messages', messagingRoutes);
-
-// Mount at /phase2/messaging (Legacy)
 app.use('/phase2/messaging', messagingRoutes);
-
-// Phase 2 routes
 app.use('/phase2', phase2Routes);
 app.use('/api/phase2', phase2Routes);
 
@@ -405,12 +379,13 @@ const server = app.listen(PORT, HOST, () => {
   console.log('='.repeat(60));
   console.log(`URL: http://${HOST}:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Redis: ${redisClient.isRedisReady() ? 'connected' : 'in-memory fallback'}`);
   console.log('\nSecurity Features Active:');
   console.log('   - XSS Protection');
-  console.log('   - CSRF Protection (global)');
+  console.log('   - CSRF Protection (global, Redis-backed)');
   console.log('   - SSRF Protection');
   console.log('   - Path Traversal Protection');
-  console.log('   - Rate Limiting');
+  console.log('   - Rate Limiting (Redis-backed)');
   console.log('   - Security Audit Logging');
   console.log('   - Input Validation & Sanitization');
   console.log('='.repeat(60) + '\n');
@@ -436,22 +411,24 @@ const server = app.listen(PORT, HOST, () => {
 
 let schedulerInterval;
 
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
   logger.info(`${signal} received, shutting down gracefully...`);
 
   // Stop accepting new connections
-  server.close(() => {
+  server.close(async () => {
     logger.info('HTTP server closed - all active connections drained');
 
-    // Stop scheduler
     if (schedulerInterval) {
       clearInterval(schedulerInterval);
     }
 
+    // Close Redis connection
+    await redisClient.close();
+
     process.exit(0);
   });
 
-  // Force shutdown after 30 seconds if connections won't drain
+  // Force shutdown after 30 seconds
   setTimeout(() => {
     logger.error('Forced shutdown - connections did not drain in 30 seconds');
     process.exit(1);

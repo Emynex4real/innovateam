@@ -59,7 +59,7 @@ const StudentAlerts = () => {
   if (loading) {
     return (
       <div className={`flex flex-col items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
         <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Analyzing student performance...</p>
       </div>
     );
@@ -104,7 +104,7 @@ const StudentAlerts = () => {
               <ArrowLeft size={16} /> Back to Dashboard
             </button>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Bell className="text-indigo-500" /> Student Alerts & Insights
+              <Bell className="text-green-500" /> Student Alerts & Insights
             </h1>
             <p className={`mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Real-time monitoring of student engagement and performance
@@ -244,7 +244,7 @@ const StudentAlerts = () => {
         <div className={`rounded-xl border shadow-sm overflow-hidden ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
           <div className={`p-6 border-b ${isDarkMode ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-gray-50/50'}`}>
             <h2 className="font-bold text-lg flex items-center gap-2">
-              <AlertTriangle size={18} className="text-indigo-500" /> Actionable Recommendations
+              <AlertTriangle size={18} className="text-green-500" /> Actionable Recommendations
             </h2>
           </div>
           

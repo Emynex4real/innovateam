@@ -195,7 +195,7 @@ const EnterpriseTakeTest = () => {
   if (loading) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center ${isDarkMode ? 'bg-zinc-950 text-zinc-400' : 'bg-gray-50 text-gray-500'}`}>
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4" />
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-600 border-t-transparent mb-4" />
         <p className="font-medium animate-pulse">Preparing Environment...</p>
       </div>
     );
@@ -219,7 +219,7 @@ const EnterpriseTakeTest = () => {
         {/* Progress Line */}
         <div className="absolute top-0 left-0 h-1 w-full bg-gray-200 dark:bg-zinc-800">
           <motion.div 
-            className="h-full bg-indigo-600"
+            className="h-full bg-green-600"
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
             transition={{ duration: 0.3 }}
@@ -300,7 +300,7 @@ const EnterpriseTakeTest = () => {
                     onClick={() => handleAnswer(currentQuestion.id, letter)}
                     className={`group relative flex items-start gap-4 p-4 md:p-5 text-left rounded-xl border-2 transition-all duration-200 ${
                       isSelected 
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-500 z-10' 
+                        ? 'border-green-600 bg-green-50 dark:bg-green-900/20 dark:border-green-500 z-10' 
                         : isDarkMode 
                           ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700' 
                           : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
@@ -308,17 +308,17 @@ const EnterpriseTakeTest = () => {
                   >
                     <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                       isSelected 
-                        ? 'border-indigo-600 bg-indigo-600 dark:border-indigo-500 dark:bg-indigo-500' 
+                        ? 'border-green-600 bg-green-600 dark:border-green-500 dark:bg-green-500' 
                         : isDarkMode ? 'border-zinc-600 group-hover:border-zinc-500' : 'border-gray-300 group-hover:border-gray-400'
                     }`}>
                       {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
                     
-                    <div className={`flex-1 text-base ${isSelected ? 'font-semibold text-indigo-900 dark:text-indigo-100' : isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>
+                    <div className={`flex-1 text-base ${isSelected ? 'font-semibold text-green-900 dark:text-green-100' : isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>
                       <MathText text={currentQuestion.options[idx]} />
                     </div>
                     
-                    <span className={`absolute top-4 right-4 text-xs font-bold opacity-0 transition-opacity ${isSelected ? 'opacity-100 text-indigo-600 dark:text-indigo-400' : ''}`}>
+                    <span className={`absolute top-4 right-4 text-xs font-bold opacity-0 transition-opacity ${isSelected ? 'opacity-100 text-green-600 dark:text-green-400' : ''}`}>
                       {letter}
                     </span>
                   </button>
@@ -355,14 +355,14 @@ const EnterpriseTakeTest = () => {
             <button 
               onClick={() => handleSubmit(false)}
               disabled={submitting}
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-70"
+              className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-70"
             >
               {submitting ? 'Submitting...' : <>Submit Test <Save size={18} /></>}
             </button>
           ) : (
             <button 
               onClick={() => handleNavigation('next')}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-transform active:scale-95"
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 flex items-center gap-2 transition-transform active:scale-95"
             >
               <span className="hidden sm:inline">Next Question</span> <span className="sm:hidden">Next</span> <ChevronRight size={20} />
             </button>
@@ -400,9 +400,9 @@ const EnterpriseTakeTest = () => {
                   const isFlag = flagged[q.id];
                   
                   let statusClass = isDarkMode ? 'bg-zinc-900 text-zinc-500 border-zinc-800' : 'bg-gray-50 text-gray-400 border-gray-200';
-                  if (isDone) statusClass = isDarkMode ? 'bg-indigo-900/30 text-indigo-400 border-indigo-800' : 'bg-indigo-50 text-indigo-600 border-indigo-200';
+                  if (isDone) statusClass = isDarkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-600 border-green-200';
                   if (isFlag) statusClass = 'bg-amber-100 text-amber-600 border-amber-300';
-                  if (isActive) statusClass = 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-300 dark:ring-indigo-900';
+                  if (isActive) statusClass = 'bg-green-600 text-white border-green-600 ring-2 ring-green-300 dark:ring-green-900';
 
                   return (
                     <button
@@ -419,8 +419,8 @@ const EnterpriseTakeTest = () => {
 
               <div className={`mt-6 pt-6 border-t space-y-3 ${isDarkMode ? 'border-zinc-800' : 'border-gray-100'}`}>
                 <div className="flex justify-between text-xs font-medium text-gray-500">
-                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-600"></span> Current</span>
-                  <span className="flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-indigo-400' : 'bg-indigo-100'}`}></span> Answered</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-600"></span> Current</span>
+                  <span className="flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-100'}`}></span> Answered</span>
                   <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Flagged</span>
                 </div>
                 <button 

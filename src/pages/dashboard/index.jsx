@@ -59,8 +59,8 @@ const AI_TOOLS = [
     subtitle: "AI Assessment",
     desc: "Deep theory grading & analysis.",
     icon: FileText,
-    color: "bg-indigo-500",
-    gradient: "from-indigo-500/20 to-blue-500/20",
+    color: "bg-green-500",
+    gradient: "from-green-500/20 to-blue-500/20",
     link: "/dashboard/ai-examiner",
     btnText: "Take Exam",
   },
@@ -259,7 +259,7 @@ const Dashboard = () => {
         {/* {isAdmin && (
           <motion.div
             variants={itemVariants}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 flex items-center justify-between shadow-lg"
+            className="bg-gradient-to-r from-purple-600 to-green-600 rounded-2xl p-6 flex items-center justify-between shadow-lg"
           >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -318,7 +318,7 @@ const Dashboard = () => {
             variants={itemVariants}
             className="md:col-span-4 bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between group relative overflow-hidden"
           >
-            <div className="absolute top-0 right-0 p-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 p-32 bg-green-500/5 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="flex justify-between items-start relative z-10">
               <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white group-hover:scale-110 transition-transform shadow-sm">
                 <Zap className="h-6 w-6 fill-orange-500 text-orange-500" />
@@ -352,7 +352,7 @@ const Dashboard = () => {
           {/* AI Tools */}
           <div className="md:col-span-12">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-indigo-500" /> Your AI Arsenal
+              <Sparkles className="h-5 w-5 text-green-500" /> Your AI Arsenal
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {AI_TOOLS.map((tool) => {
@@ -366,14 +366,14 @@ const Dashboard = () => {
                   <motion.div
                     variants={itemVariants}
                     whileHover={{ y: -5 }}
-                    className="h-full p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-transparent hover:shadow-2xl hover:shadow-indigo-500/10 transition-all group relative overflow-hidden"
+                    className="h-full p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-transparent hover:shadow-2xl hover:shadow-green-500/10 transition-all group relative overflow-hidden"
                   >
                     <div
                       className={`absolute inset-0 bg-gradient-to-br ${tool.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                     />
                     <div className="relative z-10 flex flex-col h-full">
                       <div
-                        className={`w-14 h-14 rounded-2xl ${tool.color} flex items-center justify-center text-white mb-6 shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform duration-300`}
+                        className={`w-14 h-14 rounded-2xl ${tool.color} flex items-center justify-center text-white mb-6 shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform duration-300`}
                       >
                         <tool.icon className="h-7 w-7" />
                       </div>
@@ -381,14 +381,14 @@ const Dashboard = () => {
                         <h4 className="font-bold text-xl text-slate-900 dark:text-white">
                           {tool.title}
                         </h4>
-                        <p className="text-xs font-bold text-indigo-500 uppercase tracking-wider mt-1">
+                        <p className="text-xs font-bold text-green-500 uppercase tracking-wider mt-1">
                           {tool.subtitle}
                         </p>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
                           {tool.desc}
                         </p>
                       </div>
-                      <div className="mt-6 flex items-center text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">
+                      <div className="mt-6 flex items-center text-sm font-bold text-slate-900 dark:text-white group-hover:text-green-600 transition-colors">
                         {tool.btnText}{" "}
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
@@ -408,7 +408,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="font-bold text-xl text-slate-900 dark:text-white flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-indigo-500" /> Performance
+                  <TrendingUp className="h-5 w-5 text-green-500" /> Performance
                   Analytics
                 </h3>
                 <p className="text-sm text-slate-500">
@@ -502,9 +502,9 @@ const Dashboard = () => {
           {/* Leaderboard Preview */}
           <motion.div
             variants={itemVariants}
-            className="md:col-span-4 bg-gradient-to-b from-slate-900 to-indigo-950 rounded-[2rem] shadow-xl p-8 text-white relative overflow-hidden flex flex-col"
+            className="md:col-span-4 bg-gradient-to-b from-slate-900 to-green-950 rounded-[2rem] shadow-xl p-8 text-white relative overflow-hidden flex flex-col"
           >
-            <div className="absolute top-0 right-0 p-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 p-32 bg-green-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="relative z-10 flex-1">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-400">
@@ -512,7 +512,7 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">Leaderboard</h3>
-                  <p className="text-indigo-200 text-xs">
+                  <p className="text-green-200 text-xs">
                     Top performers this week
                   </p>
                 </div>
@@ -534,7 +534,7 @@ const Dashboard = () => {
               </div>
             </div>
             <Link to="/dashboard/leaderboard" className="relative z-10 mt-6">
-              <Button className="w-full bg-white text-indigo-950 hover:bg-indigo-50 font-bold h-12 rounded-xl">
+              <Button className="w-full bg-white text-green-950 hover:bg-green-50 font-bold h-12 rounded-xl">
                 View Rankings
               </Button>
             </Link>
@@ -549,7 +549,7 @@ const Dashboard = () => {
             </h3>
             <Link
               to="/dashboard/transactions"
-              className="text-xs font-medium text-indigo-600 hover:underline"
+              className="text-xs font-medium text-green-600 hover:underline"
             >
               View All
             </Link>
@@ -557,7 +557,7 @@ const Dashboard = () => {
           <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
               <div className="p-8 text-center">
-                <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="h-6 w-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto" />
               </div>
             ) : getRecentTransactions(3).length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-sm flex flex-col items-center gap-2">
@@ -575,7 +575,7 @@ const Dashboard = () => {
                       className={`h-10 w-10 rounded-full flex items-center justify-center ${
                         tx.type === "credit"
                           ? "bg-emerald-100 text-emerald-600"
-                          : "bg-indigo-100 text-indigo-600"
+                          : "bg-green-100 text-green-600"
                       }`}
                     >
                       {tx.type === "credit" ? (

@@ -98,7 +98,7 @@ const EnhancedLeaderboard = () => {
   if (loading) {
     return (
       <div className={`flex flex-col items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
         <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading rankings...</p>
       </div>
     );
@@ -297,7 +297,7 @@ const EnhancedLeaderboard = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                         <span className={`text-sm font-medium ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                         <span className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
                            {student.xpPoints}
                          </span>
                       </td>

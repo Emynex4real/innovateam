@@ -45,7 +45,7 @@ const AdvancedAnalyticsDashboard = () => {
   if (loading) {
     return (
       <div className={`flex flex-col items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
         <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Gathering insights...</p>
       </div>
     );
@@ -75,7 +75,7 @@ const AdvancedAnalyticsDashboard = () => {
               <ArrowLeft size={16} /> Back to Dashboard
             </button>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <BarChart2 className="text-indigo-500" /> Analytics Overview
+              <BarChart2 className="text-green-500" /> Analytics Overview
             </h1>
           </div>
           
@@ -110,7 +110,7 @@ const AdvancedAnalyticsDashboard = () => {
             value={analytics?.totalAttempts || 0} 
             icon={FileText} 
             trend="Total Submissions"
-            color="indigo"
+            color="green"
             isDarkMode={isDarkMode}
           />
           <StatCard 
@@ -141,7 +141,7 @@ const AdvancedAnalyticsDashboard = () => {
               <div className={`rounded-xl border shadow-sm p-6 ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="font-bold text-lg flex items-center gap-2">
-                    <TrendingUp size={18} className="text-indigo-500" /> Performance Trend
+                    <TrendingUp size={18} className="text-green-500" /> Performance Trend
                   </h2>
                 </div>
                 
@@ -155,7 +155,7 @@ const AdvancedAnalyticsDashboard = () => {
                       
                       {/* Bar */}
                       <div 
-                        className="w-full max-w-[40px] bg-indigo-500/80 hover:bg-indigo-500 rounded-t-sm transition-all relative group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                        className="w-full max-w-[40px] bg-green-500/80 hover:bg-green-500 rounded-t-sm transition-all relative group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)]"
                         style={{ height: `${(day.avgScore / 100) * 100}%` }}
                       ></div>
                       
@@ -263,7 +263,7 @@ const AdvancedAnalyticsDashboard = () => {
                       <p className="text-xs text-gray-500">{student.attempts} tests taken</p>
                     </div>
                     <div className="text-right">
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{student.avgScore}%</span>
+                      <span className="font-bold text-green-600 dark:text-green-400">{student.avgScore}%</span>
                     </div>
                   </div>
                 ))}
@@ -285,7 +285,7 @@ const AdvancedAnalyticsDashboard = () => {
 const StatCard = ({ label, value, icon: Icon, trend, color, isDarkMode }) => {
   const colors = {
     blue: isDarkMode ? 'text-blue-400 bg-blue-900/20' : 'text-blue-600 bg-blue-50',
-    indigo: isDarkMode ? 'text-indigo-400 bg-indigo-900/20' : 'text-indigo-600 bg-indigo-50',
+    green: isDarkMode ? 'text-green-400 bg-green-900/20' : 'text-green-600 bg-green-50',
     emerald: isDarkMode ? 'text-emerald-400 bg-emerald-900/20' : 'text-emerald-600 bg-emerald-50',
     red: isDarkMode ? 'text-red-400 bg-red-900/20' : 'text-red-600 bg-red-50',
   };

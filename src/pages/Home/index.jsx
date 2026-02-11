@@ -572,7 +572,7 @@ const Home = () => {
       description: 'Connect with expert tutors and join tutorial centers',
       link: '/student/dashboard',
       badge: 'Community',
-      color: 'from-indigo-500 to-purple-500'
+      color: 'from-green-500 to-purple-500'
     },
     {
       icon: <MessageCircle className="w-8 h-8" />,

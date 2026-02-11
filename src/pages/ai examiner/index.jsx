@@ -352,7 +352,7 @@ const AIExaminer = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50/50 dark:bg-black/50 backdrop-blur-sm z-50 fixed inset-0">
         <div className="bg-white dark:bg-gray-900 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 border border-gray-100 dark:border-gray-800">
-          <Loader2 className="h-12 w-12 text-indigo-600 animate-spin mb-4" />
+          <Loader2 className="h-12 w-12 text-green-600 animate-spin mb-4" />
           <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center animate-pulse">
             {loadingText}
           </h3>
@@ -399,7 +399,7 @@ const AIExaminer = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="bg-white dark:bg-gray-900 p-2.5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
-              <Brain className="h-6 w-6 text-indigo-600" />
+              <Brain className="h-6 w-6 text-green-600" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">AI Examiner</h1>
@@ -441,7 +441,7 @@ const AIExaminer = () => {
                   className={cn(
                     "flex-1 py-4 text-sm font-bold transition-colors",
                     inputType === 'file' 
-                      ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20" 
+                      ? "text-green-600 bg-green-50 dark:bg-green-900/20" 
                       : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
                   )}
                 >
@@ -452,7 +452,7 @@ const AIExaminer = () => {
                   className={cn(
                     "flex-1 py-4 text-sm font-bold transition-colors",
                     inputType === 'text' 
-                      ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20" 
+                      ? "text-green-600 bg-green-50 dark:bg-green-900/20" 
                       : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
                   )}
                 >
@@ -462,15 +462,15 @@ const AIExaminer = () => {
 
               <div className="p-8">
                 {inputType === 'file' ? (
-                  <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-10 text-center hover:border-indigo-500 hover:bg-indigo-50/10 transition-all cursor-pointer group relative">
+                  <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-10 text-center hover:border-green-500 hover:bg-green-50/10 transition-all cursor-pointer group relative">
                     <input 
                       type="file" 
                       onChange={handleUpload} 
                       accept=".pdf,.docx,.pptx,.txt" 
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                     />
-                    <div className="bg-indigo-50 dark:bg-indigo-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                      <Upload className="h-8 w-8 text-indigo-600" />
+                    <div className="bg-green-50 dark:bg-green-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <Upload className="h-8 w-8 text-green-600" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Click to Upload</h3>
                     <p className="text-sm text-gray-500 mt-1">PDF, DOCX, PPTX, TXT (Max 10MB)</p>
@@ -498,7 +498,7 @@ const AIExaminer = () => {
                     <Button 
                       onClick={handleTextSubmit} 
                       size="lg" 
-                      className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold"
+                      className="w-full rounded-xl bg-green-600 hover:bg-green-700 font-bold"
                     >
                       Analyze Text <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -543,7 +543,7 @@ const AIExaminer = () => {
                         className={cn(
                           "rounded-xl p-3 border-2 font-bold capitalize transition-all",
                           examConfig.difficulty === level 
-                            ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400" 
+                            ? "border-green-600 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400" 
                             : "border-transparent bg-gray-100 dark:bg-gray-800 text-gray-500"
                         )}
                       >
@@ -557,7 +557,7 @@ const AIExaminer = () => {
                   <div className="space-y-4">
                     <Label className="flex justify-between">
                       <span>Questions</span>
-                      <span className="font-bold text-indigo-600">{examConfig.questionCount}</span>
+                      <span className="font-bold text-green-600">{examConfig.questionCount}</span>
                     </Label>
                     <input 
                       type="range" 
@@ -566,14 +566,14 @@ const AIExaminer = () => {
                       step="5" 
                       value={examConfig.questionCount} 
                       onChange={(e) => setExamConfig({...examConfig, questionCount: Number(e.target.value)})} 
-                      className="w-full accent-indigo-600 h-2 bg-gray-200 rounded-lg cursor-pointer" 
+                      className="w-full accent-green-600 h-2 bg-gray-200 rounded-lg cursor-pointer" 
                     />
                   </div>
                   
                   <div className="space-y-4">
                     <Label className="flex justify-between">
                       <span>Duration (Min)</span>
-                      <span className="font-bold text-indigo-600">{examConfig.duration}m</span>
+                      <span className="font-bold text-green-600">{examConfig.duration}m</span>
                     </Label>
                     <input 
                       type="range" 
@@ -582,7 +582,7 @@ const AIExaminer = () => {
                       step="5" 
                       value={examConfig.duration} 
                       onChange={(e) => setExamConfig({...examConfig, duration: Number(e.target.value)})} 
-                      className="w-full accent-indigo-600 h-2 bg-gray-200 rounded-lg cursor-pointer" 
+                      className="w-full accent-green-600 h-2 bg-gray-200 rounded-lg cursor-pointer" 
                     />
                   </div>
                 </div>
@@ -594,7 +594,7 @@ const AIExaminer = () => {
                   <Button 
                     onClick={handleGenerate} 
                     size="lg" 
-                    className="px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30"
+                    className="px-8 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/30"
                   >
                     Start Exam
                   </Button>
@@ -617,7 +617,7 @@ const AIExaminer = () => {
                 "flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-lg border",
                 timeLeft < 60 
                   ? "bg-red-50 text-red-600 border-red-100 animate-pulse" 
-                  : "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-900 dark:text-indigo-400"
+                  : "bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:border-green-900 dark:text-green-400"
               )}>
                 <Clock className="h-5 w-5" /> {formatTime(timeLeft)}
               </div>
@@ -629,12 +629,12 @@ const AIExaminer = () => {
             {/* Question Card */}
             <Card className="min-h-[400px] border-0 shadow-xl overflow-hidden relative rounded-[2rem] dark:bg-gray-900">
               <div 
-                className="absolute top-0 left-0 h-1.5 bg-indigo-600 transition-all duration-500" 
+                className="absolute top-0 left-0 h-1.5 bg-green-600 transition-all duration-500" 
                 style={{ width: `${((currentQIndex + 1) / questions.length) * 100}%` }} 
               />
               
               <CardContent className="p-8 md:p-12">
-                <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1 rounded-full mb-6 inline-block">
+                <span className="text-xs font-bold uppercase tracking-widest text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full mb-6 inline-block">
                   {questions[currentQIndex].type || 'multiple-choice'}
                 </span>
                 
@@ -652,14 +652,14 @@ const AIExaminer = () => {
                       className={cn(
                         "cursor-pointer p-5 rounded-2xl border-2 transition-all flex items-center gap-4 group",
                         answers[questions[currentQIndex].id] === opt 
-                          ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 shadow-md" 
+                          ? "border-green-600 bg-green-50 dark:bg-green-900/20 shadow-md" 
                           : "border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
                       )}
                     >
                       <div className={cn(
                         "w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 text-sm font-bold",
                         answers[questions[currentQIndex].id] === opt 
-                          ? "border-indigo-600 bg-indigo-600 text-white" 
+                          ? "border-green-600 bg-green-600 text-white" 
                           : "border-gray-300 text-gray-400"
                       )}>
                         {String.fromCharCode(65 + idx)}
@@ -667,7 +667,7 @@ const AIExaminer = () => {
                       <span className={cn(
                         "text-lg",
                         answers[questions[currentQIndex].id] === opt 
-                          ? "font-bold text-indigo-900 dark:text-indigo-300" 
+                          ? "font-bold text-green-900 dark:text-green-300" 
                           : "text-gray-600 dark:text-gray-400"
                       )}>
                         <MathText>{opt}</MathText>
@@ -689,7 +689,7 @@ const AIExaminer = () => {
                 {currentQIndex === questions.length - 1 ? (
                   <Button 
                     onClick={handleSubmitClick} 
-                    className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-8 shadow-lg shadow-indigo-500/20"
+                    className="bg-green-600 hover:bg-green-700 rounded-xl px-8 shadow-lg shadow-green-500/20"
                   >
                     Submit Exam
                   </Button>
@@ -717,7 +717,7 @@ const AIExaminer = () => {
               "rounded-[2.5rem] p-12 text-center text-white mb-8 shadow-2xl relative overflow-hidden",
               results.percentage >= 70 
                 ? "bg-gradient-to-br from-emerald-600 to-teal-800" 
-                : "bg-gradient-to-br from-indigo-600 to-purple-800"
+                : "bg-gradient-to-br from-green-600 to-purple-800"
             )}>
               <div className="relative z-10">
                 <Trophy className="h-16 w-16 mx-auto mb-4 text-white/90" />
@@ -731,13 +731,13 @@ const AIExaminer = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => setStep(0)} 
-                    className="border-white/30 text-indigo-900 dark:text-white font-bold hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
+                    className="border-white/30 text-green-900 dark:text-white font-bold hover:bg-white/10 hover:text-white rounded-xl h-12 px-6"
                   >
                     Back to Dashboard
                   </Button>
                   <Button 
                     onClick={resetExamSession} 
-                    className="bg-white text-indigo-900 hover:bg-gray-100 rounded-xl h-12 px-8 font-bold"
+                    className="bg-white text-green-900 hover:bg-gray-100 rounded-xl h-12 px-8 font-bold"
                   >
                     New Exam
                   </Button>
@@ -826,8 +826,8 @@ const AIExaminer = () => {
                           </div>
                           
                           {r.explanation && (
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900">
-                              <span className="block text-xs font-bold uppercase text-indigo-600 mb-2">
+                            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-100 dark:border-green-900">
+                              <span className="block text-xs font-bold uppercase text-green-600 mb-2">
                                 EXPLANATION
                               </span>
                               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">

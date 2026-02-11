@@ -990,13 +990,13 @@ const CourseAdvisor = () => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
           <Card className="rounded-[2rem] border-0 shadow-lg dark:bg-slate-900">
-            <CardHeader><CardTitle className="flex items-center gap-2"><User className="text-indigo-600" /> Profile Data</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><User className="text-green-600" /> Profile Data</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Target Course</Label>
-                  <select className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-transparent focus:border-indigo-500 outline-none" 
+                  <select className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-transparent focus:border-green-500 outline-none" 
                     value={preferredCourse} onChange={e => {
                       setPreferredCourse(e.target.value);
                       setOlevels({}); 
@@ -1007,14 +1007,14 @@ const CourseAdvisor = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>UTME Score</Label>
-                  <input type="number" className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-transparent focus:border-indigo-500 outline-none" 
+                  <input type="number" className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-transparent focus:border-green-500 outline-none" 
                     placeholder="e.g. 250" value={jambScore} onChange={e => setJambScore(e.target.value)} />
                 </div>
               </div>
               
               <div className="space-y-2">
                 <Label>State of Origin</Label>
-                <select className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-transparent focus:border-indigo-500 outline-none" 
+                <select className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-transparent focus:border-green-500 outline-none" 
                   value={stateOrigin} onChange={e => setStateOrigin(e.target.value)}>
                   <option value="">Select State</option>
                   {ALL_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1028,7 +1028,7 @@ const CourseAdvisor = () => {
                     <button key={sub} onClick={() => {
                       if(utmeSubs.includes(sub) && sub !== "English Language") setUtmeSubs(p => p.filter(s => s !== sub));
                       else if(!utmeSubs.includes(sub) && utmeSubs.length < 4) setUtmeSubs(p => [...p, sub]);
-                    }} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${utmeSubs.includes(sub) ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-700 text-slate-500'} ${sub === "English Language" ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    }} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${utmeSubs.includes(sub) ? 'bg-green-600 text-white' : 'bg-white dark:bg-slate-700 text-slate-500'} ${sub === "English Language" ? 'opacity-60 cursor-not-allowed' : ''}`}>
                       {sub}
                     </button>
                   ))}
@@ -1049,8 +1049,8 @@ const CourseAdvisor = () => {
                       const subjectKey = isFlexible ? sub[0] : sub;
                       
                       return (
-                        <div key={idx} className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
-                          <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 truncate mb-1" title={displayLabel}>{displayLabel}</p>
+                        <div key={idx} className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-green-100 dark:border-green-900/30">
+                          <p className="text-[10px] font-bold text-green-600 dark:text-green-400 truncate mb-1" title={displayLabel}>{displayLabel}</p>
                           <select 
                             value={olevels[subjectKey] || ""} 
                             onChange={e => {
@@ -1082,11 +1082,11 @@ const CourseAdvisor = () => {
         </div>
         <div className="lg:col-span-4">
           <Card className="rounded-[2rem] border-0 shadow-xl bg-slate-900 text-white h-full relative overflow-hidden flex flex-col justify-center text-center p-8">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/50 to-purple-900/50" />
+            <div className="absolute inset-0 bg-gradient-to-br from-green-600/50 to-purple-900/50" />
             <div className="relative z-10 space-y-6">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto backdrop-blur-md"><Brain className="w-8 h-8 text-indigo-300" /></div>
-              <div><h2 className="text-2xl font-bold">Admissions AI</h2><p className="text-indigo-200 text-sm">Strict validation against 2025 Cutoffs.</p></div>
-              <Button onClick={analyzeProfile} disabled={loading} className="w-full h-12 bg-white text-indigo-900 font-bold hover:bg-indigo-50">{loading ? "Analyzing..." : "Check Probability"}</Button>
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto backdrop-blur-md"><Brain className="w-8 h-8 text-green-300" /></div>
+              <div><h2 className="text-2xl font-bold">Admissions AI</h2><p className="text-green-200 text-sm">Strict validation against 2025 Cutoffs.</p></div>
+              <Button onClick={analyzeProfile} disabled={loading} className="w-full h-12 bg-white text-green-900 font-bold hover:bg-green-50">{loading ? "Analyzing..." : "Check Probability"}</Button>
             </div>
           </Card>
         </div>
@@ -1119,7 +1119,7 @@ const CourseAdvisor = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl text-center">
                     <p className="text-xs font-bold text-slate-400 uppercase">Your Aggregate</p>
-                    <p className="text-3xl font-bold text-indigo-600">{main.aggregate.toFixed(2)}%</p>
+                    <p className="text-3xl font-bold text-green-600">{main.aggregate.toFixed(2)}%</p>
                   </div>
                   <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl text-center">
                     <p className="text-xs font-bold text-slate-400 uppercase">Required Safe Score</p>
@@ -1149,7 +1149,7 @@ const CourseAdvisor = () => {
         {alternatives.length > 0 && (
           <div className="animate-in slide-in-from-bottom-10 fade-in duration-700">
             <div className="flex items-center gap-2 mb-4">
-              <ShieldCheck className="w-5 h-5 text-indigo-600" />
+              <ShieldCheck className="w-5 h-5 text-green-600" />
               <h3 className="text-xl font-bold text-slate-900 dark:text-white">Recommended Safety Options</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1157,10 +1157,10 @@ const CourseAdvisor = () => {
                 <Card key={idx} className="rounded-2xl border-0 shadow-lg hover:shadow-xl transition-all cursor-pointer bg-white dark:bg-slate-900 group">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600"><Award className="w-5 h-5" /></div>
+                      <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600"><Award className="w-5 h-5" /></div>
                       <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Safe Bet</Badge>
                     </div>
-                    <h4 className="font-bold text-lg mb-2 group-hover:text-indigo-600 transition-colors">{alt.name}</h4>
+                    <h4 className="font-bold text-lg mb-2 group-hover:text-green-600 transition-colors">{alt.name}</h4>
                     <div className="space-y-2 text-sm text-slate-500">
                       <div className="flex justify-between"><span>Safe Score:</span> <strong>{alt.safeScore.toFixed(2)}%</strong></div>
                       <p className="text-xs text-slate-400 mt-2 italic">*Based on your UTME score & subjects.</p>
@@ -1178,7 +1178,7 @@ const CourseAdvisor = () => {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} p-4 md:p-8`}>
       <div className="max-w-7xl mx-auto mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-3"><div className="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-600/20"><Compass className="h-6 w-6 text-white" /></div><div><h1 className="text-2xl font-bold">Pathfinder</h1><p className="text-xs text-slate-500 font-medium">Intelligent Admission Consultant</p></div></div>
+        <div className="flex items-center gap-3"><div className="bg-green-600 p-2.5 rounded-2xl shadow-lg shadow-green-600/20"><Compass className="h-6 w-6 text-white" /></div><div><h1 className="text-2xl font-bold">Pathfinder</h1><p className="text-xs text-slate-500 font-medium">Intelligent Admission Consultant</p></div></div>
       </div>
       <div className="max-w-7xl mx-auto"><AnimatePresence mode="wait">{step === 1 ? renderInput() : renderResults()}</AnimatePresence></div>
     </div>

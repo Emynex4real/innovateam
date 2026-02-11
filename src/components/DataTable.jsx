@@ -77,7 +77,7 @@ const DataTable = ({ columns, data, onAction, isLoading }) => {
                       </button>
                       <button
                         onClick={() => onAction('edit', row)}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-green-600 hover:text-green-900"
                       >
                         Edit
                       </button>

@@ -147,7 +147,7 @@ const BulkQuestionImport = () => {
             <div className="space-y-6">
                 <div className={`p-6 rounded-xl border shadow-sm ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        <Layers size={20} className="text-indigo-500" /> Configuration
+                        <Layers size={20} className="text-green-500" /> Configuration
                     </h2>
                     
                     <div className="space-y-4">
@@ -159,7 +159,7 @@ const BulkQuestionImport = () => {
                                 required
                                 value={metadata.subject}
                                 onChange={(e) => setMetadata({ ...metadata, subject: e.target.value })}
-                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                                     isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'
                                 }`}
                                 placeholder="e.g., Mathematics"
@@ -173,7 +173,7 @@ const BulkQuestionImport = () => {
                             <input
                                 value={metadata.topic}
                                 onChange={(e) => setMetadata({ ...metadata, topic: e.target.value })}
-                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                                     isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'
                                 }`}
                                 placeholder="e.g., Algebra"
@@ -187,7 +187,7 @@ const BulkQuestionImport = () => {
                             <select
                                 value={metadata.category}
                                 onChange={(e) => setMetadata({ ...metadata, category: e.target.value })}
-                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                                     isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'
                                 }`}
                             >
@@ -206,7 +206,7 @@ const BulkQuestionImport = () => {
                             <select
                                 value={metadata.difficulty}
                                 onChange={(e) => setMetadata({ ...metadata, difficulty: e.target.value })}
-                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                                className={`w-full px-4 py-2.5 rounded-lg border transition-colors focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                                     isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'
                                 }`}
                             >
@@ -218,11 +218,11 @@ const BulkQuestionImport = () => {
                     </div>
                 </div>
 
-                <div className={`p-5 rounded-xl border ${isDarkMode ? 'bg-indigo-900/20 border-indigo-800' : 'bg-indigo-50 border-indigo-100'}`}>
-                    <h3 className="font-bold text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-2">
+                <div className={`p-5 rounded-xl border ${isDarkMode ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-100'}`}>
+                    <h3 className="font-bold text-green-600 dark:text-green-400 mb-2 flex items-center gap-2">
                         <Info size={18} /> How to format
                     </h3>
-                    <ul className={`text-sm space-y-2 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-800'}`}>
+                    <ul className={`text-sm space-y-2 ${isDarkMode ? 'text-green-300' : 'text-green-800'}`}>
                         <li className="flex gap-2"><span className="font-bold">•</span> Paste text directly from Word or PDF.</li>
                         <li className="flex gap-2"><span className="font-bold">•</span> Ensure options are labeled (A, B, C, D).</li>
                         <li className="flex gap-2"><span className="font-bold">•</span> Include "Answer: X" to auto-detect correct option.</li>
@@ -267,7 +267,7 @@ Explanation: 2 + 2 equals 4.
                             className={`w-full py-3.5 rounded-lg font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
                                 parsing 
                                 ? 'bg-gray-500 cursor-not-allowed' 
-                                : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 transform hover:-translate-y-0.5'
+                                : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 transform hover:-translate-y-0.5'
                             }`}
                         >
                             {parsing ? (
@@ -322,7 +322,7 @@ Explanation: 2 + 2 equals 4.
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                        className="flex-1 sm:flex-none px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2"
                     >
                         {saving ? (
                             <>
@@ -349,7 +349,7 @@ Explanation: 2 + 2 equals 4.
                         {/* Card Header */}
                         <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? 'border-gray-800 bg-gray-800/30' : 'border-gray-100 bg-gray-50/50'}`}>
                             <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${
-                                isDarkMode ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                                isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'
                             }`}>
                                 Question {idx + 1}
                             </span>
@@ -372,7 +372,7 @@ Explanation: 2 + 2 equals 4.
                                 <textarea
                                     value={q.question_text}
                                     onChange={(e) => handleEdit(idx, 'question_text', e.target.value)}
-                                    className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                                    className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
                                         isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300'
                                     }`}
                                     rows="2"
@@ -396,7 +396,7 @@ Explanation: 2 + 2 equals 4.
                                                     newOptions[optIdx] = e.target.value;
                                                     handleEdit(idx, 'options', newOptions);
                                                 }}
-                                                className={`flex-1 px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                                                className={`flex-1 px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
                                                     isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300'
                                                 } ${
                                                     q.correct_answer === letter ? 'ring-2 ring-green-500 border-green-500' : ''

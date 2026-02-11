@@ -188,7 +188,7 @@ const EnterpriseTutorDashboard = () => {
       if (attemptsRes.success && attemptsRes.attempts && studentsRes.success) {
         const studentMap = {};
         studentsRes.students.forEach(s => { studentMap[s.id] = s.name; });
-        const recent = attemptsRes.attempts.slice(0, 10).map(attempt => ({
+        const recent = attemptsRes.attempts.slice(0, 5).map(attempt => ({
           id: attempt.id,
           studentId: attempt.student_id,
           studentName: studentMap[attempt.student_id] || 'Student',

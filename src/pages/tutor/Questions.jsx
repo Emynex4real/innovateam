@@ -204,7 +204,7 @@ const Questions = () => {
   if (loading) {
     return (
       <div className={`flex flex-col items-center justify-center min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
         <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading question bank...</p>
       </div>
     );
@@ -246,7 +246,7 @@ const Questions = () => {
             </button>
             <button 
               onClick={() => setShowForm(true)} 
-              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm transition-all font-medium"
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm transition-all font-medium"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">Add Question</span>
@@ -269,7 +269,7 @@ const Questions = () => {
                 placeholder="Search questions content..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
                   isDarkMode 
                     ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' 
                     : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
@@ -307,14 +307,14 @@ const Questions = () => {
                <div className={`flex rounded-lg border p-1 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                   <button 
                     onClick={() => setViewMode('hierarchical')}
-                    className={`p-2 rounded-md transition-all ${viewMode === 'hierarchical' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    className={`p-2 rounded-md transition-all ${viewMode === 'hierarchical' ? 'bg-white dark:bg-gray-700 shadow-sm text-green-600 dark:text-green-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                     title="Tree View"
                   >
                     <FolderTree size={18} />
                   </button>
                   <button 
                     onClick={() => setViewMode('flat')}
-                    className={`p-2 rounded-md transition-all ${viewMode === 'flat' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    className={`p-2 rounded-md transition-all ${viewMode === 'flat' ? 'bg-white dark:bg-gray-700 shadow-sm text-green-600 dark:text-green-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                     title="List View"
                   >
                     <LayoutList size={18} />
@@ -366,7 +366,7 @@ const Questions = () => {
                         onClick={() => toggleSubject(subject)}
                       >
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${isExpanded ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                            <div className={`p-2 rounded-lg ${isExpanded ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
                                 {isExpanded ? <FolderOpen size={20} /> : <Folder size={20} />}
                             </div>
                             <div>
@@ -383,7 +383,7 @@ const Questions = () => {
                                 onClick={(e) => { e.stopPropagation(); selectAllInSubject(subject); }} 
                                 className={`p-2 rounded-lg transition ${
                                     selectedInSubject === subjectQuestions.length 
-                                    ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' 
+                                    ? 'text-green-600 bg-green-50 dark:bg-green-900/20' 
                                     : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
                                 }`}
                                 title="Select All in Subject"
@@ -422,7 +422,7 @@ const Questions = () => {
                                     type="button" 
                                     onClick={(e) => { e.stopPropagation(); selectAllInTopic(subject, topic); }} 
                                     className={`p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5 transition ${
-                                        selectedInTopic === topicQuestions.length ? 'text-indigo-600' : 'text-gray-400'
+                                        selectedInTopic === topicQuestions.length ? 'text-green-600' : 'text-gray-400'
                                     }`}
                                   >
                                      {selectedInTopic === topicQuestions.length ? <CheckSquare size={16} /> : <Square size={16} />}
@@ -494,7 +494,7 @@ const Questions = () => {
                         required 
                         value={formData.question_text} 
                         onChange={(e) => setFormData({ ...formData, question_text: e.target.value })} 
-                        className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'}`} 
+                        className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'}`} 
                         rows="3" 
                         placeholder="Type the question here..."
                     />
@@ -513,7 +513,7 @@ const Questions = () => {
                                 required 
                                 value={formData.options[idx]} 
                                 onChange={(e) => { const newOptions = [...formData.options]; newOptions[idx] = e.target.value; setFormData({ ...formData, options: newOptions }); }} 
-                                className={`w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
+                                className={`w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-green-500 focus:border-transparent ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`} 
                                 placeholder={`Answer for option ${letter}`}
                              />
                           </div>
@@ -594,7 +594,7 @@ const Questions = () => {
                 <button 
                     type="submit" 
                     form="questionForm"
-                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 shadow-md transition"
+                    className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 shadow-md transition"
                 >
                     {editingId ? 'Update Question' : 'Save Question'}
                 </button>
@@ -611,8 +611,8 @@ const Questions = () => {
 const QuestionCard = ({ question, isSelected, toggleSelect, onEdit, onDelete, isDarkMode }) => (
     <div className={`group relative p-4 md:p-6 rounded-xl border transition-all ${
         isSelected 
-        ? isDarkMode ? 'border-indigo-500 bg-indigo-900/20' : 'border-indigo-500 bg-indigo-50/50' 
-        : isDarkMode ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
+        ? isDarkMode ? 'border-green-500 bg-green-900/20' : 'border-green-500 bg-green-50/50' 
+        : isDarkMode ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-green-200 hover:shadow-md'
     }`}>
         <div className="flex items-start gap-4">
             <div className="pt-1">
@@ -620,7 +620,7 @@ const QuestionCard = ({ question, isSelected, toggleSelect, onEdit, onDelete, is
                     type="checkbox" 
                     checked={isSelected} 
                     onChange={toggleSelect} 
-                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                    className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer" 
                 />
             </div>
             <div className="flex-1 min-w-0">
@@ -703,7 +703,7 @@ const QuestionCard = ({ question, isSelected, toggleSelect, onEdit, onDelete, is
 const EmptyState = ({ navigate, isSearch }) => (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
         <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm mb-4">
-            {isSearch ? <Search size={32} className="text-gray-400" /> : <Brain size={32} className="text-indigo-500" />}
+            {isSearch ? <Search size={32} className="text-gray-400" /> : <Brain size={32} className="text-green-500" />}
         </div>
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
             {isSearch ? 'No matching questions found' : 'Question Bank is Empty'}
@@ -713,7 +713,7 @@ const EmptyState = ({ navigate, isSearch }) => (
         </p>
         {!isSearch && (
             <div className="flex gap-3">
-                <button onClick={() => navigate('/tutor/questions/generate')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
+                <button onClick={() => navigate('/tutor/questions/generate')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
                     Generate with AI
                 </button>
             </div>

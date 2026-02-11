@@ -159,7 +159,7 @@ const EnterpriseDashboard = () => {
             </p>
             <button
               onClick={() => navigate('/student/centers/join')}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
             >
               Find a Center
             </button>
@@ -193,7 +193,7 @@ const EnterpriseDashboard = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button
                       onClick={() => navigate(`/student/tests?center=${primaryCenter.center_id || primaryCenter.id}`)}
-                      className="flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
+                      className="flex items-center justify-center gap-2 px-6 py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
                     >
                       <Zap size={18} /> Start New Test
                     </button>
@@ -295,12 +295,12 @@ const EnterpriseDashboard = () => {
               </div>
 
               {/* Tip Widget */}
-              <div className={`p-5 rounded-xl border ${isDarkMode ? 'bg-indigo-950/30 border-indigo-900/50' : 'bg-indigo-50 border-indigo-100'}`}>
+              <div className={`p-5 rounded-xl border ${isDarkMode ? 'bg-green-950/30 border-green-900/50' : 'bg-green-50 border-green-100'}`}>
                 <div className="flex gap-3">
-                  <Zap size={20} className="text-indigo-500 shrink-0 mt-0.5" />
+                  <Zap size={20} className="text-green-500 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-900'}`}>Did you know?</h4>
-                    <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-indigo-400' : 'text-indigo-700'}`}>
+                    <h4 className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-green-300' : 'text-green-900'}`}>Did you know?</h4>
+                    <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>
                       Consistent practice is key. Students who take tests 3 times a week score 25% higher on average.
                     </p>
                   </div>

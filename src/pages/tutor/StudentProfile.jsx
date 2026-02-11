@@ -151,10 +151,10 @@ const StudentProfile = () => {
               className={`p-6 rounded-3xl border shadow-sm relative overflow-hidden ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}
             >
               {/* Background Gradient */}
-              <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-indigo-600 to-indigo-700 opacity-10`} />
+              <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-green-600 to-green-700 opacity-10`} />
               
               <div className="relative flex flex-col items-center text-center">
-                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-700 p-1 mb-4 shadow-xl">
+                <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-green-600 to-green-700 p-1 mb-4 shadow-xl">
                   <div className={`w-full h-full rounded-[20px] flex items-center justify-center text-3xl font-bold text-white ${isDarkMode ? 'bg-gray-900' : 'bg-white text-blue-600'}`}>
                     {initials}
                   </div>

@@ -5,7 +5,7 @@ import autoTable from 'jspdf-autotable';
 const theme = {
   colors: {
     primary: [37, 99, 235],    // Royal Blue
-    secondary: [79, 70, 229],  // Indigo
+    secondary: [79, 70, 229],  // green
     accent: [245, 158, 11],    // Amber
     success: [16, 185, 129],   // Emerald
     danger: [239, 68, 68],     // Red

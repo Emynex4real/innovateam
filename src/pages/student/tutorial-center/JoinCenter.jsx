@@ -54,7 +54,7 @@ const JoinCenter = () => {
         
         {/* Header Section */}
         <div className={`px-8 pt-10 pb-6 text-center border-b ${isDarkMode ? 'border-zinc-800 bg-zinc-900' : 'border-gray-50 bg-white'}`}>
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
             <Key size={32} />
           </div>
           <h1 className="text-2xl font-bold tracking-tight mb-2">Join a Center</h1>
@@ -77,8 +77,8 @@ const JoinCenter = () => {
                 placeholder="ABC-123"
                 className={`w-full text-center text-4xl font-mono font-bold tracking-widest py-3 bg-transparent border-b-2 outline-none transition-all placeholder-opacity-30 ${
                   isDarkMode 
-                    ? 'border-zinc-700 focus:border-indigo-500 text-white placeholder-zinc-700' 
-                    : 'border-gray-200 focus:border-indigo-600 text-gray-900 placeholder-gray-300'
+                    ? 'border-zinc-700 focus:border-green-500 text-white placeholder-zinc-700' 
+                    : 'border-gray-200 focus:border-green-600 text-gray-900 placeholder-gray-300'
                 }`}
                 autoFocus
               />
@@ -89,8 +89,8 @@ const JoinCenter = () => {
               disabled={code.length < 6 || loading}
               className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                 isDarkMode 
-                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white disabled:bg-zinc-800 disabled:text-zinc-600' 
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-200 disabled:text-gray-400'
+                  ? 'bg-green-600 hover:bg-green-500 text-white disabled:bg-zinc-800 disabled:text-zinc-600' 
+                  : 'bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-200 disabled:text-gray-400'
               }`}
             >
               {loading ? (
@@ -109,7 +109,7 @@ const JoinCenter = () => {
           <button 
             onClick={() => navigate('/student/tests/public')}
             className={`text-xs font-medium flex items-center justify-center gap-1.5 mx-auto transition-colors ${
-              isDarkMode ? 'text-zinc-500 hover:text-indigo-400' : 'text-gray-500 hover:text-indigo-600'
+              isDarkMode ? 'text-zinc-500 hover:text-green-400' : 'text-gray-500 hover:text-green-600'
             }`}
           >
             <Search size={14} /> Looking for public tests? Browse Library

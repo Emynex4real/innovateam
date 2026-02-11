@@ -81,7 +81,7 @@ const EnterpriseResults = () => {
   if (loading) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center ${isDarkMode ? 'bg-zinc-950 text-zinc-400' : 'bg-gray-50 text-gray-500'}`}>
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4" />
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-600 border-t-transparent mb-4" />
         <p className="font-medium">Calculating Performance...</p>
       </div>
     );
@@ -121,7 +121,7 @@ const EnterpriseResults = () => {
             </p>
             <button
               onClick={() => navigate(`/student/test/${testId}`)}
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20"
+              className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-green-500/20"
             >
               Start Assessment
             </button>
@@ -308,7 +308,7 @@ const EnterpriseResults = () => {
                       onClick={() => setSelectedAttempt(attempt)}
                       className={`w-full flex items-center justify-between p-4 text-left transition-colors ${
                         selectedAttempt?.id === attempt.id 
-                          ? isDarkMode ? 'bg-zinc-800/50' : 'bg-indigo-50/50'
+                          ? isDarkMode ? 'bg-zinc-800/50' : 'bg-green-50/50'
                           : isDarkMode ? 'hover:bg-zinc-800' : 'hover:bg-gray-50'
                       }`}
                     >

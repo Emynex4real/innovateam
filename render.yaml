@@ -22,9 +22,13 @@ services:
       - key: GEMINI_TIMEOUT
         value: 45000
       - key: ENABLE_CACHE
-        value: false
+        value: true
       - key: CACHE_TTL
         value: 3600
+      - key: REDIS_URL
+        sync: false
+      - key: REDIS_TOKEN
+        sync: false
       - key: LOG_LEVEL
         value: info
       - key: SUPABASE_URL

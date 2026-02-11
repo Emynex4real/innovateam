@@ -173,7 +173,7 @@ const ThreadDetail = ({ userId }) => {
         {/* Main Question (Thread Starter) */}
         <article className={`rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-6 mb-4 sm:mb-8 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <header className="flex gap-2 sm:gap-4 mb-3 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-md flex-shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500 to-green-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-md flex-shrink-0">
               {thread.creator_name?.[0] || '?'}
             </div>
             <div className="min-w-0 flex-1">
