@@ -245,6 +245,57 @@ router.get('/transactions', adminLimiter, async (req, res) => {
 router.put('/transactions/:id', sensitiveOpLimiter, adminController.updateTransaction);
 router.delete('/transactions/:id', sensitiveOpLimiter, adminController.deleteTransaction);
 
+// Tutor Trial Management
+router.post('/users/:id/grant-trial', sensitiveOpLimiter, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days = 30 } = req.body;
+    const supabase = require('../supabaseClient');
+
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({
+        tutor_trial_granted: true,
+        tutor_trial_expires_at: expiresAt.toISOString()
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: `Trial granted for ${days} days (expires ${expiresAt.toLocaleDateString()})`
+    });
+  } catch (error) {
+    console.error('Grant trial error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/users/:id/revoke-trial', sensitiveOpLimiter, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const supabase = require('../supabaseClient');
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({
+        tutor_trial_granted: false,
+        tutor_trial_expires_at: null
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'Trial revoked' });
+  } catch (error) {
+    console.error('Revoke trial error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Tutorial Centers Management Routes
 router.get('/tutorial-centers', adminLimiter, adminController.getTutorialCenters);
 router.get('/tutorial-centers/:id', adminLimiter, adminController.getTutorialCenterDetails);

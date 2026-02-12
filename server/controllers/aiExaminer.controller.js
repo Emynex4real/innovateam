@@ -248,6 +248,21 @@ class AIExaminerController {
 
       const userId = req.user?.id;
 
+      // 1b. Pay-per-use gating (students get 3 free sessions, then ₦100 each)
+      if (userId) {
+        const usageService = require('../services/usage.service');
+        const usageCheck = await usageService.checkCanUseService(userId, 'ai_examiner');
+        if (!usageCheck.canUse) {
+          return res.status(402).json({
+            success: false,
+            message: 'Insufficient wallet balance. Please fund your wallet to continue.',
+            data: usageCheck
+          });
+        }
+        // Store check result for recording after successful creation
+        req._usageCheck = usageCheck;
+      }
+
       // 2. Validate required parameters
       if (!documentId) {
         return res.status(400).json({ 
@@ -356,6 +371,16 @@ class AIExaminerController {
       if (examError) {
         console.error('❌ Failed to create exam:', examError);
         throw examError;
+      }
+
+      // 9b. Record usage (deduct wallet if not free)
+      if (userId && req._usageCheck) {
+        try {
+          const usageService = require('../services/usage.service');
+          await usageService.recordUsage(userId, 'ai_examiner', examId, req._usageCheck.isFree);
+        } catch (usageErr) {
+          console.error('⚠️ Usage recording failed (exam still created):', usageErr.message);
+        }
       }
 
       // 10. Prepare questions for frontend (hide answers)

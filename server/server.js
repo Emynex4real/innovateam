@@ -50,6 +50,9 @@ const tcQuestionSetsRoutes = require('./routes/tcQuestionSets.routes');
 const tcAttemptsRoutes = require('./routes/tcAttempts.routes');
 const schedulerRoutes = require('./routes/scheduler.routes');
 
+// Webhook routes (Paystack)
+const webhookRoutes = require('./routes/webhook.routes');
+
 // Phase 1 & 2 routes
 const subscriptionRoutes = require('./routes/subscription.routes');
 const messagingRoutes = require('./routes/messaging.routes');
@@ -171,8 +174,9 @@ app.use((req, res, next) => {
 app.use(express.json({
   limit: '10mb',
   verify: (req, res, buf) => {
-    const body = buf.toString();
-    if (/<script[\s\S]*?>[\s\S]*?<\/script>/gi.test(body)) {
+    // Store raw body for webhook signature verification
+    req.rawBody = buf.toString();
+    if (/<script[\s\S]*?>[\s\S]*?<\/script>/gi.test(req.rawBody)) {
       throw new Error('Potentially malicious content detected');
     }
   }
@@ -310,6 +314,9 @@ app.get('/', (req, res) => {
 // ============================================
 // 12. API ROUTES (CSRF applied globally)
 // ============================================
+
+// Webhook routes - BEFORE CSRF (verified by Paystack signature)
+app.use('/api/webhooks', webhookRoutes);
 
 // Auth routes - CSRF exempt for login/register
 app.use('/api/auth', authRoutes);

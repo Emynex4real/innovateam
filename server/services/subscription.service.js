@@ -24,14 +24,41 @@ const subscriptionService = {
 
     if (error && error.code !== 'PGRST116') throw error;
     
-    // If no subscription, return free plan
+    // If no subscription, check for admin-granted trial
     if (!data) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tutor_trial_granted, tutor_trial_expires_at')
+        .eq('id', tutorId)
+        .single();
+
+      const hasActiveTrial = profile?.tutor_trial_granted &&
+        profile?.tutor_trial_expires_at &&
+        new Date(profile.tutor_trial_expires_at) > new Date();
+
+      if (hasActiveTrial) {
+        // Return Pro plan features as a trial
+        const { data: proPlan } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('name', 'pro')
+          .single();
+
+        return {
+          success: true,
+          subscription: null,
+          plan: proPlan || null,
+          isTrial: true,
+          trialExpiresAt: profile.tutor_trial_expires_at
+        };
+      }
+
       const { data: freePlan } = await supabase
         .from('subscription_plans')
         .select('*')
         .eq('name', 'free')
         .single();
-      
+
       return { success: true, subscription: null, plan: freePlan };
     }
 

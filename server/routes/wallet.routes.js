@@ -14,4 +14,11 @@ router.post('/deduct', financialLimiter, walletController.deductFromWallet);
 router.get('/transactions', userLimiter(50), walletController.getTransactions);
 router.get('/stats', userLimiter(50), walletController.getStats);
 
+// Paystack payment flow
+router.post('/initialize-payment', financialLimiter, walletController.initializePayment);
+router.get('/verify-payment/:reference', financialLimiter, walletController.verifyPayment);
+
+// Usage stats
+router.get('/usage', userLimiter(50), walletController.getUsageStats);
+
 module.exports = router;

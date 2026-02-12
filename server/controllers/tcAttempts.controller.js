@@ -14,6 +14,38 @@ exports.submitAttempt = async (req, res) => {
     const { question_set_id, answers, time_taken } = req.body;
     const studentId = req.user.id;
 
+    // 0. Pay-per-use gating for non-enrolled students
+    // Check if student is enrolled in the tutorial center that owns this test
+    const { data: qsData } = await supabase
+      .from('tc_question_sets')
+      .select('center_id')
+      .eq('id', question_set_id)
+      .single();
+
+    if (qsData?.center_id) {
+      const { data: enrollment } = await supabase
+        .from('tc_enrollments')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('center_id', qsData.center_id)
+        .eq('status', 'active')
+        .single();
+
+      // Only charge if NOT enrolled
+      if (!enrollment) {
+        const usageService = require('../services/usage.service');
+        const usageCheck = await usageService.checkCanUseService(studentId, 'practice_exam');
+        if (!usageCheck.canUse) {
+          return res.status(402).json({
+            success: false,
+            error: 'Insufficient wallet balance. Please fund your wallet to continue.',
+            data: usageCheck
+          });
+        }
+        req._usageCheck = usageCheck;
+      }
+    }
+
     // 1. FETCH TEST WITH QUESTIONS (Single Source of Truth)
     // DEBUG: Uncomment for debugging
     // console.log('📚 [BACKEND] Fetching question set');
@@ -105,6 +137,16 @@ exports.submitAttempt = async (req, res) => {
     
     // DEBUG: Uncomment for debugging
     // console.log('✅ [BACKEND] Attempt saved', { attemptId: attempt.id });
+
+    // Record usage (deduct wallet if not free, non-enrolled student)
+    if (req._usageCheck) {
+      try {
+        const usageService = require('../services/usage.service');
+        await usageService.recordUsage(studentId, 'practice_exam', question_set_id, req._usageCheck.isFree);
+      } catch (usageErr) {
+        console.warn('⚠️ [BACKEND] Usage recording failed (attempt still saved):', usageErr.message);
+      }
+    }
 
     // Award points for league (with error handling)
     try {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Gift, XCircle } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -89,6 +89,37 @@ const UserManagement = () => {
     } catch (err) {
       console.error('Error updating role:', err);
       alert(err.response?.data?.error || 'Failed to update role');
+    }
+  };
+
+  const handleGrantTrial = async (userId) => {
+    const days = prompt('How many trial days to grant?', '30');
+    if (!days) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/admin/users/${userId}/grant-trial`,
+        { days: parseInt(days, 10) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert(response.data.message || 'Trial granted');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to grant trial');
+    }
+  };
+
+  const handleRevokeTrial = async (userId) => {
+    if (!window.confirm('Revoke this tutor\'s trial access?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_URL}/api/admin/users/${userId}/revoke-trial`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert('Trial revoked');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to revoke trial');
     }
   };
 
@@ -181,6 +212,26 @@ const UserManagement = () => {
                         <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(user.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                        {user.role === 'tutor' && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Grant Trial"
+                              onClick={() => handleGrantTrial(user.id)}
+                            >
+                              <Gift className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Revoke Trial"
+                              onClick={() => handleRevokeTrial(user.id)}
+                            >
+                              <XCircle className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

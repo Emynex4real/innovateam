@@ -31,7 +31,11 @@ const Subscription = () => {
       ]);
 
       setPlans(plansRes.data.plans);
-      setCurrentSubscription(subRes.data.subscription);
+      setCurrentSubscription({
+        ...subRes.data.subscription,
+        isTrial: subRes.data.isTrial || false,
+        trialExpiresAt: subRes.data.trialExpiresAt || null
+      });
       setLimits(limitsRes.data);
     } catch (error) {
       toast.error('Failed to load subscription data');
@@ -134,6 +138,20 @@ const Subscription = () => {
           </div>
         )}
 
+        {/* Trial Banner */}
+        {currentSubscription?.isTrial && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+            <p className="text-amber-800 font-semibold text-lg">
+              You're on a free trial of the Pro plan
+            </p>
+            <p className="text-amber-600 text-sm mt-1">
+              Trial expires on {new Date(currentSubscription.trialExpiresAt).toLocaleDateString('en-NG', {
+                year: 'numeric', month: 'long', day: 'numeric'
+              })}
+            </p>
+          </div>
+        )}
+
         {/* Plans */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan) => {
@@ -159,9 +177,11 @@ const Subscription = () => {
                 
                 <div className="mb-6">
                   <span className={`text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    ${plan.price}
+                    {plan.price === 0 ? 'Free' : `₦${plan.price.toLocaleString()}`}
                   </span>
-                  <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>/month</span>
+                  {plan.price > 0 && (
+                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>/month</span>
+                  )}
                 </div>
 
                 <ul className="space-y-3 mb-8">

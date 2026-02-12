@@ -1,122 +1,135 @@
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs').promises;
-const path = require('path');
+const supabase = require('../supabaseClient');
 
 class Transaction {
-  constructor() {
-    this.dataPath = path.join(__dirname, '../data/user_transactions.json');
-  }
-
-  async loadTransactions() {
-    try {
-      const data = await fs.readFile(this.dataPath, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  async saveTransactions(transactions) {
-    try {
-      // Ensure directory exists
-      const dir = path.dirname(this.dataPath);
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(this.dataPath, JSON.stringify(transactions, null, 2));
-    } catch (error) {
-      console.error('Failed to save transactions:', error);
-      throw error;
-    }
-  }
-
   static async create(transactionData) {
-    const instance = new Transaction();
-    const transactions = await instance.loadTransactions();
-    
-    const transaction = {
-      id: uuidv4(),
-      userId: transactionData.userId,
-      type: transactionData.type, // 'credit', 'debit'
-      amount: parseFloat(transactionData.amount),
-      description: transactionData.description || '',
-      status: transactionData.status || 'completed',
-      category: transactionData.category || 'general',
-      reference: transactionData.reference || uuidv4().slice(0, 8),
-      metadata: transactionData.metadata || {},
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: transactionData.userId,
+        user_email: transactionData.userEmail || null,
+        description: transactionData.description || '',
+        amount: parseFloat(transactionData.amount),
+        type: transactionData.type || 'debit',
+        status: transactionData.status || 'completed',
+        category: transactionData.category || 'general',
+        reference: transactionData.reference || null,
+        metadata: transactionData.metadata || {},
+        paystack_reference: transactionData.paystackReference || null
+      })
+      .select()
+      .single();
 
-    transactions.push(transaction);
-    await instance.saveTransactions(transactions);
-    return transaction;
+    if (error) throw error;
+    return Transaction._toCamel(data);
   }
 
   static async findByUserId(userId, limit = 50) {
-    const instance = new Transaction();
-    const transactions = await instance.loadTransactions();
-    return transactions
-      .filter(t => t.userId === userId)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, limit);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return (data || []).map(Transaction._toCamel);
   }
 
   static async findById(id) {
-    const instance = new Transaction();
-    const transactions = await instance.loadTransactions();
-    return transactions.find(t => t.id === id);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return null;
+    return Transaction._toCamel(data);
   }
 
   static async getAll(limit = 100) {
-    const instance = new Transaction();
-    const transactions = await instance.loadTransactions();
-    return transactions
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, limit);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return (data || []).map(Transaction._toCamel);
   }
 
   static async getUserStats(userId) {
-    const instance = new Transaction();
-    const transactions = await instance.loadTransactions();
-    const userTransactions = transactions.filter(t => t.userId === userId);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('type, amount, status')
+      .eq('user_id', userId);
 
-    const stats = {
-      totalTransactions: userTransactions.length,
-      totalCredits: userTransactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0),
-      totalDebits: userTransactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0),
-      pendingTransactions: userTransactions.filter(t => t.status === 'pending').length,
-      completedTransactions: userTransactions.filter(t => t.status === 'completed').length
+    if (error) throw error;
+    const txns = data || [];
+
+    return {
+      totalTransactions: txns.length,
+      totalCredits: txns.filter(t => t.type === 'credit').reduce((sum, t) => sum + parseFloat(t.amount), 0),
+      totalDebits: txns.filter(t => t.type === 'debit').reduce((sum, t) => sum + parseFloat(t.amount), 0),
+      pendingTransactions: txns.filter(t => t.status === 'pending').length,
+      completedTransactions: txns.filter(t => t.status === 'completed').length
     };
-
-    return stats;
   }
 
   static async update(id, updateData) {
-    const instance = new Transaction();
-    const transactions = await instance.loadTransactions();
-    const index = transactions.findIndex(t => t.id === id);
-    
-    if (index === -1) return null;
-    
-    transactions[index] = {
-      ...transactions[index],
-      ...updateData,
-      updatedAt: new Date().toISOString()
-    };
-    
-    await instance.saveTransactions(transactions);
-    return transactions[index];
+    const mapped = {};
+    if (updateData.status !== undefined) mapped.status = updateData.status;
+    if (updateData.description !== undefined) mapped.description = updateData.description;
+    if (updateData.amount !== undefined) mapped.amount = parseFloat(updateData.amount);
+    if (updateData.metadata !== undefined) mapped.metadata = updateData.metadata;
+    mapped.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .update(mapped)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return null;
+    return Transaction._toCamel(data);
   }
 
   static async delete(id) {
-    const instance = new Transaction();
-    const transactions = await instance.loadTransactions();
-    const index = transactions.findIndex(t => t.id === id);
-    
-    if (index === -1) return false;
-    
-    transactions.splice(index, 1);
-    await instance.saveTransactions(transactions);
-    return true;
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', id);
+
+    return !error;
+  }
+
+  static async findByPaystackReference(reference) {
+    const { data } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('paystack_reference', reference)
+      .limit(1);
+
+    return data && data.length > 0;
+  }
+
+  static _toCamel(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      userId: row.user_id,
+      userEmail: row.user_email,
+      description: row.description,
+      amount: parseFloat(row.amount),
+      type: row.type,
+      status: row.status,
+      category: row.category,
+      reference: row.reference,
+      metadata: row.metadata,
+      paystackReference: row.paystack_reference,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
   }
 }
 
