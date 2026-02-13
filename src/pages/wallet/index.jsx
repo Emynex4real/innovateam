@@ -7,13 +7,31 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
-import { 
-  CreditCard, Wallet as WalletIcon, TrendingUp, TrendingDown, 
-  X, Plus, RefreshCw, Clock, ArrowUpRight, ArrowDownLeft, 
-  AlertCircle, ShieldCheck 
+import {
+  CreditCard, Wallet as WalletIcon, TrendingUp, TrendingDown,
+  X, Plus, RefreshCw, Clock, ArrowUpRight, ArrowDownLeft,
+  AlertCircle, ShieldCheck
 } from 'lucide-react';
 import supabase from '../../config/supabase';
+import { API_BASE_URL } from '../../config/api';
 import toast from 'react-hot-toast';
+
+const PAYSTACK_PUBLIC_KEY = process.env.REACT_APP_PAYSTACK_PUBLIC_KEY;
+
+let paystackScriptLoaded = false;
+function loadPaystackScript() {
+  return new Promise((resolve, reject) => {
+    if (paystackScriptLoaded || window.PaystackPop) {
+      paystackScriptLoaded = true;
+      return resolve();
+    }
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v2/inline.js';
+    script.onload = () => { paystackScriptLoaded = true; resolve(); };
+    script.onerror = () => reject(new Error('Failed to load payment provider'));
+    document.head.appendChild(script);
+  });
+}
 
 const Wallet = () => {
   const [amount, setAmount] = useState('');
@@ -21,32 +39,91 @@ const Wallet = () => {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const { user } = useAuth();
-  const { walletBalance, transactions, fundWallet, loading: walletLoading, fetchWalletData } = useWallet();
+  const { walletBalance, transactions, loading: walletLoading, fetchWalletData } = useWallet();
 
-  // --- Logic: Fund Wallet ---
+  // --- Logic: Fund Wallet via Paystack ---
   const handleFundWallet = async () => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount < 100 || numAmount > 1000000) {
       toast.error('Please enter a valid amount (₦100 - ₦1,000,000)');
       return;
     }
-    
+
     setLoading(true);
     try {
-      const userEmail = user?.email || 'user@example.com';
-      const result = await fundWallet(parseFloat(amount), paymentMethod, userEmail);
-      
-      if (result.success) {
-        toast.success(`Success! New balance: ₦${result.balance.toLocaleString()}`);
-        setAmount('');
-        setShowFundModal(false);
-      } else {
-        throw new Error('Funding failed');
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast.error('Please log in again');
+        setLoading(false);
+        return;
       }
+
+      // Step 1: Initialize payment on backend
+      const initRes = await fetch(`${API_BASE_URL}/api/wallet/initialize-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ amount: numAmount })
+      });
+
+      const initData = await initRes.json();
+      if (!initData.success) {
+        throw new Error(initData.message || 'Failed to initialize payment');
+      }
+
+      const { reference, accessCode, authorizationUrl } = initData.data;
+
+      // Step 2: Open Paystack popup
+      await loadPaystackScript();
+
+      if (!window.PaystackPop) {
+        window.location.href = authorizationUrl;
+        return;
+      }
+
+      const popup = new window.PaystackPop();
+      popup.newTransaction({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: user?.email,
+        amount: Math.round(numAmount * 100),
+        currency: 'NGN',
+        ref: reference,
+        accessCode,
+        onSuccess: async (transaction) => {
+          try {
+            const verifyRes = await fetch(
+              `${API_BASE_URL}/api/wallet/verify-payment/${transaction.reference || reference}`,
+              { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+              toast.success(`₦${numAmount.toLocaleString()} added to wallet!`);
+              await fetchWalletData();
+              setAmount('');
+              setShowFundModal(false);
+            } else {
+              toast.error(verifyData.message || 'Verification failed');
+            }
+          } catch {
+            toast.error('Payment received but verification failed. Your balance will update shortly.');
+          }
+          setLoading(false);
+        },
+        onCancel: () => {
+          toast.error('Payment cancelled');
+          setLoading(false);
+        },
+        onClose: () => {
+          setLoading(false);
+        }
+      });
     } catch (error) {
-      console.error('Funding error:', error);
-      toast.error(error.message || 'Failed to fund wallet');
-    } finally {
+      toast.error(error.message || 'Payment failed. Please try again.');
       setLoading(false);
     }
   };

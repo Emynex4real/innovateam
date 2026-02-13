@@ -2,22 +2,48 @@ const supabase = require('../supabaseClient');
 
 class Transaction {
   static async create(transactionData) {
+    // Build insert object with all columns
+    const fullRow = {
+      user_id: transactionData.userId,
+      user_email: transactionData.userEmail || null,
+      description: transactionData.description || '',
+      amount: parseFloat(transactionData.amount),
+      type: transactionData.type || 'debit',
+      status: transactionData.status || 'successful',
+      category: transactionData.category || 'general',
+      reference: transactionData.reference || null,
+      metadata: transactionData.metadata || {},
+      paystack_reference: transactionData.paystackReference || null
+    };
+
     const { data, error } = await supabase
       .from('transactions')
-      .insert({
+      .insert(fullRow)
+      .select()
+      .single();
+
+    // If columns don't exist in schema cache, retry with core columns only
+    if (error && error.code === 'PGRST204') {
+      console.warn('Transaction schema cache stale, retrying with core columns. Run: NOTIFY pgrst, \'reload schema\'; in Supabase SQL Editor.');
+      const coreRow = {
         user_id: transactionData.userId,
-        user_email: transactionData.userEmail || null,
+        user_email: transactionData.userEmail || 'unknown@user.com',
         description: transactionData.description || '',
         amount: parseFloat(transactionData.amount),
         type: transactionData.type || 'debit',
-        status: transactionData.status || 'completed',
-        category: transactionData.category || 'general',
-        reference: transactionData.reference || null,
-        metadata: transactionData.metadata || {},
-        paystack_reference: transactionData.paystackReference || null
-      })
-      .select()
-      .single();
+        status: transactionData.status || 'completed'
+      };
+      if (transactionData.metadata) coreRow.metadata = transactionData.metadata;
+
+      const { data: d2, error: e2 } = await supabase
+        .from('transactions')
+        .insert(coreRow)
+        .select()
+        .single();
+
+      if (e2) throw e2;
+      return Transaction._toCamel(d2);
+    }
 
     if (error) throw error;
     return Transaction._toCamel(data);
@@ -104,13 +130,18 @@ class Transaction {
   }
 
   static async findByPaystackReference(reference) {
-    const { data } = await supabase
-      .from('transactions')
-      .select('id')
-      .eq('paystack_reference', reference)
-      .limit(1);
+    try {
+      const { data } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('paystack_reference', reference)
+        .limit(1);
 
-    return data && data.length > 0;
+      return data && data.length > 0;
+    } catch {
+      // Column may not exist in schema cache yet
+      return false;
+    }
   }
 
   static _toCamel(row) {

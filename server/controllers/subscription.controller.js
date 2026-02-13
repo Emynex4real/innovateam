@@ -1,6 +1,6 @@
 const subscriptionService = require('../services/subscription.service');
 const paymentService = require('../services/payment.service');
-const { logger } = require('../utils/logger');
+const logger = require('../utils/logger');
 
 exports.getPlans = async (req, res) => {
   try {

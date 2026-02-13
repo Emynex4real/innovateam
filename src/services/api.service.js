@@ -59,8 +59,10 @@ class ApiService {
     }
 
     // 3. CSRF Protection for all state-changing requests
+    // Tokens are one-time use on the server, so clear after each use
     if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
       const csrfToken = await this.getCSRFToken();
+      this.csrfToken = null; // Clear so next request fetches a fresh token
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
       }

@@ -1,4 +1,6 @@
 // CSRF Protection Utility
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 class CSRFProtection {
   constructor() {
     this.token = null;
@@ -8,7 +10,7 @@ class CSRFProtection {
   // Get CSRF token from server
   async getToken() {
     try {
-      const response = await fetch('/api/csrf-token', {
+      const response = await fetch(`${API_URL}/api/csrf-token`, {
         method: 'GET',
         credentials: 'include'
       });
@@ -27,11 +29,9 @@ class CSRFProtection {
     }
   }
 
-  // Get valid token (fetch new if expired)
+  // Get valid token (always fetch fresh - tokens are one-time use on the server)
   async getValidToken() {
-    if (!this.token || Date.now() > this.tokenExpiry) {
-      await this.getToken();
-    }
+    await this.getToken();
     return this.token;
   }
 

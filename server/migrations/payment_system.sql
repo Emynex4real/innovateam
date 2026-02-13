@@ -69,11 +69,26 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- 4. Update subscription plan prices to NGN
+-- 4. Update subscription plan prices to NGN (case-insensitive match)
 ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'NGN';
-UPDATE subscription_plans SET price = 0, currency = 'NGN' WHERE name = 'free';
-UPDATE subscription_plans SET price = 2000, currency = 'NGN' WHERE name = 'pro';
-UPDATE subscription_plans SET price = 5000, currency = 'NGN' WHERE name = 'premium';
+
+UPDATE subscription_plans SET
+  price = 0,
+  currency = 'NGN',
+  features = '{"analytics": "basic", "support": "community", "ai_generations": 10, "custom_branding": false}'::jsonb
+WHERE LOWER(name) = 'free';
+
+UPDATE subscription_plans SET
+  price = 2000,
+  currency = 'NGN',
+  features = '{"analytics": "advanced", "support": "email", "ai_generations": 100, "custom_branding": false}'::jsonb
+WHERE LOWER(name) = 'pro';
+
+UPDATE subscription_plans SET
+  price = 5000,
+  currency = 'NGN',
+  features = '{"analytics": "full", "support": "priority", "ai_generations": -1, "custom_branding": true, "api_access": true}'::jsonb
+WHERE LOWER(name) = 'premium';
 
 -- 5. Ensure wallet_balance column exists on user_profiles
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS wallet_balance DECIMAL(10,2) DEFAULT 0;

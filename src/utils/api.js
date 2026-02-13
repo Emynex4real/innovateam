@@ -40,8 +40,9 @@ const api = axios.create({
 
 // Request interceptor for security
 api.interceptors.request.use(async (config) => {
-  // Add security headers
-  config.headers = apiSecurity.addSecurityHeaders(config.headers);
+  // Add security headers (set directly to preserve AxiosHeaders instance)
+  config.headers['X-Requested-With'] = 'XMLHttpRequest';
+  config.headers['X-Client-Version'] = '1.0.0';
   
   // Add CSRF token for state-changing requests
   if (['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase())) {

@@ -6,24 +6,43 @@ const subscriptionService = {
     const { data, error } = await supabase
       .from('subscription_plans')
       .select('*')
-      .eq('is_active', true)
-      .order('sort_order');
+      .order('price');
 
     if (error) throw error;
-    return { success: true, plans: data };
+
+    // Enrich plans with human-readable fields from JSONB features
+    const enrichedPlans = (data || []).map(plan => {
+      const features = typeof plan.features === 'string'
+        ? JSON.parse(plan.features)
+        : (plan.features || {});
+
+      return {
+        ...plan,
+        display_name: plan.name.charAt(0).toUpperCase() + plan.name.slice(1),
+        analytics_level: features.analytics || 'basic',
+        support_level: features.support || 'community',
+        ai_generations_per_month: features.ai_generations || 0,
+        custom_branding: features.custom_branding || false,
+        api_access: features.api_access || false
+      };
+    });
+
+    return { success: true, plans: enrichedPlans };
   },
 
-  // Get tutor's current subscription
+  // Get tutor's current subscription with expiry info
   async getTutorSubscription(tutorId) {
     const { data, error } = await supabase
       .from('tutor_subscriptions')
       .select('*, subscription_plans(*)')
       .eq('tutor_id', tutorId)
       .eq('status', 'active')
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
-    
+
     // If no subscription, check for admin-granted trial
     if (!data) {
       const { data: profile } = await supabase
@@ -37,32 +56,56 @@ const subscriptionService = {
         new Date(profile.tutor_trial_expires_at) > new Date();
 
       if (hasActiveTrial) {
-        // Return Pro plan features as a trial
         const { data: proPlan } = await supabase
           .from('subscription_plans')
           .select('*')
-          .eq('name', 'pro')
+          .ilike('name', 'pro')
           .single();
+
+        const expiresAt = new Date(profile.tutor_trial_expires_at);
+        const daysRemaining = Math.max(0, Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24)));
 
         return {
           success: true,
           subscription: null,
           plan: proPlan || null,
           isTrial: true,
-          trialExpiresAt: profile.tutor_trial_expires_at
+          trialExpiresAt: profile.tutor_trial_expires_at,
+          daysRemaining,
+          endDate: profile.tutor_trial_expires_at
         };
       }
 
       const { data: freePlan } = await supabase
         .from('subscription_plans')
         .select('*')
-        .eq('name', 'free')
+        .ilike('name', 'free')
         .single();
 
-      return { success: true, subscription: null, plan: freePlan };
+      return {
+        success: true,
+        subscription: null,
+        plan: freePlan,
+        isTrial: false,
+        daysRemaining: null,
+        endDate: null
+      };
     }
 
-    return { success: true, subscription: data, plan: data.subscription_plans };
+    // Active paid subscription — calculate days remaining
+    const endDate = data.end_date ? new Date(data.end_date) : null;
+    const daysRemaining = endDate
+      ? Math.max(0, Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24)))
+      : null;
+
+    return {
+      success: true,
+      subscription: data,
+      plan: data.subscription_plans,
+      isTrial: false,
+      daysRemaining,
+      endDate: data.end_date
+    };
   },
 
   // Create subscription
@@ -74,7 +117,6 @@ const subscriptionService = {
         plan_id: planId,
         status: 'active',
         payment_method: paymentData.method,
-        stripe_subscription_id: paymentData.stripeId,
         paystack_subscription_code: paymentData.paystackCode,
         end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       })
@@ -89,7 +131,7 @@ const subscriptionService = {
   async cancelSubscription(tutorId) {
     const { data, error } = await supabase
       .from('tutor_subscriptions')
-      .update({ 
+      .update({
         status: 'cancelled',
         cancelled_at: new Date(),
         auto_renew: false
@@ -105,8 +147,9 @@ const subscriptionService = {
 
   // Check subscription limits
   async checkLimits(tutorId) {
-    const { subscription, plan } = await this.getTutorSubscription(tutorId);
-    
+    const result = await this.getTutorSubscription(tutorId);
+    const plan = result.plan || {};
+
     // Get current usage
     const { data: center } = await supabase
       .from('tutorial_centers')

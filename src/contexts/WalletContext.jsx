@@ -63,30 +63,10 @@ export const WalletProvider = ({ children }) => {
     }
   };
 
-  const fundWallet = async (amount, paymentMethod = 'card', reference = null) => {
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !authUser) {
-      throw new Error('User not authenticated');
-    }
-
-    try {
-      const result = await cleanWalletService.fundWallet(amount, paymentMethod);
-      
-      if (result.success) {
-        setWalletBalance(result.balance);
-        await fetchWalletData();
-        return {
-          success: true,
-          balance: result.balance
-        };
-      }
-      
-      throw new Error('Funding failed');
-    } catch (error) {
-      console.error('❌ Wallet funding failed:', error.message);
-      throw error;
-    }
+  // Wallet funding is handled via Paystack (PaymentModal or wallet page).
+  // This method only refreshes the local balance after a verified payment.
+  const fundWallet = async () => {
+    await fetchWalletData();
   };
 
   const getTransactionStats = async (days = 30) => {
@@ -164,18 +144,8 @@ export const WalletProvider = ({ children }) => {
           throw new Error(result.error || 'Transaction failed');
         }
       } else {
-        // For credit transactions, use funding
-        const result = await cleanWalletService.fundWallet(
-          transactionData.amount,
-          'credit'
-        );
-        
-        if (result.success) {
-          await fetchWalletData();
-          return { success: true, transaction: transactionData };
-        } else {
-          throw new Error(result.error || 'Transaction failed');
-        }
+        // Credit transactions must go through Paystack payment flow
+        throw new Error('Wallet funding must go through the payment modal');
       }
     } catch (error) {
       throw error;

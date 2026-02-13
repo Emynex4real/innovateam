@@ -19,7 +19,8 @@ import {
   CheckCircle,
   XCircle,
   Zap,
-  Layout
+  Layout,
+  CreditCard
 } from 'lucide-react';
 import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
@@ -438,7 +439,7 @@ const EnterpriseTutorDashboard = () => {
                             <p className="text-gray-500 text-sm">Insights & Reports</p>
                         </button>
 
-                        <button 
+                        <button
                             onClick={() => navigate('/tutor/students/alerts/all')}
                             className="group p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-red-300 dark:hover:border-red-700 text-left"
                         >
@@ -447,6 +448,17 @@ const EnterpriseTutorDashboard = () => {
                             </div>
                             <h3 className="text-lg font-bold mb-1 group-hover:text-red-600 transition-colors">Alerts</h3>
                             <p className="text-gray-500 text-sm">Needs attention</p>
+                        </button>
+
+                        <button
+                            onClick={() => navigate('/tutor/subscription')}
+                            className="group p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-purple-300 dark:hover:border-purple-700 text-left"
+                        >
+                            <div className="bg-purple-50 dark:bg-purple-900/20 w-10 h-10 rounded-lg flex items-center justify-center mb-3 text-purple-600 dark:text-purple-400">
+                                <CreditCard size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold mb-1 group-hover:text-purple-600 transition-colors">Subscription</h3>
+                            <p className="text-gray-500 text-sm">Manage your plan</p>
                         </button>
                     </div>
                 </div>

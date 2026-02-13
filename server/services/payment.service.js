@@ -14,8 +14,12 @@ const paymentService = {
       .eq('id', planId)
       .single();
 
+    // Get actual tutor email from auth
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(tutorId);
+    const tutorEmail = authUser?.email || `tutor_${tutorId}@example.com`;
+
     const params = JSON.stringify({
-      email: `tutor_${tutorId}@example.com`, // You should get actual email from user table
+      email: tutorEmail,
       amount: Math.round(plan.price * 100), // Paystack expects amount in kobo
       currency: plan.currency,
       callback_url: callbackUrl,
@@ -70,8 +74,12 @@ const paymentService = {
       .eq('test_id', testId)
       .single();
 
+    // Get actual student email from auth
+    const { data: { user: studentUser } } = await supabase.auth.admin.getUserById(studentId);
+    const studentEmail = studentUser?.email || `student_${studentId}@example.com`;
+
     const params = JSON.stringify({
-      email: `student_${studentId}@example.com`, // You should get actual email from user table
+      email: studentEmail,
       amount: Math.round(paidTest.price * 100), // Paystack expects amount in kobo
       currency: paidTest.currency,
       callback_url: callbackUrl,

@@ -321,12 +321,17 @@ app.use('/api/webhooks', webhookRoutes);
 // Auth routes - CSRF exempt for login/register
 app.use('/api/auth', authRoutes);
 
+// Wallet routes - BEFORE CSRF (protected by Bearer token auth, not cookies)
+app.use('/api/wallet', walletRoutes);
+
+// Subscription routes - BEFORE CSRF (protected by Bearer token auth)
+app.use('/api/subscriptions', subscriptionRoutes);
+
 // Apply CSRF to all remaining /api routes
 app.use('/api', csrfProtection);
 
 // Protected routes
 app.use('/api/profile', profileRoutes);
-app.use('/api/wallet', walletRoutes);
 app.use('/api/services', servicesRoutes);
 
 // AI routes
@@ -350,7 +355,6 @@ app.use('/api/tc-attempts', tcAttemptsRoutes);
 app.use('/api/scheduler', schedulerRoutes);
 
 // Phase 1 routes
-app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/gamification', gamificationRoutes);
 

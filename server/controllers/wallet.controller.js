@@ -174,7 +174,7 @@ exports.verifyPayment = async (req, res) => {
       type: 'credit',
       amount: amountInNaira,
       description: 'Wallet funding via Paystack',
-      status: 'completed',
+      status: 'successful',
       category: 'wallet_funding',
       reference,
       paystackReference: reference

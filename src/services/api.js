@@ -15,7 +15,7 @@ api.interceptors.request.use(
   async (config) => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+
       if (error) {
         console.error('Session error:', error);
         // Try to refresh if session is invalid
@@ -23,17 +23,29 @@ api.interceptors.request.use(
         if (!refreshError && refreshData?.session?.access_token) {
           config.headers.Authorization = `Bearer ${refreshData.session.access_token}`;
           localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, refreshData.session.access_token);
-          return config;
         }
-      }
-      
-      if (session?.access_token) {
+      } else if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
         localStorage.setItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN, session.access_token);
       }
     } catch (err) {
       console.error('Auth interceptor error:', err);
     }
+
+    // Add CSRF token for state-changing requests (tokens are one-time use)
+    if (['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase())) {
+      try {
+        const baseUrl = API_BASE_URL.replace(/\/api$/, '');
+        const res = await fetch(`${baseUrl}/api/csrf-token`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.csrfToken) {
+          config.headers['x-csrf-token'] = data.csrfToken;
+        }
+      } catch (err) {
+        console.warn('CSRF token fetch failed:', err);
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

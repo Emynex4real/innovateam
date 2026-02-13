@@ -84,7 +84,7 @@ async function handleChargeSuccess(data) {
       type: 'credit',
       amount: amountInNaira,
       description: 'Wallet funding via Paystack (webhook)',
-      status: 'completed',
+      status: 'successful',
       category: 'wallet_funding',
       reference,
       paystackReference: reference
@@ -121,7 +121,7 @@ async function handleChargeSuccess(data) {
       type: 'debit',
       amount: amountInNaira,
       description: 'Tutor subscription payment',
-      status: 'completed',
+      status: 'successful',
       category: 'subscription',
       reference,
       paystackReference: reference
