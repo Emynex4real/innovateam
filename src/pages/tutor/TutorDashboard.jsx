@@ -22,6 +22,9 @@ import {
   Layout,
   CreditCard
 } from 'lucide-react';
+import axios from 'axios';
+import supabase from '../../config/supabase';
+import { API_BASE_URL } from '../../config/api';
 import tutorialCenterService from '../../services/tutorialCenter.service';
 import toast from 'react-hot-toast';
 import { componentStyles } from '../../styles/designSystem';
@@ -46,6 +49,7 @@ const EnterpriseTutorDashboard = () => {
   const [newCenterDescription, setNewCenterDescription] = useState('');
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [planWarnings, setPlanWarnings] = useState([]);
 
   const handleCreateCenter = async () => {
     if (!newCenterName.trim()) {
@@ -200,6 +204,32 @@ const EnterpriseTutorDashboard = () => {
         }));
         setRecentActivity(recent);
       }
+
+      // Check subscription limits for warning banner
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const limitsRes = await axios.get(`${API_BASE_URL}/api/subscriptions/limits`, {
+            headers: { Authorization: `Bearer ${session.access_token}` }
+          });
+          if (limitsRes.data?.success) {
+            const { usage, limits: planLimits } = limitsRes.data;
+            const warnings = [];
+            if (planLimits?.max_students && usage?.students >= planLimits.max_students) {
+              warnings.push({ resource: 'students', used: usage.students, max: planLimits.max_students });
+            }
+            if (planLimits?.max_questions && usage?.questions >= planLimits.max_questions) {
+              warnings.push({ resource: 'questions', used: usage.questions, max: planLimits.max_questions });
+            }
+            if (planLimits?.max_tests && usage?.tests >= planLimits.max_tests) {
+              warnings.push({ resource: 'tests', used: usage.tests, max: planLimits.max_tests });
+            }
+            setPlanWarnings(warnings);
+          }
+        }
+      } catch {
+        // Non-critical — don't block dashboard for limit check failure
+      }
     } catch (error) {
       console.error('Dashboard load error:', error);
       setCenter(null);
@@ -349,6 +379,30 @@ const EnterpriseTutorDashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* Subscription Limit Warning */}
+        {planWarnings.length > 0 && (
+          <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
+                  You've exceeded your plan limits
+                </p>
+                <p className="text-amber-700 dark:text-amber-400 text-sm mt-1">
+                  {planWarnings.map(w => `${w.resource}: ${w.used}/${w.max}`).join(' • ')}.
+                  {' '}You won't be able to create new {planWarnings.map(w => w.resource).join(' or ')} until you upgrade.
+                </p>
+                <button
+                  onClick={() => navigate('/tutor/subscription')}
+                  className="mt-3 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition"
+                >
+                  Upgrade Plan
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
