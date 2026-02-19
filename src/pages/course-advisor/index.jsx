@@ -97,7 +97,7 @@ const COURSE_DB = {
 
   // === FACULTY OF COMPUTING & INFORMATICS ===
   "Computer Science": {
-    faculty: "Computing & Informatics", cutoff: 83.425, min_jamb: 260,
+    faculty: "Computing & Informatics", cutoff: 75.425, min_jamb: 250,
     utme_req: [
       "English Language", 
       "Mathematics", 
@@ -109,7 +109,7 @@ const COURSE_DB = {
     salary: "Very High", demand: "Explosive"
   },
   "Data Science": {
-    faculty: "Computing & Informatics", cutoff: 76.925, min_jamb: 250,
+    faculty: "Computing & Informatics", cutoff: 70.925, min_jamb: 230,
     utme_req: [
       "English Language", 
       "Mathematics", 
@@ -123,7 +123,7 @@ const COURSE_DB = {
 
   // === FACULTY OF ENGINEERING ===
   "Computer Engineering": {
-    faculty: "Engineering", cutoff: 82.875, min_jamb: 260,
+    faculty: "Engineering", cutoff: 79.50, min_jamb: 260,
     utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
     waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
     waec_sitting: "One Sitting",
@@ -144,7 +144,7 @@ const COURSE_DB = {
     salary: "High", demand: "High"
   },
   "Systems Engineering": {
-    faculty: "Engineering", cutoff: 78.225, min_jamb: 240,
+    faculty: "Engineering", cutoff: 75.225, min_jamb: 240,
     utme_req: ["English Language", "Mathematics", "Physics", "Chemistry"],
     waec_req: ["English Language", "Mathematics", "Physics", "Chemistry", "Further Math"],
     waec_sitting: "One Sitting",
@@ -188,7 +188,7 @@ const COURSE_DB = {
     salary: "Medium", demand: "High"
   },
   "Biochemistry": {
-    faculty: "Science", cutoff: 66.55, min_jamb: 200,
+    faculty: "Science", cutoff: 68.55, min_jamb: 200,
     utme_req: ["English Language", "Biology", "Chemistry", "Physics"],
     waec_req: ["English Language", "Mathematics", "Biology", "Chemistry", "Physics"],
     waec_sitting: "One Sitting",
@@ -914,6 +914,85 @@ const CourseAdvisor = () => {
       // --- ALTERNATIVES ENGINE (SMART RECOMMENDATION) ---
       let suggested = [];
       if (status !== "SECURE") {
+        // Comprehensive course similarity mapping
+        const COURSE_FAMILIES = {
+          // Medical Sciences
+          "Medicine & Surgery": ["Nursing Science", "Radiography", "Medical Laboratory Science", "Physiotherapy", "Biochemistry", "Microbiology", "Physiology", "Pharmacology"],
+          "Dentistry": ["Medicine & Surgery", "Nursing Science", "Medical Laboratory Science", "Radiography", "Biochemistry", "Microbiology"],
+          "Nursing Science": ["Radiography", "Medical Laboratory Science", "Physiotherapy", "Physiology", "Biochemistry", "Microbiology"],
+          "Radiography": ["Nursing Science", "Medical Laboratory Science", "Physiotherapy", "Physics", "Biochemistry"],
+          "Medical Laboratory Science": ["Radiography", "Nursing Science", "Biochemistry", "Microbiology", "Industrial Chemistry"],
+          "Physiotherapy": ["Nursing Science", "Radiography", "Medical Laboratory Science", "Physiology", "Biochemistry"],
+          "Pharmacy": ["Biochemistry", "Pharmacology", "Microbiology", "Industrial Chemistry", "Medical Laboratory Science"],
+          "Pharmacology": ["Pharmacy", "Biochemistry", "Physiology", "Microbiology"],
+          "Physiology": ["Biochemistry", "Microbiology", "Pharmacology", "Medical Laboratory Science"],
+          "Biochemistry": ["Microbiology", "Industrial Chemistry", "Pharmacology", "Medical Laboratory Science", "Marine Biology"],
+          "Microbiology": ["Biochemistry", "Medical Laboratory Science", "Industrial Chemistry", "Marine Biology", "Fisheries"],
+          
+          // Computing & Tech
+          "Computer Science": ["Data Science", "Computer Engineering", "Systems Engineering", "Mathematics & Statistics"],
+          "Data Science": ["Computer Science", "Mathematics & Statistics", "Computer Engineering", "Systems Engineering"],
+          "Computer Engineering": ["Computer Science", "Data Science", "Electrical & Electronics Engineering", "Systems Engineering"],
+          
+          // Engineering
+          "Electrical & Electronics Engineering": ["Computer Engineering", "Systems Engineering", "Mechanical Engineering", "Petroleum & Gas Engineering"],
+          "Mechanical Engineering": ["Electrical & Electronics Engineering", "Civil Engineering", "Chemical Engineering", "Petroleum & Gas Engineering"],
+          "Systems Engineering": ["Computer Engineering", "Electrical & Electronics Engineering", "Computer Science"],
+          "Civil Engineering": ["Mechanical Engineering", "Building", "Architecture", "Surveying & Geoinformatics", "Quantity Surveying"],
+          "Chemical Engineering": ["Mechanical Engineering", "Petroleum & Gas Engineering", "Industrial Chemistry", "Biochemistry"],
+          "Petroleum & Gas Engineering": ["Chemical Engineering", "Mechanical Engineering", "Geology", "Geophysics"],
+          "Surveying & Geoinformatics": ["Civil Engineering", "Quantity Surveying", "Geography", "Urban & Regional Planning"],
+          
+          // Pure Sciences
+          "Industrial Chemistry": ["Chemical Engineering", "Biochemistry", "Microbiology", "Pharmacy"],
+          "Geology": ["Geophysics", "Petroleum & Gas Engineering", "Geography", "Civil Engineering"],
+          "Geophysics": ["Geology", "Petroleum & Gas Engineering", "Physics", "Geography"],
+          "Mathematics & Statistics": ["Computer Science", "Data Science", "Actuarial Science", "Economics", "Physics"],
+          "Marine Biology": ["Fisheries", "Microbiology", "Biochemistry", "Geography"],
+          "Fisheries": ["Marine Biology", "Microbiology", "Biochemistry"],
+          
+          // Management Sciences
+          "Accounting": ["Finance", "Business Administration", "Actuarial Science", "Economics", "Insurance"],
+          "Finance": ["Accounting", "Business Administration", "Economics", "Actuarial Science", "Insurance"],
+          "Business Administration": ["Accounting", "Finance", "Economics", "Employment Relations & HRM (IRPM)", "Insurance"],
+          "Actuarial Science": ["Finance", "Accounting", "Mathematics & Statistics", "Economics", "Insurance"],
+          "Insurance": ["Actuarial Science", "Finance", "Accounting", "Business Administration"],
+          "Employment Relations & HRM (IRPM)": ["Business Administration", "Sociology", "Social Work", "Psychology"],
+          
+          // Social Sciences
+          "Economics": ["Finance", "Accounting", "Business Administration", "Political Science", "Actuarial Science"],
+          "Political Science": ["History & Strategic Studies", "Sociology", "Mass Communication", "Law", "Economics"],
+          "Psychology": ["Sociology", "Social Work", "Employment Relations & HRM (IRPM)", "Mass Communication"],
+          "Sociology": ["Psychology", "Social Work", "Political Science", "Mass Communication"],
+          "Geography": ["Geology", "Geophysics", "Urban & Regional Planning", "Surveying & Geoinformatics", "Estate Management"],
+          "Social Work": ["Psychology", "Sociology", "Employment Relations & HRM (IRPM)"],
+          
+          // Law & Arts
+          "Law": ["Political Science", "History & Strategic Studies", "Mass Communication", "English"],
+          "Mass Communication": ["English", "Political Science", "Sociology", "Psychology", "Creative Arts (Theatre/Visual/Music)"],
+          "English": ["Literature-in-English", "Mass Communication", "Linguistics", "Creative Arts (Theatre/Visual/Music)"],
+          "History & Strategic Studies": ["Political Science", "Law", "Philosophy", "Sociology"],
+          "Philosophy": ["History & Strategic Studies", "English", "Political Science"],
+          "Linguistics": ["English", "French", "Chinese"],
+          "French": ["Linguistics", "English", "Chinese"],
+          "Chinese": ["Linguistics", "French", "English"],
+          "Creative Arts (Theatre/Visual/Music)": ["Mass Communication", "English", "Architecture"],
+          
+          // Environmental Sciences
+          "Architecture": ["Building", "Quantity Surveying", "Estate Management", "Urban & Regional Planning", "Civil Engineering"],
+          "Building": ["Architecture", "Quantity Surveying", "Civil Engineering", "Estate Management"],
+          "Quantity Surveying": ["Building", "Architecture", "Estate Management", "Civil Engineering"],
+          "Estate Management": ["Architecture", "Building", "Quantity Surveying", "Urban & Regional Planning"],
+          "Urban & Regional Planning": ["Architecture", "Estate Management", "Geography", "Surveying & Geoinformatics"],
+          
+          // Education
+          "Science Education (Bio/Chem/Phys/Math)": ["Biochemistry", "Microbiology", "Industrial Chemistry", "Mathematics & Statistics"],
+          "Arts Education (Eng/Hist/Religions)": ["English", "History & Strategic Studies", "Philosophy"],
+          "Educational Management": ["Business Administration", "Employment Relations & HRM (IRPM)", "Sociology"]
+        };
+
+        const relatedCourses = COURSE_FAMILIES[preferredCourse] || [];
+
         suggested = Object.keys(COURSE_DB)
           .filter(key => key !== preferredCourse)
           .map(key => {
@@ -921,31 +1000,38 @@ const CourseAdvisor = () => {
             
             // A. UTME Check: Does this course accept my UTME combo?
             const matchingUtme = checkRequirements(course.utme_req, utmeSubs);
-            if (matchingUtme < 3) return null; // Must match at least 3 subjects
+            if (matchingUtme < 3) return null;
 
             // B. JAMB Score Check
             if (parsedJamb < Math.max(200, course.min_jamb)) return null;
 
-            // C. Estimate Aggregate (Assume Best O-Levels since we don't know them yet)
-            // We assume the student has B2 average (36 points) for courses we don't have grades for.
-            // This is a "Projection" to show potential.
-            const projectedOLevel = 36; // Average decent student
+            // C. Estimate Aggregate
+            const projectedOLevel = 36;
             const projectedAgg = utmeAggregate + projectedOLevel;
             const altCutoff = isCatchment ? course.cutoff - 2 : course.cutoff;
 
-            // Only recommend if they stand a chance
-            if (projectedAgg >= altCutoff - 5) { // Within 5 points range
+            if (projectedAgg >= altCutoff - 5) {
+              // D. Calculate similarity score
+              const isRelated = relatedCourses.includes(key);
+              const sameFaculty = course.faculty === targetCourse.faculty;
+              const similarityScore = (isRelated ? 100 : 0) + (sameFaculty ? 50 : 0);
+              
               return { 
                 name: key, 
                 ...course, 
                 chance: projectedAgg >= altCutoff ? "High" : "Fair", 
-                safeScore: altCutoff + 2 
+                safeScore: altCutoff + 2,
+                similarityScore
               };
             }
             return null;
           })
           .filter(Boolean)
-          .sort((a, b) => a.cutoff - b.cutoff) // Sort by easiest entry (lowest cutoff)
+          .sort((a, b) => {
+            // Prioritize: 1. Related courses, 2. Same faculty, 3. Lower cutoff
+            if (b.similarityScore !== a.similarityScore) return b.similarityScore - a.similarityScore;
+            return a.cutoff - b.cutoff;
+          })
           .slice(0, 3);
       }
 
