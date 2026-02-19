@@ -2,13 +2,16 @@ const supabase = require('../supabaseClient');
 
 /**
  * Check subscription limits for a tutor's tutorial center.
- * Returns { allowed, warning, usage, limit, plan } or throws on DB error.
+ * Returns { allowed, warning, usage, limit, plan, graceEndsAt } or throws on DB error.
  *
  * Behavior:
  * - Admins always pass (no limits enforced)
  * - If tutor has no center yet, allow (they'll create one)
  * - If usage is under limit, allow
- * - If usage is over limit, block with upgrade message
+ * - If usage is over limit:
+ *   - First time: Set 7-day grace period, allow with warning
+ *   - Within grace period: Allow with countdown warning
+ *   - After grace period: Block with upgrade message
  *
  * @param {string} tutorId - The tutor's user ID
  * @param {'students'|'questions'|'tests'} resource - Which resource to check
@@ -58,13 +61,55 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
 
   // Check if adding would exceed limit
   if (afterAdd > limit) {
+    // Check for grace period
+    const { data: graceRecord } = await supabase
+      .from('subscription_grace_periods')
+      .select('*')
+      .eq('tutor_id', tutorId)
+      .eq('resource_type', resource)
+      .single();
+
+    const now = new Date();
+    let graceEndsAt = null;
+
+    if (!graceRecord) {
+      // First time exceeding - create grace period (7 days)
+      graceEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      await supabase.from('subscription_grace_periods').insert({
+        tutor_id: tutorId,
+        resource_type: resource,
+        grace_ends_at: graceEndsAt.toISOString(),
+        limit_exceeded_at: now.toISOString()
+      });
+    } else {
+      graceEndsAt = new Date(graceRecord.grace_ends_at);
+    }
+
+    // Check if grace period has expired
+    if (now > graceEndsAt) {
+      return {
+        allowed: false,
+        warning: null,
+        usage: currentUsage,
+        limit,
+        plan: plan?.name || 'Free',
+        graceEndsAt: graceEndsAt.toISOString(),
+        graceExpired: true,
+        message: `You've reached your ${plan?.name || 'Free'} plan limit of ${limit} ${resource}. Your grace period expired on ${graceEndsAt.toLocaleDateString()}. Upgrade to continue.`
+      };
+    }
+
+    // Still in grace period - allow but warn
+    const daysLeft = Math.ceil((graceEndsAt - now) / (1000 * 60 * 60 * 24));
     return {
-      allowed: false,
-      warning: null,
+      allowed: true,
+      warning: `You've exceeded your limit of ${limit} ${resource}. You have ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left to upgrade before access is blocked.`,
       usage: currentUsage,
       limit,
       plan: plan?.name || 'Free',
-      message: `You've reached your ${plan?.name || 'Free'} plan limit of ${limit} ${resource}. Upgrade your plan to add more.`
+      graceEndsAt: graceEndsAt.toISOString(),
+      inGracePeriod: true,
+      daysRemaining: daysLeft
     };
   }
 

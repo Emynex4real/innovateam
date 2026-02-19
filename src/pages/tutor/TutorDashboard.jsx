@@ -213,17 +213,25 @@ const EnterpriseTutorDashboard = () => {
             headers: { Authorization: `Bearer ${session.access_token}` }
           });
           if (limitsRes.data?.success) {
-            const { usage, limits: planLimits } = limitsRes.data;
+            const { usage, limits: planLimits, graceInfo } = limitsRes.data;
             const warnings = [];
-            if (planLimits?.max_students && usage?.students >= planLimits.max_students) {
-              warnings.push({ resource: 'students', used: usage.students, max: planLimits.max_students });
-            }
-            if (planLimits?.max_questions && usage?.questions >= planLimits.max_questions) {
-              warnings.push({ resource: 'questions', used: usage.questions, max: planLimits.max_questions });
-            }
-            if (planLimits?.max_tests && usage?.tests >= planLimits.max_tests) {
-              warnings.push({ resource: 'tests', used: usage.tests, max: planLimits.max_tests });
-            }
+            
+            // Check each resource for limit violations
+            ['students', 'questions', 'tests'].forEach(resource => {
+              const maxKey = `max_${resource}`;
+              if (planLimits?.[maxKey] && usage?.[resource] >= planLimits[maxKey]) {
+                const grace = graceInfo?.[resource];
+                warnings.push({ 
+                  resource, 
+                  used: usage[resource], 
+                  max: planLimits[maxKey],
+                  graceEndsAt: grace?.graceEndsAt,
+                  daysRemaining: grace?.daysRemaining,
+                  expired: grace?.expired
+                });
+              }
+            });
+            
             setPlanWarnings(warnings);
           }
         }
@@ -382,22 +390,65 @@ const EnterpriseTutorDashboard = () => {
 
         {/* Subscription Limit Warning */}
         {planWarnings.length > 0 && (
-          <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <div className={`mb-6 rounded-xl p-4 ${
+            planWarnings.some(w => w.expired) 
+              ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+              : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+          }`}>
             <div className="flex items-start gap-3">
-              <AlertCircle className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={20} />
+              <AlertCircle className={`flex-shrink-0 mt-0.5 ${
+                planWarnings.some(w => w.expired)
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-amber-600 dark:text-amber-400'
+              }`} size={20} />
               <div className="flex-1">
-                <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
-                  You've exceeded your plan limits
+                <p className={`font-semibold text-sm ${
+                  planWarnings.some(w => w.expired)
+                    ? 'text-red-800 dark:text-red-300'
+                    : 'text-amber-800 dark:text-amber-300'
+                }`}>
+                  {planWarnings.some(w => w.expired) 
+                    ? '🚫 Plan Limits Enforced - Upgrade Required'
+                    : '⚠️ You\'ve exceeded your plan limits'}
                 </p>
-                <p className="text-amber-700 dark:text-amber-400 text-sm mt-1">
+                <p className={`text-sm mt-1 ${
+                  planWarnings.some(w => w.expired)
+                    ? 'text-red-700 dark:text-red-400'
+                    : 'text-amber-700 dark:text-amber-400'
+                }`}>
                   {planWarnings.map(w => `${w.resource}: ${w.used}/${w.max}`).join(' • ')}.
-                  {' '}You won't be able to create new {planWarnings.map(w => w.resource).join(' or ')} until you upgrade.
                 </p>
+                
+                {/* Grace period countdown */}
+                {planWarnings.some(w => !w.expired && w.daysRemaining !== undefined) && (
+                  <div className="mt-2 p-2 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                      ⏰ Grace Period Active
+                    </p>
+                    {planWarnings.filter(w => !w.expired && w.daysRemaining !== undefined).map(w => (
+                      <p key={w.resource} className="text-xs mt-1 text-amber-800 dark:text-amber-300">
+                        <span className="font-semibold capitalize">{w.resource}:</span> {w.daysRemaining} day{w.daysRemaining !== 1 ? 's' : ''} remaining until {new Date(w.graceEndsAt).toLocaleDateString()}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Expired grace period message */}
+                {planWarnings.some(w => w.expired) && (
+                  <p className="text-sm mt-2 font-medium text-red-800 dark:text-red-300">
+                    Your grace period has expired. You cannot create new {planWarnings.filter(w => w.expired).map(w => w.resource).join(' or ')} until you upgrade.
+                  </p>
+                )}
+                
                 <button
                   onClick={() => navigate('/tutor/subscription')}
-                  className="mt-3 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition"
+                  className={`mt-3 px-4 py-1.5 text-sm font-medium rounded-lg transition ${
+                    planWarnings.some(w => w.expired)
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-amber-600 hover:bg-amber-700 text-white'
+                  }`}
                 >
-                  Upgrade Plan
+                  {planWarnings.some(w => w.expired) ? 'Upgrade Now' : 'Upgrade Plan'}
                 </button>
               </div>
             </div>

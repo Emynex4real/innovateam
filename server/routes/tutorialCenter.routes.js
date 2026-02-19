@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/authenticate');
 const { checkCenterSuspension } = require('../middleware/checkSuspension');
+const { checkLimit } = require('../middleware/subscriptionLimits');
 const tutorialCenterController = require('../controllers/tutorialCenter.controller');
 const { questionValidation, questionSetValidation, paginationValidation, uuidValidation } = require('../middleware/validation');
 const { writeLimiter } = require('../middleware/rateLimiter');
@@ -33,18 +34,18 @@ router.get('/advanced-analytics', tutorialCenterController.getAdvancedAnalytics)
 router.get('/achievements', tutorialCenterController.getMyAchievements);
 router.get('/achievements/all', tutorialCenterController.getAllAchievements);
 
-// Questions management (block if suspended)
-router.post('/tc-questions', checkCenterSuspension, writeLimiter, questionValidation, tutorialCenterController.createQuestion);
+// Questions management (block if suspended or limit exceeded)
+router.post('/tc-questions', checkCenterSuspension, checkLimit('questions'), writeLimiter, questionValidation, tutorialCenterController.createQuestion);
 router.get('/tc-questions', paginationValidation, tutorialCenterController.getQuestions);
 router.put('/tc-questions/:id', checkCenterSuspension, writeLimiter, uuidValidation('id'), questionValidation, tutorialCenterController.updateQuestion);
 router.delete('/tc-questions/:id', checkCenterSuspension, writeLimiter, uuidValidation('id'), tutorialCenterController.deleteQuestion);
-router.post('/tc-questions/generate-ai', checkCenterSuspension, writeLimiter, tutorialCenterController.generateQuestionsAI);
-router.post('/tc-questions/generate-ai-stream', checkCenterSuspension, writeLimiter, tutorialCenterController.generateQuestionsAIStream);
+router.post('/tc-questions/generate-ai', checkCenterSuspension, checkLimit('questions', (req) => req.body.questions?.length || 10), writeLimiter, tutorialCenterController.generateQuestionsAI);
+router.post('/tc-questions/generate-ai-stream', checkCenterSuspension, checkLimit('questions', (req) => req.body.count || 10), writeLimiter, tutorialCenterController.generateQuestionsAIStream);
 router.post('/tc-questions/parse-bulk', checkCenterSuspension, writeLimiter, tutorialCenterController.parseBulkQuestions);
-router.post('/tc-questions/save-bulk', checkCenterSuspension, writeLimiter, tutorialCenterController.saveBulkQuestions);
+router.post('/tc-questions/save-bulk', checkCenterSuspension, checkLimit('questions', (req) => req.body.questions?.length || 0), writeLimiter, tutorialCenterController.saveBulkQuestions);
 
-// Question sets (tests) management (block if suspended)
-router.post('/tc-question-sets', checkCenterSuspension, writeLimiter, questionSetValidation, tutorialCenterController.createQuestionSet);
+// Question sets (tests) management (block if suspended or limit exceeded)
+router.post('/tc-question-sets', checkCenterSuspension, checkLimit('tests'), writeLimiter, questionSetValidation, tutorialCenterController.createQuestionSet);
 router.get('/tc-question-sets', paginationValidation, tutorialCenterController.getQuestionSets);
 router.get('/tc-question-sets/:id', uuidValidation('id'), tutorialCenterController.getQuestionSet);
 router.put('/tc-question-sets/:id', checkCenterSuspension, writeLimiter, uuidValidation('id'), questionSetValidation, tutorialCenterController.updateQuestionSet);

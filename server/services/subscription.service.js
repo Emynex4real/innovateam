@@ -177,7 +177,27 @@ const subscriptionService = {
       tests: !plan.max_tests || usage.tests < plan.max_tests
     };
 
-    return { success: true, limits: plan, usage, canAdd };
+    // Get grace period info for exceeded limits
+    const { data: gracePeriods } = await supabase
+      .from('subscription_grace_periods')
+      .select('*')
+      .eq('tutor_id', tutorId);
+
+    const graceInfo = {};
+    if (gracePeriods) {
+      gracePeriods.forEach(gp => {
+        const graceEndsAt = new Date(gp.grace_ends_at);
+        const now = new Date();
+        const daysRemaining = Math.max(0, Math.ceil((graceEndsAt - now) / (1000 * 60 * 60 * 24)));
+        graceInfo[gp.resource_type] = {
+          graceEndsAt: gp.grace_ends_at,
+          daysRemaining,
+          expired: now > graceEndsAt
+        };
+      });
+    }
+
+    return { success: true, limits: plan, usage, canAdd, graceInfo };
   }
 };
 

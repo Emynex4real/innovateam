@@ -30,26 +30,57 @@ export const AuthProvider = ({ children }) => {
 
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      // Validate session security
-      if (session && !SecureTokenManager.getToken()) {
-        // Session exists but no secure token - force logout
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        // If session is expired or invalid, try to refresh
+        if (error || !session) {
+          const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
+          
+          if (!refreshedSession) {
+            // Can't refresh - clear everything
+            await supabase.auth.signOut();
+            SecureTokenManager.clearToken();
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+          
+          setSession(refreshedSession)
+          setUser(refreshedSession.user)
+          if (refreshedSession.user) {
+            loadUserProfile(refreshedSession.user.id)
+          }
+          setLoading(false)
+          return;
+        }
+        
+        // Validate session security
+        if (session && !SecureTokenManager.getToken()) {
+          // Session exists but no secure token - force logout
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
+        setSession(session)
+        setUser(session?.user ?? null)
+        
+        if (session?.user) {
+          loadUserProfile(session.user.id)
+        }
+        
+        setLoading(false)
+      } catch (err) {
+        console.error('Session initialization error:', err)
         await supabase.auth.signOut();
         setSession(null);
         setUser(null);
         setLoading(false);
-        return;
       }
-      
-      setSession(session)
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        loadUserProfile(session.user.id)
-      }
-      
-      setLoading(false)
     }
 
     getInitialSession()
@@ -57,6 +88,20 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Handle token expiration
+        if (event === 'TOKEN_REFRESHED') {
+          logger.info('Token refreshed successfully');
+        }
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          SecureTokenManager.clearToken();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        
         setSession(session)
         setUser(session?.user ?? null)
         
