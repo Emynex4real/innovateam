@@ -11,7 +11,13 @@ class CacheService {
       try {
         const redis = getRedis();
         const data = await redis.get(key);
-        return data ? JSON.parse(data) : null;
+        if (!data) return null;
+        
+        // Upstash returns objects directly, not strings
+        if (typeof data === 'object') return data;
+        
+        // Standard Redis returns strings
+        return JSON.parse(data);
       } catch (error) {
         logger.error('Redis get failed', { key, error: error.message });
       }
@@ -23,7 +29,8 @@ class CacheService {
     if (isRedisReady()) {
       try {
         const redis = getRedis();
-        await redis.set(key, JSON.stringify(value), { ex: ttlSeconds });
+        // Upstash accepts objects directly, no need to stringify
+        await redis.set(key, value, { ex: ttlSeconds });
         return true;
       } catch (error) {
         logger.error('Redis set failed', { key, error: error.message });
