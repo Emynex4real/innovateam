@@ -1,6 +1,6 @@
 import React from 'react';
-import { Shield, AlertTriangle, Eye } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ProctoringMonitor = ({ violations, isDarkMode }) => {
   const violationCount = violations.length;
@@ -31,35 +31,18 @@ const ProctoringMonitor = ({ violations, isDarkMode }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`fixed top-20 right-4 z-30 px-4 py-3 rounded-xl border-2 shadow-lg backdrop-blur-sm ${colorClasses[risk.color]}`}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`fixed bottom-4 right-4 z-30 px-3 py-2 rounded-lg border shadow-lg backdrop-blur-sm ${colorClasses[risk.color]}`}
     >
-      <div className="flex items-center gap-3">
-        <Eye size={18} />
+      <div className="flex items-center gap-2">
+        <Eye size={16} />
         <div>
-          <p className="text-xs font-medium opacity-75">Proctoring Active</p>
-          <p className="text-sm font-bold">
-            {violationCount} {violationCount === 1 ? 'Flag' : 'Flags'}
-            <span className="ml-2 text-xs">({risk.text})</span>
+          <p className="text-xs font-bold">
+            {violationCount} {violationCount === 1 ? 'Flag' : 'Flags'} ({risk.text})
           </p>
         </div>
       </div>
-
-      <AnimatePresence>
-        {violationCount > 0 && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="mt-2 pt-2 border-t border-current/20"
-          >
-            <p className="text-xs opacity-75">
-              Your activity is being monitored. Avoid switching tabs or copying content.
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };
