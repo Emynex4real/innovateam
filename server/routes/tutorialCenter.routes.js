@@ -56,7 +56,7 @@ router.delete('/tc-question-sets/:id', checkCenterSuspension, writeLimiter, uuid
 // Question set questions management (block if suspended)
 router.post('/tc-question-sets/:id/questions', checkCenterSuspension, writeLimiter, uuidValidation('id'), tutorialCenterController.addQuestionsToTest);
 router.delete('/tc-question-sets/:testId/questions/:questionId', checkCenterSuspension, writeLimiter, tutorialCenterController.removeQuestionFromTest);
-router.get('/tc-question-sets/:id/questions', uuidValidation('id'), cacheMiddleware(300, true), tutorialCenterController.getTestQuestions); // Shared cache - same for all students
+router.get('/tc-question-sets/:id/questions', uuidValidation('id'), cacheMiddleware(600, true), tutorialCenterController.getTestQuestions); // Shared cache 10min - questions don't change often
 
 // Attempts
 router.get('/tc-attempts/center-attempts', tutorialCenterController.getCenterAttempts);
