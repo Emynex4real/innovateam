@@ -80,6 +80,7 @@ import AdvancedAnalyticsDashboard from './pages/tutor/AdvancedAnalyticsDashboard
 import StudentDashboard from './pages/student/tutorial-center/StudentDashboard.jsx';
 import ThemeEditor from './pages/tutor/ThemeEditor';
 import Subscription from './pages/tutor/Subscription';
+import ProctoringDashboard from './pages/tutor/ProctoringDashboard';
 import NotFound from './pages/NotFound';
 
 import supabase from './config/supabase';
@@ -364,6 +365,7 @@ function App() {
               <Route path="/tutor/analytics" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />
               <Route path="/tutor/analytics/advanced" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><AdvancedAnalyticsDashboard /></RoleProtectedRoute>} />
               <Route path="/tutor/theme" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><ThemeEditor /></RoleProtectedRoute>} />
+              <Route path="/tutor/proctoring" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><ProctoringDashboard /></RoleProtectedRoute>} />
               <Route path="/tutor/subscription" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Subscription /></RoleProtectedRoute>} />
               <Route path="/tutor/subscription/success" element={<RoleProtectedRoute allowedRoles={['tutor', 'admin']}><Subscription /></RoleProtectedRoute>} />
 

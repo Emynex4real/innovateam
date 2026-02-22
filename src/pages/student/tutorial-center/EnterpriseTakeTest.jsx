@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import studentTCService from '../../../services/studentTC.service';
-import { AntiCheatTracker } from '../../../utils/antiCheat';
+import { useAntiCheat } from '../../../hooks/useAntiCheat';
+import proctoringService from '../../../services/proctoring.service';
+import ProctoringMonitor from '../../../components/exam/ProctoringMonitor';
 import MathText from '../../../components/MathText';
 import toast from 'react-hot-toast';
 import { useDarkMode } from '../../../contexts/DarkModeContext';
@@ -36,15 +38,14 @@ const EnterpriseTakeTest = () => {
   const [accessInfo, setAccessInfo] = useState(null);
 
   // --- ANTI-CHEAT & TIMING REFS ---
-  const trackerRef = useRef(new AntiCheatTracker());
+  const { violations, getViolations, getFingerprint } = useAntiCheat(testId);
   const startTimeRef = useRef(Date.now());
   const questionStartTimeRef = useRef(Date.now());
+  const sessionIdRef = useRef(null);
 
   // --- INITIALIZATION ---
   useEffect(() => {
     loadTest();
-    trackerRef.current.init();
-    return () => trackerRef.current.reset();
   }, [testId]);
 
   // --- TIMER LOGIC ---
@@ -96,8 +97,6 @@ const EnterpriseTakeTest = () => {
   // --- INTERACTION HANDLERS ---
   const handleAnswer = (questionId, selectedOption) => {
     triggerHaptic('selection');
-    const timeTaken = Date.now() - questionStartTimeRef.current;
-    trackerRef.current.trackAnswer(questionId, timeTaken);
     setAnswers(prev => ({ ...prev, [questionId]: selectedOption }));
     questionStartTimeRef.current = Date.now();
   };
@@ -148,8 +147,8 @@ const EnterpriseTakeTest = () => {
         selected_answer: answers[q.id] || null
       }));
 
-      const suspiciousEvents = trackerRef.current.getEvents();
-      const fingerprint = trackerRef.current.getFingerprint();
+      const suspiciousEvents = getViolations();
+      const fingerprint = getFingerprint();
 
       const payload = {
         question_set_id: testId,
@@ -162,6 +161,27 @@ const EnterpriseTakeTest = () => {
       const response = await studentTCService.submitAttempt(payload);
 
       if (response.success) {
+        console.log('✅ Test submitted successfully, attempt_id:', response.attempt_id);
+        console.log('📊 Violations to log:', suspiciousEvents.length);
+        
+        // Log proctoring session
+        if (response.attempt_id) {
+          try {
+            const proctoringResult = await proctoringService.logSession(
+              response.attempt_id,
+              testId,
+              fingerprint,
+              suspiciousEvents
+            );
+            console.log('🛡️ Proctoring logged:', proctoringResult);
+          } catch (proctoringError) {
+            console.error('❌ Proctoring log failed:', proctoringError);
+            // Don't block test submission if proctoring fails
+          }
+        } else {
+          console.warn('⚠️ No attempt_id returned, proctoring not logged');
+        }
+
         toast.success(autoSubmit ? 'Time Up! Test Submitted.' : 'Test Completed Successfully!');
         setTimeout(() => {
           navigate(`/student/results/${testId}`, { replace: true });
@@ -213,6 +233,8 @@ const EnterpriseTakeTest = () => {
 
   return (
     <div className={`min-h-screen flex flex-col font-sans ${isDarkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-gray-50 text-gray-900'}`}>
+      {/* Proctoring Monitor */}
+      <ProctoringMonitor violations={violations} isDarkMode={isDarkMode} />
       
       {/* 1. TOP CONTROL BAR */}
       <header className={`sticky top-0 z-20 border-b backdrop-blur-md ${isDarkMode ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white/90 border-gray-200'}`}>

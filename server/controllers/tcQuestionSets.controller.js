@@ -98,56 +98,99 @@ exports.getQuestionSets = async (req, res) => {
         .eq('center_id', center.id)
         .is('student_id', null);  // ✅ FIX: Filter out student-specific tests
     } else {
-      // DEBUG: Uncomment for debugging
-      console.log('🎓 [TEST-FETCH-STUDENT] User is STUDENT', { 
-        userId,
-        note: 'Should see public tests + own remedial tests'
-      });
+      console.log('\n' + '='.repeat(60));
+      console.log('🎓 [STUDENT] Fetching tests for student');
+      console.log('User ID:', userId);
       
-      // Student - show only active sets
-      query = query.eq('is_active', true);
+      // Get centers student is enrolled in
+      const { data: enrollments, error: enrollError } = await supabase
+        .from('tc_enrollments')
+        .select('center_id')
+        .eq('student_id', userId);
+      
+      console.log('\n📋 Enrollment Query Results:');
+      console.log('Total enrollments:', enrollments?.length || 0);
+      if (enrollments && enrollments.length > 0) {
+        enrollments.forEach((e, i) => {
+          console.log(`  ${i+1}. Center: ${e.center_id}`);
+        });
+      }
+      if (enrollError) {
+        console.error('❌ Enrollment query error:', enrollError);
+      }
+      
+      const enrolledCenterIds = enrollments?.map(e => e.center_id) || [];
+      
+      console.log('\n✅ Total enrollments:', enrollments?.length || 0);
+      console.log('Enrolled center IDs:', enrolledCenterIds);
+      
+      if (enrolledCenterIds.length === 0) {
+        console.log('⚠️  No active enrollments - returning empty');
+        console.log('='.repeat(60) + '\n');
+        return res.json({ success: true, questionSets: [] });
+      }
+      
+      // Student - show only active sets from enrolled centers
+      query = query
+        .eq('is_active', true)
+        .in('center_id', enrolledCenterIds);
+      
+      console.log('\n🔍 Query filters applied:');
+      console.log('- is_active: true');
+      console.log('- center_id IN:', enrolledCenterIds);
       
       // Filter by specific center if provided
       if (center_id) {
+        console.log('- center_id filter:', center_id);
+        if (!enrolledCenterIds.includes(center_id)) {
+          console.log('⚠️  Not enrolled in requested center');
+          console.log('='.repeat(60) + '\n');
+          return res.json({ success: true, questionSets: [] });
+        }
         query = query.eq('center_id', center_id);
       }
     }
 
+    console.log('\n🔄 Executing query...');
     const { data, error } = await query;
     
     if (error) {
-      console.error('❌ [TEST-FETCH-STUDENT] Query error:', error);
+      console.error('\n❌ Query error:', error);
+      console.log('='.repeat(60) + '\n');
       throw error;
+    }
+
+    console.log('\n✅ Query successful');
+    console.log('Tests found:', data?.length || 0);
+    if (data && data.length > 0) {
+      data.forEach((t, i) => {
+        console.log(`  ${i+1}. ${t.title} (ID: ${t.id}, Active: ${t.is_active}, Student: ${t.student_id || 'none'})`);
+      });
     }
 
     // For students: Filter to show only public tests + own remedial tests
     let filteredData = data;
     if (!center) {
-      // console.log('🔍 [TEST-FETCH-STUDENT] Filtering student tests', {
-      //   totalTests: data?.length,
-      //   currentUserId: userId,
-      //   testsWithStudentId: data?.filter(t => t.student_id).map(t => ({
-      //     id: t.id,
-      //     title: t.title,
-      //     student_id: t.student_id,
-      //     isRemedial: t.is_remedial,
-      //     belongsToCurrentUser: t.student_id === userId
-      //   }))
-      // });
+      console.log('\n🔍 Applying student filters...');
       
       filteredData = data?.filter(test => {
         const isPublic = !test.student_id;
         const isOwnRemedial = test.student_id === userId;
-        return isPublic || isOwnRemedial;
+        const keep = isPublic || isOwnRemedial;
+        if (!keep) {
+          console.log(`  ❌ Filtered out: ${test.title} (belongs to ${test.student_id})`);
+        }
+        return keep;
       }) || [];
+      
+      console.log('\n📦 Final results:', filteredData.length);
+      if (filteredData.length > 0) {
+        filteredData.forEach((t, i) => {
+          console.log(`  ${i+1}. ${t.title}`);
+        });
+      }
     }
-
-    // console.log('✅ [TEST-FETCH-STUDENT] Final results', {
-    //   total: filteredData?.length,
-    //   remedialCount: filteredData?.filter(t => t.is_remedial).length,
-    //   studentSpecificCount: filteredData?.filter(t => t.student_id).length,
-    //   publicCount: filteredData?.filter(t => !t.student_id).length
-    // });
+    console.log('='.repeat(60) + '\n');
 
     res.json({ success: true, questionSets: filteredData });
   } catch (error) {

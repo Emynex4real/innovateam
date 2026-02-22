@@ -172,7 +172,8 @@ exports.submitAttempt = async (req, res) => {
     // DEBUG: Uncomment for debugging
     // console.log('✅ [BACKEND] Sending success response');
     res.json({ 
-      success: true, 
+      success: true,
+      attempt_id: attempt.id, // ✅ Add attempt_id for proctoring
       attempt: {
         ...attempt,
         results: questionSet.show_answers ? gradedResults : gradedResults.map(r => ({

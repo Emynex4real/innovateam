@@ -49,6 +49,7 @@ const tcQuestionsRoutes = require('./routes/tcQuestions.routes');
 const tcQuestionSetsRoutes = require('./routes/tcQuestionSets.routes');
 const tcAttemptsRoutes = require('./routes/tcAttempts.routes');
 const schedulerRoutes = require('./routes/scheduler.routes');
+const proctoringRoutes = require('./routes/proctoring.routes');
 
 // Webhook routes (Paystack)
 const webhookRoutes = require('./routes/webhook.routes');
@@ -326,6 +327,9 @@ app.use('/api/wallet', walletRoutes);
 
 // Subscription routes - BEFORE CSRF (protected by Bearer token auth)
 app.use('/api/subscriptions', subscriptionRoutes);
+
+// Proctoring routes - BEFORE CSRF (protected by Bearer token auth)
+app.use('/api/proctoring', proctoringRoutes);
 
 // Apply CSRF to all remaining /api routes
 app.use('/api', csrfProtection);

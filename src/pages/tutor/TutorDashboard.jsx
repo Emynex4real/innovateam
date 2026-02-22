@@ -20,7 +20,8 @@ import {
   XCircle,
   Zap,
   Layout,
-  CreditCard
+  CreditCard,
+  Shield
 } from 'lucide-react';
 import axios from 'axios';
 import supabase from '../../config/supabase';
@@ -564,6 +565,17 @@ const EnterpriseTutorDashboard = () => {
                             </div>
                             <h3 className="text-lg font-bold mb-1 group-hover:text-purple-600 transition-colors">Subscription</h3>
                             <p className="text-gray-500 text-sm">Manage your plan</p>
+                        </button>
+
+                        <button
+                            onClick={() => navigate('/tutor/proctoring')}
+                            className="group p-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-green-300 dark:hover:border-green-700 text-left"
+                        >
+                            <div className="bg-green-50 dark:bg-green-900/20 w-10 h-10 rounded-lg flex items-center justify-center mb-3 text-green-600 dark:text-green-400">
+                                <Shield size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold mb-1 group-hover:text-green-600 transition-colors">Proctoring</h3>
+                            <p className="text-gray-500 text-sm">Monitor exam integrity</p>
                         </button>
                     </div>
                 </div>
