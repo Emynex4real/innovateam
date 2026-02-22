@@ -142,7 +142,22 @@ const EnterpriseTutorDashboard = () => {
   const loadData = async (isMounted = true, loadId = 'unknown') => {
     try {
       setLoading(true);
-      const centerRes = await tutorialCenterService.getMyCenter();
+      
+      // Retry center fetch with exponential backoff
+      let centerRes;
+      let retries = 3;
+      for (let i = 0; i < retries; i++) {
+        try {
+          centerRes = await tutorialCenterService.getMyCenter();
+          break;
+        } catch (error) {
+          if (error.response?.status === 429 && i < retries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, i)));
+            continue;
+          }
+          throw error;
+        }
+      }
       
       if (!isMounted) return;
       

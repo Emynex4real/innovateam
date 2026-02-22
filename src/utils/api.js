@@ -28,10 +28,25 @@ const apiSecurity = {
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://innovateam-api.onrender.com';
 
+// Retry logic with exponential backoff
+const retryRequest = async (fn, retries = 3, delay = 1000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.response?.status === 429 && i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
 // Create axios instance with security enhancements
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 30000, // Increased for cold starts
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -69,10 +84,18 @@ api.interceptors.request.use(async (config) => {
 // Response interceptor for validation
 api.interceptors.response.use((response) => {
   return response;
-}, (error) => {
+}, async (error) => {
   if (error.code === 'ECONNABORTED') {
     return Promise.reject(new Error('Request timeout'));
   }
+  
+  // Auto-retry on 429
+  if (error.response?.status === 429 && !error.config.__retryCount) {
+    error.config.__retryCount = 1;
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return api.request(error.config);
+  }
+  
   return Promise.reject(error);
 });
 
