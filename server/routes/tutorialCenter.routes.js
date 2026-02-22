@@ -6,16 +6,17 @@ const { checkLimit } = require('../middleware/subscriptionLimits');
 const tutorialCenterController = require('../controllers/tutorialCenter.controller');
 const { questionValidation, questionSetValidation, paginationValidation, uuidValidation } = require('../middleware/validation');
 const { writeLimiter } = require('../middleware/rateLimiter');
+const { cacheMiddleware } = require('../middleware/cache');
 
 // All routes require authentication
 router.use(authenticate);
 
 // Tutorial center management (check suspension for write operations)
 router.post('/', tutorialCenterController.createCenter);
-router.get('/my-center', tutorialCenterController.getMyCenter);
+router.get('/my-center', cacheMiddleware(60), tutorialCenterController.getMyCenter); // Cache 1min
 router.put('/', checkCenterSuspension, tutorialCenterController.updateCenter);
 router.delete('/', checkCenterSuspension, tutorialCenterController.deleteCenter);
-router.get('/students', tutorialCenterController.getCenterStudents);
+router.get('/students', cacheMiddleware(30), tutorialCenterController.getCenterStudents); // Cache 30s
 
 // Enhanced student management
 router.get('/students/:studentId/profile', tutorialCenterController.getStudentProfile);
@@ -55,7 +56,7 @@ router.delete('/tc-question-sets/:id', checkCenterSuspension, writeLimiter, uuid
 // Question set questions management (block if suspended)
 router.post('/tc-question-sets/:id/questions', checkCenterSuspension, writeLimiter, uuidValidation('id'), tutorialCenterController.addQuestionsToTest);
 router.delete('/tc-question-sets/:testId/questions/:questionId', checkCenterSuspension, writeLimiter, tutorialCenterController.removeQuestionFromTest);
-router.get('/tc-question-sets/:id/questions', uuidValidation('id'), tutorialCenterController.getTestQuestions);
+router.get('/tc-question-sets/:id/questions', uuidValidation('id'), cacheMiddleware(300, true), tutorialCenterController.getTestQuestions); // Shared cache - same for all students
 
 // Attempts
 router.get('/tc-attempts/center-attempts', tutorialCenterController.getCenterAttempts);

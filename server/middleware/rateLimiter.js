@@ -1,9 +1,11 @@
 const rateLimit = require('express-rate-limit');
+const { createStore } = require('../stores/rateLimitStore');
 
 // General API rate limiter
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  store: createStore(15 * 60 * 1000),
   message: {
     success: false,
     error: 'Too many requests, please try again later'
@@ -16,6 +18,7 @@ const apiLimiter = rateLimit({
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
+  store: createStore(15 * 60 * 1000),
   message: {
     success: false,
     error: 'Too many write requests, please try again later'
@@ -26,6 +29,7 @@ const writeLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
+  store: createStore(15 * 60 * 1000),
   message: {
     success: false,
     error: 'Too many authentication attempts, please try again later'
