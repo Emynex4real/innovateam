@@ -63,7 +63,15 @@ const baseOptions = {
       });
     }
   },
-  db: { schema: 'public' },
+  db: { 
+    schema: 'public',
+    pooler: {
+      connectionString: process.env.SUPABASE_POOLER_URL || process.env.SUPABASE_URL,
+      max: 10,
+      min: 2,
+      idleTimeoutMillis: 30000
+    }
+  },
   realtime: { eventsPerSecond: 10 }
 };
 
