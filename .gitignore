@@ -221,6 +221,7 @@ users_fixed.json
 
 # Keep only essential docs
 !README.md
+!CLAUDE.md
 !FUZZY_MATCHING.md
 !SUBJECT_ALIASES.md
 !FUZZY_MATCHING_COMPLETE.md

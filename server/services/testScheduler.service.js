@@ -1,5 +1,6 @@
-const supabase = require('../supabaseClient');
-const logger = require('../utils/logger');
+const supabase = require("../supabaseClient");
+const logger = require("../utils/logger");
+const subscriptionService = require("./subscription.service");
 
 class TestSchedulerService {
   /**
@@ -8,16 +9,16 @@ class TestSchedulerService {
   async activateScheduledTests() {
     try {
       const now = new Date().toISOString();
-      
+
       const { data, error } = await supabase
-        .from('tc_question_sets')
-        .update({ 
+        .from("tc_question_sets")
+        .update({
           is_active: true,
-          last_activated_at: now
+          last_activated_at: now,
         })
-        .eq('auto_activate', true)
-        .eq('is_active', false)
-        .lte('scheduled_start', now)
+        .eq("auto_activate", true)
+        .eq("is_active", false)
+        .lte("scheduled_start", now)
         .or(`scheduled_end.is.null,scheduled_end.gt.${now}`)
         .select();
 
@@ -29,7 +30,7 @@ class TestSchedulerService {
 
       return { success: true, activated: data?.length || 0 };
     } catch (error) {
-      logger.error('Failed to activate scheduled tests:', error);
+      logger.error("Failed to activate scheduled tests:", error);
       return { success: false, error: error.message };
     }
   }
@@ -40,13 +41,13 @@ class TestSchedulerService {
   async deactivateScheduledTests() {
     try {
       const now = new Date().toISOString();
-      
+
       const { data, error } = await supabase
-        .from('tc_question_sets')
+        .from("tc_question_sets")
         .update({ is_active: false })
-        .eq('auto_deactivate', true)
-        .eq('is_active', true)
-        .lte('scheduled_end', now)
+        .eq("auto_deactivate", true)
+        .eq("is_active", true)
+        .lte("scheduled_end", now)
         .select();
 
       if (error) throw error;
@@ -57,7 +58,7 @@ class TestSchedulerService {
 
       return { success: true, deactivated: data?.length || 0 };
     } catch (error) {
-      logger.error('Failed to deactivate scheduled tests:', error);
+      logger.error("Failed to deactivate scheduled tests:", error);
       return { success: false, error: error.message };
     }
   }
@@ -68,14 +69,14 @@ class TestSchedulerService {
   async handleRecurringTests() {
     try {
       const now = new Date();
-      
+
       // Get recurring tests that need activation
       const { data: tests, error } = await supabase
-        .from('tc_question_sets')
-        .select('*')
-        .eq('is_recurring', true)
-        .eq('is_active', false)
-        .not('recurrence_pattern', 'is', null);
+        .from("tc_question_sets")
+        .select("*")
+        .eq("is_recurring", true)
+        .eq("is_active", false)
+        .not("recurrence_pattern", "is", null);
 
       if (error) throw error;
 
@@ -83,19 +84,19 @@ class TestSchedulerService {
 
       for (const test of tests || []) {
         const shouldActivate = this.shouldActivateRecurring(test, now);
-        
+
         if (shouldActivate) {
           const nextActivation = this.calculateNextActivation(test, now);
-          
+
           await supabase
-            .from('tc_question_sets')
+            .from("tc_question_sets")
             .update({
               is_active: true,
               last_activated_at: now.toISOString(),
-              next_activation_at: nextActivation
+              next_activation_at: nextActivation,
             })
-            .eq('id', test.id);
-          
+            .eq("id", test.id);
+
           activated++;
         }
       }
@@ -106,7 +107,7 @@ class TestSchedulerService {
 
       return { success: true, activated };
     } catch (error) {
-      logger.error('Failed to handle recurring tests:', error);
+      logger.error("Failed to handle recurring tests:", error);
       return { success: false, error: error.message };
     }
   }
@@ -131,18 +132,18 @@ class TestSchedulerService {
     const next = new Date(currentTime);
 
     switch (recurrence_pattern) {
-      case 'daily':
+      case "daily":
         next.setDate(next.getDate() + 1);
         break;
 
-      case 'weekly':
+      case "weekly":
         if (recurrence_days && recurrence_days.length > 0) {
           const currentDay = next.getDay();
           const days = recurrence_days.sort((a, b) => a - b);
-          
+
           // Find next day in array
-          let nextDay = days.find(d => d > currentDay);
-          
+          let nextDay = days.find((d) => d > currentDay);
+
           if (!nextDay) {
             // Wrap to next week
             nextDay = days[0];
@@ -155,7 +156,7 @@ class TestSchedulerService {
         }
         break;
 
-      case 'monthly':
+      case "monthly":
         next.setMonth(next.getMonth() + 1);
         break;
 
@@ -170,21 +171,31 @@ class TestSchedulerService {
    * Run all scheduler tasks
    */
   async runScheduler() {
-    logger.info('Running test scheduler...');
-    
+    logger.info("Running test scheduler...");
+
     const results = await Promise.all([
       this.activateScheduledTests(),
       this.deactivateScheduledTests(),
-      this.handleRecurringTests()
+      this.handleRecurringTests(),
     ]);
+
+    // Also check for expired subscriptions
+    let subscriptionsExpired = 0;
+    try {
+      const subResult = await subscriptionService.deactivateExpired();
+      subscriptionsExpired = subResult.deactivated;
+    } catch (err) {
+      logger.error("Subscription deactivation check failed:", err);
+    }
 
     const summary = {
       activated: results[0].activated + results[2].activated,
       deactivated: results[1].deactivated,
-      timestamp: new Date().toISOString()
+      subscriptionsExpired,
+      timestamp: new Date().toISOString(),
     };
 
-    logger.info('Scheduler completed:', summary);
+    logger.info("Scheduler completed:", summary);
     return summary;
   }
 }

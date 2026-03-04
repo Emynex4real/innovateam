@@ -1,4 +1,4 @@
-const supabase = require('../supabaseClient');
+const supabase = require("../supabaseClient");
 
 /**
  * Check subscription limits for a tutor's tutorial center.
@@ -18,7 +18,12 @@ const supabase = require('../supabaseClient');
  * @param {number} addCount - How many new items being added (default 1)
  * @param {boolean} isAdmin - Whether the user is an admin
  */
-async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin = false) {
+async function checkSubscriptionLimit(
+  tutorId,
+  resource,
+  addCount = 1,
+  isAdmin = false,
+) {
   // Admins bypass all limits
   if (isAdmin) {
     return { allowed: true, warning: null };
@@ -26,9 +31,21 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
 
   // Map resource to plan column and table
   const resourceMap = {
-    students: { planCol: 'max_students', table: 'tc_enrollments', countCol: 'center_id' },
-    questions: { planCol: 'max_questions', table: 'tc_questions', countCol: 'center_id' },
-    tests: { planCol: 'max_tests', table: 'tc_question_sets', countCol: 'center_id' }
+    students: {
+      planCol: "max_students",
+      table: "tc_enrollments",
+      countCol: "center_id",
+    },
+    questions: {
+      planCol: "max_questions",
+      table: "tc_questions",
+      countCol: "center_id",
+    },
+    tests: {
+      planCol: "max_tests",
+      table: "tc_question_sets",
+      countCol: "center_id",
+    },
   };
 
   const config = resourceMap[resource];
@@ -36,9 +53,9 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
 
   // Get tutor's center
   const { data: center } = await supabase
-    .from('tutorial_centers')
-    .select('id')
-    .eq('tutor_id', tutorId)
+    .from("tutorial_centers")
+    .select("id")
+    .eq("tutor_id", tutorId)
     .single();
 
   if (!center) return { allowed: true, warning: null };
@@ -53,8 +70,8 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
   // Count current usage
   const { count } = await supabase
     .from(config.table)
-    .select('*', { count: 'exact', head: true })
-    .eq('center_id', center.id);
+    .select("*", { count: "exact", head: true })
+    .eq("center_id", center.id);
 
   const currentUsage = count || 0;
   const afterAdd = currentUsage + addCount;
@@ -63,10 +80,10 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
   if (afterAdd > limit) {
     // Check for grace period
     const { data: graceRecord } = await supabase
-      .from('subscription_grace_periods')
-      .select('*')
-      .eq('tutor_id', tutorId)
-      .eq('resource_type', resource)
+      .from("subscription_grace_periods")
+      .select("*")
+      .eq("tutor_id", tutorId)
+      .eq("resource_type", resource)
       .single();
 
     const now = new Date();
@@ -75,11 +92,11 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
     if (!graceRecord) {
       // First time exceeding - create grace period (7 days)
       graceEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      await supabase.from('subscription_grace_periods').insert({
+      await supabase.from("subscription_grace_periods").insert({
         tutor_id: tutorId,
         resource_type: resource,
         grace_ends_at: graceEndsAt.toISOString(),
-        limit_exceeded_at: now.toISOString()
+        limit_exceeded_at: now.toISOString(),
       });
     } else {
       graceEndsAt = new Date(graceRecord.grace_ends_at);
@@ -92,10 +109,10 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
         warning: null,
         usage: currentUsage,
         limit,
-        plan: plan?.name || 'Free',
+        plan: plan?.name || "Free",
         graceEndsAt: graceEndsAt.toISOString(),
         graceExpired: true,
-        message: `You've reached your ${plan?.name || 'Free'} plan limit of ${limit} ${resource}. Your grace period expired on ${graceEndsAt.toLocaleDateString()}. Upgrade to continue.`
+        message: `You've reached your ${plan?.name || "Free"} plan limit of ${limit} ${resource}. Your grace period expired on ${graceEndsAt.toLocaleDateString()}. Upgrade to continue.`,
       };
     }
 
@@ -103,36 +120,43 @@ async function checkSubscriptionLimit(tutorId, resource, addCount = 1, isAdmin =
     const daysLeft = Math.ceil((graceEndsAt - now) / (1000 * 60 * 60 * 24));
     return {
       allowed: true,
-      warning: `You've exceeded your limit of ${limit} ${resource}. You have ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left to upgrade before access is blocked.`,
+      warning: `You've exceeded your limit of ${limit} ${resource}. You have ${daysLeft} day${daysLeft !== 1 ? "s" : ""} left to upgrade before access is blocked.`,
       usage: currentUsage,
       limit,
-      plan: plan?.name || 'Free',
+      plan: plan?.name || "Free",
       graceEndsAt: graceEndsAt.toISOString(),
       inGracePeriod: true,
-      daysRemaining: daysLeft
+      daysRemaining: daysLeft,
     };
   }
 
   // Warn if near limit (80%+)
   const pct = Math.round((afterAdd / limit) * 100);
-  const warning = pct >= 80
-    ? `You're using ${afterAdd} of ${limit} ${resource} (${pct}%). Consider upgrading soon.`
-    : null;
+  const warning =
+    pct >= 80
+      ? `You're using ${afterAdd} of ${limit} ${resource} (${pct}%). Consider upgrading soon.`
+      : null;
 
-  return { allowed: true, warning, usage: currentUsage, limit, plan: plan?.name };
+  return {
+    allowed: true,
+    warning,
+    usage: currentUsage,
+    limit,
+    plan: plan?.name,
+  };
 }
 
 /**
  * Get the tutor's active subscription plan (or free plan as default)
  */
 async function getTutorPlan(tutorId) {
-  // Check for active paid subscription
+  // Check for active paid subscription (including grace_period and past_due)
   const { data: sub } = await supabase
-    .from('tutor_subscriptions')
-    .select('*, subscription_plans(*)')
-    .eq('tutor_id', tutorId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
+    .from("tutor_subscriptions")
+    .select("*, subscription_plans(*)")
+    .eq("tutor_id", tutorId)
+    .in("status", ["active", "grace_period", "past_due"])
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -140,27 +164,29 @@ async function getTutorPlan(tutorId) {
 
   // Check for admin-granted trial
   const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('tutor_trial_granted, tutor_trial_expires_at')
-    .eq('id', tutorId)
+    .from("user_profiles")
+    .select("tutor_trial_granted, tutor_trial_expires_at")
+    .eq("id", tutorId)
     .single();
 
-  if (profile?.tutor_trial_granted &&
+  if (
+    profile?.tutor_trial_granted &&
     profile?.tutor_trial_expires_at &&
-    new Date(profile.tutor_trial_expires_at) > new Date()) {
+    new Date(profile.tutor_trial_expires_at) > new Date()
+  ) {
     const { data: proPlan } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .ilike('name', 'pro')
+      .from("subscription_plans")
+      .select("*")
+      .ilike("name", "pro")
       .single();
     return proPlan;
   }
 
   // Default to free plan
   const { data: freePlan } = await supabase
-    .from('subscription_plans')
-    .select('*')
-    .ilike('name', 'free')
+    .from("subscription_plans")
+    .select("*")
+    .ilike("name", "free")
     .single();
 
   return freePlan;
@@ -178,10 +204,15 @@ function checkLimit(resource, getCountFromReq) {
       const tutorId = req.user?.id;
       if (!tutorId) return next();
 
-      const isAdmin = req.user?.role === 'admin';
+      const isAdmin = req.user?.role === "admin";
       const addCount = getCountFromReq ? getCountFromReq(req) : 1;
 
-      const result = await checkSubscriptionLimit(tutorId, resource, addCount, isAdmin);
+      const result = await checkSubscriptionLimit(
+        tutorId,
+        resource,
+        addCount,
+        isAdmin,
+      );
 
       if (!result.allowed) {
         return res.status(403).json({
@@ -190,7 +221,7 @@ function checkLimit(resource, getCountFromReq) {
           limitReached: true,
           usage: result.usage,
           limit: result.limit,
-          plan: result.plan
+          plan: result.plan,
         });
       }
 
@@ -202,7 +233,7 @@ function checkLimit(resource, getCountFromReq) {
       next();
     } catch (error) {
       // Don't block on limit check failures — let the request through
-      console.error('Subscription limit check error:', error.message);
+      console.error("Subscription limit check error:", error.message);
       next();
     }
   };
@@ -220,28 +251,34 @@ function checkEnrollmentLimit() {
 
       // Find the center and its tutor
       const { data: center } = await supabase
-        .from('tutorial_centers')
-        .select('id, tutor_id')
-        .eq('access_code', accessCode.toUpperCase())
+        .from("tutorial_centers")
+        .select("id, tutor_id")
+        .eq("access_code", accessCode.toUpperCase())
         .single();
 
       if (!center) return next(); // Let the controller handle the 404
 
       // Check against the tutor's plan, not the student
       const isAdmin = false; // Student enrolling — always check limits
-      const result = await checkSubscriptionLimit(center.tutor_id, 'students', 1, isAdmin);
+      const result = await checkSubscriptionLimit(
+        center.tutor_id,
+        "students",
+        1,
+        isAdmin,
+      );
 
       if (!result.allowed) {
         return res.status(403).json({
           success: false,
-          error: 'This tutorial center has reached its student capacity. Ask the tutor to upgrade their plan.',
-          limitReached: true
+          error:
+            "This tutorial center has reached its student capacity. Ask the tutor to upgrade their plan.",
+          limitReached: true,
         });
       }
 
       next();
     } catch (error) {
-      console.error('Enrollment limit check error:', error.message);
+      console.error("Enrollment limit check error:", error.message);
       next();
     }
   };

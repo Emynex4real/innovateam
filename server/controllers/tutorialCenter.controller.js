@@ -1,6 +1,6 @@
-const supabase = require('../supabaseClient');
-const logger = require('../utils/safeLogger');
-const tutorialCenterService = require('../services/tutorialCenter.service');
+const supabase = require("../supabaseClient");
+const logger = require("../utils/safeLogger");
+const tutorialCenterService = require("../services/tutorialCenter.service");
 
 // Create tutorial center
 exports.createCenter = async (req, res) => {
@@ -10,31 +10,31 @@ exports.createCenter = async (req, res) => {
 
     // Check if tutor has any center (including soft-deleted)
     const { data: existing, error: existingError } = await supabase
-      .from('tutorial_centers')
-      .select('id, deleted_at')
-      .eq('tutor_id', tutorId)
+      .from("tutorial_centers")
+      .select("id, deleted_at")
+      .eq("tutor_id", tutorId)
       .maybeSingle();
 
     if (existingError) {
-      logger.error('Error checking existing center:', existingError);
+      logger.error("Error checking existing center:", existingError);
       throw existingError;
     }
 
     // If center exists and is deleted, restore it
     if (existing && existing.deleted_at) {
       const { data, error } = await supabase
-        .from('tutorial_centers')
-        .update({ 
-          name, 
-          description, 
-          deleted_at: null 
+        .from("tutorial_centers")
+        .update({
+          name,
+          description,
+          deleted_at: null,
         })
-        .eq('id', existing.id)
+        .eq("id", existing.id)
         .select()
         .single();
 
       if (error) throw error;
-      logger.info('Tutorial center restored', { centerId: data.id, tutorId });
+      logger.info("Tutorial center restored", { centerId: data.id, tutorId });
       return res.json({ success: true, center: data });
     }
 
@@ -42,26 +42,26 @@ exports.createCenter = async (req, res) => {
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: 'You already have a tutorial center'
+        error: "You already have a tutorial center",
       });
     }
 
     // Create new center
     const { data, error: insertError } = await supabase
-      .from('tutorial_centers')
+      .from("tutorial_centers")
       .insert([{ tutor_id: tutorId, name, description }])
       .select()
       .single();
 
     if (insertError) {
-      logger.error('Error inserting center:', insertError);
+      logger.error("Error inserting center:", insertError);
       throw insertError;
     }
 
-    logger.info('Tutorial center created', { centerId: data.id, tutorId });
+    logger.info("Tutorial center created", { centerId: data.id, tutorId });
     res.json({ success: true, center: data });
   } catch (error) {
-    logger.error('Create center error:', error);
+    logger.error("Create center error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -69,12 +69,10 @@ exports.createCenter = async (req, res) => {
 // Get tutor's center with analytics
 exports.getMyCenter = async (req, res) => {
   try {
-    console.log('🔍 getMyCenter called for user:', req.user.id);
     const result = await tutorialCenterService.getMyCenter(req.user.id);
-    console.log('✅ getMyCenter result:', JSON.stringify(result, null, 2));
     res.json(result);
   } catch (error) {
-    logger.error('Get center error:', error);
+    logger.error("Get center error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -85,43 +83,48 @@ exports.deleteCenter = async (req, res) => {
     const { reason } = req.body;
     const tutorId = req.user.id;
 
-    console.log('Delete request from tutor:', tutorId);
+    console.log("Delete request from tutor:", tutorId);
 
     // Get center ID
     const { data: center, error: selectError } = await supabase
-      .from('tutorial_centers')
-      .select('id, name, deleted_at')
-      .eq('tutor_id', tutorId);
+      .from("tutorial_centers")
+      .select("id, name, deleted_at")
+      .eq("tutor_id", tutorId);
 
-    console.log('Query result:', { center, selectError });
+    console.log("Query result:", { center, selectError });
 
     if (selectError) throw selectError;
-    
+
     if (!center || center.length === 0) {
-      return res.status(404).json({ success: false, error: 'Center not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
     }
 
     const centerData = center[0];
 
     // Call stored procedure with tutor_id
-    const { data, error } = await supabase.rpc('delete_tutorial_center', {
+    const { data, error } = await supabase.rpc("delete_tutorial_center", {
       center_id_param: centerData.id,
       tutor_id_param: tutorId,
-      reason: reason || 'No reason provided'
+      reason: reason || "No reason provided",
     });
 
-    console.log('RPC result:', { data, error });
+    console.log("RPC result:", { data, error });
 
     if (error) throw error;
-    
+
     if (data && !data.success) {
-      throw new Error(data.error || 'Failed to delete center');
+      throw new Error(data.error || "Failed to delete center");
     }
 
-    logger.info('Tutorial center deleted', { centerId: centerData.id, tutorId });
+    logger.info("Tutorial center deleted", {
+      centerId: centerData.id,
+      tutorId,
+    });
     res.json(data);
   } catch (error) {
-    logger.error('Delete center error:', error);
+    logger.error("Delete center error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -133,9 +136,9 @@ exports.updateCenter = async (req, res) => {
     const tutorId = req.user.id;
 
     const { data, error } = await supabase
-      .from('tutorial_centers')
+      .from("tutorial_centers")
       .update({ name, description })
-      .eq('tutor_id', tutorId)
+      .eq("tutor_id", tutorId)
       .select()
       .single();
 
@@ -143,70 +146,76 @@ exports.updateCenter = async (req, res) => {
 
     res.json({ success: true, center: data });
   } catch (error) {
-    logger.error('Update center error:', error);
+    logger.error("Update center error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 // Get center students
 exports.getCenterStudents = async (req, res) => {
-  console.log('🎯 getCenterStudents called - User:', req.user?.id);
   try {
     const tutorId = req.user.id;
 
     // Get center first
     const { data: center } = await supabase
-      .from('tutorial_centers')
-      .select('id')
-      .eq('tutor_id', tutorId)
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
       .single();
 
     if (!center) {
-      return res.status(404).json({ success: false, error: 'Center not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
     }
 
     // Get enrolled students
     const { data: enrollments, error } = await supabase
-      .from('tc_enrollments')
-      .select('student_id, enrolled_at')
-      .eq('center_id', center.id);
+      .from("tc_enrollments")
+      .select("student_id, enrolled_at")
+      .eq("center_id", center.id);
 
     if (error) throw error;
 
     // Get student details from user_profiles
-    const studentIds = enrollments.map(e => e.student_id);
+    const studentIds = enrollments.map((e) => e.student_id);
     const { data: profiles } = await supabase
-      .from('user_profiles')
-      .select('id, email, full_name')
-      .in('id', studentIds);
+      .from("user_profiles")
+      .select("id, email, full_name")
+      .in("id", studentIds);
 
     // Get attempt stats for each student
     const { data: attempts } = await supabase
-      .from('tc_student_attempts')
-      .select('student_id, score, question_set_id')
-      .in('student_id', studentIds);
+      .from("tc_student_attempts")
+      .select("student_id, score, question_set_id")
+      .in("student_id", studentIds);
 
     // Combine data
-    const students = enrollments.map(e => {
-      const profile = profiles?.find(p => p.id === e.student_id);
-      const studentAttempts = attempts?.filter(a => a.student_id === e.student_id) || [];
-      const avgScore = studentAttempts.length > 0
-        ? Math.round(studentAttempts.reduce((sum, a) => sum + a.score, 0) / studentAttempts.length)
-        : 0;
+    const students = enrollments.map((e) => {
+      const profile = profiles?.find((p) => p.id === e.student_id);
+      const studentAttempts =
+        attempts?.filter((a) => a.student_id === e.student_id) || [];
+      const avgScore =
+        studentAttempts.length > 0
+          ? Math.round(
+              studentAttempts.reduce((sum, a) => sum + a.score, 0) /
+                studentAttempts.length,
+            )
+          : 0;
 
       return {
         id: e.student_id,
-        email: profile?.email || 'Unknown',
-        name: profile?.full_name || profile?.email?.split('@')[0] || 'Unknown',
+        email: profile?.email || "Unknown",
+        name: profile?.full_name || profile?.email?.split("@")[0] || "Unknown",
         enrolled_at: e.enrolled_at,
         total_attempts: studentAttempts.length,
-        average_score: avgScore
+        average_score: avgScore,
       };
     });
 
     res.json({ success: true, students, center_id: center.id });
   } catch (error) {
-    logger.error('Get students error:', error);
+    logger.error("Get students error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -219,7 +228,7 @@ exports.getLeaderboard = async (req, res) => {
     const result = await tutorialCenterService.getLeaderboard(testId, filter);
     res.json(result);
   } catch (error) {
-    logger.error('Get leaderboard error:', error);
+    logger.error("Get leaderboard error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -228,10 +237,13 @@ exports.getLeaderboard = async (req, res) => {
 exports.getStudentAnalytics = async (req, res) => {
   try {
     const { centerId } = req.params;
-    const result = await tutorialCenterService.getStudentAnalytics(req.user.id, centerId);
+    const result = await tutorialCenterService.getStudentAnalytics(
+      req.user.id,
+      centerId,
+    );
     res.json(result);
   } catch (error) {
-    logger.error('Get analytics error:', error);
+    logger.error("Get analytics error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -240,11 +252,14 @@ exports.getStudentAnalytics = async (req, res) => {
 exports.getAdvancedAnalytics = async (req, res) => {
   try {
     const { timeRange } = req.query;
-    const advancedAnalyticsService = require('../services/advancedAnalytics.service');
-    const result = await advancedAnalyticsService.getAdvancedAnalytics(req.user.id, timeRange);
+    const advancedAnalyticsService = require("../services/advancedAnalytics.service");
+    const result = await advancedAnalyticsService.getAdvancedAnalytics(
+      req.user.id,
+      timeRange,
+    );
     res.json(result);
   } catch (error) {
-    logger.error('Get advanced analytics error:', error);
+    logger.error("Get advanced analytics error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -252,10 +267,12 @@ exports.getAdvancedAnalytics = async (req, res) => {
 // Get student achievements
 exports.getMyAchievements = async (req, res) => {
   try {
-    const result = await tutorialCenterService.getStudentAchievements(req.user.id);
+    const result = await tutorialCenterService.getStudentAchievements(
+      req.user.id,
+    );
     res.json(result);
   } catch (error) {
-    logger.error('Get achievements error:', error);
+    logger.error("Get achievements error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -266,7 +283,7 @@ exports.getAllAchievements = async (req, res) => {
     const result = await tutorialCenterService.getAllAchievements();
     res.json(result);
   } catch (error) {
-    logger.error('Get all achievements error:', error);
+    logger.error("Get all achievements error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -279,98 +296,107 @@ exports.getStudentProfile = async (req, res) => {
     const { studentId } = req.params;
     const tutorId = req.user.id;
 
-    console.log('🔍 Getting student profile:', { studentId, tutorId });
+    console.log("🔍 Getting student profile:", { studentId, tutorId });
 
     // Get tutor's center
     const { data: center, error: centerError } = await supabase
-      .from('tutorial_centers')
-      .select('id')
-      .eq('tutor_id', tutorId)
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
       .maybeSingle();
 
     if (centerError) {
-      console.error('❌ Center error:', centerError);
+      console.error("❌ Center error:", centerError);
       throw centerError;
     }
 
     if (!center) {
-      console.log('❌ No center found for tutor');
-      return res.status(404).json({ success: false, error: 'Tutorial center not found' });
+      console.log("❌ No center found for tutor");
+      return res
+        .status(404)
+        .json({ success: false, error: "Tutorial center not found" });
     }
 
-    console.log('✅ Center found:', center.id);
+    console.log("✅ Center found:", center.id);
 
     // Check enrollment
     const { data: enrollment, error: enrollError } = await supabase
-      .from('tc_enrollments')
-      .select('*')
-      .eq('center_id', center.id)
-      .eq('student_id', studentId)
+      .from("tc_enrollments")
+      .select("*")
+      .eq("center_id", center.id)
+      .eq("student_id", studentId)
       .maybeSingle();
 
     if (enrollError) {
-      console.error('❌ Enrollment error:', enrollError);
+      console.error("❌ Enrollment error:", enrollError);
       throw enrollError;
     }
 
     if (!enrollment) {
-      console.log('❌ Student not enrolled in this center');
-      return res.status(403).json({ success: false, error: 'Student not enrolled in your center' });
+      console.log("❌ Student not enrolled in this center");
+      return res
+        .status(403)
+        .json({ success: false, error: "Student not enrolled in your center" });
     }
 
-    console.log('✅ Enrollment found');
+    console.log("✅ Enrollment found");
 
     // Get student profile
     const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', studentId)
+      .from("user_profiles")
+      .select("*")
+      .eq("id", studentId)
       .single();
 
     if (profileError) {
-      console.error('❌ Profile error:', profileError);
+      console.error("❌ Profile error:", profileError);
       throw profileError;
     }
 
-    console.log('✅ Profile found:', profile?.email);
+    console.log("✅ Profile found:", profile?.email);
 
     // Get attempts for this center's tests
     const { data: centerTests } = await supabase
-      .from('tc_question_sets')
-      .select('id')
-      .eq('center_id', center.id);
+      .from("tc_question_sets")
+      .select("id")
+      .eq("center_id", center.id);
 
-    const testIds = centerTests?.map(t => t.id) || [];
+    const testIds = centerTests?.map((t) => t.id) || [];
 
     const { data: attempts } = await supabase
-      .from('tc_student_attempts')
-      .select('*')
-      .eq('student_id', studentId)
-      .in('question_set_id', testIds);
+      .from("tc_student_attempts")
+      .select("*")
+      .eq("student_id", studentId)
+      .in("question_set_id", testIds);
 
-    console.log('✅ Found attempts:', attempts?.length || 0);
+    console.log("✅ Found attempts:", attempts?.length || 0);
 
-    const avgScore = attempts?.length ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0;
-    const totalXP = attempts?.reduce((sum, a) => sum + (a.xp_earned || 0), 0) || 0;
+    const avgScore = attempts?.length
+      ? Math.round(
+          attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length,
+        )
+      : 0;
+    const totalXP =
+      attempts?.reduce((sum, a) => sum + (a.xp_earned || 0), 0) || 0;
 
     const student = {
       id: studentId,
-      name: profile?.full_name || profile?.email?.split('@')[0] || 'Unknown',
+      name: profile?.full_name || profile?.email?.split("@")[0] || "Unknown",
       email: profile?.email,
       enrolled_at: enrollment.enrolled_at,
       total_tests: attempts?.length || 0,
       average_score: avgScore,
       total_xp: totalXP,
       level: Math.floor(totalXP / 100) + 1,
-      tier: totalXP > 1000 ? 'gold' : totalXP > 500 ? 'silver' : 'bronze'
+      tier: totalXP > 1000 ? "gold" : totalXP > 500 ? "silver" : "bronze",
     };
 
-    console.log('✅ Sending student data:', student);
+    console.log("✅ Sending student data:", student);
 
     res.json({ success: true, student });
   } catch (error) {
-    console.error('❌ Get student profile error:', error);
-    logger.error('Get student profile error:', error);
+    console.error("❌ Get student profile error:", error);
+    logger.error("Get student profile error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -381,47 +407,55 @@ exports.getStudentTestHistory = async (req, res) => {
     const { studentId } = req.params;
     const tutorId = req.user.id;
 
-    console.log('🔍 Getting test history:', { studentId, tutorId });
+    console.log("🔍 Getting test history:", { studentId, tutorId });
 
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
     if (!center) {
-      console.log('❌ No center found');
-      return res.status(404).json({ success: false, error: 'Center not found' });
+      console.log("❌ No center found");
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
     }
 
-    console.log('✅ Center found:', center.id);
+    console.log("✅ Center found:", center.id);
 
     // Get all tests from this center
     const { data: centerTests } = await supabase
-      .from('tc_question_sets')
-      .select('id')
-      .eq('center_id', center.id);
+      .from("tc_question_sets")
+      .select("id")
+      .eq("center_id", center.id);
 
-    const testIds = centerTests?.map(t => t.id) || [];
-    console.log('📝 Center test IDs:', testIds);
+    const testIds = centerTests?.map((t) => t.id) || [];
+    console.log("📝 Center test IDs:", testIds);
 
     // Get attempts for these tests only
     const { data: attempts, error } = await supabase
-      .from('tc_student_attempts')
-      .select(`
+      .from("tc_student_attempts")
+      .select(
+        `
         *,
         tc_question_sets(title)
-      `)
-      .eq('student_id', studentId)
-      .in('question_set_id', testIds)
-      .order('completed_at', { ascending: false });
+      `,
+      )
+      .eq("student_id", studentId)
+      .in("question_set_id", testIds)
+      .order("completed_at", { ascending: false });
 
     if (error) {
-      console.error('❌ Query error:', error);
+      console.error("❌ Query error:", error);
       throw error;
     }
 
-    console.log('✅ Found attempts:', attempts?.length || 0);
+    console.log("✅ Found attempts:", attempts?.length || 0);
 
     res.json({ success: true, attempts: attempts || [] });
   } catch (error) {
-    console.error('❌ Get test history error:', error);
-    logger.error('Get test history error:', error);
+    console.error("❌ Get test history error:", error);
+    logger.error("Get test history error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -430,25 +464,27 @@ exports.getStudentTestHistory = async (req, res) => {
 exports.getStudentDetailedAnalytics = async (req, res) => {
   try {
     const { studentId } = req.params;
-    
+
     // Get attempts with question set details
     // Note: tc_question_sets doesn't have subject/topic columns
     // We'll group by test title instead
     const { data: attempts, error } = await supabase
-      .from('tc_student_attempts')
-      .select(`
+      .from("tc_student_attempts")
+      .select(
+        `
         score,
         question_set_id,
         tc_question_sets!inner(title)
-      `)
-      .eq('student_id', studentId);
+      `,
+      )
+      .eq("student_id", studentId);
 
     if (error) throw error;
 
     // Group by test/question set and calculate performance
     const testPerformance = {};
-    attempts?.forEach(a => {
-      const testTitle = a.tc_question_sets?.title || 'Unknown Test';
+    attempts?.forEach((a) => {
+      const testTitle = a.tc_question_sets?.title || "Unknown Test";
       if (!testPerformance[testTitle]) {
         testPerformance[testTitle] = { total: 0, count: 0, scores: [] };
       }
@@ -462,9 +498,10 @@ exports.getStudentDetailedAnalytics = async (req, res) => {
       const avgScore = Math.round(data.total / data.count);
       const maxScore = Math.max(...data.scores);
       const minScore = Math.min(...data.scores);
-      const trend = data.scores.length > 1 
-        ? data.scores[data.scores.length - 1] - data.scores[0]
-        : 0;
+      const trend =
+        data.scores.length > 1
+          ? data.scores[data.scores.length - 1] - data.scores[0]
+          : 0;
 
       return {
         subject, // Using test title as subject for now
@@ -473,7 +510,14 @@ exports.getStudentDetailedAnalytics = async (req, res) => {
         minScore,
         attempts: data.count,
         trend,
-        performance: avgScore >= 80 ? 'excellent' : avgScore >= 60 ? 'good' : avgScore >= 40 ? 'fair' : 'needs improvement'
+        performance:
+          avgScore >= 80
+            ? "excellent"
+            : avgScore >= 60
+              ? "good"
+              : avgScore >= 40
+                ? "fair"
+                : "needs improvement",
       };
     });
 
@@ -482,7 +526,7 @@ exports.getStudentDetailedAnalytics = async (req, res) => {
 
     res.json({ success: true, analytics });
   } catch (error) {
-    logger.error('Get analytics error:', error);
+    logger.error("Get analytics error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -491,21 +535,23 @@ exports.getStudentDetailedAnalytics = async (req, res) => {
 exports.getStudentProgress = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { period = 'month' } = req.query;
+    const { period = "month" } = req.query;
 
-    const daysAgo = period === 'week' ? 7 : period === 'month' ? 30 : 90;
-    const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+    const daysAgo = period === "week" ? 7 : period === "month" ? 30 : 90;
+    const startDate = new Date(
+      Date.now() - daysAgo * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
     const { data: attempts } = await supabase
-      .from('tc_student_attempts')
-      .select('score, completed_at')
-      .eq('student_id', studentId)
-      .gte('completed_at', startDate)
-      .order('completed_at');
+      .from("tc_student_attempts")
+      .select("score, completed_at")
+      .eq("student_id", studentId)
+      .gte("completed_at", startDate)
+      .order("completed_at");
 
     res.json({ success: true, progress: attempts || [] });
   } catch (error) {
-    logger.error('Get progress error:', error);
+    logger.error("Get progress error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -514,15 +560,29 @@ exports.getStudentProgress = async (req, res) => {
 exports.generateStudentReport = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { period = 'week' } = req.body;
+    const { period = "week" } = req.body;
 
-    const daysAgo = period === 'week' ? 7 : period === 'month' ? 30 : 90;
-    const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+    const daysAgo = period === "week" ? 7 : period === "month" ? 30 : 90;
+    const startDate = new Date(
+      Date.now() - daysAgo * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
-    const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', studentId).single();
-    const { data: attempts } = await supabase.from('tc_student_attempts').select('*').eq('student_id', studentId).gte('completed_at', startDate);
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", studentId)
+      .single();
+    const { data: attempts } = await supabase
+      .from("tc_student_attempts")
+      .select("*")
+      .eq("student_id", studentId)
+      .gte("completed_at", startDate);
 
-    const avgScore = attempts?.length ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0;
+    const avgScore = attempts?.length
+      ? Math.round(
+          attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length,
+        )
+      : 0;
 
     const report = {
       student: { name: profile?.full_name, email: profile?.email },
@@ -531,15 +591,15 @@ exports.generateStudentReport = async (req, res) => {
       summary: {
         tests_taken: attempts?.length || 0,
         average_score: avgScore,
-        highest_score: Math.max(...(attempts?.map(a => a.score) || [0])),
-        lowest_score: Math.min(...(attempts?.map(a => a.score) || [100]))
+        highest_score: Math.max(...(attempts?.map((a) => a.score) || [0])),
+        lowest_score: Math.min(...(attempts?.map((a) => a.score) || [100])),
       },
-      attempts: attempts || []
+      attempts: attempts || [],
     };
 
     res.json({ success: true, report });
   } catch (error) {
-    logger.error('Generate report error:', error);
+    logger.error("Generate report error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -551,15 +611,15 @@ exports.getStudentNotes = async (req, res) => {
     const tutorId = req.user.id;
 
     const { data: notes } = await supabase
-      .from('tutor_notes')
-      .select('*')
-      .eq('tutor_id', tutorId)
-      .eq('student_id', studentId)
-      .order('created_at', { ascending: false });
+      .from("tutor_notes")
+      .select("*")
+      .eq("tutor_id", tutorId)
+      .eq("student_id", studentId)
+      .order("created_at", { ascending: false });
 
     res.json({ success: true, notes: notes || [] });
   } catch (error) {
-    logger.error('Get notes error:', error);
+    logger.error("Get notes error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -572,7 +632,7 @@ exports.addStudentNote = async (req, res) => {
     const tutorId = req.user.id;
 
     const { data, error } = await supabase
-      .from('tutor_notes')
+      .from("tutor_notes")
       .insert([{ tutor_id: tutorId, student_id: studentId, note }])
       .select()
       .single();
@@ -580,7 +640,7 @@ exports.addStudentNote = async (req, res) => {
     if (error) throw error;
     res.json({ success: true, note: data });
   } catch (error) {
-    logger.error('Add note error:', error);
+    logger.error("Add note error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -589,19 +649,44 @@ exports.addStudentNote = async (req, res) => {
 exports.getStudentAlerts = async (req, res) => {
   try {
     const tutorId = req.user.id;
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
 
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: recentAttempts } = await supabase.from('tc_student_attempts').select('student_id').gte('completed_at', sevenDaysAgo);
-    const activeStudentIds = [...new Set(recentAttempts?.map(a => a.student_id) || [])];
+    const sevenDaysAgo = new Date(
+      Date.now() - 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data: recentAttempts } = await supabase
+      .from("tc_student_attempts")
+      .select("student_id")
+      .gte("completed_at", sevenDaysAgo);
+    const activeStudentIds = [
+      ...new Set(recentAttempts?.map((a) => a.student_id) || []),
+    ];
 
-    const { data: enrollments } = await supabase.from('tc_enrollments').select('student_id').eq('center_id', center.id);
-    const inactiveStudents = enrollments?.filter(e => !activeStudentIds.includes(e.student_id)) || [];
+    const { data: enrollments } = await supabase
+      .from("tc_enrollments")
+      .select("student_id")
+      .eq("center_id", center.id);
+    const inactiveStudents =
+      enrollments?.filter((e) => !activeStudentIds.includes(e.student_id)) ||
+      [];
 
-    res.json({ success: true, alerts: { inactive_count: inactiveStudents.length, inactive_students: inactiveStudents } });
+    res.json({
+      success: true,
+      alerts: {
+        inactive_count: inactiveStudents.length,
+        inactive_students: inactiveStudents,
+      },
+    });
   } catch (error) {
-    logger.error('Get alerts error:', error);
+    logger.error("Get alerts error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -611,13 +696,24 @@ exports.getStudentAlerts = async (req, res) => {
 exports.createQuestion = async (req, res) => {
   try {
     const tutorId = req.user.id;
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
 
-    const result = await tutorialCenterService.createQuestion(tutorId, center.id, req.body);
+    const result = await tutorialCenterService.createQuestion(
+      tutorId,
+      center.id,
+      req.body,
+    );
     res.json(result);
   } catch (error) {
-    logger.error('Create question error:', error);
+    logger.error("Create question error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -625,50 +721,52 @@ exports.createQuestion = async (req, res) => {
 exports.getQuestions = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
-      console.log('❌ No user in request');
-      return res.status(401).json({ success: false, error: 'Unauthorized - No user found' });
+      console.log("❌ No user in request");
+      return res
+        .status(401)
+        .json({ success: false, error: "Unauthorized - No user found" });
     }
-    
+
     const tutorId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 1000; // Increased for test builder
     const offset = (page - 1) * limit;
 
-    console.log('📝 getQuestions called:', { tutorId, page, limit });
-
     const { data: center, error: centerError } = await supabase
-      .from('tutorial_centers')
-      .select('id')
-      .eq('tutor_id', tutorId)
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
       .maybeSingle();
 
     if (centerError) {
-      console.log('❌ Center query error:', centerError);
-      return res.status(500).json({ success: false, error: centerError.message });
+      console.log("❌ Center query error:", centerError);
+      return res
+        .status(500)
+        .json({ success: false, error: centerError.message });
     }
 
     if (!center) {
-      console.log('✅ No center found, returning empty array');
-      return res.json({ success: true, questions: [], pagination: { page, limit, total: 0, totalPages: 0 } });
+      console.log("✅ No center found, returning empty array");
+      return res.json({
+        success: true,
+        questions: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      });
     }
 
-    console.log('✅ Center found:', center.id);
-
     const { data, error, count } = await supabase
-      .from('tc_questions')
-      .select('*', { count: 'exact' })
-      .eq('center_id', center.id)
-      .order('subject', { ascending: true })
-      .order('topic', { ascending: true })
-      .order('created_at', { ascending: false })
+      .from("tc_questions")
+      .select("*", { count: "exact" })
+      .eq("center_id", center.id)
+      .order("subject", { ascending: true })
+      .order("topic", { ascending: true })
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.log('❌ Questions query error:', error);
+      console.log("❌ Questions query error:", error);
       throw error;
     }
-
-    console.log(`✅ Found ${data?.length || 0} questions`);
 
     res.json({
       success: true,
@@ -677,12 +775,12 @@ exports.getQuestions = async (req, res) => {
         page,
         limit,
         total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
-      }
+        totalPages: Math.ceil((count || 0) / limit),
+      },
     });
   } catch (error) {
-    console.error('❌ getQuestions error:', error);
-    logger.error('Get questions error:', error);
+    console.error("❌ getQuestions error:", error);
+    logger.error("Get questions error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -691,21 +789,37 @@ exports.updateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
     const tutorId = req.user.id;
-    
+
     // Verify ownership
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
-    
-    const { data: question } = await supabase.from('tc_questions').select('center_id').eq('id', id).single();
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
+
+    const { data: question } = await supabase
+      .from("tc_questions")
+      .select("center_id")
+      .eq("id", id)
+      .single();
     if (!question || question.center_id !== center.id) {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+      return res.status(403).json({ success: false, error: "Unauthorized" });
     }
-    
-    const { data, error } = await supabase.from('tc_questions').update(req.body).eq('id', id).select().single();
+
+    const { data, error } = await supabase
+      .from("tc_questions")
+      .update(req.body)
+      .eq("id", id)
+      .select()
+      .single();
     if (error) throw error;
     res.json({ success: true, question: data });
   } catch (error) {
-    logger.error('Update question error:', error);
+    logger.error("Update question error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -714,175 +828,202 @@ exports.deleteQuestion = async (req, res) => {
   try {
     const { id } = req.params;
     const tutorId = req.user.id;
-    
+
     // Verify ownership
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
-    
-    const { data: question } = await supabase.from('tc_questions').select('center_id').eq('id', id).single();
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
+
+    const { data: question } = await supabase
+      .from("tc_questions")
+      .select("center_id")
+      .eq("id", id)
+      .single();
     if (!question || question.center_id !== center.id) {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+      return res.status(403).json({ success: false, error: "Unauthorized" });
     }
-    
-    const { error } = await supabase.from('tc_questions').delete().eq('id', id);
+
+    const { error } = await supabase.from("tc_questions").delete().eq("id", id);
     if (error) throw error;
     res.json({ success: true });
   } catch (error) {
-    logger.error('Delete question error:', error);
+    logger.error("Delete question error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 exports.generateQuestionsAI = async (req, res) => {
-  console.log('\n🎯 ========== AI GENERATION REQUEST ==========');
-  console.log('Request Body:', JSON.stringify(req.body, null, 2));
-  console.log('User:', req.user?.id);
-  
-  try {
-    const { subject, topic, difficulty = 'medium', count = 5 } = req.body;
+  console.log("\n🎯 ========== AI GENERATION REQUEST ==========");
+  console.log("Request Body:", JSON.stringify(req.body, null, 2));
+  console.log("User:", req.user?.id);
 
-    console.log('🎯 Parsed params:', { subject, topic, difficulty, count });
+  try {
+    const { subject, topic, difficulty = "medium", count = 5 } = req.body;
+
+    console.log("🎯 Parsed params:", { subject, topic, difficulty, count });
 
     if (!subject || !topic) {
-      console.log('❌ Validation failed: Missing subject or topic');
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Subject and topic are required' 
+      console.log("❌ Validation failed: Missing subject or topic");
+      return res.status(400).json({
+        success: false,
+        error: "Subject and topic are required",
       });
     }
 
-    console.log('✅ Validation passed, calling Gemini service...');
-    
+    console.log("✅ Validation passed, calling Gemini service...");
+
     // Over-generate to account for invalid questions (industry standard)
     const QUALITY_BUFFER = 1.2; // Request 20% extra
     const adjustedCount = Math.ceil(count * QUALITY_BUFFER);
-    
-    console.log(`📊 Requesting ${adjustedCount} questions (${count} needed + ${adjustedCount - count} buffer)`);
-    
+
+    console.log(
+      `📊 Requesting ${adjustedCount} questions (${count} needed + ${adjustedCount - count} buffer)`,
+    );
+
     // Use existing Gemini service
-    const geminiService = require('../services/gemini.service');
+    const geminiService = require("../services/gemini.service");
     const questions = await geminiService.generateQuestions({
       subject,
       topic,
       difficulty,
-      totalQuestions: adjustedCount
+      totalQuestions: adjustedCount,
     });
 
     console.log(`✅ Gemini returned ${questions?.length || 0} questions`);
 
     if (!questions || questions.length === 0) {
-      console.log('❌ No questions generated');
-      return res.status(500).json({ 
-        success: false, 
-        error: 'No questions were generated. Please try again.' 
+      console.log("❌ No questions generated");
+      return res.status(500).json({
+        success: false,
+        error: "No questions were generated. Please try again.",
       });
     }
 
     // Validate and filter questions - ensure all have required fields
-    const validQuestions = questions.filter(q => {
-      const isValid = q.question && 
-                     Array.isArray(q.options) && 
-                     q.options.length === 4 && 
-                     q.answer && 
-                     q.explanation;
-      
+    const validQuestions = questions.filter((q) => {
+      const isValid =
+        q.question &&
+        Array.isArray(q.options) &&
+        q.options.length === 4 &&
+        q.answer &&
+        q.explanation;
+
       if (!isValid) {
-        console.warn('⚠️ Skipping invalid question:', { 
-          hasQuestion: !!q.question, 
-          hasOptions: Array.isArray(q.options), 
+        console.warn("⚠️ Skipping invalid question:", {
+          hasQuestion: !!q.question,
+          hasOptions: Array.isArray(q.options),
           optionsCount: q.options?.length,
           hasAnswer: !!q.answer,
-          hasExplanation: !!q.explanation
+          hasExplanation: !!q.explanation,
         });
       }
-      
+
       return isValid;
     });
 
     const invalidCount = questions.length - validQuestions.length;
-    const qualityRate = ((validQuestions.length / questions.length) * 100).toFixed(1);
-    
-    console.log(`✅ Quality: ${validQuestions.length}/${questions.length} valid (${qualityRate}%)`);
-    
+    const qualityRate = (
+      (validQuestions.length / questions.length) *
+      100
+    ).toFixed(1);
+
+    console.log(
+      `✅ Quality: ${validQuestions.length}/${questions.length} valid (${qualityRate}%)`,
+    );
+
     // Log quality metrics for monitoring
     if (invalidCount > 0) {
-      logger.warn('AI quality metrics', { 
+      logger.warn("AI quality metrics", {
         requested: adjustedCount,
         generated: questions.length,
         valid: validQuestions.length,
         invalid: invalidCount,
-        qualityRate: `${qualityRate}%`
+        qualityRate: `${qualityRate}%`,
       });
     }
 
     if (validQuestions.length === 0) {
-      console.log('❌ No valid questions after filtering');
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Generated questions were invalid. Please try again.' 
+      console.log("❌ No valid questions after filtering");
+      return res.status(500).json({
+        success: false,
+        error: "Generated questions were invalid. Please try again.",
       });
     }
 
     // Return exactly the requested count (or all if less)
     const finalQuestions = validQuestions.slice(0, count);
-    
+
     // Format for frontend
-    const formatted = finalQuestions.map(q => ({
+    const formatted = finalQuestions.map((q) => ({
       question_text: q.question,
       options: q.options,
       correct_answer: q.answer.trim().toUpperCase().charAt(0),
       explanation: q.explanation,
       subject,
       topic,
-      difficulty
+      difficulty,
     }));
 
-    console.log(`✅ Returning ${formatted.length}/${count} requested questions`);
-    console.log('========== END AI GENERATION ==========\n');
-    
+    console.log(
+      `✅ Returning ${formatted.length}/${count} requested questions`,
+    );
+    console.log("========== END AI GENERATION ==========\n");
+
     res.json({ success: true, questions: formatted });
   } catch (error) {
-    console.error('❌ Generate questions error:', error.message);
-    console.error('Stack:', error.stack);
-    logger.error('Generate questions error:', error);
+    console.error("❌ Generate questions error:", error.message);
+    console.error("Stack:", error.stack);
+    logger.error("Generate questions error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 exports.generateQuestionsAIStream = async (req, res) => {
-  const { subject, topic, difficulty = 'medium', count = 5 } = req.body;
+  const { subject, topic, difficulty = "medium", count = 5 } = req.body;
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
 
   try {
-    const geminiService = require('../services/gemini.service');
-    
+    const geminiService = require("../services/gemini.service");
+
     const questions = await geminiService.generateQuestions({
       subject,
       topic,
       difficulty,
       totalQuestions: count,
       onProgress: (progress) => {
-        res.write(`data: ${JSON.stringify({ type: 'progress', ...progress })}\n\n`);
-      }
+        res.write(
+          `data: ${JSON.stringify({ type: "progress", ...progress })}\n\n`,
+        );
+      },
     });
 
-    const formatted = questions.map(q => ({
+    const formatted = questions.map((q) => ({
       question_text: q.question,
       options: q.options,
       correct_answer: q.answer,
       explanation: q.explanation,
       subject,
       topic,
-      difficulty
+      difficulty,
     }));
 
-    res.write(`data: ${JSON.stringify({ type: 'complete', questions: formatted })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ type: "complete", questions: formatted })}\n\n`,
+    );
     res.end();
   } catch (error) {
-    res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`,
+    );
     res.end();
   }
 };
@@ -892,62 +1033,76 @@ exports.parseBulkQuestions = async (req, res) => {
     const { text, subject, topic, difficulty, category } = req.body;
 
     if (!text || !subject) {
-      return res.status(400).json({ success: false, error: 'Text and subject are required' });
+      return res
+        .status(400)
+        .json({ success: false, error: "Text and subject are required" });
     }
 
-    const geminiService = require('../services/gemini.service');
+    const geminiService = require("../services/gemini.service");
     const questions = await geminiService.parseBulkQuestions({
       text,
       subject,
       topic,
       difficulty,
-      category
+      category,
     });
 
     res.json({ success: true, questions });
   } catch (error) {
-    logger.error('Parse bulk failed', { error: error?.message || String(error) });
-    const errorMsg = error?.message || 'Failed to parse questions. Please try again.';
+    logger.error("Parse bulk failed", {
+      error: error?.message || String(error),
+    });
+    const errorMsg =
+      error?.message || "Failed to parse questions. Please try again.";
     res.status(500).json({ success: false, error: errorMsg });
   }
 };
 
 exports.saveBulkQuestions = async (req, res) => {
   const startTime = Date.now();
-  
+
   try {
     const { questions } = req.body;
     const tutorId = req.user?.id;
 
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
-      return res.status(400).json({ success: false, error: 'No questions provided' });
+      return res
+        .status(400)
+        .json({ success: false, error: "No questions provided" });
     }
 
-    logger.info('Bulk save started', { tutorId, count: questions.length });
+    logger.info("Bulk save started", { tutorId, count: questions.length });
 
     const { data: center, error: centerError } = await supabase
-      .from('tutorial_centers')
-      .select('id')
-      .eq('tutor_id', tutorId)
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
       .maybeSingle();
 
     if (centerError) {
-      logger.error('Center query error', { tutorId, error: centerError?.message });
-      return res.status(500).json({ success: false, error: 'Database error' });
+      logger.error("Center query error", {
+        tutorId,
+        error: centerError?.message,
+      });
+      return res.status(500).json({ success: false, error: "Database error" });
     }
 
     if (!center) {
-      logger.error('Center not found', { tutorId });
-      return res.status(404).json({ success: false, error: 'Create a tutorial center first' });
+      logger.error("Center not found", { tutorId });
+      return res
+        .status(404)
+        .json({ success: false, error: "Create a tutorial center first" });
     }
 
     const questionsToInsert = [];
-    
+
     for (let idx = 0; idx < questions.length; idx++) {
       const q = questions[idx];
-      
-      if (!q.question_text || typeof q.question_text !== 'string') {
-        throw new Error(`Question ${idx + 1}: Missing or invalid question_text`);
+
+      if (!q.question_text || typeof q.question_text !== "string") {
+        throw new Error(
+          `Question ${idx + 1}: Missing or invalid question_text`,
+        );
       }
       if (!Array.isArray(q.options) || q.options.length !== 4) {
         throw new Error(`Question ${idx + 1}: Must have exactly 4 options`);
@@ -959,81 +1114,93 @@ exports.saveBulkQuestions = async (req, res) => {
         throw new Error(`Question ${idx + 1}: Missing subject`);
       }
 
-      const sanitizedAnswer = String(q.correct_answer).trim().toUpperCase().charAt(0);
-      if (!['A', 'B', 'C', 'D'].includes(sanitizedAnswer)) {
-        throw new Error(`Question ${idx + 1}: Invalid correct_answer "${q.correct_answer}". Must be A, B, C, or D`);
+      const sanitizedAnswer = String(q.correct_answer)
+        .trim()
+        .toUpperCase()
+        .charAt(0);
+      if (!["A", "B", "C", "D"].includes(sanitizedAnswer)) {
+        throw new Error(
+          `Question ${idx + 1}: Invalid correct_answer "${q.correct_answer}". Must be A, B, C, or D`,
+        );
       }
 
       questionsToInsert.push({
         question_text: q.question_text.trim(),
         options: q.options,
         correct_answer: sanitizedAnswer,
-        explanation: q.explanation || '',
+        explanation: q.explanation || "",
         subject: q.subject,
-        topic: q.topic || '',
-        difficulty: q.difficulty || 'medium',
-        category: q.category || '',
+        topic: q.topic || "",
+        difficulty: q.difficulty || "medium",
+        category: q.category || "",
         tutor_id: tutorId,
-        center_id: center.id
+        center_id: center.id,
       });
     }
 
     const BATCH_SIZE = 20;
     const allInserted = [];
-    
+
     for (let i = 0; i < questionsToInsert.length; i += BATCH_SIZE) {
       const batch = questionsToInsert.slice(i, i + BATCH_SIZE);
-      const batchNum = Math.floor(i/BATCH_SIZE) + 1;
-      
+      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+
       let retries = 3;
       let success = false;
-      
+
       while (retries > 0 && !success) {
         try {
           const { data, error } = await supabase
-            .from('tc_questions')
+            .from("tc_questions")
             .insert(batch)
             .select();
 
           if (error) throw error;
-          
+
           allInserted.push(...data);
           success = true;
-          
+
           if (i + BATCH_SIZE < questionsToInsert.length) {
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise((r) => setTimeout(r, 500));
           }
         } catch (err) {
           retries--;
-          
+
           if (retries === 0) {
-            logger.error('Batch insert failed', { batchNum, error: err?.message });
+            logger.error("Batch insert failed", {
+              batchNum,
+              error: err?.message,
+            });
             throw err;
           }
-          
-          await new Promise(r => setTimeout(r, 1000 * (4 - retries)));
+
+          await new Promise((r) => setTimeout(r, 1000 * (4 - retries)));
         }
       }
     }
 
     const duration = Date.now() - startTime;
-    logger.info('Bulk save completed', { 
-      tutorId, 
-      count: allInserted.length, 
-      durationMs: duration 
+    logger.info("Bulk save completed", {
+      tutorId,
+      count: allInserted.length,
+      durationMs: duration,
     });
-    
-    res.json({ success: true, questions: allInserted, count: allInserted.length });
+
+    res.json({
+      success: true,
+      questions: allInserted,
+      count: allInserted.length,
+    });
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('Save bulk questions error', { 
+    logger.error("Save bulk questions error", {
       error: error?.message || String(error),
-      durationMs: duration 
+      durationMs: duration,
     });
-    
-    res.status(500).json({ 
-      success: false, 
-      error: error?.message || 'Failed to save questions' 
+
+    res.status(500).json({
+      success: false,
+      error: error?.message || "Failed to save questions",
     });
   }
 };
@@ -1043,55 +1210,60 @@ exports.saveBulkQuestions = async (req, res) => {
 exports.createQuestionSet = async (req, res) => {
   try {
     const tutorId = req.user.id;
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
 
-    const result = await tutorialCenterService.createQuestionSet(tutorId, center.id, req.body);
+    const result = await tutorialCenterService.createQuestionSet(
+      tutorId,
+      center.id,
+      req.body,
+    );
     res.json(result);
   } catch (error) {
-    logger.error('Create question set error:', error);
+    logger.error("Create question set error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 exports.getQuestionSets = async (req, res) => {
-  console.log('🎯 [TEST-FETCH-TUTOR] getQuestionSets called - User:', req.user?.id);
   try {
     const tutorId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
 
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
-
-    // DEBUG: Uncomment for debugging
-    console.log('📊 [TEST-FETCH-TUTOR] Fetching tests for tutor', {
-      tutorId,
-      centerId: center.id,
-      note: 'Filtering out student-specific remedial tests'
-    });
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
 
     const { data, error, count } = await supabase
-      .from('tc_question_sets')
-      .select(`
+      .from("tc_question_sets")
+      .select(
+        `
         *,
         question_count:tc_question_set_items(count)
-      `, { count: 'exact' })
-      .eq('center_id', center.id)
-      .is('student_id', null)  // ✅ FIX: Only show tutor-created tests (not student remedial)
-      .order('created_at', { ascending: false })
+      `,
+        { count: "exact" },
+      )
+      .eq("center_id", center.id)
+      .is("student_id", null)
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-
-    // DEBUG: Uncomment for debugging
-    console.log('✅ [TEST-FETCH-TUTOR] Query results', {
-      total: data?.length,
-      remedialCount: data?.filter(t => t.is_remedial).length,
-      studentSpecificCount: data?.filter(t => t.student_id).length,
-      note: 'studentSpecificCount should be 0 for tutor view'
-    });
 
     res.json({
       success: true,
@@ -1100,11 +1272,11 @@ exports.getQuestionSets = async (req, res) => {
         page,
         limit,
         total: count,
-        totalPages: Math.ceil(count / limit)
-      }
+        totalPages: Math.ceil(count / limit),
+      },
     });
   } catch (error) {
-    logger.error('Get question sets error:', error);
+    logger.error("Get question sets error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1112,11 +1284,15 @@ exports.getQuestionSets = async (req, res) => {
 exports.getQuestionSet = async (req, res) => {
   try {
     const { id } = req.params;
-    const { data, error } = await supabase.from('tc_question_sets').select('*').eq('id', id).single();
+    const { data, error } = await supabase
+      .from("tc_question_sets")
+      .select("*")
+      .eq("id", id)
+      .single();
     if (error) throw error;
     res.json({ success: true, questionSet: data });
   } catch (error) {
-    logger.error('Get question set error:', error);
+    logger.error("Get question set error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1126,46 +1302,48 @@ exports.updateQuestionSet = async (req, res) => {
     const { id } = req.params;
     const tutorId = req.user.id;
     const updateData = req.body;
-    
+
     // Verify ownership
     const { data: center, error: centerError } = await supabase
-      .from('tutorial_centers')
-      .select('id')
-      .eq('tutor_id', tutorId)
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
       .single();
-    
+
     if (centerError || !center) {
-      return res.status(404).json({ success: false, error: 'Center not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
     }
-    
+
     const { data: questionSet, error: qsError } = await supabase
-      .from('tc_question_sets')
-      .select('center_id')
-      .eq('id', id)
+      .from("tc_question_sets")
+      .select("center_id")
+      .eq("id", id)
       .single();
-    
+
     if (qsError || !questionSet || questionSet.center_id !== center.id) {
-      return res.status(qsError ? 404 : 403).json({ 
-        success: false, 
-        error: qsError ? 'Test not found' : 'Unauthorized' 
+      return res.status(qsError ? 404 : 403).json({
+        success: false,
+        error: qsError ? "Test not found" : "Unauthorized",
       });
     }
-    
+
     const { data, error } = await supabase
-      .from('tc_question_sets')
+      .from("tc_question_sets")
       .update(updateData)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
-    
+
     if (error) {
-      return res.status(500).json({ success: false, error: 'Update failed' });
+      return res.status(500).json({ success: false, error: "Update failed" });
     }
-    
+
     res.json({ success: true, questionSet: data });
   } catch (error) {
-    logger.error('Update question set error', { error: error.message });
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    logger.error("Update question set error", { error: error.message });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
 
@@ -1173,11 +1351,16 @@ exports.toggleAnswers = async (req, res) => {
   try {
     const { id } = req.params;
     const { show_answers } = req.body;
-    const { data, error } = await supabase.from('tc_question_sets').update({ show_answers }).eq('id', id).select().single();
+    const { data, error } = await supabase
+      .from("tc_question_sets")
+      .update({ show_answers })
+      .eq("id", id)
+      .select()
+      .single();
     if (error) throw error;
     res.json({ success: true, questionSet: data });
   } catch (error) {
-    logger.error('Toggle answers error:', error);
+    logger.error("Toggle answers error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1186,21 +1369,35 @@ exports.deleteQuestionSet = async (req, res) => {
   try {
     const { id } = req.params;
     const tutorId = req.user.id;
-    
+
     // Verify ownership
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
-    
-    const { data: questionSet } = await supabase.from('tc_question_sets').select('center_id').eq('id', id).single();
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
+
+    const { data: questionSet } = await supabase
+      .from("tc_question_sets")
+      .select("center_id")
+      .eq("id", id)
+      .single();
     if (!questionSet || questionSet.center_id !== center.id) {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+      return res.status(403).json({ success: false, error: "Unauthorized" });
     }
-    
-    const { error } = await supabase.from('tc_question_sets').delete().eq('id', id);
+
+    const { error } = await supabase
+      .from("tc_question_sets")
+      .delete()
+      .eq("id", id);
     if (error) throw error;
     res.json({ success: true });
   } catch (error) {
-    logger.error('Delete question set error:', error);
+    logger.error("Delete question set error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1214,44 +1411,52 @@ exports.addQuestionsToTest = async (req, res) => {
     const tutorId = req.user.id;
 
     if (!Array.isArray(question_ids) || question_ids.length === 0) {
-      return res.status(400).json({ success: false, error: 'question_ids array required' });
+      return res
+        .status(400)
+        .json({ success: false, error: "question_ids array required" });
     }
 
-    console.log('📝 Adding questions to test:', { testId, questionIds: question_ids, tutorId });
+    console.log("📝 Adding questions to test:", {
+      testId,
+      questionIds: question_ids,
+      tutorId,
+    });
 
     // Verify test ownership
     const { data: test } = await supabase
-      .from('tc_question_sets')
-      .select('id, tutor_id')
-      .eq('id', testId)
-      .eq('tutor_id', tutorId)
+      .from("tc_question_sets")
+      .select("id, tutor_id")
+      .eq("id", testId)
+      .eq("tutor_id", tutorId)
       .single();
 
     if (!test) {
-      return res.status(404).json({ success: false, error: 'Test not found or unauthorized' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Test not found or unauthorized" });
     }
 
     // Insert into junction table
     const items = question_ids.map((qid, index) => ({
       question_set_id: testId,
       question_id: qid,
-      order_number: index + 1
+      order_number: index + 1,
     }));
 
     const { data, error } = await supabase
-      .from('tc_question_set_items')
+      .from("tc_question_set_items")
       .insert(items)
       .select();
 
     if (error) {
-      console.log('❌ Insert error:', error);
+      console.log("❌ Insert error:", error);
       throw error;
     }
 
-    console.log('✅ Added questions:', data?.length);
+    console.log("✅ Added questions:", data?.length);
     res.json({ success: true, count: data?.length, added: data?.length });
   } catch (error) {
-    logger.error('Add questions to test error:', error);
+    logger.error("Add questions to test error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1261,10 +1466,10 @@ exports.removeQuestionFromTest = async (req, res) => {
     const { testId, questionId } = req.params;
     const tutorId = req.user.id;
 
-    const { data, error } = await supabase.rpc('remove_question_from_test', {
+    const { data, error } = await supabase.rpc("remove_question_from_test", {
       test_id: testId,
       question_id_param: questionId,
-      tutor_user_id: tutorId
+      tutor_user_id: tutorId,
     });
 
     if (error) throw error;
@@ -1272,7 +1477,7 @@ exports.removeQuestionFromTest = async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    logger.error('Remove question from test error:', error);
+    logger.error("Remove question from test error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1283,8 +1488,9 @@ exports.getTestQuestions = async (req, res) => {
 
     // Query the correct junction table: tc_question_set_items
     const { data, error } = await supabase
-      .from('tc_question_set_items')
-      .select(`
+      .from("tc_question_set_items")
+      .select(
+        `
         order_number,
         tc_questions(
           id,
@@ -1296,20 +1502,21 @@ exports.getTestQuestions = async (req, res) => {
           topic,
           difficulty
         )
-      `)
-      .eq('question_set_id', testId)
-      .order('order_number');
+      `,
+      )
+      .eq("question_set_id", testId)
+      .order("order_number");
 
     if (error) throw error;
 
-    const questions = data.map(item => ({
+    const questions = data.map((item) => ({
       ...item.tc_questions,
-      order_number: item.order_number
+      order_number: item.order_number,
     }));
 
     res.json({ success: true, questions });
   } catch (error) {
-    logger.error('Get test questions error:', error);
+    logger.error("Get test questions error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1319,14 +1526,58 @@ exports.getTestQuestions = async (req, res) => {
 exports.getCenterAttempts = async (req, res) => {
   try {
     const tutorId = req.user.id;
-    const { data: center } = await supabase.from('tutorial_centers').select('id').eq('tutor_id', tutorId).single();
-    if (!center) return res.status(404).json({ success: false, error: 'Center not found' });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
 
-    const { data, error } = await supabase.from('tc_student_attempts').select('*').order('completed_at', { ascending: false });
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+    if (!center)
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
+
+    // Get question set IDs for this center
+    const { data: sets } = await supabase
+      .from("tc_question_sets")
+      .select("id")
+      .eq("center_id", center.id);
+    const setIds = sets?.map((s) => s.id) || [];
+
+    if (setIds.length === 0) {
+      return res.json({
+        success: true,
+        attempts: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      });
+    }
+
+    const { data, error, count } = await supabase
+      .from("tc_student_attempts")
+      .select(
+        "id, student_id, question_set_id, score, total_questions, completed_at, time_taken",
+        { count: "exact" },
+      )
+      .in("question_set_id", setIds)
+      .order("completed_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
     if (error) throw error;
-    res.json({ success: true, attempts: data || [] });
+    res.json({
+      success: true,
+      attempts: data || [],
+      pagination: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    });
   } catch (error) {
-    logger.error('Get attempts error:', error);
+    logger.error("Get attempts error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1337,21 +1588,25 @@ exports.getStudentAttempts = async (req, res) => {
     const tutorId = req.user.id;
 
     const { data, error } = await supabase
-      .from('tc_student_attempts')
-      .select(`
+      .from("tc_student_attempts")
+      .select(
+        `
         *,
         question_set:question_set_id(title, tutor_id)
-      `)
-      .eq('student_id', studentId)
-      .order('completed_at', { ascending: false });
+      `,
+      )
+      .eq("student_id", studentId)
+      .order("completed_at", { ascending: false });
 
     if (error) throw error;
 
-    const tutorAttempts = data.filter(a => a.question_set?.tutor_id === tutorId);
+    const tutorAttempts = data.filter(
+      (a) => a.question_set?.tutor_id === tutorId,
+    );
 
     res.json({ success: true, attempts: tutorAttempts });
   } catch (error) {
-    logger.error('Get student attempts error:', error);
+    logger.error("Get student attempts error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1363,18 +1618,18 @@ exports.updateTheme = async (req, res) => {
     const tutorId = req.user.id;
 
     const { data, error } = await supabase
-      .from('tutorial_centers')
+      .from("tutorial_centers")
       .update({ theme_config })
-      .eq('tutor_id', tutorId)
+      .eq("tutor_id", tutorId)
       .select()
       .single();
 
     if (error) throw error;
 
-    logger.info('Theme updated', { tutorId });
+    logger.info("Theme updated", { tutorId });
     res.json({ success: true, center: data });
   } catch (error) {
-    logger.error('Update theme error:', error);
+    logger.error("Update theme error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1387,51 +1642,62 @@ exports.checkTestAccess = async (req, res) => {
 
     // Get test settings
     const { data: test, error: testError } = await supabase
-      .from('tc_question_sets')
-      .select('max_attempts, cooldown_hours')
-      .eq('id', testId)
+      .from("tc_question_sets")
+      .select("max_attempts, cooldown_hours")
+      .eq("id", testId)
       .single();
 
     if (testError) throw testError;
 
     // Get student attempts
     const { data: attempts, error: attemptsError } = await supabase
-      .from('tc_student_attempts')
-      .select('completed_at, score')
-      .eq('question_set_id', testId)
-      .eq('student_id', studentId)
-      .order('completed_at', { ascending: false });
+      .from("tc_student_attempts")
+      .select("completed_at, score")
+      .eq("question_set_id", testId)
+      .eq("student_id", studentId)
+      .order("completed_at", { ascending: false });
 
     if (attemptsError) throw attemptsError;
 
     const attemptsUsed = attempts?.length || 0;
 
     // Check max attempts (only if max_attempts is set and > 0)
-    if (test.max_attempts && test.max_attempts > 0 && attemptsUsed >= test.max_attempts) {
+    if (
+      test.max_attempts &&
+      test.max_attempts > 0 &&
+      attemptsUsed >= test.max_attempts
+    ) {
       return res.json({
         success: true,
         canAttempt: false,
-        reason: 'max_attempts_reached',
+        reason: "max_attempts_reached",
         attemptsUsed,
         maxAttempts: test.max_attempts,
-        message: `Maximum attempts (${test.max_attempts}) reached`
+        message: `Maximum attempts (${test.max_attempts}) reached`,
       });
     }
 
     // Check cooldown (only if cooldown_hours is set and > 0)
-    if (test.cooldown_hours && test.cooldown_hours > 0 && attempts && attempts.length > 0) {
+    if (
+      test.cooldown_hours &&
+      test.cooldown_hours > 0 &&
+      attempts &&
+      attempts.length > 0
+    ) {
       const lastAttempt = new Date(attempts[0].completed_at);
       const now = new Date();
       const hoursSinceLastAttempt = (now - lastAttempt) / (1000 * 60 * 60);
 
       if (hoursSinceLastAttempt < test.cooldown_hours) {
-        const hoursRemaining = Math.ceil(test.cooldown_hours - hoursSinceLastAttempt);
+        const hoursRemaining = Math.ceil(
+          test.cooldown_hours - hoursSinceLastAttempt,
+        );
         return res.json({
           success: true,
           canAttempt: false,
-          reason: 'cooldown_active',
+          reason: "cooldown_active",
           hoursRemaining,
-          message: `Please wait ${hoursRemaining} hour(s) before retrying`
+          message: `Please wait ${hoursRemaining} hour(s) before retrying`,
         });
       }
     }
@@ -1441,10 +1707,12 @@ exports.checkTestAccess = async (req, res) => {
       canAttempt: true,
       attemptsUsed,
       maxAttempts: test.max_attempts || null,
-      attemptsRemaining: test.max_attempts ? test.max_attempts - attemptsUsed : null
+      attemptsRemaining: test.max_attempts
+        ? test.max_attempts - attemptsUsed
+        : null,
     });
   } catch (error) {
-    logger.error('Check test access error:', error);
+    logger.error("Check test access error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
