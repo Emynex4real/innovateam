@@ -1,5 +1,5 @@
-const rateLimit = require('express-rate-limit');
-const { createStore } = require('../stores/rateLimitStore');
+const rateLimit = require("express-rate-limit");
+const { createStore } = require("../stores/rateLimitStore");
 
 // General API rate limiter
 const apiLimiter = rateLimit({
@@ -8,21 +8,21 @@ const apiLimiter = rateLimit({
   store: createStore(15 * 60 * 1000),
   message: {
     success: false,
-    error: 'Too many requests, please try again later'
+    error: "Too many requests, please try again later",
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 // Strict limiter for write operations
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: process.env.NODE_ENV === "development" ? 200 : 50,
   store: createStore(15 * 60 * 1000),
   message: {
     success: false,
-    error: 'Too many write requests, please try again later'
-  }
+    error: "Too many write requests, please try again later",
+  },
 });
 
 // Auth limiter
@@ -32,12 +32,12 @@ const authLimiter = rateLimit({
   store: createStore(15 * 60 * 1000),
   message: {
     success: false,
-    error: 'Too many authentication attempts, please try again later'
-  }
+    error: "Too many authentication attempts, please try again later",
+  },
 });
 
 module.exports = {
   apiLimiter,
   writeLimiter,
-  authLimiter
+  authLimiter,
 };

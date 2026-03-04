@@ -69,6 +69,10 @@ const logger = require("./utils/logger");
 
 const app = express();
 
+// Trust proxy for correct IP detection behind Cloudflare/Vercel/Nginx
+// Required for rate limiting to work per-user instead of per-proxy
+app.set("trust proxy", 1);
+
 // ============================================
 // 1. SECURITY HEADERS (Enhanced Helmet)
 // ============================================

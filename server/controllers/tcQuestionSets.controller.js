@@ -12,6 +12,8 @@ exports.createQuestionSet = async (req, res) => {
       passing_score,
       visibility,
       show_answers,
+      is_cbt_mode,
+      exam_type,
     } = req.body;
     const tutorId = req.user.id;
 
@@ -40,6 +42,8 @@ exports.createQuestionSet = async (req, res) => {
           passing_score,
           visibility: visibility || "private",
           show_answers: show_answers || false,
+          is_cbt_mode: is_cbt_mode || false,
+          exam_type: exam_type || "custom",
         },
       ])
       .select()
@@ -168,7 +172,7 @@ exports.getQuestionSet = async (req, res) => {
 
     const isTutor = set.tutor_id === userId;
 
-    const questions =
+    let questions =
       set.items
         ?.sort((a, b) => a.order_number - b.order_number)
         .map((item) => {
@@ -179,6 +183,27 @@ exports.getQuestionSet = async (req, res) => {
           }
           return q;
         }) || [];
+
+    // Seeded shuffle for CBT mode (each student gets unique but consistent order)
+    if (set.shuffle_questions && !isTutor && questions.length > 1) {
+      // Simple seeded PRNG using hash of userId + testId
+      const seedStr = `${userId}-${id}`;
+      let seed = 0;
+      for (let i = 0; i < seedStr.length; i++) {
+        seed = ((seed << 5) - seed + seedStr.charCodeAt(i)) | 0;
+      }
+      const seededRandom = () => {
+        seed = (seed * 1664525 + 1013904223) & 0x7fffffff;
+        return seed / 0x7fffffff;
+      };
+      // Fisher-Yates shuffle with seeded random
+      const shuffled = [...questions];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      questions = shuffled;
+    }
 
     res.json({
       success: true,
@@ -202,6 +227,8 @@ exports.updateQuestionSet = async (req, res) => {
       show_answers,
       is_active,
       visibility,
+      is_cbt_mode,
+      exam_type,
     } = req.body;
     const tutorId = req.user.id;
 
@@ -215,6 +242,8 @@ exports.updateQuestionSet = async (req, res) => {
         show_answers,
         is_active,
         visibility,
+        is_cbt_mode,
+        exam_type,
       })
       .eq("id", id)
       .eq("tutor_id", tutorId)

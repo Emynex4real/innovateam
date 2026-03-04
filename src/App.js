@@ -51,6 +51,7 @@ import MyCenters from "./pages/student/tutorial-center/MyCenters";
 import StudentTests from "./pages/student/tutorial-center/EnterpriseTestList.jsx";
 import PublicTests from "./pages/student/tutorial-center/PublicTests";
 import TakeTest from "./pages/student/tutorial-center/EnterpriseTakeTest.jsx";
+import CBTSimulator from "./pages/student/tutorial-center/CBTSimulator.jsx";
 import Results from "./pages/student/tutorial-center/EnterpriseResults.jsx";
 import ReviewAnswers from "./pages/student/tutorial-center/ReviewAnswers";
 import StudentAnalytics from "./pages/student/analytics/MyAnalytics";
@@ -818,6 +819,14 @@ function App() {
                   element={
                     <RoleProtectedRoute allowedRoles={["student"]}>
                       <TakeTest />
+                    </RoleProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/student/test/:testId/cbt"
+                  element={
+                    <RoleProtectedRoute allowedRoles={["student"]}>
+                      <CBTSimulator />
                     </RoleProtectedRoute>
                   }
                 />
