@@ -70,6 +70,16 @@ router.get(
   tutorialCenterController.getStudentAlerts,
 ); // Cache 2min
 
+// WhatsApp results sharing
+router.put(
+  "/students/:studentId/parent-whatsapp",
+  tutorialCenterController.updateParentWhatsapp,
+);
+router.get(
+  "/tests/:testId/whatsapp-results",
+  tutorialCenterController.getTestWhatsAppResults,
+);
+
 // Analytics and gamification
 router.get("/leaderboard/:testId", tutorialCenterController.getLeaderboard);
 router.get(

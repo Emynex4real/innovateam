@@ -172,7 +172,7 @@ exports.getCenterStudents = async (req, res) => {
     // Get enrolled students
     const { data: enrollments, error } = await supabase
       .from("tc_enrollments")
-      .select("student_id, enrolled_at")
+      .select("student_id, enrolled_at, parent_whatsapp")
       .eq("center_id", center.id);
 
     if (error) throw error;
@@ -208,6 +208,7 @@ exports.getCenterStudents = async (req, res) => {
         email: profile?.email || "Unknown",
         name: profile?.full_name || profile?.email?.split("@")[0] || "Unknown",
         enrolled_at: e.enrolled_at,
+        parent_whatsapp: e.parent_whatsapp || null,
         total_attempts: studentAttempts.length,
         average_score: avgScore,
       };
@@ -1718,3 +1719,134 @@ exports.checkTestAccess = async (req, res) => {
 };
 
 module.exports = exports;
+
+// Update parent WhatsApp number for a student enrollment
+exports.updateParentWhatsapp = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { studentId } = req.params;
+    const { parent_whatsapp } = req.body;
+
+    // Verify tutor owns a center
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id")
+      .eq("tutor_id", tutorId)
+      .single();
+
+    if (!center) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
+    }
+
+    // Update the enrollment record
+    const { error } = await supabase
+      .from("tc_enrollments")
+      .update({ parent_whatsapp: parent_whatsapp || null })
+      .eq("center_id", center.id)
+      .eq("student_id", studentId);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: "Parent WhatsApp updated" });
+  } catch (error) {
+    logger.error("Update parent WhatsApp error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get test results formatted for WhatsApp sharing
+exports.getTestWhatsAppResults = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { testId } = req.params;
+
+    // Get center
+    const { data: center } = await supabase
+      .from("tutorial_centers")
+      .select("id, name")
+      .eq("tutor_id", tutorId)
+      .single();
+
+    if (!center) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Center not found" });
+    }
+
+    // Get test info
+    const { data: test } = await supabase
+      .from("tc_question_sets")
+      .select("id, title, passing_score")
+      .eq("id", testId)
+      .single();
+
+    if (!test) {
+      return res.status(404).json({ success: false, error: "Test not found" });
+    }
+
+    // Get attempts for this test
+    const { data: attempts } = await supabase
+      .from("tc_student_attempts")
+      .select("student_id, score, total_questions, completed_at")
+      .eq("question_set_id", testId);
+
+    if (!attempts || attempts.length === 0) {
+      return res.json({
+        success: true,
+        results: [],
+        test,
+        centerName: center.name,
+      });
+    }
+
+    // Get student IDs
+    const studentIds = [...new Set(attempts.map((a) => a.student_id))];
+
+    // Get student profiles and enrollments with parent_whatsapp in parallel
+    const [profilesRes, enrollmentsRes] = await Promise.all([
+      supabase
+        .from("user_profiles")
+        .select("id, full_name, email")
+        .in("id", studentIds),
+      supabase
+        .from("tc_enrollments")
+        .select("student_id, parent_whatsapp")
+        .eq("center_id", center.id)
+        .in("student_id", studentIds),
+    ]);
+
+    // Build results
+    const results = attempts.map((attempt) => {
+      const profile = profilesRes.data?.find(
+        (p) => p.id === attempt.student_id,
+      );
+      const enrollment = enrollmentsRes.data?.find(
+        (e) => e.student_id === attempt.student_id,
+      );
+      const passed = attempt.score >= test.passing_score;
+
+      return {
+        studentId: attempt.student_id,
+        studentName:
+          profile?.full_name || profile?.email?.split("@")[0] || "Unknown",
+        score: attempt.score,
+        totalQuestions: attempt.total_questions,
+        passed,
+        completedAt: attempt.completed_at,
+        parentWhatsapp: enrollment?.parent_whatsapp || null,
+      };
+    });
+
+    res.json({
+      success: true,
+      results,
+      test: { title: test.title, passingScore: test.passing_score },
+      centerName: center.name,
+    });
+  } catch (error) {
+    logger.error("Get WhatsApp results error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

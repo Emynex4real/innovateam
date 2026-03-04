@@ -1,80 +1,83 @@
-import api from './api';
-import requestManager from '../utils/requestManager';
-import { isDebugEnabled } from '../config/debug.config';
+import api from "./api";
+import requestManager from "../utils/requestManager";
+import { isDebugEnabled } from "../config/debug.config";
 
-const API_BASE = '/tutorial-centers';
+const API_BASE = "/tutorial-centers";
 
 // Logging helper
 const log = (level, message, data = {}) => {
-  if (!isDebugEnabled('SERVICE_LAYER')) return;
+  if (!isDebugEnabled("SERVICE_LAYER")) return;
   const timestamp = new Date().toISOString();
-  const emoji = { info: '📘', warn: '⚠️', error: '❌', success: '✅' }[level] || '📝';
+  const emoji =
+    { info: "📘", warn: "⚠️", error: "❌", success: "✅" }[level] || "📝";
   console.log(`${emoji} [TC-SERVICE ${timestamp}] ${message}`, data);
 };
 
 export const tutorialCenterService = {
   createCenter: async (data) => {
-    log('info', 'createCenter called', { name: data.name });
+    log("info", "createCenter called", { name: data.name });
     try {
       const response = await api.post(API_BASE, data);
-      log('success', 'createCenter completed');
+      log("success", "createCenter completed");
       requestManager.clearCache(); // Clear all cache
       return response.data;
     } catch (error) {
-      log('error', 'createCenter failed', { error: error.message });
+      log("error", "createCenter failed", { error: error.message });
       throw error;
     }
   },
 
   getMyCenter: async () => {
-    log('info', 'getMyCenter called');
+    log("info", "getMyCenter called");
     return requestManager.deduplicate(
-      'getMyCenter',
+      "getMyCenter",
       async () => {
         const response = await api.get(`${API_BASE}/my-center`);
-        log('success', 'getMyCenter completed');
+        log("success", "getMyCenter completed");
         return response.data;
       },
-      { cache: true, cacheTTL: 10000 } // 10s cache
+      { cache: true, cacheTTL: 10000 }, // 10s cache
     );
   },
 
   updateCenter: async (data) => {
-    log('info', 'updateCenter called');
+    log("info", "updateCenter called");
     try {
       const response = await api.put(API_BASE, data);
-      log('success', 'updateCenter completed');
-      requestManager.clearCache('getMyCenter');
+      log("success", "updateCenter completed");
+      requestManager.clearCache("getMyCenter");
       return response.data;
     } catch (error) {
-      log('error', 'updateCenter failed', { error: error.message });
+      log("error", "updateCenter failed", { error: error.message });
       throw error;
     }
   },
 
   deleteCenter: async (data) => {
-    log('info', 'deleteCenter called');
+    log("info", "deleteCenter called");
     try {
       const response = await api.delete(API_BASE, { data });
-      log('success', 'deleteCenter completed');
+      log("success", "deleteCenter completed");
       requestManager.clearCache();
       return response.data;
     } catch (error) {
-      log('error', 'deleteCenter failed', { error: error.message });
+      log("error", "deleteCenter failed", { error: error.message });
       throw error;
     }
   },
 
   getStudents: async () => {
-    log('info', 'getStudents called');
+    log("info", "getStudents called");
     return requestManager.deduplicate(
-      'getStudents',
+      "getStudents",
       async () => {
         const response = await api.get(`${API_BASE}/students`);
-        log('success', 'getStudents completed', { count: response.data.students?.length });
+        log("success", "getStudents completed", {
+          count: response.data.students?.length,
+        });
         return response.data;
       },
-      { cache: true, cacheTTL: 15000 } // 15s cache
+      { cache: true, cacheTTL: 15000 }, // 15s cache
     );
   },
 
@@ -84,31 +87,43 @@ export const tutorialCenterService = {
   },
 
   generateQuestionsAI: async (data) => {
-    const response = await api.post(`${API_BASE}/tc-questions/generate-ai`, data);
+    const response = await api.post(
+      `${API_BASE}/tc-questions/generate-ai`,
+      data,
+    );
     return response.data;
   },
 
   parseBulkQuestions: async (data) => {
-    const response = await api.post(`${API_BASE}/tc-questions/parse-bulk`, data);
+    const response = await api.post(
+      `${API_BASE}/tc-questions/parse-bulk`,
+      data,
+    );
     return response.data;
   },
 
   saveBulkQuestions: async (questions) => {
-    const response = await api.post(`${API_BASE}/tc-questions/save-bulk`, { questions });
+    const response = await api.post(`${API_BASE}/tc-questions/save-bulk`, {
+      questions,
+    });
     return response.data;
   },
 
   getQuestions: async (filters = {}) => {
-    log('info', 'getQuestions called', { filters });
+    log("info", "getQuestions called", { filters });
     const cacheKey = `getQuestions:${JSON.stringify(filters)}`;
     return requestManager.deduplicate(
       cacheKey,
       async () => {
-        const response = await api.get(`${API_BASE}/tc-questions`, { params: filters });
-        log('success', 'getQuestions completed', { count: response.data.questions?.length });
+        const response = await api.get(`${API_BASE}/tc-questions`, {
+          params: filters,
+        });
+        log("success", "getQuestions completed", {
+          count: response.data.questions?.length,
+        });
         return response.data;
       },
-      { cache: true, cacheTTL: 20000 } // 20s cache
+      { cache: true, cacheTTL: 20000 }, // 20s cache
     );
   },
 
@@ -128,15 +143,17 @@ export const tutorialCenterService = {
   },
 
   getQuestionSets: async () => {
-    log('info', 'getQuestionSets called');
+    log("info", "getQuestionSets called");
     return requestManager.deduplicate(
-      'getQuestionSets',
+      "getQuestionSets",
       async () => {
         const response = await api.get(`${API_BASE}/tc-question-sets`);
-        log('success', 'getQuestionSets completed', { count: response.data.questionSets?.length });
+        log("success", "getQuestionSets completed", {
+          count: response.data.questionSets?.length,
+        });
         return response.data;
       },
-      { cache: true, cacheTTL: 15000 } // 15s cache
+      { cache: true, cacheTTL: 15000 }, // 15s cache
     );
   },
 
@@ -151,7 +168,10 @@ export const tutorialCenterService = {
   },
 
   toggleAnswers: async (id, show_answers) => {
-    const response = await api.put(`${API_BASE}/tc-question-sets/${id}/toggle-answers`, { show_answers });
+    const response = await api.put(
+      `${API_BASE}/tc-question-sets/${id}/toggle-answers`,
+      { show_answers },
+    );
     return response.data;
   },
 
@@ -161,20 +181,26 @@ export const tutorialCenterService = {
   },
 
   getCenterAttempts: async () => {
-    log('info', 'getCenterAttempts called');
+    log("info", "getCenterAttempts called");
     return requestManager.deduplicate(
-      'getCenterAttempts',
+      "getCenterAttempts",
       async () => {
-        const response = await api.get(`${API_BASE}/tc-attempts/center-attempts`);
-        log('success', 'getCenterAttempts completed', { count: response.data.attempts?.length });
+        const response = await api.get(
+          `${API_BASE}/tc-attempts/center-attempts`,
+        );
+        log("success", "getCenterAttempts completed", {
+          count: response.data.attempts?.length,
+        });
         return response.data;
       },
-      { cache: true, cacheTTL: 10000 } // 10s cache
+      { cache: true, cacheTTL: 10000 }, // 10s cache
     );
   },
 
-  getLeaderboard: async (questionSetId, filter = 'all') => {
-    const response = await api.get(`${API_BASE}/leaderboard/${questionSetId}?filter=${filter}`);
+  getLeaderboard: async (questionSetId, filter = "all") => {
+    const response = await api.get(
+      `${API_BASE}/leaderboard/${questionSetId}?filter=${filter}`,
+    );
     return response.data;
   },
 
@@ -183,8 +209,10 @@ export const tutorialCenterService = {
     return response.data;
   },
 
-  getAdvancedAnalytics: async (timeRange = 'week') => {
-    const response = await api.get(`${API_BASE}/advanced-analytics?timeRange=${timeRange}`);
+  getAdvancedAnalytics: async (timeRange = "week") => {
+    const response = await api.get(
+      `${API_BASE}/advanced-analytics?timeRange=${timeRange}`,
+    );
     return response.data;
   },
 
@@ -204,22 +232,31 @@ export const tutorialCenterService = {
   },
 
   getStudentTestHistory: async (studentId) => {
-    const response = await api.get(`${API_BASE}/students/${studentId}/test-history`);
+    const response = await api.get(
+      `${API_BASE}/students/${studentId}/test-history`,
+    );
     return response.data;
   },
 
   getStudentAnalytics: async (studentId) => {
-    const response = await api.get(`${API_BASE}/students/${studentId}/analytics`);
+    const response = await api.get(
+      `${API_BASE}/students/${studentId}/analytics`,
+    );
     return response.data;
   },
 
-  getStudentProgress: async (studentId, period = 'month') => {
-    const response = await api.get(`${API_BASE}/students/${studentId}/progress?period=${period}`);
+  getStudentProgress: async (studentId, period = "month") => {
+    const response = await api.get(
+      `${API_BASE}/students/${studentId}/progress?period=${period}`,
+    );
     return response.data;
   },
 
-  generateStudentReport: async (studentId, period = 'week') => {
-    const response = await api.post(`${API_BASE}/students/${studentId}/report`, { period });
+  generateStudentReport: async (studentId, period = "week") => {
+    const response = await api.post(
+      `${API_BASE}/students/${studentId}/report`,
+      { period },
+    );
     return response.data;
   },
 
@@ -229,7 +266,9 @@ export const tutorialCenterService = {
   },
 
   addStudentNote: async (studentId, note) => {
-    const response = await api.post(`${API_BASE}/students/${studentId}/notes`, { note });
+    const response = await api.post(`${API_BASE}/students/${studentId}/notes`, {
+      note,
+    });
     return response.data;
   },
 
@@ -240,22 +279,31 @@ export const tutorialCenterService = {
 
   // Question set questions management
   addQuestionsToTest: async (testId, questionIds) => {
-    const response = await api.post(`${API_BASE}/tc-question-sets/${testId}/questions`, { question_ids: questionIds });
+    const response = await api.post(
+      `${API_BASE}/tc-question-sets/${testId}/questions`,
+      { question_ids: questionIds },
+    );
     return response.data;
   },
 
   removeQuestionFromTest: async (testId, questionId) => {
-    const response = await api.delete(`${API_BASE}/tc-question-sets/${testId}/questions/${questionId}`);
+    const response = await api.delete(
+      `${API_BASE}/tc-question-sets/${testId}/questions/${questionId}`,
+    );
     return response.data;
   },
 
   getTestQuestions: async (testId) => {
-    const response = await api.get(`${API_BASE}/tc-question-sets/${testId}/questions`);
+    const response = await api.get(
+      `${API_BASE}/tc-question-sets/${testId}/questions`,
+    );
     return response.data;
   },
 
   getStudentAttempts: async (studentId) => {
-    const response = await api.get(`${API_BASE}/students/${studentId}/attempts`);
+    const response = await api.get(
+      `${API_BASE}/students/${studentId}/attempts`,
+    );
     return response.data;
   },
 
@@ -272,17 +320,19 @@ export const tutorialCenterService = {
 
   generateRemedialTest: async (attemptId) => {
     // DEBUG: Uncomment for debugging
-    console.log('📡 [SERVICE] generateRemedialTest called', { attemptId });
-    
+    console.log("📡 [SERVICE] generateRemedialTest called", { attemptId });
+
     try {
-      const response = await api.post(`${API_BASE}/remedial/generate`, { attempt_id: attemptId });
-      console.log('✅ [SERVICE] generateRemedialTest response', response.data);
+      const response = await api.post(`${API_BASE}/remedial/generate`, {
+        attempt_id: attemptId,
+      });
+      console.log("✅ [SERVICE] generateRemedialTest response", response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ [SERVICE] generateRemedialTest error', {
+      console.error("❌ [SERVICE] generateRemedialTest error", {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
       });
       throw error;
     }
@@ -301,7 +351,9 @@ export const tutorialCenterService = {
 
   // White Label
   updateTheme: async (theme) => {
-    const response = await api.put(`${API_BASE}/theme`, { theme_config: theme });
+    const response = await api.put(`${API_BASE}/theme`, {
+      theme_config: theme,
+    });
     return response.data;
   },
 
@@ -309,7 +361,24 @@ export const tutorialCenterService = {
   checkTestAccess: async (testId) => {
     const response = await api.get(`${API_BASE}/tests/${testId}/check-access`);
     return response.data;
-  }
+  },
+
+  // WhatsApp: Update parent WhatsApp number
+  updateParentWhatsapp: async (studentId, parentWhatsapp) => {
+    const response = await api.put(
+      `${API_BASE}/students/${studentId}/parent-whatsapp`,
+      { parent_whatsapp: parentWhatsapp },
+    );
+    return response.data;
+  },
+
+  // WhatsApp: Get test results for sharing
+  getTestWhatsAppResults: async (testId) => {
+    const response = await api.get(
+      `${API_BASE}/tests/${testId}/whatsapp-results`,
+    );
+    return response.data;
+  },
 };
 
 export default tutorialCenterService;
