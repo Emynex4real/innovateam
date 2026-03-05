@@ -86,6 +86,19 @@ export const tutorialCenterService = {
     return response.data;
   },
 
+  uploadQuestionImage: async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = await api.post(
+      `${API_BASE}/tc-questions/upload-image`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return response.data;
+  },
+
   generateQuestionsAI: async (data) => {
     const response = await api.post(
       `${API_BASE}/tc-questions/generate-ai`,

@@ -400,6 +400,16 @@ const CBTSimulator = () => {
 
               {/* Question Body */}
               <div className="bg-white rounded-b-lg shadow-md p-6 md:p-8 mb-4">
+                {/* Question Image */}
+                {currentQuestion.image_url && (
+                  <div className="mb-4">
+                    <img
+                      src={currentQuestion.image_url}
+                      alt="Question diagram"
+                      className="max-w-full max-h-[300px] rounded-lg border border-gray-200 mx-auto object-contain"
+                    />
+                  </div>
+                )}
                 <div className="text-base md:text-lg leading-relaxed text-gray-900 mb-8">
                   <MathText text={currentQuestion.question_text} />
                 </div>

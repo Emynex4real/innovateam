@@ -63,11 +63,13 @@ import TutoringMarketplace from "./pages/student/TutoringMarketplace";
 
 // Tutor & Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPastQuestionsUpload from "./pages/admin/AdminPastQuestionsUpload";
 import TutorDashboard from "./pages/tutor/TutorDashboard.jsx";
 import TutorQuestions from "./pages/tutor/Questions";
 import AIGenerator from "./pages/tutor/AIGenerator";
 import BulkQuestionImport from "./pages/tutor/BulkQuestionImport";
 import TestBuilder from "./pages/tutor/TestBuilder";
+import PastQuestionsLibrary from "./pages/tutor/PastQuestionsLibrary";
 import Tests from "./pages/tutor/Tests";
 import TestDetail from "./pages/tutor/TestDetail";
 import Students from "./pages/tutor/Students";
@@ -675,6 +677,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/tutor/past-questions"
+                  element={
+                    <RoleProtectedRoute allowedRoles={["tutor", "admin"]}>
+                      <PastQuestionsLibrary />
+                    </RoleProtectedRoute>
+                  }
+                />
+                <Route
                   path="/tutor/students"
                   element={
                     <RoleProtectedRoute allowedRoles={["tutor", "admin"]}>
@@ -912,6 +922,14 @@ function App() {
                   element={
                     <AdminProtectedRoute>
                       <AdminDashboard />
+                    </AdminProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/past-questions-upload"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminPastQuestionsUpload />
                     </AdminProtectedRoute>
                   }
                 />

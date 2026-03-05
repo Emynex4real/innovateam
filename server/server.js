@@ -52,6 +52,8 @@ const tcQuestionSetsRoutes = require("./routes/tcQuestionSets.routes");
 const tcAttemptsRoutes = require("./routes/tcAttempts.routes");
 const schedulerRoutes = require("./routes/scheduler.routes");
 const proctoringRoutes = require("./routes/proctoring.routes");
+const pastQuestionsRoutes = require("./routes/pastQuestions.routes");
+const adminPastQuestionsRoutes = require("./routes/adminPastQuestions.routes");
 
 // Webhook routes (Paystack)
 const webhookRoutes = require("./routes/webhook.routes");
@@ -376,6 +378,7 @@ app.use("/api/email", emailRoutes);
 app.use("/api", courseRecommendationRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/past-questions", adminPastQuestionsRoutes);
 app.use("/api/cost-monitoring", apiCostRoutes);
 app.use("/api/knowledge-base", knowledgeBaseRoutes);
 
@@ -386,6 +389,7 @@ app.use("/api/tc-questions", tcQuestionsRoutes);
 app.use("/api/tc-question-sets", tcQuestionSetsRoutes);
 app.use("/api/tc-attempts", tcAttemptsRoutes);
 app.use("/api/scheduler", schedulerRoutes);
+app.use("/api/past-questions", pastQuestionsRoutes);
 
 // Phase 1 routes
 app.use("/api/analytics", analyticsRoutes);

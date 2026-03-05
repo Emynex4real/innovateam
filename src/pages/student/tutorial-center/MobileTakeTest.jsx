@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import studentTCService from '../../../services/studentTC.service';
-import toast from 'react-hot-toast';
-import MathText from '../../../components/MathText';
-import { hapticFeedback, useSwipeGesture } from '../../../utils/mobileOptimization';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import studentTCService from "../../../services/studentTC.service";
+import toast from "react-hot-toast";
+import MathText from "../../../components/MathText";
+import {
+  hapticFeedback,
+  useSwipeGesture,
+} from "../../../utils/mobileOptimization";
 
 const MobileTakeTest = () => {
   const { testId } = useParams();
@@ -24,7 +27,7 @@ const MobileTakeTest = () => {
   useEffect(() => {
     if (timeLeft <= 0) return;
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           handleSubmit();
           return 0;
@@ -43,74 +46,82 @@ const MobileTakeTest = () => {
         setTimeLeft(response.questionSet.time_limit * 60);
       }
     } catch (error) {
-      toast.error('Failed to load test');
-      navigate('/student/tests');
+      toast.error("Failed to load test");
+      navigate("/student/tests");
     } finally {
       setLoading(false);
     }
   };
 
   const handleAnswer = (questionId, answer) => {
-    hapticFeedback('light');
+    hapticFeedback("light");
     setAnswers({ ...answers, [questionId]: answer });
   };
 
   const nextQuestion = () => {
     if (currentQuestion < test.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-      hapticFeedback('light');
+      hapticFeedback("light");
     }
   };
 
   const prevQuestion = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
-      hapticFeedback('light');
+      hapticFeedback("light");
     }
   };
 
   const goToQuestion = (index) => {
     setCurrentQuestion(index);
     setShowQuestionNav(false);
-    hapticFeedback('light');
+    hapticFeedback("light");
   };
 
   const handleSubmit = async () => {
     if (submitting) return;
-    
-    const unanswered = test.questions.filter(q => !answers[q.id]);
-    if (unanswered.length > 0 && !window.confirm(`${unanswered.length} questions unanswered. Submit anyway?`)) {
+
+    const unanswered = test.questions.filter((q) => !answers[q.id]);
+    if (
+      unanswered.length > 0 &&
+      !window.confirm(
+        `${unanswered.length} questions unanswered. Submit anyway?`,
+      )
+    ) {
       return;
     }
 
     setSubmitting(true);
-    hapticFeedback('success');
-    
+    hapticFeedback("success");
+
     try {
       const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-      const formattedAnswers = test.questions.map(q => ({
+      const formattedAnswers = test.questions.map((q) => ({
         question_id: q.id,
-        selected_answer: answers[q.id] || null
+        selected_answer: answers[q.id] || null,
       }));
 
       const response = await studentTCService.submitAttempt({
         question_set_id: testId,
         answers: formattedAnswers,
-        time_taken: timeTaken
+        time_taken: timeTaken,
       });
 
       if (response.success) {
-        toast.success('Test submitted!');
+        toast.success("Test submitted!");
         navigate(`/student/results/${testId}`);
       }
     } catch (error) {
-      toast.error('Failed to submit test');
+      toast.error("Failed to submit test");
       setSubmitting(false);
     }
   };
 
   // Swipe gestures
-  const { handleTouchStart, handleTouchEnd } = useSwipeGesture(nextQuestion, prevQuestion);
+  const { handleTouchStart, handleTouchEnd } = useSwipeGesture(
+    nextQuestion,
+    prevQuestion,
+  );
 
   if (loading) {
     return (
@@ -138,8 +149,10 @@ const MobileTakeTest = () => {
             >
               ← Back
             </button>
-            <div className={`text-2xl font-bold ${timeLeft < 300 ? 'text-red-600' : 'text-blue-600'}`}>
-              {minutes}:{seconds.toString().padStart(2, '0')}
+            <div
+              className={`text-2xl font-bold ${timeLeft < 300 ? "text-red-600" : "text-blue-600"}`}
+            >
+              {minutes}:{seconds.toString().padStart(2, "0")}
             </div>
             <button
               onClick={() => setShowQuestionNav(true)}
@@ -164,27 +177,45 @@ const MobileTakeTest = () => {
         onTouchEnd={handleTouchEnd}
       >
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-4">
+          {/* Question Image */}
+          {question.image_url && (
+            <div className="mb-4">
+              <img
+                src={question.image_url}
+                alt="Question diagram"
+                className="max-w-full max-h-[250px] rounded-lg border border-gray-200 dark:border-gray-700 mx-auto object-contain"
+              />
+            </div>
+          )}
           <div className="flex items-start gap-3 mb-6">
             <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 min-w-[32px]">
               {currentQuestion + 1}.
             </span>
-            <MathText text={question.question_text} className="flex-1 text-lg leading-relaxed" />
+            <MathText
+              text={question.question_text}
+              className="flex-1 text-lg leading-relaxed"
+            />
           </div>
 
           <div className="space-y-3">
-            {['A', 'B', 'C', 'D'].map((letter, optIdx) => (
+            {["A", "B", "C", "D"].map((letter, optIdx) => (
               <button
                 key={letter}
                 onClick={() => handleAnswer(question.id, letter)}
                 className={`w-full text-left p-4 rounded-xl border-2 transition-all min-h-[60px] ${
                   answers[question.id] === letter
-                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 shadow-md'
-                    : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 active:scale-98'
+                    ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 shadow-md"
+                    : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 active:scale-98"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="font-bold text-lg min-w-[24px]">{letter}.</span>
-                  <MathText text={question.options[optIdx]} className="flex-1" />
+                  <span className="font-bold text-lg min-w-[24px]">
+                    {letter}.
+                  </span>
+                  <MathText
+                    text={question.options[optIdx]}
+                    className="flex-1"
+                  />
                 </div>
               </button>
             ))}
@@ -213,7 +244,7 @@ const MobileTakeTest = () => {
               disabled={submitting}
               className="flex-1 min-h-[48px] bg-green-600 text-white rounded-xl font-semibold disabled:opacity-50 active:scale-95 transition"
             >
-              {submitting ? 'Submitting...' : 'Submit Test'}
+              {submitting ? "Submitting..." : "Submit Test"}
             </button>
           ) : (
             <button
@@ -249,10 +280,10 @@ const MobileTakeTest = () => {
                     onClick={() => goToQuestion(idx)}
                     className={`aspect-square rounded-xl font-bold text-lg transition ${
                       idx === currentQuestion
-                        ? 'bg-blue-600 text-white'
+                        ? "bg-blue-600 text-white"
                         : answers[q.id]
-                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
                     }`}
                   >
                     {idx + 1}
