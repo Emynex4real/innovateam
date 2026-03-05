@@ -20,6 +20,12 @@ const MobileTakeTest = () => {
   const [showQuestionNav, setShowQuestionNav] = useState(false);
   const [startTime] = useState(Date.now());
 
+  // Signal exam mode to pause all background polling
+  useEffect(() => {
+    window.dispatchEvent(new Event("exam-mode-start"));
+    return () => window.dispatchEvent(new Event("exam-mode-end"));
+  }, []);
+
   useEffect(() => {
     loadTest();
   }, [testId]);

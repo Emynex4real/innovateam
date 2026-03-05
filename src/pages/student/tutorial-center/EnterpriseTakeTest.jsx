@@ -53,6 +53,12 @@ const EnterpriseTakeTest = () => {
   const questionStartTimeRef = useRef(Date.now());
   const sessionIdRef = useRef(null);
 
+  // Signal exam mode to pause all background polling
+  useEffect(() => {
+    window.dispatchEvent(new Event("exam-mode-start"));
+    return () => window.dispatchEvent(new Event("exam-mode-end"));
+  }, []);
+
   // --- INITIALIZATION ---
   useEffect(() => {
     loadTest();

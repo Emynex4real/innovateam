@@ -41,6 +41,12 @@ const CBTSimulator = () => {
   const { violations, getViolations, getFingerprint } = useAntiCheat(testId);
   const startTimeRef = useRef(Date.now());
 
+  // Signal exam mode to pause all background polling
+  useEffect(() => {
+    window.dispatchEvent(new Event('exam-mode-start'));
+    return () => window.dispatchEvent(new Event('exam-mode-end'));
+  }, []);
+
   // Load test
   useEffect(() => {
     const load = async () => {
