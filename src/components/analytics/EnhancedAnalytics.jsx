@@ -9,7 +9,6 @@ import {
   Activity,
   Target,
   BookOpen,
-  Award,
   AlertCircle,
 } from "lucide-react";
 
@@ -193,7 +192,7 @@ export const RecentTestHistory = ({ attempts = [] }) => {
                   <div className="text-right">
                     <div
                       className={`min-w-[54px] text-center px-2.5 py-1 rounded-md border text-[11px] font-black tracking-tighter uppercase shadow-sm ${getScoreColor(
-                        attempt.score
+                        attempt.score,
                       )}`}
                     >
                       {attempt.score}%
@@ -224,13 +223,15 @@ export const StrengthsWeaknesses = ({ subjects = [] }) => {
   const { isDarkMode } = useDarkMode();
 
   const sortedByScore = [...subjects].sort(
-    (a, b) => (b.avgScore || b.mastery) - (a.avgScore || a.mastery)
+    (a, b) => (b.avgScore || b.mastery) - (a.avgScore || a.mastery),
   );
   const strengths = sortedByScore.slice(0, 3);
   const weaknesses = sortedByScore.slice(-3).reverse();
 
   const ProgressBar = ({ value, colorClass, bgClass }) => (
-    <div className={`h-1.5 w-full rounded-full mt-1.5 overflow-hidden ${bgClass}`}>
+    <div
+      className={`h-1.5 w-full rounded-full mt-1.5 overflow-hidden ${bgClass}`}
+    >
       <div
         className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass}`}
         style={{ width: `${value}%` }}
@@ -259,8 +260,8 @@ export const StrengthsWeaknesses = ({ subjects = [] }) => {
                   ? "text-green-400"
                   : "text-green-600"
                 : isDarkMode
-                ? "text-red-400"
-                : "text-red-600"
+                  ? "text-red-400"
+                  : "text-red-600"
             }`}
           >
             {score}%
@@ -275,11 +276,13 @@ export const StrengthsWeaknesses = ({ subjects = [] }) => {
     );
   };
 
-  // Modified layout: Stack vertically instead of force grid
-  // This allows the parent component to control the grid layout
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <DashboardCard title="Top Strengths" icon={TrendingUp} className="flex-1">
+    <div className="flex flex-col gap-4">
+      <DashboardCard
+        title="Top Strengths"
+        icon={TrendingUp}
+        className="flex-1 border-none bg-transparent shadow-none p-0"
+      >
         {subjects.length > 0 ? (
           <div className="pt-1">
             {strengths.map((sub, idx) => (
@@ -295,7 +298,15 @@ export const StrengthsWeaknesses = ({ subjects = [] }) => {
         )}
       </DashboardCard>
 
-      <DashboardCard title="Focus Areas" icon={TrendingDown} className="flex-1">
+      <div
+        className={`h-px w-full ${isDarkMode ? "bg-zinc-800" : "bg-gray-100"}`}
+      />
+
+      <DashboardCard
+        title="Focus Areas"
+        icon={TrendingDown}
+        className="flex-1 border-none bg-transparent shadow-none p-0"
+      >
         {subjects.length > 0 ? (
           <div className="pt-1">
             {weaknesses.map((sub, idx) => (
@@ -395,7 +406,7 @@ export const StudyCalendarHeatmap = ({ attempts = [] }) => {
                   onMouseEnter={() => setHoveredDay(day)}
                   onMouseLeave={() => setHoveredDay(null)}
                   className={`w-3 h-3 rounded-[2px] ${getIntensityColor(
-                    day.count
+                    day.count,
                   )} cursor-pointer transition-all hover:scale-125 hover:z-10`}
                 />
               ))}
@@ -428,7 +439,7 @@ export const StudyCalendarHeatmap = ({ attempts = [] }) => {
               <div
                 key={level}
                 className={`w-2 h-2 rounded-[1px] ${getIntensityColor(
-                  level === 0 ? 0 : (maxCount / 4) * level
+                  level === 0 ? 0 : (maxCount / 4) * level,
                 )}`}
               />
             ))}
@@ -455,7 +466,6 @@ export const StudentDashboard = ({
             - Right (4 cols): Strengths + Weaknesses
       */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
         {/* Left Main Column */}
         <div className="lg:col-span-8 space-y-6">
           {/* Consistency: Full width of Main Column */}
@@ -471,7 +481,7 @@ export const StudentDashboard = ({
 
         {/* Right Sidebar Column */}
         <div className="lg:col-span-4 h-full">
-            <StrengthsWeaknesses subjects={subjectPerformance} />
+          <StrengthsWeaknesses subjects={subjectPerformance} />
         </div>
       </div>
     </div>
