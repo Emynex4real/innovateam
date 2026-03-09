@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../App';
-import supabase from '../config/supabase';
+import React, { useEffect, useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../App";
+import supabase from "../config/supabase";
 
 const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -25,24 +25,27 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
       try {
         // 3. Always check the DB first for the most up-to-date role
         const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('role, is_admin, is_tutor, is_student')
-          .eq('id', user.id)
+          .from("user_profiles")
+          .select("role, is_admin, is_tutor, is_student")
+          .eq("id", user.id)
           .single();
-        
+
         if (profileError) {
-          console.error('RoleProtectedRoute profile error:', profileError);
+          console.error("RoleProtectedRoute profile error:", profileError);
         }
-        
+
         // console.log('RoleProtectedRoute profile:', profile);
-        
+
         // Check boolean flags first, then fallback to role column
-        let role = 'student';
-        if (profile?.is_admin === true || profile?.role === 'admin') role = 'admin';
-        else if (profile?.is_tutor === true || profile?.role === 'tutor') role = 'tutor';
-        else if (profile?.is_student === true || profile?.role === 'student') role = 'student';
+        let role = "student";
+        if (profile?.is_admin === true || profile?.role === "admin")
+          role = "admin";
+        else if (profile?.is_tutor === true || profile?.role === "tutor")
+          role = "tutor";
+        else if (profile?.is_student === true || profile?.role === "student")
+          role = "student";
         else if (profile?.role) role = profile.role; // Use role column if boolean flags not set
-        
+
         // 4. Fallback to metadata if DB check fails
         if (!role) {
           role = user?.user_metadata?.role;
@@ -50,13 +53,13 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
 
         if (isMounted) {
           // console.log(`Role Check: ${role} | Allowed: ${allowedRoles.join(', ')}`);
-          setUserRole(role || 'student');
+          setUserRole(role || "student");
           setRoleLoading(false);
         }
       } catch (error) {
-        console.error('Error fetching role:', error);
+        console.error("Error fetching role:", error);
         if (isMounted) {
-          setUserRole('student');
+          setUserRole("student");
           setRoleLoading(false);
         }
       }
@@ -64,7 +67,9 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
 
     fetchUserRole();
 
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [user, isAuthenticated, loading]);
 
   if (loading || roleLoading) {
@@ -80,20 +85,19 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 2. ✅ CRITICAL FIX: Check allowedRoles FIRST. 
+  // 2. ✅ CRITICAL FIX: Check allowedRoles FIRST.
   // If the current page allows ['student', 'admin'] and I am 'admin', I stay here.
   if (allowedRoles.includes(userRole)) {
     return children;
   }
 
-  // 3. Unauthorized Access Handling
-  if (userRole === 'admin') {
-    return <Navigate to="/admin/dashboard" replace />;
+  if (userRole === "admin") {
+    return <Navigate to="/admin" replace />;
   }
-  if (userRole === 'tutor') {
+  if (userRole === "tutor") {
     return <Navigate to="/tutor/dashboard" replace />;
   }
-  
+
   return <Navigate to="/dashboard" replace />;
 };
 

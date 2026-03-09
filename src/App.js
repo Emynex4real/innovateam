@@ -41,6 +41,7 @@ import EducationalSidebar from "./components/EducationalSidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import RoleProtectedRoute from "./components/RoleProtectedRoute"; // Ensure this exists
+import { AdminProvider } from "./contexts/AdminContext";
 
 // Student Pages
 import PracticeQuestions from "./pages/student/PracticeQuestions";
@@ -62,8 +63,13 @@ import StudyGroups from "./pages/student/StudyGroups";
 import TutoringMarketplace from "./pages/student/TutoringMarketplace";
 
 // Tutor & Admin Pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminFinancials from "./pages/admin/AdminFinancials";
+import AdminCenters from "./pages/admin/AdminCenters";
+import AdminSettings from "./pages/admin/AdminSettings";
 import AdminPastQuestionsUpload from "./pages/admin/AdminPastQuestionsUpload";
+import ModernAdminLayout from "./components/ModernAdminLayout";
 import TutorDashboard from "./pages/tutor/TutorDashboard.jsx";
 import TutorQuestions from "./pages/tutor/Questions";
 import AIGenerator from "./pages/tutor/AIGenerator";
@@ -160,13 +166,45 @@ const SupabaseAuthProvider = ({ children }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        setUser(session.user);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (
+        (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
+        session?.user
+      ) {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select(
+            "role, is_admin, is_tutor, is_student, full_name, wallet_balance",
+          )
+          .eq("id", session.user.id)
+          .single();
+
+        let role = "student";
+        if (profile?.is_admin === true || profile?.role === "admin")
+          role = "admin";
+        else if (profile?.is_tutor === true || profile?.role === "tutor")
+          role = "tutor";
+        else if (profile?.is_student === true || profile?.role === "student")
+          role = "student";
+        else if (profile?.role) role = profile.role;
+
+        const userData = {
+          id: session.user.id,
+          email: session.user.email,
+          name:
+            profile?.full_name ||
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split("@")[0],
+          role: role,
+          isAdmin: role === "admin",
+          walletBalance: profile?.wallet_balance || 0,
+          user_metadata: session.user.user_metadata,
+        };
+        localStorage.setItem("confirmedUser", JSON.stringify(userData));
+        setUser(userData);
       } else if (event === "SIGNED_OUT") {
         setUser(null);
-      } else {
-        setUser(session?.user ?? null);
+        localStorage.removeItem("confirmedUser");
       }
       setLoading(false);
     });
@@ -913,26 +951,22 @@ function App() {
                   path="/admin"
                   element={
                     <AdminProtectedRoute>
-                      <AdminDashboard />
+                      <AdminProvider>
+                        <ModernAdminLayout />
+                      </AdminProvider>
                     </AdminProtectedRoute>
                   }
-                />
-                <Route
-                  path="/admin/dashboard"
-                  element={
-                    <AdminProtectedRoute>
-                      <AdminDashboard />
-                    </AdminProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/past-questions-upload"
-                  element={
-                    <AdminProtectedRoute>
-                      <AdminPastQuestionsUpload />
-                    </AdminProtectedRoute>
-                  }
-                />
+                >
+                  <Route index element={<AdminOverview />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="transactions" element={<AdminFinancials />} />
+                  <Route path="centers" element={<AdminCenters />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route
+                    path="past-questions-upload"
+                    element={<AdminPastQuestionsUpload />}
+                  />
+                </Route>
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

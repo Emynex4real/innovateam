@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/SupabaseAuthContext';
-import { useAdmin } from '../contexts/AdminContext';
-import { toast } from 'react-toastify';
+import React, { useState } from "react";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/SupabaseAuthContext";
+import { useAdmin } from "../contexts/AdminContext";
+import { toast } from "react-toastify";
 import {
   HomeIcon,
   UsersIcon,
@@ -13,9 +13,9 @@ import {
   XMarkIcon,
   BellIcon,
   MagnifyingGlassIcon,
-  ChartBarIcon,
-  ShieldCheckIcon
-} from '@heroicons/react/24/outline';
+  BuildingLibraryIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 
 const ModernAdminLayout = () => {
   const { user, logout } = useAuth();
@@ -25,20 +25,20 @@ const ModernAdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: HomeIcon },
-    { name: 'Users', href: '/admin/users', icon: UsersIcon },
-    { name: 'Transactions', href: '/admin/transactions', icon: CreditCardIcon },
-    { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
-    { name: 'Settings', href: '/admin/settings', icon: CogIcon },
+    { name: "Dashboard", href: "/admin", icon: HomeIcon },
+    { name: "Users & Roles", href: "/admin/users", icon: UsersIcon },
+    { name: "Financials", href: "/admin/transactions", icon: CreditCardIcon },
+    { name: "Centers", href: "/admin/centers", icon: BuildingLibraryIcon },
+    { name: "Settings", href: "/admin/settings", icon: CogIcon },
   ];
 
   const handleLogout = async () => {
     try {
       await logout();
-      toast.success('Logged out successfully');
-      navigate('/login');
+      toast.success("Logged out successfully");
+      navigate("/login");
     } catch (error) {
-      toast.error('Failed to logout');
+      toast.error("Failed to logout");
     }
   };
 
@@ -54,7 +54,9 @@ const ModernAdminLayout = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Access Denied
+          </h1>
           <p>You don't have admin privileges.</p>
         </div>
       </div>
@@ -66,17 +68,22 @@ const ModernAdminLayout = () => {
       {/* Mobile sidebar overlay */}
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setOpen(false)} />
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
+            onClick={() => setOpen(false)}
+          />
         </div>
       )}
-      
+
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-        open ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200">
           <div className="flex items-center">
-            <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <ShieldCheckIcon className="h-5 w-5 text-white" />
             </div>
             <h1 className="ml-3 text-xl font-bold text-gray-900">Admin</h1>
@@ -88,7 +95,7 @@ const ModernAdminLayout = () => {
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-        
+
         <nav className="mt-8 px-4">
           <ul className="space-y-1">
             {navigation.map((item) => {
@@ -101,13 +108,17 @@ const ModernAdminLayout = () => {
                     onClick={() => setOpen(false)}
                     className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     }`}
                   >
-                    <Icon className={`mr-3 h-5 w-5 ${
-                      isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
-                    }`} />
+                    <Icon
+                      className={`mr-3 h-5 w-5 ${
+                        isActive
+                          ? "text-white"
+                          : "text-gray-400 group-hover:text-gray-600"
+                      }`}
+                    />
                     {item.name}
                   </Link>
                 </li>
@@ -115,15 +126,17 @@ const ModernAdminLayout = () => {
             })}
           </ul>
         </nav>
-        
+
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                {(user?.name || user?.email || 'A').charAt(0).toUpperCase()}
+              <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                {(user?.name || user?.email || "A").charAt(0).toUpperCase()}
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin'}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {user?.name || "Admin"}
+                </p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
             </div>
@@ -143,7 +156,7 @@ const ModernAdminLayout = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-      
+
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
@@ -156,7 +169,7 @@ const ModernAdminLayout = () => {
               >
                 <Bars3Icon className="h-6 w-6" />
               </button>
-              
+
               <div className="hidden sm:block ml-4 lg:ml-0">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -170,20 +183,20 @@ const ModernAdminLayout = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg relative">
                 <BellIcon className="h-6 w-6" />
                 <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
               </button>
-              
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                {(user?.name || user?.email || 'A').charAt(0).toUpperCase()}
+
+              <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+                {(user?.name || user?.email || "A").charAt(0).toUpperCase()}
               </div>
             </div>
           </div>
         </div>
-        
+
         <main className="flex-1">
           <Outlet />
         </main>

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL } from "../config/api";
 
 /**
  * Messaging Service
@@ -6,30 +6,34 @@ import { API_BASE_URL } from '../config/api';
  */
 
 class MessagingService {
-  
   static async getToken() {
     try {
       // First try Supabase session (most reliable)
-      const { default: supabase } = await import('../config/supabase');
-      const { data: { session } } = await supabase.auth.getSession();
+      const { default: supabase } = await import("../config/supabase");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session?.access_token) return session.access_token;
     } catch (e) {
-      console.error('Error getting Supabase token:', e);
+      console.error("Error getting Supabase token:", e);
     }
 
     // Fallback to localStorage
-    return localStorage.getItem('authToken') || 
-           localStorage.getItem('auth_token') || 
-           localStorage.getItem('token') ||
-           localStorage.getItem('access_token') || null;
+    return (
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("auth_token") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("access_token") ||
+      null
+    );
   }
 
   // ✅ HELPER: Standardized headers
   static async getHeaders() {
     const token = await this.getToken();
     return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     };
   }
 
@@ -37,19 +41,22 @@ class MessagingService {
     try {
       const token = await this.getToken();
       if (!token) {
-        console.warn('No auth token found, returning empty conversations');
+        console.warn("No auth token found, returning empty conversations");
         return { success: false, data: [] };
       }
 
-      const response = await fetch(`${API_BASE_URL}/phase2/messaging/conversations`, {
-        method: 'GET',
-        headers: await this.getHeaders(),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/phase2/messaging/conversations`,
+        {
+          method: "GET",
+          headers: await this.getHeaders(),
+        },
+      );
 
       if (response.status === 401) {
         // Handle token expiration gracefully
-        console.error('Session expired (401)');
-        return { success: false, error: 'Session expired', data: [] };
+        console.error("Session expired (401)");
+        return { success: false, error: "Session expired", data: [] };
       }
 
       if (!response.ok) {
@@ -59,7 +66,7 @@ class MessagingService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      console.error("Error fetching conversations:", error);
       return {
         success: false,
         error: error.message,
@@ -68,12 +75,41 @@ class MessagingService {
     }
   }
 
+  static async getUnreadCount() {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, unreadCount: 0 };
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/phase2/messaging/unread-count`,
+        {
+          method: "GET",
+          headers: await this.getHeaders(),
+        },
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) return { success: false, unreadCount: 0 };
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      return { success: false, error: error.message, unreadCount: 0 };
+    }
+  }
+
   static async getMessages(conversationId, limit = 50, offset = 0) {
-    if (!conversationId || conversationId === 'undefined') return { success: false, data: [] };
+    if (!conversationId || conversationId === "undefined")
+      return { success: false, data: [] };
 
     try {
       const token = await this.getToken();
-      if (!token) return { success: false, error: 'No token found' };
+      if (!token) return { success: false, error: "No token found" };
 
       const query = new URLSearchParams({
         limit: limit.toString(),
@@ -83,9 +119,9 @@ class MessagingService {
       const response = await fetch(
         `${API_BASE_URL}/phase2/messaging/conversations/${conversationId}?${query}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: await this.getHeaders(),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -95,7 +131,7 @@ class MessagingService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error("Error fetching messages:", error);
       return {
         success: false,
         error: error.message,
@@ -104,15 +140,21 @@ class MessagingService {
     }
   }
 
-  static async sendMessage(conversationId, messageText, mediaUrl = null, mediaType = null) {
-    if (!conversationId) return { success: false, error: 'Missing Conversation ID' };
+  static async sendMessage(
+    conversationId,
+    messageText,
+    mediaUrl = null,
+    mediaType = null,
+  ) {
+    if (!conversationId)
+      return { success: false, error: "Missing Conversation ID" };
 
     try {
       const token = await this.getToken();
-      if (!token) throw new Error('Authentication required');
+      if (!token) throw new Error("Authentication required");
 
       const response = await fetch(`${API_BASE_URL}/phase2/messaging/send`, {
-        method: 'POST',
+        method: "POST",
         headers: await this.getHeaders(),
         body: JSON.stringify({
           conversationId,
@@ -129,7 +171,7 @@ class MessagingService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
       return {
         success: false,
         error: error.message,
@@ -144,9 +186,9 @@ class MessagingService {
       const response = await fetch(
         `${API_BASE_URL}/phase2/messaging/messages/read/${conversationId}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: await this.getHeaders(),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -158,7 +200,7 @@ class MessagingService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      console.error("Error marking messages as read:", error);
       return {
         success: false,
         error: error.message,
@@ -171,9 +213,9 @@ class MessagingService {
       const response = await fetch(
         `${API_BASE_URL}/phase2/messaging/messages/${messageId}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: await this.getHeaders(),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -183,7 +225,7 @@ class MessagingService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error deleting message:', error);
+      console.error("Error deleting message:", error);
       return {
         success: false,
         error: error.message,
@@ -194,34 +236,39 @@ class MessagingService {
   static async startConversation(otherUserId, centerId) {
     try {
       const token = await this.getToken();
-      
+
       if (!token) {
-        console.error('StartConversation: No auth token found');
-        throw new Error('Authentication required. Please login again.');
+        console.error("StartConversation: No auth token found");
+        throw new Error("Authentication required. Please login again.");
       }
 
-      const response = await fetch(`${API_BASE_URL}/phase2/messaging/conversations`, {
-        method: 'POST',
-        headers: await this.getHeaders(),
-        body: JSON.stringify({
-          otherUserId,
-          centerId,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/phase2/messaging/conversations`,
+        {
+          method: "POST",
+          headers: await this.getHeaders(),
+          body: JSON.stringify({
+            otherUserId,
+            centerId,
+          }),
+        },
+      );
 
       if (response.status === 401) {
-        throw new Error('Unauthorized: Please log in again.');
+        throw new Error("Unauthorized: Please log in again.");
       }
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errData.error || `HTTP error! status: ${response.status}`,
+        );
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      console.error("Error starting conversation:", error);
       return {
         success: false,
         error: error.message,

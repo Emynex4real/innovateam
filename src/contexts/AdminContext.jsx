@@ -1,15 +1,21 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { useAuth } from './SupabaseAuthContext';
-import adminService from '../services/admin.service';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
+import { useAuth } from "../App";
+import adminService from "../services/admin.service";
 
 const AdminContext = createContext();
 
 // Debug logging helper
 const debugAdmin = (message, data = {}) => {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     console.log(`[AdminContext] ${message}`, {
       timestamp: new Date().toISOString(),
-      ...data
+      ...data,
     });
   }
 };
@@ -17,7 +23,7 @@ const debugAdmin = (message, data = {}) => {
 export const AdminProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dashboardMetrics, setDashboardMetrics] = useState({
@@ -26,9 +32,8 @@ export const AdminProvider = ({ children }) => {
     revenue: 0,
     totalServices: 0,
     recentTransactions: [],
-    recentUsers: [], 
-    recentServices: [] 
-
+    recentUsers: [],
+    recentServices: [],
   });
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -39,35 +44,35 @@ export const AdminProvider = ({ children }) => {
 
   // Determine if the current user is an admin
   const adminStatus = useMemo(() => {
-    const isAdminUser = user?.role === 'admin' || user?.isAdmin === true;
-    debugAdmin('Checking admin status', {
+    const isAdminUser = user?.role === "admin" || user?.isAdmin === true;
+    debugAdmin("Checking admin status", {
       userId: user?.id,
       userRole: user?.role,
       userIsAdmin: user?.isAdmin,
-      isAdmin: isAdminUser
+      isAdmin: isAdminUser,
     });
     return isAdminUser;
   }, [user]);
 
   // Log admin status changes
   useEffect(() => {
-    debugAdmin('Admin status updated', {
+    debugAdmin("Admin status updated", {
       isAuthenticated,
       isAdmin: adminStatus,
       userId: user?.id,
-      userRole: user?.role
+      userRole: user?.role,
     });
   }, [adminStatus, isAuthenticated, user]);
 
   const fetchDashboardMetrics = async () => {
-    console.log('fetchDashboardMetrics called');
+    console.log("fetchDashboardMetrics called");
     setIsLoading(true);
     setError(null);
     try {
-      console.log('Calling adminService.getDashboardMetrics()');
+      console.log("Calling adminService.getDashboardMetrics()");
       const data = await adminService.getDashboardMetrics();
-      console.log('Dashboard metrics received:', data);
-      
+      console.log("Dashboard metrics received:", data);
+
       // Ensure the data has the expected structure
       const metrics = {
         totalUsers: 0,
@@ -77,12 +82,15 @@ export const AdminProvider = ({ children }) => {
         recentTransactions: [],
         recentUsers: [],
         recentServices: [],
-        ...data
+        ...data,
       };
       setDashboardMetrics(metrics);
       return metrics;
     } catch (err) {
-      console.warn('Using fallback dashboard metrics due to error:', err.message);
+      console.warn(
+        "Using fallback dashboard metrics due to error:",
+        err.message,
+      );
       setError(err.message);
       // Set default metrics in case of error
       const fallbackMetrics = {
@@ -92,7 +100,7 @@ export const AdminProvider = ({ children }) => {
         totalServices: 0,
         recentTransactions: [],
         recentUsers: [],
-        recentServices: []
+        recentServices: [],
       };
       setDashboardMetrics(fallbackMetrics);
       return fallbackMetrics;
@@ -108,7 +116,7 @@ export const AdminProvider = ({ children }) => {
       const data = await adminService.getUsers(params);
       setUsers(data.users || []);
     } catch (err) {
-      setError(err.message || 'Failed to fetch users');
+      setError(err.message || "Failed to fetch users");
       setUsers([]);
     } finally {
       setIsLoading(false);
@@ -121,76 +129,82 @@ export const AdminProvider = ({ children }) => {
    * @returns {Promise<Array>} Array of transactions
    */
   const fetchTransactions = async (params = {}) => {
-    const method = 'fetchTransactions';
+    const method = "fetchTransactions";
     console.group(`[AdminContext.${method}]`);
-    console.log('Starting transaction fetch with params:', params);
-    console.log('Current transactions state (before):', transactions);
-    
+    console.log("Starting transaction fetch with params:", params);
+    console.log("Current transactions state (before):", transactions);
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      console.log('Calling adminService.getTransactions()');
+      console.log("Calling adminService.getTransactions()");
       const transactionsData = await adminService.getTransactions(params);
-      
+
       // Log the received data structure for debugging
-      console.log('Transactions data received:', {
+      console.log("Transactions data received:", {
         isArray: Array.isArray(transactionsData),
         count: transactionsData?.length || 0,
-        sample: transactionsData?.[0] || 'No transactions'
+        sample: transactionsData?.[0] || "No transactions",
       });
-      
+
       // Ensure we have an array (handle both direct array and { transactions: [] } formats)
-      const transactionsArray = Array.isArray(transactionsData) 
-        ? transactionsData 
+      const transactionsArray = Array.isArray(transactionsData)
+        ? transactionsData
         : transactionsData?.transactions || [];
-      
+
       if (!Array.isArray(transactionsArray)) {
-        console.warn('Unexpected transactions data format:', transactionsData);
-        throw new Error('Invalid transactions data format received from server');
+        console.warn("Unexpected transactions data format:", transactionsData);
+        throw new Error(
+          "Invalid transactions data format received from server",
+        );
       }
-      
+
       console.log(`Processing ${transactionsArray.length} transactions`);
-      
+
       // Transform data if needed to match expected format
-      const processedTransactions = transactionsArray.map(tx => ({
+      const processedTransactions = transactionsArray.map((tx) => ({
         id: tx.id || `tx_${Math.random().toString(36).substr(2, 9)}`,
-        user: typeof tx.user === 'object' ? tx.user : { 
-          id: 'unknown', 
-          name: 'Unknown User', 
-          email: 'unknown@example.com' 
-        },
+        user:
+          typeof tx.user === "object"
+            ? tx.user
+            : {
+                id: "unknown",
+                name: "Unknown User",
+                email: "unknown@example.com",
+              },
         amount: Number(tx.amount) || 0,
-        type: tx.type || 'unknown',
-        status: tx.status || 'pending',
+        type: tx.type || "unknown",
+        status: tx.status || "pending",
         createdAt: tx.createdAt || new Date().toISOString(),
-        description: tx.description || 'No description',
+        description: tx.description || "No description",
         // Include all other properties from the original transaction
-        ...tx
+        ...tx,
       }));
-      
+
       setTransactions(processedTransactions);
-      console.log('Transactions state updated successfully');
+      console.log("Transactions state updated successfully");
       return processedTransactions;
-      
     } catch (error) {
-      const errorMessage = error.details?.message || error.message || 'Failed to fetch transactions';
+      const errorMessage =
+        error.details?.message ||
+        error.message ||
+        "Failed to fetch transactions";
       console.error(`[AdminContext.${method}] Error:`, {
         error,
         message: errorMessage,
         code: error.code,
-        stack: error.stack
+        stack: error.stack,
       });
-      
+
       setError(errorMessage);
-      
+
       // Set empty array to trigger the "no transactions" UI state
       setTransactions([]);
       return [];
-      
     } finally {
-      console.log('Transaction fetch completed');
-      console.log('Current transactions state (after):', transactions);
+      console.log("Transaction fetch completed");
+      console.log("Current transactions state (after):", transactions);
       console.groupEnd();
       setIsLoading(false);
     }
@@ -203,30 +217,30 @@ export const AdminProvider = ({ children }) => {
       const data = await adminService.getServices(params);
       setServices(data.services);
     } catch (err) {
-      setError(err.message || 'Failed to fetch services');
+      setError(err.message || "Failed to fetch services");
     } finally {
       setIsLoading(false);
     }
   };
 
   const toggleSidebar = () => {
-    setIsSidebarCollapsed(prev => !prev);
+    setIsSidebarCollapsed((prev) => !prev);
   };
 
-  const isAdmin = user?.isAdmin === true || user?.role === 'admin';
-  console.log('[AdminContext] user:', user);
-  console.log('[AdminContext] isAdmin:', isAdmin);
+  const isAdmin = user?.isAdmin === true || user?.role === "admin";
+  console.log("[AdminContext] user:", user);
+  console.log("[AdminContext] isAdmin:", isAdmin);
 
   // Log the value being provided to context consumers
-  console.log('[AdminContext] Providing context value:', {
+  console.log("[AdminContext] Providing context value:", {
     transactionsCount: transactions.length,
     isLoading,
     error,
-    isAdmin
+    isAdmin,
   });
 
   // Derived state: true only when admin status is determined
-  const isAdminResolved = user !== null && typeof adminStatus === 'boolean';
+  const isAdminResolved = user !== null && typeof adminStatus === "boolean";
 
   const contextValue = {
     isAdmin: adminStatus,
@@ -250,18 +264,18 @@ export const AdminProvider = ({ children }) => {
     services,
     fetchServices,
     selectedService,
-    setSelectedService
+    setSelectedService,
   };
 
   // Log context value changes
   useEffect(() => {
-    debugAdmin('AdminContext value updated', {
+    debugAdmin("AdminContext value updated", {
       isAdmin: contextValue.isAdmin,
       isLoading: contextValue.isLoading,
       error: contextValue.error,
       userCount: contextValue.users?.length,
       transactionCount: contextValue.transactions?.length,
-      serviceCount: contextValue.services?.length
+      serviceCount: contextValue.services?.length,
     });
   }, [contextValue]);
 
@@ -275,7 +289,7 @@ export const AdminProvider = ({ children }) => {
 export const useAdmin = () => {
   const context = useContext(AdminContext);
   if (!context) {
-    throw new Error('useAdmin must be used within an AdminProvider');
+    throw new Error("useAdmin must be used within an AdminProvider");
   }
   return context;
 };

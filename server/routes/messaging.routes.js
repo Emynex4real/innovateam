@@ -27,8 +27,7 @@ router.get("/conversations/:conversationId", messagingController.getMessages);
 // 4. Send a message
 router.post("/send", messagingController.sendMessage);
 
-// 5. Direct access fallback
-router.get("/:conversationId", messagingController.getMessages);
+// 5. Direct access fallback removed due to route conflict with /unread-count
 
 // ==========================================
 // ANNOUNCEMENT ROUTES
