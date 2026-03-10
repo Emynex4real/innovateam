@@ -126,6 +126,11 @@ const StudentAnalytics = () => {
       }
     } catch (error) {
       console.error("Analytics load error:", error);
+      if (error?.response?.status === 401 || error?.message?.includes('Session expired')) {
+        toast.error("Session expired. Please log in again.");
+        navigate('/login');
+        return;
+      }
       toast.error("Failed to load analytics data");
     } finally {
       setLoading(false);

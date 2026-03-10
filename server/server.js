@@ -359,6 +359,9 @@ app.use("/api/wallet", walletRoutes);
 // Subscription routes - BEFORE CSRF (protected by Bearer token auth)
 app.use("/api/subscriptions", subscriptionRoutes);
 
+// Analytics routes - BEFORE CSRF (protected by Bearer token auth)
+app.use("/api/analytics", analyticsRoutes);
+
 // Proctoring routes - BEFORE CSRF (protected by Bearer token auth)
 app.use("/api/proctoring", proctoringRoutes);
 
@@ -392,7 +395,6 @@ app.use("/api/scheduler", schedulerRoutes);
 app.use("/api/past-questions", pastQuestionsRoutes);
 
 // Phase 1 routes
-app.use("/api/analytics", analyticsRoutes);
 app.use("/api/gamification", gamificationRoutes);
 
 // ============================================

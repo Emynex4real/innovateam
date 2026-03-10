@@ -82,8 +82,15 @@ const Subscription = () => {
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [togglingAutoRenew, setTogglingAutoRenew] = useState(false);
 
+  // Fetch data on mount, but SKIP if we're on the success route or have a
+  // pending payment-success flag (the dedicated effect below will handle it).
   useEffect(() => {
-    loadData();
+    const isSuccessRoute = location.pathname === "/tutor/subscription/success";
+    const hasPendingPayment = sessionStorage.getItem("subscription_payment_success");
+    if (!isSuccessRoute && !hasPendingPayment) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Check for stored payment success flag on mount and after navigation
@@ -96,9 +103,10 @@ const Subscription = () => {
       sessionStorage.removeItem("subscription_upgraded_plan");
       setUpgradedPlanName(planName);
       setPaymentSuccess(true);
-      // Reload data to reflect the upgraded plan
-      loadData();
+      // Reload data to reflect the upgraded plan, force cache refresh
+      loadData(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   // Detect Paystack redirect and verify payment
@@ -114,6 +122,7 @@ const Subscription = () => {
       sessionStorage.setItem("subscription_payment_success", "true");
       navigate("/tutor/subscription", { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, location.search]);
 
   const verifySubscriptionPayment = async (reference) => {
@@ -143,13 +152,23 @@ const Subscription = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh = false) => {
+    if (forceRefresh) {
+      requestManager.clearCache("getMySubscription");
+      requestManager.clearCache("checkLimits");
+      requestManager.clearCache("getPlans");
+    }
+
+    // When forceRefresh is true, add a cache-busting timestamp to defeat
+    // browser HTTP 304/ETag caching that returns stale responses.
+    const cacheBuster = forceRefresh ? `?_t=${Date.now()}` : "";
+
     try {
       const [plansRes, subRes, limitsRes] = await Promise.allSettled([
         requestManager.deduplicate(
           "getPlans",
           async () => {
-            const response = await api.get("/subscriptions/plans");
+            const response = await api.get(`/subscriptions/plans${cacheBuster}`);
             return response.data;
           },
           { cache: true, cacheTTL: 60000 },
@@ -157,7 +176,7 @@ const Subscription = () => {
         requestManager.deduplicate(
           "getMySubscription",
           async () => {
-            const response = await api.get("/subscriptions/my-subscription");
+            const response = await api.get(`/subscriptions/my-subscription${cacheBuster}`);
             return response.data;
           },
           { cache: true, cacheTTL: 30000 },
@@ -165,7 +184,7 @@ const Subscription = () => {
         requestManager.deduplicate(
           "checkLimits",
           async () => {
-            const response = await api.get("/subscriptions/limits");
+            const response = await api.get(`/subscriptions/limits${cacheBuster}`);
             return response.data;
           },
           { cache: true, cacheTTL: 30000 },
@@ -246,7 +265,7 @@ const Subscription = () => {
       toast.success(
         "Subscription cancelled. You can still use paid features until your current period ends.",
       );
-      loadData();
+      loadData(true);
     } catch (error) {
       toast.error("Failed to cancel subscription");
     }
@@ -265,7 +284,7 @@ const Subscription = () => {
       );
 
       toast.success(`Auto-renewal ${enable ? "enabled" : "disabled"}`);
-      loadData();
+      loadData(true);
     } catch (error) {
       toast.error(
         error.response?.data?.error || "Failed to update auto-renewal",

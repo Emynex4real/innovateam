@@ -5,7 +5,15 @@ const API_BASE = 'http://localhost:5000/api';
 
 const getAuthHeader = async () => {
   const { data: { session } } = await supabase.auth.getSession();
-  return { Authorization: `Bearer ${session?.access_token}` };
+  if (session?.access_token) {
+    return { Authorization: `Bearer ${session.access_token}` };
+  }
+  // Session expired or missing — try refreshing
+  const { data: { session: refreshed }, error } = await supabase.auth.refreshSession();
+  if (error || !refreshed?.access_token) {
+    throw new Error('Session expired. Please log in again.');
+  }
+  return { Authorization: `Bearer ${refreshed.access_token}` };
 };
 
 export const analyticsService = {
