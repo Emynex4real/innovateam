@@ -24,6 +24,7 @@ class SupabaseAuthService {
 
       if (authError) throw authError;
 
+      const targetRole = userData.role || 'student';
       const { error: profileError } = await supabase
         .from('user_profiles')
         .upsert({
@@ -31,7 +32,10 @@ class SupabaseAuthService {
           email: userData.email,
           full_name: userData.fullName || userData.name,
           wallet_balance: 0,
-          role: userData.role || 'student',
+          role: targetRole,
+          is_admin: targetRole === 'admin',
+          is_tutor: targetRole === 'tutor',
+          is_student: targetRole === 'student',
           status: 'active'
         }, { onConflict: 'id' });
 

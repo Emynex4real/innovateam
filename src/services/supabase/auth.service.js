@@ -42,6 +42,28 @@ export class AuthService {
       })
 
       if (error) throw error
+
+      // Set role in user_profiles (upsert to handle race condition with DB trigger)
+      if (data.user) {
+        const targetRole = userData.role || 'student';
+        await new Promise((r) => setTimeout(r, 500));
+        
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .upsert({
+            id: data.user.id,
+            email: email.toLowerCase().trim(),
+            full_name: this.sanitizeInput(userData.fullName) || '',
+            role: targetRole,
+            is_admin: targetRole === 'admin',
+            is_tutor: targetRole === 'tutor',
+            is_student: targetRole === 'student',
+          }, { onConflict: 'id' });
+
+        if (profileError) {
+          console.warn('Profile role upsert failed:', profileError);
+        }
+      }
       
       logger.security('User registration attempt', { email: email.toLowerCase() });
       return { success: true, data }

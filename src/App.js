@@ -230,19 +230,48 @@ const SupabaseAuthProvider = ({ children }) => {
       if (error) throw error;
 
       if (data.user) {
-        // Update BOTH role text and boolean flags
-        const { error: updateError } = await supabase
+        // Use upsert instead of update to handle the race condition where
+        // the user_profiles row may not exist yet (created by DB trigger).
+        // .update() silently updates zero rows if the row doesn't exist,
+        // leaving the user stuck with the default 'student' role.
+        const targetRole = userData?.role || "student";
+        
+        // Small delay to give the DB trigger time to create the profile row
+        await new Promise((r) => setTimeout(r, 500));
+        
+        const { error: upsertError } = await supabase
           .from("user_profiles")
-          .update({
-            role: userData?.role || "student",
-            is_admin: userData?.role === "admin",
-            is_tutor: userData?.role === "tutor",
-            is_student: userData?.role === "student" || !userData?.role,
-          })
-          .eq("id", data.user.id);
+          .upsert(
+            {
+              id: data.user.id,
+              email: email.toLowerCase().trim(),
+              full_name: userData?.fullName || userData?.name || "",
+              role: targetRole,
+              is_admin: targetRole === "admin",
+              is_tutor: targetRole === "tutor",
+              is_student: targetRole === "student",
+            },
+            { onConflict: "id" }
+          );
 
-        if (updateError) {
-          console.error("Role update error:", updateError);
+        if (upsertError) {
+          console.error("Role upsert error:", upsertError);
+          
+          // Retry once after another delay in case of timing issues
+          await new Promise((r) => setTimeout(r, 1000));
+          const { error: retryError } = await supabase
+            .from("user_profiles")
+            .update({
+              role: targetRole,
+              is_admin: targetRole === "admin",
+              is_tutor: targetRole === "tutor",
+              is_student: targetRole === "student",
+            })
+            .eq("id", data.user.id);
+
+          if (retryError) {
+            console.error("Role retry update error:", retryError);
+          }
         }
       }
 
