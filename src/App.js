@@ -114,102 +114,124 @@ const SupabaseAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for confirmed user in localStorage
-    const confirmedUser = localStorage.getItem("confirmedUser");
-    if (confirmedUser) {
-      const userData = JSON.parse(confirmedUser);
-      if (userData.email_confirmed_at) {
-        setUser(userData);
-        setLoading(false);
-        return;
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // 1. Optimistic Local Load
+        const cachedUser = localStorage.getItem("confirmedUser");
+        if (cachedUser) {
+          try {
+            const parsed = JSON.parse(cachedUser);
+            if (parsed?.email_confirmed_at) {
+              if (mounted) setUser(parsed);
+              // Don't stop loading yet, background sync first
+            }
+          } catch (e) {
+            localStorage.removeItem("confirmedUser");
+          }
+        }
+
+        // 2. Fetch fresh session from Supabase
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session error:", error);
+          throw error;
+        }
+
+        if (session?.user) {
+          // Check DB role
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("role, is_admin, is_tutor, is_student, full_name, wallet_balance")
+            .eq("id", session.user.id)
+            .single();
+
+          let role = "student";
+          if (profile?.is_admin === true || profile?.role === "admin") role = "admin";
+          else if (profile?.is_tutor === true || profile?.role === "tutor") role = "tutor";
+          else if (profile?.is_student === true || profile?.role === "student") role = "student";
+          else if (profile?.role) role = profile.role;
+
+          const userData = {
+            id: session.user.id,
+            email: session.user.email,
+            name: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split("@")[0],
+            role: role,
+            isAdmin: role === "admin",
+            walletBalance: profile?.wallet_balance || 0,
+            user_metadata: session.user.user_metadata,
+            email_confirmed_at: session.user.email_confirmed_at,
+          };
+
+          localStorage.setItem("confirmedUser", JSON.stringify(userData));
+          if (mounted) setUser(userData);
+        } else {
+          // Token expired or invalid
+          localStorage.removeItem("confirmedUser");
+          localStorage.removeItem("token");
+          if (mounted) setUser(null);
+        }
+      } catch (err) {
+        console.error("Auth init failed:", err);
+      } finally {
+        if (mounted) setLoading(false);
       }
-    }
+    };
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select(
-            "role, is_admin, is_tutor, is_student, full_name, wallet_balance",
-          )
-          .eq("id", session.user.id)
-          .single();
+    initializeAuth();
 
-        // Check boolean flags first, then fallback to role column
-        let role = "student";
-        if (profile?.is_admin === true || profile?.role === "admin")
-          role = "admin";
-        else if (profile?.is_tutor === true || profile?.role === "tutor")
-          role = "tutor";
-        else if (profile?.is_student === true || profile?.role === "student")
-          role = "student";
-        else if (profile?.role) role = profile.role;
+    // 3. Listen for token refreshes / cross-tab logins
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
 
-        const userData = {
-          id: session.user.id,
-          email: session.user.email,
-          name:
-            profile?.full_name ||
-            session.user.user_metadata?.full_name ||
-            session.user.email?.split("@")[0],
-          role: role,
-          walletBalance: profile?.wallet_balance || 0,
-          user_metadata: session.user.user_metadata,
-        };
-        localStorage.setItem("confirmedUser", JSON.stringify(userData));
-        setUser(userData);
-      }
-      setLoading(false);
-    });
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+        // 🚨 CRITICAL FIX: Push DB fetch to next tick to avoid Supabase auth lock deadlock!
+        // When signInWithPassword triggers this event, it holds the auth lock. 
+        // A direct DB call (`supabase.from`) internally calls `getSession()`,
+        // which attempts to acquire the same lock, freezing the app forever.
+        setTimeout(async () => {
+          if (!mounted) return;
+          try {
+            const { data: profile } = await supabase
+              .from("user_profiles")
+              .select("role, is_admin, is_tutor, is_student, full_name, wallet_balance")
+              .eq("id", session.user.id)
+              .single();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (
-        (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
-        session?.user
-      ) {
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select(
-            "role, is_admin, is_tutor, is_student, full_name, wallet_balance",
-          )
-          .eq("id", session.user.id)
-          .single();
+            let role = "student";
+            if (profile?.is_admin === true || profile?.role === "admin") role = "admin";
+            else if (profile?.is_tutor === true || profile?.role === "tutor") role = "tutor";
+            else if (profile?.is_student === true || profile?.role === "student") role = "student";
+            else if (profile?.role) role = profile.role;
 
-        let role = "student";
-        if (profile?.is_admin === true || profile?.role === "admin")
-          role = "admin";
-        else if (profile?.is_tutor === true || profile?.role === "tutor")
-          role = "tutor";
-        else if (profile?.is_student === true || profile?.role === "student")
-          role = "student";
-        else if (profile?.role) role = profile.role;
-
-        const userData = {
-          id: session.user.id,
-          email: session.user.email,
-          name:
-            profile?.full_name ||
-            session.user.user_metadata?.full_name ||
-            session.user.email?.split("@")[0],
-          role: role,
-          isAdmin: role === "admin",
-          walletBalance: profile?.wallet_balance || 0,
-          user_metadata: session.user.user_metadata,
-        };
-        localStorage.setItem("confirmedUser", JSON.stringify(userData));
-        setUser(userData);
+            const userData = {
+              id: session.user.id,
+              email: session.user.email,
+              name: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split("@")[0],
+              role: role,
+              isAdmin: role === "admin",
+              walletBalance: profile?.wallet_balance || 0,
+              user_metadata: session.user.user_metadata,
+            };
+            
+            localStorage.setItem("confirmedUser", JSON.stringify(userData));
+            if (mounted) setUser(userData);
+          } catch (e) {
+            console.error("Auth listen profile fetch error:", e);
+          }
+        }, 0);
       } else if (event === "SIGNED_OUT") {
-        setUser(null);
         localStorage.removeItem("confirmedUser");
+        if (mounted) setUser(null);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email, password, userData) => {

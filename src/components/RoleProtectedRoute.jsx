@@ -13,6 +13,7 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
     let isMounted = true;
 
     const fetchUserRole = async () => {
+      console.log("🛡️ [RoleProtected] fetchUserRole started. Loading:", loading, "User:", !!user);
       // 1. If auth is still loading, do nothing yet
       if (loading) return;
 
@@ -52,12 +53,12 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
         }
 
         if (isMounted) {
-          // console.log(`Role Check: ${role} | Allowed: ${allowedRoles.join(', ')}`);
+          console.log(`🛡️ [RoleProtected] Role Check resolved: ${role} | Allowed: ${allowedRoles.join(', ')}`);
           setUserRole(role || "student");
           setRoleLoading(false);
         }
       } catch (error) {
-        console.error("Error fetching role:", error);
+        console.error("🛡️ [RoleProtected] Error fetching role:", error);
         if (isMounted) {
           setUserRole("student");
           setRoleLoading(false);
@@ -73,6 +74,8 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
   }, [user, isAuthenticated, loading]);
 
   if (loading || roleLoading) {
+    if (loading) console.log("⏳ [RoleProtected] Rendering spinner because Auth is loading");
+    if (roleLoading) console.log("⏳ [RoleProtected] Rendering spinner because Role is loading");
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -82,10 +85,12 @@ const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   // 1. Not Authenticated
   if (!isAuthenticated || !user) {
+    console.log("🛡️ [RoleProtected] Not authenticated, redirecting to login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // 2. ✅ CRITICAL FIX: Check allowedRoles FIRST.
+  console.log(`🛡️ [RoleProtected] Evaluating clearance. User is '${userRole}', needs [${allowedRoles.join(', ')}]`);
   // If the current page allows ['student', 'admin'] and I am 'admin', I stay here.
   if (allowedRoles.includes(userRole)) {
     return children;
