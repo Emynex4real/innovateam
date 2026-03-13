@@ -83,6 +83,7 @@ export const tutorialCenterService = {
 
   createQuestion: async (data) => {
     const response = await api.post(`${API_BASE}/tc-questions`, data);
+    requestManager.clearCache();
     return response.data;
   },
 
@@ -142,16 +143,19 @@ export const tutorialCenterService = {
 
   updateQuestion: async (id, data) => {
     const response = await api.put(`${API_BASE}/tc-questions/${id}`, data);
+    requestManager.clearCache();
     return response.data;
   },
 
   deleteQuestion: async (id) => {
     const response = await api.delete(`${API_BASE}/tc-questions/${id}`);
+    requestManager.clearCache();
     return response.data;
   },
 
   createQuestionSet: async (data) => {
     const response = await api.post(`${API_BASE}/tc-question-sets`, data);
+    requestManager.clearCache();
     return response.data;
   },
 
@@ -177,6 +181,7 @@ export const tutorialCenterService = {
 
   updateQuestionSet: async (id, data) => {
     const response = await api.put(`${API_BASE}/tc-question-sets/${id}`, data);
+    requestManager.clearCache();
     return response.data;
   },
 
@@ -190,6 +195,7 @@ export const tutorialCenterService = {
 
   deleteQuestionSet: async (id) => {
     const response = await api.delete(`${API_BASE}/tc-question-sets/${id}`);
+    requestManager.clearCache();
     return response.data;
   },
 
@@ -296,6 +302,7 @@ export const tutorialCenterService = {
       `${API_BASE}/tc-question-sets/${testId}/questions`,
       { question_ids: questionIds },
     );
+    requestManager.clearCache();
     return response.data;
   },
 
@@ -303,6 +310,7 @@ export const tutorialCenterService = {
     const response = await api.delete(
       `${API_BASE}/tc-question-sets/${testId}/questions/${questionId}`,
     );
+    requestManager.clearCache();
     return response.data;
   },
 

@@ -20,9 +20,9 @@ router.use(authenticate);
 router.post("/", tutorialCenterController.createCenter);
 router.get(
   "/my-center",
-  cacheMiddleware(60),
+  cacheMiddleware(5),
   tutorialCenterController.getMyCenter,
-); // Cache 1min
+); // Cache 5s
 router.put("/", checkCenterSuspension, tutorialCenterController.updateCenter);
 router.delete(
   "/",
@@ -31,9 +31,9 @@ router.delete(
 );
 router.get(
   "/students",
-  cacheMiddleware(120),
+  cacheMiddleware(5),
   tutorialCenterController.getCenterStudents,
-); // Cache 2min
+); // Cache 5s
 
 // Enhanced student management
 router.get(
@@ -106,9 +106,9 @@ router.post(
 router.get(
   "/tc-questions",
   paginationValidation,
-  cacheMiddleware(120),
+  cacheMiddleware(5),
   tutorialCenterController.getQuestions,
-); // Cache 2min
+); // Cache 5s
 router.put(
   "/tc-questions/:id",
   checkCenterSuspension,
@@ -164,9 +164,9 @@ router.post(
 router.get(
   "/tc-question-sets",
   paginationValidation,
-  cacheMiddleware(120),
+  cacheMiddleware(5),
   tutorialCenterController.getQuestionSets,
-); // Cache 2min
+); // Cache 5s
 router.get(
   "/tc-question-sets/:id",
   uuidValidation("id"),
@@ -219,9 +219,9 @@ router.get(
 // Attempts
 router.get(
   "/tc-attempts/center-attempts",
-  cacheMiddleware(30),
+  cacheMiddleware(5),
   tutorialCenterController.getCenterAttempts,
-); // Cache 30s
+); // Cache 5s
 router.get(
   "/students/:studentId/attempts",
   tutorialCenterController.getStudentAttempts,
