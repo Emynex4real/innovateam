@@ -382,6 +382,7 @@ const Questions = () => {
                   <option value="Commercial">Commercial</option>
                   <option value="Arts">Arts</option>
                   <option value="General">General</option>
+                  <option value="past_question_ican">Professional (ICAN)</option>
                 </select>
                 <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1"></div>
                 <select
@@ -838,6 +839,7 @@ const Questions = () => {
                         <option value="Commercial">Commercial</option>
                         <option value="Arts">Arts</option>
                         <option value="General">General</option>
+                        <option value="past_question_ican">Professional (ICAN)</option>
                       </select>
                     </div>
                     <div>
@@ -1126,7 +1128,13 @@ const EmptyState = ({ navigate, isSearch }) => (
         : "Start building your library by adding questions manually, importing files, or using AI generation."}
     </p>
     {!isSearch && (
-      <div className="flex gap-3">
+      <div className="flex gap-3 mt-4">
+        <button
+          onClick={() => navigate("/tutor/past-questions")}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+        >
+          Import Past Questions
+        </button>
         <button
           onClick={() => navigate("/tutor/questions/generate")}
           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"

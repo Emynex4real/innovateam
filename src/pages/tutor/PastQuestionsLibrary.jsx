@@ -26,6 +26,7 @@ const examBodies = [
   { id: "jamb", label: "JAMB", emoji: "🎓" },
   { id: "waec", label: "WAEC", emoji: "📝" },
   { id: "neco", label: "NECO", emoji: "📋" },
+  { id: "ican", label: "ICAN", emoji: "🏛️" },
 ];
 
 const difficultyColors = {
@@ -225,6 +226,12 @@ const PastQuestionsLibrary = () => {
                 icon={BarChart3}
                 label="Subjects"
                 value={Object.keys(stats.bySubject || {}).length}
+                isDarkMode={isDarkMode}
+              />
+              <StatCard
+                icon={Award}
+                label="ICAN"
+                value={stats.byExamBody?.ican || 0}
                 isDarkMode={isDarkMode}
               />
             </div>
