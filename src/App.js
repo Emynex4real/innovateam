@@ -76,6 +76,7 @@ import AIGenerator from "./pages/tutor/AIGenerator";
 import BulkQuestionImport from "./pages/tutor/BulkQuestionImport";
 import TestBuilder from "./pages/tutor/TestBuilder";
 import PastQuestionsLibrary from "./pages/tutor/PastQuestionsLibrary";
+import ICANPastQuestionsLibrary from "./pages/tutor/ICANPastQuestionsLibrary";
 import Tests from "./pages/tutor/Tests";
 import TestDetail from "./pages/tutor/TestDetail";
 import Students from "./pages/tutor/Students";
@@ -770,6 +771,14 @@ function App() {
                   element={
                     <RoleProtectedRoute allowedRoles={["tutor", "admin"]}>
                       <PastQuestionsLibrary />
+                    </RoleProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tutor/ican-past-questions"
+                  element={
+                    <RoleProtectedRoute allowedRoles={["tutor", "admin"]}>
+                      <ICANPastQuestionsLibrary />
                     </RoleProtectedRoute>
                   }
                 />

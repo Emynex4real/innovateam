@@ -12,6 +12,8 @@ const pastQuestionsService = {
     if (filters.topic) params.topic = filters.topic;
     if (filters.difficulty) params.difficulty = filters.difficulty;
     if (filters.search) params.search = filters.search;
+    if (filters.diet) params.diet = filters.diet;
+    if (filters.skill_level) params.skill_level = filters.skill_level;
     if (filters.page) params.page = filters.page;
     if (filters.limit) params.limit = filters.limit;
 

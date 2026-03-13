@@ -18,6 +18,7 @@ import {
   GraduationCap,
   Calendar,
   BarChart3,
+  Award,
 } from "lucide-react";
 
 const examBodies = [
@@ -228,6 +229,33 @@ const PastQuestionsLibrary = () => {
               />
             </div>
           )}
+
+          {/* ICAN Banner */}
+          <div
+            className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${
+              isDarkMode
+                ? "bg-gradient-to-r from-indigo-950/40 to-purple-950/40 border-indigo-800/50 hover:border-indigo-700"
+                : "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 hover:border-indigo-300"
+            }`}
+            onClick={() => navigate("/tutor/ican-past-questions")}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                  <Award size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">ICAN Professional Exam Questions</h3>
+                  <p className={`text-xs mt-0.5 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    Browse Foundation, Skills & Professional level past papers for tutorial centers
+                  </p>
+                </div>
+              </div>
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${isDarkMode ? "bg-indigo-900/40 text-indigo-300" : "bg-indigo-100 text-indigo-700"}`}>
+                Browse ICAN →
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Filters */}

@@ -1,5 +1,5 @@
 const supabase = require("../supabaseClient");
-const { logger } = require("../utils/logger");
+const logger = require("../utils/logger");
 
 // Browse past questions with filters + pagination
 exports.getPastQuestions = async (req, res) => {
@@ -11,6 +11,8 @@ exports.getPastQuestions = async (req, res) => {
       topic,
       difficulty,
       search,
+      diet,
+      skill_level,
       page = 1,
       limit = 20,
     } = req.query;
@@ -23,6 +25,8 @@ exports.getPastQuestions = async (req, res) => {
     if (topic) query = query.ilike("topic", `%${topic}%`);
     if (difficulty) query = query.eq("difficulty", difficulty);
     if (search) query = query.ilike("question_text", `%${search}%`);
+    if (diet) query = query.eq("diet", diet);
+    if (skill_level) query = query.eq("skill_level", skill_level);
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query = query
@@ -208,7 +212,7 @@ exports.getStats = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("past_questions")
-      .select("exam_body, exam_year, subject");
+      .select("exam_body, exam_year, subject, diet, skill_level");
 
     if (error) throw error;
 
