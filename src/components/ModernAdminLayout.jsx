@@ -15,6 +15,7 @@ import {
   MagnifyingGlassIcon,
   BuildingLibraryIcon,
   ShieldCheckIcon,
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/outline";
 
 const ModernAdminLayout = () => {
@@ -29,6 +30,7 @@ const ModernAdminLayout = () => {
     { name: "Users & Roles", href: "/admin/users", icon: UsersIcon },
     { name: "Financials", href: "/admin/transactions", icon: CreditCardIcon },
     { name: "Centers", href: "/admin/centers", icon: BuildingLibraryIcon },
+    { name: "Past Questions", href: "/admin/past-questions-upload", icon: CloudArrowUpIcon },
     { name: "Settings", href: "/admin/settings", icon: CogIcon },
   ];
 

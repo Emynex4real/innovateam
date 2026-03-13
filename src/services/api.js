@@ -5,14 +5,19 @@ import supabase from '../config/supabase';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Request interceptor
 api.interceptors.request.use(
   async (config) => {
+    // Auto-detect Content-Type: let browser set multipart/form-data (with boundary)
+    // for FormData, otherwise default to application/json
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    } else if (!config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
 

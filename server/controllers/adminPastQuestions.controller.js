@@ -2,7 +2,7 @@ const supabase = require("../supabaseClient");
 const geminiService = require("../services/gemini.service");
 const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
-const { logger } = require("../utils/logger");
+const logger = require("../utils/logger");
 
 /**
  * Helper: Extract text from uploaded file buffer
@@ -70,7 +70,7 @@ exports.uploadAndParse = async (req, res) => {
         .json({ success: false, error: "No file uploaded" });
     }
 
-    const { exam_body = "jamb", exam_year = "2024", subject = "" } = req.body;
+    const { exam_body = "jamb", exam_year = "2024", subject = "", diet = "", skill_level = "" } = req.body;
 
     if (!subject) {
       return res
@@ -123,6 +123,9 @@ exports.uploadAndParse = async (req, res) => {
       exam_body,
       exam_year: parseInt(exam_year),
       subject,
+      // ICAN-specific fields (only populated for ICAN uploads)
+      ...(exam_body === "ican" && diet ? { diet } : {}),
+      ...(exam_body === "ican" && skill_level ? { skill_level } : {}),
     }));
 
     console.log(
@@ -171,6 +174,9 @@ exports.saveQuestions = async (req, res) => {
       correct_answer: q.correct_answer,
       explanation: q.explanation || "",
       difficulty: q.difficulty || "medium",
+      // ICAN-specific fields
+      ...(q.exam_body === "ican" && q.diet ? { diet: q.diet } : {}),
+      ...(q.exam_body === "ican" && q.skill_level ? { skill_level: q.skill_level } : {}),
     }));
 
     const { data, error } = await supabase
@@ -188,10 +194,12 @@ exports.saveQuestions = async (req, res) => {
       message: `${data.length} past questions saved successfully!`,
     });
   } catch (error) {
-    logger.error("Save past questions error:", error);
-    res
-      .status(500)
-      .json({ success: false, error: error.message || "Failed to save" });
+    const errMsg = error?.message || error?.details || error?.hint || "Failed to save";
+    console.error("❌ Save past questions error:", errMsg, error);
+    logger.error("Save past questions error", { message: errMsg, code: error?.code });
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: errMsg });
+    }
   }
 };
 
