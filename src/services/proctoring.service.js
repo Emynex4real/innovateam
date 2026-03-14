@@ -1,10 +1,11 @@
 import axios from 'axios';
+import { supabase } from '../config/supabase';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
+const getAuthHeader = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return { Authorization: `Bearer ${session?.access_token}` };
 };
 
 export const proctoringService = {
@@ -14,7 +15,7 @@ export const proctoringService = {
       const { data } = await axios.post(
         `${API_URL}/api/proctoring/session`,
         { attempt_id: attemptId, test_id: testId, device_fingerprint: deviceFingerprint, violations },
-        { headers: getAuthHeader() }
+        { headers: await getAuthHeader() }
       );
       return data;
     } catch (error) {
@@ -29,7 +30,7 @@ export const proctoringService = {
       const { data } = await axios.post(
         `${API_URL}/api/proctoring/session/end`,
         { session_id: sessionId },
-        { headers: getAuthHeader() }
+        { headers: await getAuthHeader() }
       );
       return data;
     } catch (error) {
@@ -43,7 +44,7 @@ export const proctoringService = {
     try {
       const { data } = await axios.get(
         `${API_URL}/api/proctoring/report/${attemptId}`,
-        { headers: getAuthHeader() }
+        { headers: await getAuthHeader() }
       );
       return data;
     } catch (error) {
@@ -58,7 +59,7 @@ export const proctoringService = {
       const params = new URLSearchParams(filters).toString();
       const { data } = await axios.get(
         `${API_URL}/api/proctoring/reports?${params}`,
-        { headers: getAuthHeader() }
+        { headers: await getAuthHeader() }
       );
       return data;
     } catch (error) {
@@ -72,7 +73,7 @@ export const proctoringService = {
     try {
       const { data } = await axios.get(
         `${API_URL}/api/proctoring/my-session/${attemptId}`,
-        { headers: getAuthHeader() }
+        { headers: await getAuthHeader() }
       );
       return data;
     } catch (error) {

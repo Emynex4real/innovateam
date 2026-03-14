@@ -126,9 +126,14 @@ const AdminCenters = () => {
   }, [loadData]);
 
   // Center Operations
+  const getToken = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token;
+  };
+
   const handleViewDetails = async (center) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = await getToken();
       const response = await axios.get(
         `${API_URL}/api/admin/tutorial-centers/${center.id}`,
         {
@@ -151,7 +156,7 @@ const AdminCenters = () => {
     if (!reason) return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = await getToken();
       await axios.patch(
         `${API_URL}/api/admin/tutorial-centers/${centerId}/suspend`,
         { reason },
@@ -166,7 +171,7 @@ const AdminCenters = () => {
 
   const handleActivate = async (centerId) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = await getToken();
       await axios.patch(
         `${API_URL}/api/admin/tutorial-centers/${centerId}/activate`,
         {},
@@ -190,7 +195,7 @@ const AdminCenters = () => {
     if (!reason) return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = await getToken();
       await axios.delete(`${API_URL}/api/admin/tutorial-centers/${centerId}`, {
         data: { reason },
         headers: { Authorization: `Bearer ${token}` },

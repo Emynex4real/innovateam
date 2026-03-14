@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, Eye, Clock, MousePointer, Copy, Flag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { supabase } from '../../config/supabase';
 
 const ProctoringReport = ({ attemptId, onClose, isDarkMode }) => {
   const [report, setReport] = useState(null);
@@ -13,7 +14,8 @@ const ProctoringReport = ({ attemptId, onClose, isDarkMode }) => {
 
   const fetchReport = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       const { data } = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/proctoring/report/${attemptId}`,
         { headers: { Authorization: `Bearer ${token}` } }
